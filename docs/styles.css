@@ -54,6 +54,44 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
   text-decoration:none;
 }
 .hero-links a:hover { border-color:#c9aa74; color:#7c4c0b; }
+.hero-links a.active { border-color:#277560; background:#e8f3ee; color:#1d6a56; }
+.perf-toolbar { margin-top:4px; }
+.perf-tabs { margin:14px 0 0; }
+.perf-tab { display:none; margin-top:14px; }
+.perf-tab.active { display:block; }
+.perf-filters { display:flex; flex-wrap:wrap; gap:10px 14px; margin-bottom:14px; align-items:end; }
+.perf-filters label { display:grid; gap:5px; color:#5f564a; font-size:12px; font-weight:900; }
+.perf-filters select,.perf-form input,.perf-form select { min-width:132px; height:34px; padding:0 10px; border:1px solid var(--line); border-radius:10px; background:#fffdf8; }
+.perf-chart-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.perf-chart-card { display:grid; gap:12px; padding:14px; border:1px solid var(--line); border-radius:16px; background:#fffaf1; min-height:360px; }
+.perf-chart-wide { grid-column:1 / -1; }
+.perf-pie-wrap { position:relative; height:300px; }
+.perf-pie-wrap canvas { width:100% !important; height:100% !important; }
+.perf-pie-center { position:absolute; inset:0; display:grid; place-content:center; text-align:center; pointer-events:none; }
+.perf-pie-center strong { font-size:34px; line-height:1; color:#21352e; }
+.perf-pie-center span { color:#6f6254; font-size:14px; font-weight:900; }
+.perf-pie-center em { margin-top:4px; color:#8a7a67; font-size:12px; font-weight:850; }
+.perf-total-time { color:#1d6a56; font-size:18px; }
+.perf-legend { display:grid; gap:6px; max-height:180px; overflow:auto; }
+.perf-legend-item { display:grid; grid-template-columns:12px 1fr auto auto; gap:8px; align-items:center; padding:6px 8px; border:1px solid var(--line); border-radius:10px; background:#fffdf8; font-size:12px; }
+.perf-legend-item i { width:12px; height:12px; border-radius:999px; }
+.perf-legend-item b { color:#1d6a56; font-weight:950; }
+.perf-legend-item em { color:#6f6254; }
+.perf-compare-pick { display:flex; flex-wrap:wrap; gap:8px; }
+.perf-compare-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--line); border-radius:999px; background:#fffdf8; font-size:12px; font-weight:900; }
+.perf-trigger-grid { display:grid; grid-template-columns:minmax(280px,420px) 1fr; gap:14px; }
+.perf-form { display:grid; gap:10px; }
+.perf-form label { display:grid; gap:5px; font-size:12px; font-weight:900; color:#5f564a; }
+.perf-attr-fieldset { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fffdf8; }
+.perf-attr-fieldset legend { padding:0 6px; color:#87570a; font-size:12px; font-weight:950; }
+.perf-table { min-width:760px; }
+.bottleneck-pill { display:inline-flex; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:950; }
+.bottleneck-pill.bottleneck-HBM { border:1px solid rgba(47,115,200,.28); background:#edf4ff; color:#235a9f; }
+.bottleneck-pill.bottleneck-Cube { border:1px solid rgba(39,117,96,.28); background:#e7f3ee; color:#1d6a56; }
+.bottleneck-pill.bottleneck-L2 { border:1px solid rgba(184,117,8,.28); background:#fff4d8; color:#8a570c; }
+.bottleneck-pill.bottleneck-Vector { border:1px solid rgba(107,91,149,.28); background:#f1edf8; color:#574a7d; }
+.bottleneck-pill.bottleneck-none { border:1px solid var(--line); background:#fffaf1; color:#6f6254; }
+#networkCompare,#caseMbuMfu { max-height:280px; }
 .summary { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
 .metric { display:grid; align-content:center; min-height:74px; padding:12px; background:#29342e; color:#fffdf8; box-shadow:var(--shadow); }
 .metric small { color:#d8ccb8; font-weight:800; }
@@ -765,6 +803,7 @@ td .link-input { min-width:220px; }
 .muted-cell { color:#b0a491; font-weight:800; }
 @media (max-width:980px) {
   .hero,.summary,.gantt-row,.audit-item,.admin-grid { grid-template-columns:1fr; }
+  .perf-chart-grid,.perf-trigger-grid { grid-template-columns:1fr; }
   .rule-card-grid { grid-template-columns:1fr; }
   .detail-axis-grid { grid-template-columns:1fr; }
   .detail-axis-label { justify-content:flex-start; }

@@ -12,6 +12,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT / "data" / "project.sqlite3"
 STATE_PATH = ROOT / "data" / "project-state.json"
+PERF_DATA_PATH = ROOT / "data" / "performance-data.json"
+DOCS_PERF_DATA_PATH = ROOT / "docs" / "performance-data.json"
 AUDIT_LOG_PATH = ROOT / "data" / "audit-log.jsonl"
 PROJECT_DATA_CANDIDATES = [
     ROOT / "data" / "seed-project-data.json",
@@ -236,7 +238,7 @@ def import_state_snapshot(conn: sqlite3.Connection, path: Path) -> None:
             "risk": task.get("risk") or "中",
             "priority": task.get("priority") or RISK_TO_PRIORITY.get(task.get("risk"), "P1"),
             "group_id": task.get("group_id"),
-            "special_id": task.get("special_id"),
+            "special_id": task.get("special_id") or None,
             "start_date": task.get("start_date"),
             "end_date": task.get("end_date"),
             "evidence": task.get("evidence", []),
@@ -448,7 +450,7 @@ def upsert_task(conn: sqlite3.Connection, payload: dict[str, Any]) -> None:
             payload.get("risk", "中"),
             payload.get("priority", "P1"),
             payload.get("group_id"),
-            payload.get("special_id"),
+            payload.get("special_id") or None,
             payload.get("start_date"),
             payload.get("end_date"),
             as_json(payload.get("evidence", [])),
@@ -608,3 +610,130 @@ def write_audit_snapshot(conn: sqlite3.Connection) -> None:
     with AUDIT_LOG_PATH.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(audit_row_to_dict(row), ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def load_perf_data(conn: sqlite3.Connection) -> dict[str, Any]:
+    row = conn.execute("SELECT value FROM project_meta WHERE key = 'perfData'").fetchone()
+    if row:
+        return parse_json(row["value"], default_perf_data())
+    if PERF_DATA_PATH.exists():
+        data = json.loads(PERF_DATA_PATH.read_text(encoding="utf-8-sig"))
+        save_perf_data(conn, data)
+        return data
+    data = default_perf_data()
+    save_perf_data(conn, data)
+    return data
+
+
+def save_perf_data(conn: sqlite3.Connection, data: dict[str, Any]) -> dict[str, Any]:
+    data = normalize_perf_data(data)
+    conn.execute(
+        "INSERT OR REPLACE INTO project_meta(key, value) VALUES (?, ?)",
+        ("perfData", as_json(data)),
+    )
+    PERF_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    PERF_DATA_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    DOCS_PERF_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    DOCS_PERF_DATA_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return data
+
+
+def default_perf_data() -> dict[str, Any]:
+    if PERF_DATA_PATH.exists():
+        return json.loads(PERF_DATA_PATH.read_text(encoding="utf-8-sig"))
+    return {
+        "version": now_iso(),
+        "models": [{"id": "gdn", "label": "GDN", "position": 0, "active": True}],
+        "cases": [{"id": "case-b", "label": "用例B", "category": "standard", "hv": None, "hk": None, "attributes": {"seq_len": 4096}, "position": 0, "active": True}],
+        "snapshots": [],
+        "runs": [],
+    }
+
+
+def normalize_perf_data(data: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "version": data.get("version") or now_iso(),
+        "models": list(data.get("models") or []),
+        "cases": list(data.get("cases") or []),
+        "snapshots": list(data.get("snapshots") or []),
+        "runs": list(data.get("runs") or []),
+    }
+
+
+def add_perf_model(conn: sqlite3.Connection, model: dict[str, Any]) -> dict[str, Any]:
+    data = load_perf_data(conn)
+    model_id = model.get("id") or make_id("model")
+    if any(item.get("id") == model_id for item in data["models"]):
+        raise ValueError("model already exists")
+    data["models"].append({
+        "id": model_id,
+        "label": model.get("label") or model_id,
+        "position": len(data["models"]),
+        "active": True,
+    })
+    data["version"] = now_iso()
+    return save_perf_data(conn, data)
+
+
+def trigger_perf_run(conn: sqlite3.Connection, payload: dict[str, Any], created_by: str = "backend") -> dict[str, Any]:
+    data = load_perf_data(conn)
+    case_id = payload.get("case_id")
+    model_id = payload.get("model_id")
+    chip = payload.get("chip") or "A2"
+    if chip not in {"A2", "A3"}:
+        raise ValueError("chip must be A2 or A3")
+    if not any(item.get("id") == case_id for item in data["cases"]):
+        raise ValueError("case not found")
+    if not any(item.get("id") == model_id for item in data["models"]):
+        raise ValueError("model not found")
+    base = next(
+        (item for item in data["snapshots"] if item.get("model_id") == model_id and item.get("case_id") == case_id and item.get("chip") == chip),
+        data["snapshots"][0] if data["snapshots"] else None,
+    )
+    operators = []
+    for item in base.get("operators", []) if base else []:
+        time_ms = round(float(item.get("time_ms", 0)) * (0.92 + (hash(f"{case_id}-{model_id}-{chip}-{item.get('operator_id')}") % 16) / 100), 1)
+        operators.append({**item, "time_ms": time_ms})
+    if not operators:
+        operators = [
+            {"operator_id": "chunk_fwd_o", "time_ms": 360.0, "share_pct": 45.0, "mbu": 0.72, "mfu": 0.64, "bottleneck": "HBM", "cube_util": 0.64, "vector_util": 0.5, "mem_util": 0.72},
+            {"operator_id": "chunk_gated_delta_rule_fwd_h", "time_ms": 320.0, "share_pct": 40.0, "mbu": 0.68, "mfu": 0.7, "bottleneck": "Cube", "cube_util": 0.7, "vector_util": 0.55, "mem_util": 0.5},
+            {"operator_id": "chunk_bwd_dv_local", "time_ms": 120.0, "share_pct": 15.0, "mbu": 0.58, "mfu": 0.66, "bottleneck": "L2", "cube_util": 0.66, "vector_util": 0.6, "mem_util": 0.58},
+        ]
+    total_time_ms = round(sum(item["time_ms"] for item in operators), 1)
+    for item in operators:
+        item["share_pct"] = round(item["time_ms"] / total_time_ms * 1000) / 10 if total_time_ms else 0
+    timestamp = now_iso()
+    snapshot = {
+        "id": make_id("snap"),
+        "label": f"{timestamp[:10]} 主线",
+        "snapshot_date": timestamp[:10],
+        "branch": "main",
+        "model_id": model_id,
+        "case_id": case_id,
+        "chip": chip,
+        "total_time_ms": total_time_ms,
+        "status": "done",
+        "created_at": timestamp,
+        "operators": operators,
+    }
+    run = {
+        "id": make_id("run"),
+        "case_id": case_id,
+        "model_id": model_id,
+        "chip": chip,
+        "device": payload.get("device") or "722",
+        "attributes": payload.get("attributes") or {},
+        "status": "done",
+        "snapshot_id": snapshot["id"],
+        "created_by": created_by,
+        "created_at": timestamp,
+        "finished_at": timestamp,
+        "message": "测试执行完成",
+        "snapshot": snapshot,
+    }
+    data["snapshots"].insert(0, snapshot)
+    data["runs"].insert(0, run)
+    data["version"] = timestamp
+    save_perf_data(conn, data)
+    return {"data": data, "run": run}

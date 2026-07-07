@@ -1,0 +1,1001 @@
+{
+  "version": "2026-07-07T14:53:17+08:00",
+  "models": [
+    {
+      "id": "gdn",
+      "label": "GDN",
+      "position": 0,
+      "active": true
+    },
+    {
+      "id": "kdn",
+      "label": "KDN",
+      "position": 1,
+      "active": true
+    }
+  ],
+  "cases": [
+    {
+      "id": "case-b",
+      "label": "用例B",
+      "category": "standard",
+      "hv": null,
+      "hk": null,
+      "attributes": {
+        "seq_len": 4096,
+        "batch": 1,
+        "hidden": 2048
+      },
+      "position": 0,
+      "active": true
+    },
+    {
+      "id": "case-hv-4k",
+      "label": "H_v=4096",
+      "category": "H_v",
+      "hv": 4096,
+      "hk": null,
+      "attributes": {
+        "seq_len": 4096,
+        "batch": 1
+      },
+      "position": 1,
+      "active": true
+    },
+    {
+      "id": "case-hv-8k",
+      "label": "H_v=8192",
+      "category": "H_v",
+      "hv": 8192,
+      "hk": null,
+      "attributes": {
+        "seq_len": 8192,
+        "batch": 1
+      },
+      "position": 2,
+      "active": true
+    },
+    {
+      "id": "case-hk-32",
+      "label": "H_k=32",
+      "category": "H_k",
+      "hv": null,
+      "hk": 32,
+      "attributes": {
+        "seq_len": 4096,
+        "batch": 1
+      },
+      "position": 3,
+      "active": true
+    },
+    {
+      "id": "case-hk-64",
+      "label": "H_k=64",
+      "category": "H_k",
+      "hv": null,
+      "hk": 64,
+      "attributes": {
+        "seq_len": 4096,
+        "batch": 1
+      },
+      "position": 4,
+      "active": true
+    }
+  ],
+  "snapshots": [
+    {
+      "id": "snap-f0c91d46ca",
+      "label": "2026-07-07 主线",
+      "snapshot_date": "2026-07-07",
+      "branch": "main",
+      "model_id": "gdn",
+      "case_id": "case-b",
+      "chip": "A2",
+      "total_time_ms": 1871.8,
+      "status": "done",
+      "created_at": "2026-07-07T14:53:17+08:00",
+      "operators": [
+        {
+          "operator_id": "chunk_gated_delta_rule_fwd_h",
+          "time_ms": 425.1,
+          "share_pct": 22.7,
+          "mbu": 0.66,
+          "mfu": 0.71,
+          "bottleneck": "Cube",
+          "cube_util": 0.71,
+          "vector_util": 0.54,
+          "mem_util": 0.48
+        },
+        {
+          "operator_id": "chunk_fwd_o",
+          "time_ms": 364.0,
+          "share_pct": 19.4,
+          "mbu": 0.74,
+          "mfu": 0.63,
+          "bottleneck": "HBM",
+          "cube_util": 0.63,
+          "vector_util": 0.49,
+          "mem_util": 0.74
+        },
+        {
+          "operator_id": "chunk_bwd_dv_local",
+          "time_ms": 320.2,
+          "share_pct": 17.1,
+          "mbu": 0.58,
+          "mfu": 0.67,
+          "bottleneck": "L2",
+          "cube_util": 0.67,
+          "vector_util": 0.61,
+          "mem_util": 0.58
+        },
+        {
+          "operator_id": "chunk_bwd_dqkwg",
+          "time_ms": 252.4,
+          "share_pct": 13.5,
+          "mbu": 0.62,
+          "mfu": 0.59,
+          "bottleneck": "Cube",
+          "cube_util": 0.59,
+          "vector_util": 0.52,
+          "mem_util": 0.55
+        },
+        {
+          "operator_id": "recompute_wu_fwd",
+          "time_ms": 204.2,
+          "share_pct": 10.9,
+          "mbu": 0.55,
+          "mfu": 0.64,
+          "bottleneck": "Vector",
+          "cube_util": 0.48,
+          "vector_util": 0.64,
+          "mem_util": 0.51
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_full",
+          "time_ms": 147.4,
+          "share_pct": 7.9,
+          "mbu": 0.49,
+          "mfu": 0.56,
+          "bottleneck": "HBM",
+          "cube_util": 0.52,
+          "vector_util": 0.44,
+          "mem_util": 0.62
+        },
+        {
+          "operator_id": "solve_tril",
+          "time_ms": 95.4,
+          "share_pct": 5.1,
+          "mbu": 0.41,
+          "mfu": 0.48,
+          "bottleneck": "L2",
+          "cube_util": 0.45,
+          "vector_util": 0.38,
+          "mem_util": 0.41
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_da",
+          "time_ms": 63.1,
+          "share_pct": 3.4,
+          "mbu": 0.38,
+          "mfu": 0.42,
+          "bottleneck": "Vector",
+          "cube_util": 0.39,
+          "vector_util": 0.42,
+          "mem_util": 0.35
+        }
+      ]
+    },
+    {
+      "id": "snap-gdn-caseb-0625-a2",
+      "label": "2026-06-25 主线",
+      "snapshot_date": "2026-06-25",
+      "branch": "main",
+      "model_id": "gdn",
+      "case_id": "case-b",
+      "chip": "A2",
+      "total_time_ms": 1920.4,
+      "status": "done",
+      "created_at": "2026-06-25T18:00:00+08:00",
+      "operators": [
+        {
+          "operator_id": "chunk_gated_delta_rule_fwd_h",
+          "time_ms": 438.2,
+          "share_pct": 22.8,
+          "mbu": 0.66,
+          "mfu": 0.71,
+          "bottleneck": "Cube",
+          "cube_util": 0.71,
+          "vector_util": 0.54,
+          "mem_util": 0.48
+        },
+        {
+          "operator_id": "chunk_fwd_o",
+          "time_ms": 395.6,
+          "share_pct": 20.6,
+          "mbu": 0.74,
+          "mfu": 0.63,
+          "bottleneck": "HBM",
+          "cube_util": 0.63,
+          "vector_util": 0.49,
+          "mem_util": 0.74
+        },
+        {
+          "operator_id": "chunk_bwd_dv_local",
+          "time_ms": 302.1,
+          "share_pct": 15.7,
+          "mbu": 0.58,
+          "mfu": 0.67,
+          "bottleneck": "L2",
+          "cube_util": 0.67,
+          "vector_util": 0.61,
+          "mem_util": 0.58
+        },
+        {
+          "operator_id": "chunk_bwd_dqkwg",
+          "time_ms": 268.5,
+          "share_pct": 14.0,
+          "mbu": 0.62,
+          "mfu": 0.59,
+          "bottleneck": "Cube",
+          "cube_util": 0.59,
+          "vector_util": 0.52,
+          "mem_util": 0.55
+        },
+        {
+          "operator_id": "recompute_wu_fwd",
+          "time_ms": 198.3,
+          "share_pct": 10.3,
+          "mbu": 0.55,
+          "mfu": 0.64,
+          "bottleneck": "Vector",
+          "cube_util": 0.48,
+          "vector_util": 0.64,
+          "mem_util": 0.51
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_full",
+          "time_ms": 156.8,
+          "share_pct": 8.2,
+          "mbu": 0.49,
+          "mfu": 0.56,
+          "bottleneck": "HBM",
+          "cube_util": 0.52,
+          "vector_util": 0.44,
+          "mem_util": 0.62
+        },
+        {
+          "operator_id": "solve_tril",
+          "time_ms": 98.4,
+          "share_pct": 5.1,
+          "mbu": 0.41,
+          "mfu": 0.48,
+          "bottleneck": "L2",
+          "cube_util": 0.45,
+          "vector_util": 0.38,
+          "mem_util": 0.41
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_da",
+          "time_ms": 62.5,
+          "share_pct": 3.3,
+          "mbu": 0.38,
+          "mfu": 0.42,
+          "bottleneck": "Vector",
+          "cube_util": 0.39,
+          "vector_util": 0.42,
+          "mem_util": 0.35
+        }
+      ]
+    },
+    {
+      "id": "snap-gdn-caseb-0701-a2",
+      "label": "2026-07-01 主线",
+      "snapshot_date": "2026-07-01",
+      "branch": "main",
+      "model_id": "gdn",
+      "case_id": "case-b",
+      "chip": "A2",
+      "total_time_ms": 1785.2,
+      "status": "done",
+      "created_at": "2026-07-01T18:00:00+08:00",
+      "operators": [
+        {
+          "operator_id": "chunk_gated_delta_rule_fwd_h",
+          "time_ms": 402.1,
+          "share_pct": 22.5,
+          "mbu": 0.68,
+          "mfu": 0.74,
+          "bottleneck": "Cube",
+          "cube_util": 0.74,
+          "vector_util": 0.56,
+          "mem_util": 0.5
+        },
+        {
+          "operator_id": "chunk_fwd_o",
+          "time_ms": 368.4,
+          "share_pct": 20.6,
+          "mbu": 0.76,
+          "mfu": 0.66,
+          "bottleneck": "HBM",
+          "cube_util": 0.66,
+          "vector_util": 0.51,
+          "mem_util": 0.76
+        },
+        {
+          "operator_id": "chunk_bwd_dv_local",
+          "time_ms": 278.9,
+          "share_pct": 15.6,
+          "mbu": 0.6,
+          "mfu": 0.7,
+          "bottleneck": "L2",
+          "cube_util": 0.7,
+          "vector_util": 0.63,
+          "mem_util": 0.6
+        },
+        {
+          "operator_id": "chunk_bwd_dqkwg",
+          "time_ms": 245.2,
+          "share_pct": 13.7,
+          "mbu": 0.64,
+          "mfu": 0.62,
+          "bottleneck": "Cube",
+          "cube_util": 0.62,
+          "vector_util": 0.55,
+          "mem_util": 0.57
+        },
+        {
+          "operator_id": "recompute_wu_fwd",
+          "time_ms": 182.6,
+          "share_pct": 10.2,
+          "mbu": 0.57,
+          "mfu": 0.67,
+          "bottleneck": "Vector",
+          "cube_util": 0.5,
+          "vector_util": 0.67,
+          "mem_util": 0.53
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_full",
+          "time_ms": 142.8,
+          "share_pct": 8.0,
+          "mbu": 0.52,
+          "mfu": 0.59,
+          "bottleneck": "HBM",
+          "cube_util": 0.55,
+          "vector_util": 0.46,
+          "mem_util": 0.65
+        },
+        {
+          "operator_id": "solve_tril",
+          "time_ms": 92.1,
+          "share_pct": 5.2,
+          "mbu": 0.43,
+          "mfu": 0.51,
+          "bottleneck": "L2",
+          "cube_util": 0.48,
+          "vector_util": 0.4,
+          "mem_util": 0.43
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_da",
+          "time_ms": 73.1,
+          "share_pct": 4.1,
+          "mbu": 0.4,
+          "mfu": 0.45,
+          "bottleneck": "Vector",
+          "cube_util": 0.41,
+          "vector_util": 0.45,
+          "mem_util": 0.37
+        }
+      ]
+    },
+    {
+      "id": "snap-gdn-caseb-0707-a2",
+      "label": "2026-07-07 主线",
+      "snapshot_date": "2026-07-07",
+      "branch": "main",
+      "model_id": "gdn",
+      "case_id": "case-b",
+      "chip": "A2",
+      "total_time_ms": 1712.8,
+      "status": "done",
+      "created_at": "2026-07-07T10:00:00+08:00",
+      "operators": [
+        {
+          "operator_id": "chunk_gated_delta_rule_fwd_h",
+          "time_ms": 385.6,
+          "share_pct": 22.5,
+          "mbu": 0.7,
+          "mfu": 0.76,
+          "bottleneck": "Cube",
+          "cube_util": 0.76,
+          "vector_util": 0.58,
+          "mem_util": 0.52
+        },
+        {
+          "operator_id": "chunk_fwd_o",
+          "time_ms": 352.1,
+          "share_pct": 20.6,
+          "mbu": 0.78,
+          "mfu": 0.68,
+          "bottleneck": "HBM",
+          "cube_util": 0.68,
+          "vector_util": 0.53,
+          "mem_util": 0.78
+        },
+        {
+          "operator_id": "chunk_bwd_dv_local",
+          "time_ms": 265.4,
+          "share_pct": 15.5,
+          "mbu": 0.62,
+          "mfu": 0.72,
+          "bottleneck": "L2",
+          "cube_util": 0.72,
+          "vector_util": 0.65,
+          "mem_util": 0.62
+        },
+        {
+          "operator_id": "chunk_bwd_dqkwg",
+          "time_ms": 234.8,
+          "share_pct": 13.7,
+          "mbu": 0.66,
+          "mfu": 0.64,
+          "bottleneck": "Cube",
+          "cube_util": 0.64,
+          "vector_util": 0.57,
+          "mem_util": 0.59
+        },
+        {
+          "operator_id": "recompute_wu_fwd",
+          "time_ms": 175.2,
+          "share_pct": 10.2,
+          "mbu": 0.59,
+          "mfu": 0.69,
+          "bottleneck": "Vector",
+          "cube_util": 0.52,
+          "vector_util": 0.69,
+          "mem_util": 0.55
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_full",
+          "time_ms": 136.5,
+          "share_pct": 8.0,
+          "mbu": 0.54,
+          "mfu": 0.61,
+          "bottleneck": "HBM",
+          "cube_util": 0.57,
+          "vector_util": 0.48,
+          "mem_util": 0.67
+        },
+        {
+          "operator_id": "solve_tril",
+          "time_ms": 88.9,
+          "share_pct": 5.2,
+          "mbu": 0.45,
+          "mfu": 0.53,
+          "bottleneck": "L2",
+          "cube_util": 0.5,
+          "vector_util": 0.42,
+          "mem_util": 0.45
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_da",
+          "time_ms": 74.3,
+          "share_pct": 4.3,
+          "mbu": 0.42,
+          "mfu": 0.47,
+          "bottleneck": "Vector",
+          "cube_util": 0.43,
+          "vector_util": 0.47,
+          "mem_util": 0.39
+        }
+      ]
+    },
+    {
+      "id": "snap-gdn-caseb-0701-a3",
+      "label": "2026-07-01 主线",
+      "snapshot_date": "2026-07-01",
+      "branch": "main",
+      "model_id": "gdn",
+      "case_id": "case-b",
+      "chip": "A3",
+      "total_time_ms": 1654.6,
+      "status": "done",
+      "created_at": "2026-07-01T20:00:00+08:00",
+      "operators": [
+        {
+          "operator_id": "chunk_gated_delta_rule_fwd_h",
+          "time_ms": 372.8,
+          "share_pct": 22.5,
+          "mbu": 0.72,
+          "mfu": 0.78,
+          "bottleneck": "Cube",
+          "cube_util": 0.78,
+          "vector_util": 0.6,
+          "mem_util": 0.54
+        },
+        {
+          "operator_id": "chunk_fwd_o",
+          "time_ms": 340.5,
+          "share_pct": 20.6,
+          "mbu": 0.8,
+          "mfu": 0.7,
+          "bottleneck": "HBM",
+          "cube_util": 0.7,
+          "vector_util": 0.55,
+          "mem_util": 0.8
+        },
+        {
+          "operator_id": "chunk_bwd_dv_local",
+          "time_ms": 256.2,
+          "share_pct": 15.5,
+          "mbu": 0.64,
+          "mfu": 0.74,
+          "bottleneck": "L2",
+          "cube_util": 0.74,
+          "vector_util": 0.67,
+          "mem_util": 0.64
+        },
+        {
+          "operator_id": "chunk_bwd_dqkwg",
+          "time_ms": 226.7,
+          "share_pct": 13.7,
+          "mbu": 0.68,
+          "mfu": 0.66,
+          "bottleneck": "Cube",
+          "cube_util": 0.66,
+          "vector_util": 0.59,
+          "mem_util": 0.61
+        },
+        {
+          "operator_id": "recompute_wu_fwd",
+          "time_ms": 168.8,
+          "share_pct": 10.2,
+          "mbu": 0.61,
+          "mfu": 0.71,
+          "bottleneck": "Vector",
+          "cube_util": 0.54,
+          "vector_util": 0.71,
+          "mem_util": 0.57
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_full",
+          "time_ms": 131.4,
+          "share_pct": 7.9,
+          "mbu": 0.56,
+          "mfu": 0.63,
+          "bottleneck": "HBM",
+          "cube_util": 0.59,
+          "vector_util": 0.5,
+          "mem_util": 0.69
+        },
+        {
+          "operator_id": "solve_tril",
+          "time_ms": 86.0,
+          "share_pct": 5.2,
+          "mbu": 0.47,
+          "mfu": 0.55,
+          "bottleneck": "L2",
+          "cube_util": 0.52,
+          "vector_util": 0.44,
+          "mem_util": 0.47
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_da",
+          "time_ms": 72.2,
+          "share_pct": 4.4,
+          "mbu": 0.44,
+          "mfu": 0.49,
+          "bottleneck": "Vector",
+          "cube_util": 0.45,
+          "vector_util": 0.49,
+          "mem_util": 0.41
+        }
+      ]
+    },
+    {
+      "id": "snap-gdn-hv8k-0701-a2",
+      "label": "2026-07-01 主线",
+      "snapshot_date": "2026-07-01",
+      "branch": "main",
+      "model_id": "gdn",
+      "case_id": "case-hv-8k",
+      "chip": "A2",
+      "total_time_ms": 2845.6,
+      "status": "done",
+      "created_at": "2026-07-01T18:30:00+08:00",
+      "operators": [
+        {
+          "operator_id": "chunk_gated_delta_rule_fwd_h",
+          "time_ms": 682.4,
+          "share_pct": 24.0,
+          "mbu": 0.71,
+          "mfu": 0.68,
+          "bottleneck": "HBM",
+          "cube_util": 0.68,
+          "vector_util": 0.52,
+          "mem_util": 0.71
+        },
+        {
+          "operator_id": "chunk_fwd_o",
+          "time_ms": 598.2,
+          "share_pct": 21.0,
+          "mbu": 0.82,
+          "mfu": 0.61,
+          "bottleneck": "HBM",
+          "cube_util": 0.61,
+          "vector_util": 0.48,
+          "mem_util": 0.82
+        },
+        {
+          "operator_id": "chunk_bwd_dv_local",
+          "time_ms": 445.8,
+          "share_pct": 15.7,
+          "mbu": 0.65,
+          "mfu": 0.66,
+          "bottleneck": "L2",
+          "cube_util": 0.66,
+          "vector_util": 0.6,
+          "mem_util": 0.65
+        },
+        {
+          "operator_id": "chunk_bwd_dqkwg",
+          "time_ms": 398.6,
+          "share_pct": 14.0,
+          "mbu": 0.68,
+          "mfu": 0.58,
+          "bottleneck": "Cube",
+          "cube_util": 0.58,
+          "vector_util": 0.51,
+          "mem_util": 0.6
+        },
+        {
+          "operator_id": "recompute_wu_fwd",
+          "time_ms": 298.4,
+          "share_pct": 10.5,
+          "mbu": 0.6,
+          "mfu": 0.63,
+          "bottleneck": "Vector",
+          "cube_util": 0.49,
+          "vector_util": 0.63,
+          "mem_util": 0.56
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_full",
+          "time_ms": 228.2,
+          "share_pct": 8.0,
+          "mbu": 0.55,
+          "mfu": 0.54,
+          "bottleneck": "HBM",
+          "cube_util": 0.51,
+          "vector_util": 0.43,
+          "mem_util": 0.68
+        },
+        {
+          "operator_id": "solve_tril",
+          "time_ms": 142.0,
+          "share_pct": 5.0,
+          "mbu": 0.46,
+          "mfu": 0.47,
+          "bottleneck": "L2",
+          "cube_util": 0.44,
+          "vector_util": 0.37,
+          "mem_util": 0.46
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_da",
+          "time_ms": 52.0,
+          "share_pct": 1.8,
+          "mbu": 0.41,
+          "mfu": 0.4,
+          "bottleneck": "Vector",
+          "cube_util": 0.38,
+          "vector_util": 0.4,
+          "mem_util": 0.36
+        }
+      ]
+    },
+    {
+      "id": "snap-gdn-hk64-0701-a2",
+      "label": "2026-07-01 主线",
+      "snapshot_date": "2026-07-01",
+      "branch": "main",
+      "model_id": "gdn",
+      "case_id": "case-hk-64",
+      "chip": "A2",
+      "total_time_ms": 2018.3,
+      "status": "done",
+      "created_at": "2026-07-01T19:00:00+08:00",
+      "operators": [
+        {
+          "operator_id": "chunk_gated_delta_rule_fwd_h",
+          "time_ms": 452.6,
+          "share_pct": 22.4,
+          "mbu": 0.67,
+          "mfu": 0.73,
+          "bottleneck": "Cube",
+          "cube_util": 0.73,
+          "vector_util": 0.55,
+          "mem_util": 0.51
+        },
+        {
+          "operator_id": "chunk_fwd_o",
+          "time_ms": 412.8,
+          "share_pct": 20.5,
+          "mbu": 0.75,
+          "mfu": 0.65,
+          "bottleneck": "HBM",
+          "cube_util": 0.65,
+          "vector_util": 0.5,
+          "mem_util": 0.75
+        },
+        {
+          "operator_id": "chunk_bwd_dv_local",
+          "time_ms": 318.4,
+          "share_pct": 15.8,
+          "mbu": 0.59,
+          "mfu": 0.69,
+          "bottleneck": "L2",
+          "cube_util": 0.69,
+          "vector_util": 0.62,
+          "mem_util": 0.59
+        },
+        {
+          "operator_id": "chunk_bwd_dqkwg",
+          "time_ms": 312.6,
+          "share_pct": 15.5,
+          "mbu": 0.63,
+          "mfu": 0.61,
+          "bottleneck": "Cube",
+          "cube_util": 0.61,
+          "vector_util": 0.54,
+          "mem_util": 0.56
+        },
+        {
+          "operator_id": "recompute_wu_fwd",
+          "time_ms": 205.8,
+          "share_pct": 10.2,
+          "mbu": 0.56,
+          "mfu": 0.66,
+          "bottleneck": "Vector",
+          "cube_util": 0.49,
+          "vector_util": 0.66,
+          "mem_util": 0.52
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_full",
+          "time_ms": 162.4,
+          "share_pct": 8.0,
+          "mbu": 0.5,
+          "mfu": 0.57,
+          "bottleneck": "HBM",
+          "cube_util": 0.53,
+          "vector_util": 0.45,
+          "mem_util": 0.63
+        },
+        {
+          "operator_id": "solve_tril",
+          "time_ms": 104.7,
+          "share_pct": 5.2,
+          "mbu": 0.42,
+          "mfu": 0.49,
+          "bottleneck": "L2",
+          "cube_util": 0.46,
+          "vector_util": 0.39,
+          "mem_util": 0.42
+        },
+        {
+          "operator_id": "prepare_wy_repr_bwd_da",
+          "time_ms": 49.0,
+          "share_pct": 2.4,
+          "mbu": 0.39,
+          "mfu": 0.43,
+          "bottleneck": "Vector",
+          "cube_util": 0.4,
+          "vector_util": 0.43,
+          "mem_util": 0.37
+        }
+      ]
+    },
+    {
+      "id": "snap-kdn-caseb-0701-a2",
+      "label": "2026-07-01 主线",
+      "snapshot_date": "2026-07-01",
+      "branch": "main",
+      "model_id": "kdn",
+      "case_id": "case-b",
+      "chip": "A2",
+      "total_time_ms": 2142.7,
+      "status": "done",
+      "created_at": "2026-07-01T21:00:00+08:00",
+      "operators": [
+        {
+          "operator_id": "kimi_delta_attention_triton",
+          "time_ms": 856.2,
+          "share_pct": 40.0,
+          "mbu": 0.58,
+          "mfu": 0.52,
+          "bottleneck": "HBM",
+          "cube_util": 0.48,
+          "vector_util": 0.42,
+          "mem_util": 0.72
+        },
+        {
+          "operator_id": "chunk_gated_delta_rule_fwd_h",
+          "time_ms": 428.5,
+          "share_pct": 20.0,
+          "mbu": 0.64,
+          "mfu": 0.68,
+          "bottleneck": "Cube",
+          "cube_util": 0.68,
+          "vector_util": 0.51,
+          "mem_util": 0.47
+        },
+        {
+          "operator_id": "chunk_fwd_o",
+          "time_ms": 385.9,
+          "share_pct": 18.0,
+          "mbu": 0.72,
+          "mfu": 0.6,
+          "bottleneck": "HBM",
+          "cube_util": 0.6,
+          "vector_util": 0.47,
+          "mem_util": 0.72
+        },
+        {
+          "operator_id": "chunk_bwd_dv_local",
+          "time_ms": 299.0,
+          "share_pct": 14.0,
+          "mbu": 0.56,
+          "mfu": 0.64,
+          "bottleneck": "L2",
+          "cube_util": 0.64,
+          "vector_util": 0.58,
+          "mem_util": 0.56
+        },
+        {
+          "operator_id": "recompute_wu_fwd",
+          "time_ms": 107.1,
+          "share_pct": 5.0,
+          "mbu": 0.52,
+          "mfu": 0.61,
+          "bottleneck": "Vector",
+          "cube_util": 0.45,
+          "vector_util": 0.61,
+          "mem_util": 0.48
+        },
+        {
+          "operator_id": "solve_tril",
+          "time_ms": 66.0,
+          "share_pct": 3.0,
+          "mbu": 0.4,
+          "mfu": 0.45,
+          "bottleneck": "L2",
+          "cube_util": 0.42,
+          "vector_util": 0.36,
+          "mem_util": 0.4
+        }
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "id": "run-9af786d22f",
+      "case_id": "case-b",
+      "model_id": "gdn",
+      "chip": "A2",
+      "device": "722",
+      "attributes": {
+        "seq_len": 4096
+      },
+      "status": "done",
+      "snapshot_id": "snap-f0c91d46ca",
+      "created_by": "tester",
+      "created_at": "2026-07-07T14:53:17+08:00",
+      "finished_at": "2026-07-07T14:53:17+08:00",
+      "message": "测试执行完成",
+      "snapshot": {
+        "id": "snap-f0c91d46ca",
+        "label": "2026-07-07 主线",
+        "snapshot_date": "2026-07-07",
+        "branch": "main",
+        "model_id": "gdn",
+        "case_id": "case-b",
+        "chip": "A2",
+        "total_time_ms": 1871.8,
+        "status": "done",
+        "created_at": "2026-07-07T14:53:17+08:00",
+        "operators": [
+          {
+            "operator_id": "chunk_gated_delta_rule_fwd_h",
+            "time_ms": 425.1,
+            "share_pct": 22.7,
+            "mbu": 0.66,
+            "mfu": 0.71,
+            "bottleneck": "Cube",
+            "cube_util": 0.71,
+            "vector_util": 0.54,
+            "mem_util": 0.48
+          },
+          {
+            "operator_id": "chunk_fwd_o",
+            "time_ms": 364.0,
+            "share_pct": 19.4,
+            "mbu": 0.74,
+            "mfu": 0.63,
+            "bottleneck": "HBM",
+            "cube_util": 0.63,
+            "vector_util": 0.49,
+            "mem_util": 0.74
+          },
+          {
+            "operator_id": "chunk_bwd_dv_local",
+            "time_ms": 320.2,
+            "share_pct": 17.1,
+            "mbu": 0.58,
+            "mfu": 0.67,
+            "bottleneck": "L2",
+            "cube_util": 0.67,
+            "vector_util": 0.61,
+            "mem_util": 0.58
+          },
+          {
+            "operator_id": "chunk_bwd_dqkwg",
+            "time_ms": 252.4,
+            "share_pct": 13.5,
+            "mbu": 0.62,
+            "mfu": 0.59,
+            "bottleneck": "Cube",
+            "cube_util": 0.59,
+            "vector_util": 0.52,
+            "mem_util": 0.55
+          },
+          {
+            "operator_id": "recompute_wu_fwd",
+            "time_ms": 204.2,
+            "share_pct": 10.9,
+            "mbu": 0.55,
+            "mfu": 0.64,
+            "bottleneck": "Vector",
+            "cube_util": 0.48,
+            "vector_util": 0.64,
+            "mem_util": 0.51
+          },
+          {
+            "operator_id": "prepare_wy_repr_bwd_full",
+            "time_ms": 147.4,
+            "share_pct": 7.9,
+            "mbu": 0.49,
+            "mfu": 0.56,
+            "bottleneck": "HBM",
+            "cube_util": 0.52,
+            "vector_util": 0.44,
+            "mem_util": 0.62
+          },
+          {
+            "operator_id": "solve_tril",
+            "time_ms": 95.4,
+            "share_pct": 5.1,
+            "mbu": 0.41,
+            "mfu": 0.48,
+            "bottleneck": "L2",
+            "cube_util": 0.45,
+            "vector_util": 0.38,
+            "mem_util": 0.41
+          },
+          {
+            "operator_id": "prepare_wy_repr_bwd_da",
+            "time_ms": 63.1,
+            "share_pct": 3.4,
+            "mbu": 0.38,
+            "mfu": 0.42,
+            "bottleneck": "Vector",
+            "cube_util": 0.39,
+            "vector_util": 0.42,
+            "mem_util": 0.35
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -11,16 +11,19 @@ try:
     from .db import (
         DB_PATH,
         ROOT,
+        add_perf_model,
         connect,
         export_all,
         init_db,
         list_audit_entries,
+        load_perf_data,
         load_repo_state_or_seed,
         make_id,
         now_iso,
         seed_audit_if_empty,
         seed_if_empty,
         task_to_dict,
+        trigger_perf_run,
         update_task,
         upsert_task,
     )
@@ -29,16 +32,19 @@ except ImportError:
     from db import (  # type: ignore
         DB_PATH,
         ROOT,
+        add_perf_model,
         connect,
         export_all,
         init_db,
         list_audit_entries,
+        load_perf_data,
         load_repo_state_or_seed,
         make_id,
         now_iso,
         seed_audit_if_empty,
         seed_if_empty,
         task_to_dict,
+        trigger_perf_run,
         update_task,
         upsert_task,
     )
@@ -106,6 +112,8 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/specials":
                 rows = conn.execute("SELECT * FROM specials ORDER BY position, title").fetchall()
                 self.send_json([dict(row) for row in rows])
+            elif path == "/api/perf":
+                self.send_json(load_perf_data(conn))
             elif path == "/api/tasks":
                 self.send_json(list_tasks(conn, query))
             elif path.startswith("/api/tasks/"):
@@ -141,6 +149,14 @@ class Handler(BaseHTTPRequestHandler):
                     conn.commit()
                     self.finalize_change(conn, "task.delete", "task", task_id, "删除任务：" + (row["title"] if row else task_id))
                     self.send_json({"ok": True})
+                elif path == "/api/perf/models" and method == "POST":
+                    result = add_perf_model(conn, payload.get("model") or payload)
+                    conn.commit()
+                    self.send_json({"ok": True, "data": result}, status=201)
+                elif path == "/api/perf/runs" and method == "POST":
+                    result = trigger_perf_run(conn, payload, created_by="local")
+                    conn.commit()
+                    self.send_json({"ok": True, **result}, status=201)
                 elif path == "/api/groups" and method == "POST":
                     self.create_group(conn, payload)
                 elif path.startswith("/api/groups/") and method == "PATCH":

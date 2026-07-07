@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>性能看板 - flash-linear-attention-npu</title>
+  <link rel="stylesheet" href="./styles.css?v=20260707-perf-dashboard">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Performance Dashboard</p>
+        <h1>性能看板</h1>
+        <p class="meta" id="meta">读取性能数据中</p>
+        <nav class="hero-links" aria-label="项目导航">
+          <a href="./index.html">项目看板</a>
+          <a href="./performance-dashboard.html" class="active">性能看板</a>
+          <a href="./user-guide.html">使用说明</a>
+          <a href="./design-diagrams.html">设计图</a>
+          <a href="./delivery-stats.html">提前完成统计</a>
+        </nav>
+      </div>
+      <div class="summary" id="summary"></div>
+    </header>
+
+    <section class="toolbar perf-toolbar">
+      <span id="authStatus" class="edit-status">只读模式</span>
+      <span id="workerLogin" class="worker-login hidden">
+        <label>账号 <input id="loginUser" autocomplete="username" placeholder="账号"></label>
+        <label>密码 <input id="loginPassword" type="password" autocomplete="current-password" placeholder="密码"></label>
+        <button id="loginBtn" type="button">登录</button>
+      </span>
+      <button id="logoutBtn" type="button" class="hidden">退出</button>
+      <button id="addModelBtn" type="button" class="hidden admin-only">新增模型</button>
+    </section>
+
+    <nav class="perf-tabs view-switch" aria-label="性能看板视图">
+      <button type="button" class="active" data-tab="network">整网性能饼图</button>
+      <button type="button" data-tab="case">单个用例性能图</button>
+      <button type="button" data-tab="trigger">用例执行触发</button>
+    </nav>
+
+    <section id="tab-network" class="perf-tab active panel">
+      <div class="perf-filters">
+        <label>用例
+          <select id="netCase"></select>
+        </label>
+        <label>用例属性
+          <select id="netCaseAttr">
+            <option value="">全部</option>
+            <option value="standard">用例B</option>
+            <option value="H_v">H_v</option>
+            <option value="H_k">H_k</option>
+          </select>
+        </label>
+        <label>日期（主线）
+          <select id="netDate"></select>
+        </label>
+        <label>模型
+          <select id="netModel"></select>
+        </label>
+        <label>芯片
+          <select id="netChip">
+            <option value="A2">A2</option>
+            <option value="A3">A3</option>
+          </select>
+        </label>
+      </div>
+      <div class="perf-chart-grid">
+        <div class="perf-chart-card">
+          <div class="panel-title-row">
+            <h2>算子整网占比</h2>
+            <strong id="netTotalTime" class="perf-total-time">—</strong>
+          </div>
+          <div class="perf-pie-wrap">
+            <canvas id="networkPie"></canvas>
+            <div id="networkPieCenter" class="perf-pie-center"></div>
+          </div>
+          <div id="networkLegend" class="perf-legend"></div>
+        </div>
+        <div class="perf-chart-card">
+          <div class="panel-title-row">
+            <h2>算子耗时对比</h2>
+            <small>最多选 4 个算子</small>
+          </div>
+          <div id="networkComparePick" class="perf-compare-pick"></div>
+          <canvas id="networkCompare"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-case" class="perf-tab panel">
+      <div class="perf-filters">
+        <label>算子
+          <select id="caseOperator"></select>
+        </label>
+        <label>日期（主线）
+          <select id="caseDate"></select>
+        </label>
+        <label>用例属性
+          <select id="caseAttr">
+            <option value="">全部</option>
+            <option value="standard">用例B</option>
+            <option value="H_v">H_v</option>
+            <option value="H_k">H_k</option>
+          </select>
+        </label>
+        <label>模型
+          <select id="caseModel"></select>
+        </label>
+        <label>芯片
+          <select id="caseChip">
+            <option value="A2">A2</option>
+            <option value="A3">A3</option>
+          </select>
+        </label>
+      </div>
+      <div class="perf-chart-grid">
+        <div class="perf-chart-card perf-chart-wide">
+          <div class="panel-title-row"><h2>MBU / MFU 对比</h2></div>
+          <canvas id="caseMbuMfu"></canvas>
+        </div>
+        <div class="perf-chart-card perf-chart-wide">
+          <div class="panel-title-row"><h2>资源利用率与瓶颈</h2></div>
+          <div class="table-wrap stats-table-wrap">
+            <table class="stats-table perf-table">
+              <thead>
+                <tr>
+                  <th>用例</th>
+                  <th>耗时(ms)</th>
+                  <th>MBU</th>
+                  <th>MFU</th>
+                  <th>瓶颈</th>
+                  <th>Cube</th>
+                  <th>Vector</th>
+                  <th>Mem</th>
+                </tr>
+              </thead>
+              <tbody id="caseDetailRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-trigger" class="perf-tab panel">
+      <div class="perf-trigger-grid">
+        <div class="perf-chart-card">
+          <div class="panel-title-row"><h2>触发用例测试</h2><small>722 设备，支持 A2 / A3</small></div>
+          <form id="triggerForm" class="perf-form">
+            <label>用例
+              <select id="triggerCase" required></select>
+            </label>
+            <label>模型
+              <select id="triggerModel" required></select>
+            </label>
+            <label>芯片
+              <select id="triggerChip" required>
+                <option value="A2">A2</option>
+                <option value="A3">A3</option>
+              </select>
+            </label>
+            <label>设备
+              <input id="triggerDevice" value="722" readonly>
+            </label>
+            <fieldset class="perf-attr-fieldset">
+              <legend>用例属性</legend>
+              <label>seq_len <input id="attrSeqLen" type="number" min="1" placeholder="4096"></label>
+              <label>batch <input id="attrBatch" type="number" min="1" placeholder="1"></label>
+              <label>H_v <input id="attrHv" type="number" min="1" placeholder="可选"></label>
+              <label>H_k <input id="attrHk" type="number" min="1" placeholder="可选"></label>
+              <label>hidden <input id="attrHidden" type="number" min="1" placeholder="可选"></label>
+            </fieldset>
+            <label>备注 <input id="triggerNotes" placeholder="可选说明"></label>
+            <button type="submit" class="primary">执行测试</button>
+          </form>
+        </div>
+        <div class="perf-chart-card">
+          <div class="panel-title-row"><h2>执行记录</h2></div>
+          <div class="table-wrap stats-table-wrap">
+            <table class="stats-table perf-table">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>用例</th>
+                  <th>模型</th>
+                  <th>芯片</th>
+                  <th>状态</th>
+                  <th>总耗时</th>
+                  <th>操作人</th>
+                </tr>
+              </thead>
+              <tbody id="runRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./config.js?v=20260707-perf-dashboard"></script>
+  <script>
+    const WORKER_API_BASE = String(window.FLASH_IO_API_BASE || localStorage.getItem("flashWorkerApiBase") || "").replace(/\/+$/, "");
+    const TOKEN_KEY = "flashWorkerToken";
+    const PIE_COLORS = ["#277560", "#2f73c8", "#b87508", "#cf3d32", "#6b5b95", "#88b04b", "#f7cac9", "#92a8d1", "#955251", "#b565a7"];
+    const OPERATOR_LABELS = {
+      chunk_gated_delta_rule_fwd_h: "fwd_h",
+      chunk_fwd_o: "fwd_o",
+      recompute_wu_fwd: "recompute_wu",
+      chunk_bwd_dv_local: "dv_local",
+      chunk_bwd_dqkwg: "dqkwg",
+      chunk_gated_delta_rule_bwd_dhu: "dhu",
+      prepare_wy_repr_bwd_da: "prepare_wy_da",
+      prepare_wy_repr_bwd_full: "prepare_wy_full",
+      solve_tril: "solve_tril",
+      kimi_delta_attention_triton: "KDA triton",
+      causal_conv1d_fwd: "causal_conv1d_fwd",
+      causal_conv1d_bwd: "causal_conv1d_bwd",
+    };
+
+    const state = {
+      data: null,
+      operators: [],
+      token: localStorage.getItem(TOKEN_KEY) || "",
+      user: null,
+      charts: {},
+      compareOps: [],
+    };
+
+    init().catch((error) => {
+      document.querySelector("#meta").textContent = `读取失败：${error.message || error}`;
+    });
+
+    async function init() {
+      bindEvents();
+      await loadData();
+      if (WORKER_API_BASE && state.token) await refreshUser();
+      renderAll();
+    }
+
+    function bindEvents() {
+      document.querySelectorAll(".perf-tabs button").forEach((button) => {
+        button.addEventListener("click", () => switchTab(button.dataset.tab));
+      });
+      ["netCase", "netCaseAttr", "netDate", "netModel", "netChip"].forEach((id) => {
+        document.querySelector(`#${id}`).addEventListener("change", renderNetworkTab);
+      });
+      ["caseOperator", "caseDate", "caseAttr", "caseModel", "caseChip"].forEach((id) => {
+        document.querySelector(`#${id}`).addEventListener("change", renderCaseTab);
+      });
+      document.querySelector("#triggerForm").addEventListener("submit", onTriggerSubmit);
+      document.querySelector("#loginBtn").addEventListener("click", onLogin);
+      document.querySelector("#logoutBtn").addEventListener("click", onLogout);
+      document.querySelector("#addModelBtn").addEventListener("click", onAddModel);
+      document.querySelector("#triggerCase").addEventListener("change", fillTriggerAttrs);
+    }
+
+    async function loadData() {
+      if (WORKER_API_BASE) {
+        const [perfRes, exportRes] = await Promise.all([
+          fetch(`${WORKER_API_BASE}/api/perf`, { headers: authHeaders() }),
+          fetch(`${WORKER_API_BASE}/api/export`),
+        ]);
+        if (!perfRes.ok) throw new Error(`Worker perf API ${perfRes.status}`);
+        state.data = await perfRes.json();
+        if (exportRes.ok) {
+          const exported = await exportRes.json();
+          state.operators = exported.operators || [];
+        }
+      } else {
+        const [perfRes, stateRes] = await Promise.all([
+          fetch(`./performance-data.json?v=${Date.now()}`),
+          fetch(`./project-state.json?v=${Date.now()}`),
+        ]);
+        if (!perfRes.ok) throw new Error("未读取到 performance-data.json");
+        state.data = await perfRes.json();
+        if (stateRes.ok) {
+          const exported = await stateRes.json();
+          state.operators = exported.operators || [];
+        }
+      }
+      state.compareOps = (currentSnapshot()?.operators || []).slice(0, 2).map((item) => item.operator_id);
+    }
+
+    function authHeaders() {
+      const headers = { "Content-Type": "application/json" };
+      if (state.token) headers.Authorization = `Bearer ${state.token}`;
+      return headers;
+    }
+
+    async function workerPost(path, body) {
+      const response = await fetch(`${WORKER_API_BASE}${path}`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `API ${response.status}`);
+      return payload;
+    }
+
+    async function refreshUser() {
+      const response = await fetch(`${WORKER_API_BASE}/api/me`, { headers: authHeaders() });
+      if (!response.ok) {
+        state.user = null;
+        state.token = "";
+        localStorage.removeItem(TOKEN_KEY);
+        return;
+      }
+      const payload = await response.json();
+      state.user = payload.user || null;
+    }
+
+    async function onLogin() {
+      const username = document.querySelector("#loginUser").value.trim();
+      const password = document.querySelector("#loginPassword").value;
+      if (!username || !password) return alert("请输入账号和密码。");
+      const result = await workerPost("/api/login", { username, password });
+      state.token = result.token || "";
+      state.user = result.user || null;
+      localStorage.setItem(TOKEN_KEY, state.token);
+      renderAuth();
+    }
+
+    function onLogout() {
+      state.token = "";
+      state.user = null;
+      localStorage.removeItem(TOKEN_KEY);
+      renderAuth();
+    }
+
+    async function onAddModel() {
+      const label = prompt("请输入新模型名称（如 GDNv2）：");
+      if (!label) return;
+      const id = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `model-${Date.now()}`;
+      if (WORKER_API_BASE) {
+        const result = await workerPost("/api/perf/models", { model: { id, label } });
+        state.data = result.data || state.data;
+      } else {
+        state.data.models.push({ id, label, position: state.data.models.length, active: true });
+      }
+      renderAll();
+    }
+
+    async function onTriggerSubmit(event) {
+      event.preventDefault();
+      const caseId = document.querySelector("#triggerCase").value;
+      const modelId = document.querySelector("#triggerModel").value;
+      const chip = document.querySelector("#triggerChip").value;
+      const testCase = state.data.cases.find((item) => item.id === caseId);
+      const attributes = {
+        seq_len: numberOr(document.querySelector("#attrSeqLen").value, testCase?.attributes?.seq_len),
+        batch: numberOr(document.querySelector("#attrBatch").value, testCase?.attributes?.batch),
+        hidden: numberOr(document.querySelector("#attrHidden").value, testCase?.attributes?.hidden),
+        hv: numberOr(document.querySelector("#attrHv").value, testCase?.hv),
+        hk: numberOr(document.querySelector("#attrHk").value, testCase?.hk),
+        notes: document.querySelector("#triggerNotes").value.trim(),
+      };
+      const payload = { case_id: caseId, model_id: modelId, chip, device: "722", attributes };
+      if (WORKER_API_BASE) {
+        const result = await workerPost("/api/perf/runs", payload);
+        state.data = result.data || state.data;
+      } else {
+        const run = simulateRun(payload, testCase);
+        state.data.runs.unshift(run);
+        state.data.snapshots.unshift(run.snapshot);
+      }
+      renderAll();
+      switchTab("network");
+      alert("测试已提交，结果已写入性能看板。");
+    }
+
+    function simulateRun(payload, testCase) {
+      const now = new Date().toISOString();
+      const base = state.data.snapshots.find((item) => item.model_id === payload.model_id && item.case_id === payload.case_id && item.chip === payload.chip)
+        || state.data.snapshots[0];
+      const jitter = () => 0.92 + Math.random() * 0.16;
+      const operators = (base?.operators || []).map((item) => {
+        const time = Math.round(item.time_ms * jitter() * 10) / 10;
+        return { ...item, time_ms: time };
+      });
+      const total = Math.round(operators.reduce((sum, item) => sum + item.time_ms, 0) * 10) / 10;
+      operators.forEach((item) => { item.share_pct = Math.round(item.time_ms / total * 1000) / 10; });
+      const snapshot = {
+        id: `snap-run-${Date.now()}`,
+        label: `${todayYmd()} 主线`,
+        snapshot_date: todayYmd(),
+        branch: "main",
+        model_id: payload.model_id,
+        case_id: payload.case_id,
+        chip: payload.chip,
+        total_time_ms: total,
+        status: "done",
+        created_at: now,
+        operators,
+      };
+      return {
+        id: `run-${Date.now()}`,
+        case_id: payload.case_id,
+        model_id: payload.model_id,
+        chip: payload.chip,
+        device: "722",
+        attributes: payload.attributes,
+        status: "done",
+        snapshot_id: snapshot.id,
+        created_by: state.user?.username || "local",
+        created_at: now,
+        finished_at: now,
+        message: "本地模拟执行完成",
+        snapshot,
+      };
+    }
+
+    function renderAll() {
+      renderAuth();
+      renderMeta();
+      fillFilters();
+      renderNetworkTab();
+      renderCaseTab();
+      renderRuns();
+    }
+
+    function renderAuth() {
+      const isAdmin = state.user?.role === "admin";
+      const loggedIn = Boolean(state.user);
+      document.body.classList.toggle("admin-editing", isAdmin);
+      document.querySelector("#authStatus").textContent = loggedIn ? `${state.user.username}（${state.user.role}）` : WORKER_API_BASE ? "只读模式 · 登录后可触发测试" : "本地模式 · 可模拟执行";
+      document.querySelector("#workerLogin").classList.toggle("hidden", loggedIn || !WORKER_API_BASE);
+      document.querySelector("#logoutBtn").classList.toggle("hidden", !loggedIn);
+      document.querySelector("#addModelBtn").classList.toggle("hidden", !isAdmin);
+    }
+
+    function renderMeta() {
+      const snapCount = state.data.snapshots.length;
+      const runCount = state.data.runs.length;
+      document.querySelector("#meta").textContent = `数据版本：${state.data.version || "未知"} · ${state.data.models.length} 个模型 · ${state.data.cases.length} 个用例 · ${snapCount} 条快照 · ${runCount} 次执行`;
+      document.querySelector("#summary").innerHTML = [
+        ["模型", state.data.models.length],
+        ["用例", state.data.cases.length],
+        ["快照", snapCount],
+        ["执行", runCount],
+      ].map(([label, value]) => `<div class="summary-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`).join("");
+    }
+
+    function fillFilters() {
+      fillSelect("#netCase", state.data.cases.map((item) => [item.id, item.label]));
+      fillSelect("#netModel", state.data.models.map((item) => [item.id, item.label]));
+      fillSelect("#caseModel", state.data.models.map((item) => [item.id, item.label]));
+      fillSelect("#triggerCase", state.data.cases.map((item) => [item.id, item.label]));
+      fillSelect("#triggerModel", state.data.models.map((item) => [item.id, item.label]));
+      fillSelect("#caseOperator", operatorOptions());
+      refreshDateSelects();
+      if (!document.querySelector("#netCase").value && state.data.cases[0]) document.querySelector("#netCase").value = state.data.cases[0].id;
+      if (!document.querySelector("#netModel").value && state.data.models[0]) document.querySelector("#netModel").value = state.data.models[0].id;
+      if (!document.querySelector("#caseModel").value && state.data.models[0]) document.querySelector("#caseModel").value = state.data.models[0].id;
+      if (!document.querySelector("#caseOperator").value) document.querySelector("#caseOperator").value = operatorOptions()[0]?.[0] || "";
+      fillTriggerAttrs();
+    }
+
+    function operatorOptions() {
+      const ids = new Set();
+      state.data.snapshots.forEach((snap) => (snap.operators || []).forEach((item) => ids.add(item.operator_id)));
+      return [...ids].map((id) => [id, operatorLabel(id)]);
+    }
+
+    function refreshDateSelects() {
+      const dates = [...new Set(state.data.snapshots.map((item) => item.label))];
+      fillSelect("#netDate", dates.map((item) => [item, item]));
+      fillSelect("#caseDate", dates.map((item) => [item, item]));
+      if (dates[0]) {
+        document.querySelector("#netDate").value = dates[dates.length - 1];
+        document.querySelector("#caseDate").value = dates[dates.length - 1];
+      }
+    }
+
+    function fillSelect(selector, entries) {
+      const select = document.querySelector(selector);
+      const current = select.value;
+      select.innerHTML = entries.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("");
+      if ([...select.options].some((option) => option.value === current)) select.value = current;
+    }
+
+    function fillTriggerAttrs() {
+      const testCase = state.data.cases.find((item) => item.id === document.querySelector("#triggerCase").value);
+      if (!testCase) return;
+      document.querySelector("#attrSeqLen").value = testCase.attributes?.seq_len ?? "";
+      document.querySelector("#attrBatch").value = testCase.attributes?.batch ?? "";
+      document.querySelector("#attrHidden").value = testCase.attributes?.hidden ?? "";
+      document.querySelector("#attrHv").value = testCase.hv ?? "";
+      document.querySelector("#attrHk").value = testCase.hk ?? "";
+    }
+
+    function currentSnapshot() {
+      const caseId = document.querySelector("#netCase").value;
+      const caseAttr = document.querySelector("#netCaseAttr").value;
+      const dateLabel = document.querySelector("#netDate").value;
+      const modelId = document.querySelector("#netModel").value;
+      const chip = document.querySelector("#netChip").value;
+      const cases = filteredCases(caseAttr, caseId);
+      const allowed = new Set(cases.map((item) => item.id));
+      return state.data.snapshots.find((item) => item.label === dateLabel && item.model_id === modelId && item.chip === chip && allowed.has(item.case_id))
+        || state.data.snapshots.find((item) => item.label === dateLabel && item.model_id === modelId && item.chip === chip)
+        || null;
+    }
+
+    function filteredCases(attr, caseId) {
+      return state.data.cases.filter((item) => {
+        if (caseId && item.id !== caseId) return false;
+        if (attr && item.category !== attr) return false;
+        return item.active !== false;
+      });
+    }
+
+    function renderNetworkTab() {
+      const snap = currentSnapshot();
+      const center = document.querySelector("#networkPieCenter");
+      const legend = document.querySelector("#networkLegend");
+      const totalNode = document.querySelector("#netTotalTime");
+      if (!snap) {
+        totalNode.textContent = "无匹配数据";
+        center.innerHTML = "";
+        legend.innerHTML = '<p class="empty">当前筛选条件下没有性能快照。</p>';
+        destroyChart("networkPie");
+        destroyChart("networkCompare");
+        document.querySelector("#networkComparePick").innerHTML = "";
+        return;
+      }
+      const operators = [...(snap.operators || [])].sort((a, b) => b.time_ms - a.time_ms);
+      totalNode.textContent = `总耗时 ${snap.total_time_ms.toFixed(1)} ms`;
+      center.innerHTML = `<strong>${snap.total_time_ms.toFixed(0)}</strong><span>ms</span><em>${escapeHtml(snap.label)}</em>`;
+      legend.innerHTML = operators.map((item, index) => `
+        <div class="perf-legend-item">
+          <i style="background:${PIE_COLORS[index % PIE_COLORS.length]}"></i>
+          <span>${escapeHtml(operatorLabel(item.operator_id))}</span>
+          <b>${item.share_pct.toFixed(1)}%</b>
+          <em>${item.time_ms.toFixed(1)} ms</em>
+        </div>
+      `).join("");
+      destroyChart("networkPie");
+      state.charts.networkPie = new Chart(document.querySelector("#networkPie"), {
+        type: "doughnut",
+        data: {
+          labels: operators.map((item) => operatorLabel(item.operator_id)),
+          datasets: [{
+            data: operators.map((item) => item.time_ms),
+            backgroundColor: operators.map((_, index) => PIE_COLORS[index % PIE_COLORS.length]),
+            borderWidth: 2,
+            borderColor: "#fffaf1",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "62%",
+          plugins: { legend: { display: false } },
+        },
+      });
+      renderComparePick(operators);
+      renderCompareChart(operators, snap);
+    }
+
+    function renderComparePick(operators) {
+      const host = document.querySelector("#networkComparePick");
+      if (!state.compareOps.length) state.compareOps = operators.slice(0, 2).map((item) => item.operator_id);
+      host.innerHTML = operators.map((item) => {
+        const checked = state.compareOps.includes(item.operator_id) ? "checked" : "";
+        return `<label class="perf-compare-chip"><input type="checkbox" value="${escapeHtml(item.operator_id)}" ${checked}> ${escapeHtml(operatorLabel(item.operator_id))}</label>`;
+      }).join("");
+      host.querySelectorAll("input").forEach((input) => {
+        input.addEventListener("change", () => {
+          const selected = [...host.querySelectorAll("input:checked")].map((node) => node.value);
+          if (selected.length > 4) {
+            input.checked = false;
+            return alert("最多选择 4 个算子进行对比。");
+          }
+          state.compareOps = selected;
+          renderCompareChart(operators, currentSnapshot());
+        });
+      });
+    }
+
+    function renderCompareChart(operators, snap) {
+      const selected = operators.filter((item) => state.compareOps.includes(item.operator_id));
+      destroyChart("networkCompare");
+      state.charts.networkCompare = new Chart(document.querySelector("#networkCompare"), {
+        type: "bar",
+        data: {
+          labels: selected.map((item) => operatorLabel(item.operator_id)),
+          datasets: [{
+            label: `${snap?.label || ""} 耗时(ms)`,
+            data: selected.map((item) => item.time_ms),
+            backgroundColor: "#277560",
+            borderRadius: 8,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, title: { display: true, text: "ms" } },
+          },
+          plugins: { legend: { display: false } },
+        },
+      });
+    }
+
+    function renderCaseTab() {
+      const operatorId = document.querySelector("#caseOperator").value;
+      const dateLabel = document.querySelector("#caseDate").value;
+      const attr = document.querySelector("#caseAttr").value;
+      const modelId = document.querySelector("#caseModel").value;
+      const chip = document.querySelector("#caseChip").value;
+      const rows = [];
+      state.data.snapshots
+        .filter((snap) => snap.label === dateLabel && snap.model_id === modelId && snap.chip === chip)
+        .forEach((snap) => {
+          const testCase = state.data.cases.find((item) => item.id === snap.case_id);
+          if (!testCase || (attr && testCase.category !== attr)) return;
+          const metric = (snap.operators || []).find((item) => item.operator_id === operatorId);
+          if (!metric) return;
+          rows.push({ snap, testCase, metric });
+        });
+      const tbody = document.querySelector("#caseDetailRows");
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty">当前筛选条件下没有该算子的用例数据。</td></tr>';
+        destroyChart("caseMbuMfu");
+        return;
+      }
+      tbody.innerHTML = rows.map(({ testCase, metric }) => `
+        <tr>
+          <td>${escapeHtml(testCase.label)}</td>
+          <td>${metric.time_ms.toFixed(1)}</td>
+          <td>${pct(metric.mbu)}</td>
+          <td>${pct(metric.mfu)}</td>
+          <td><span class="bottleneck-pill bottleneck-${escapeHtml(metric.bottleneck || "none")}">${escapeHtml(metric.bottleneck || "—")}</span></td>
+          <td>${pct(metric.cube_util)}</td>
+          <td>${pct(metric.vector_util)}</td>
+          <td>${pct(metric.mem_util)}</td>
+        </tr>
+      `).join("");
+      destroyChart("caseMbuMfu");
+      state.charts.caseMbuMfu = new Chart(document.querySelector("#caseMbuMfu"), {
+        type: "bar",
+        data: {
+          labels: rows.map(({ testCase }) => testCase.label),
+          datasets: [
+            { label: "MBU", data: rows.map(({ metric }) => metric.mbu), backgroundColor: "#2f73c8", borderRadius: 6 },
+            { label: "MFU", data: rows.map(({ metric }) => metric.mfu), backgroundColor: "#b87508", borderRadius: 6 },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true, max: 1, ticks: { callback: (v) => `${Math.round(v * 100)}%` } } },
+        },
+      });
+    }
+
+    function renderRuns() {
+      const tbody = document.querySelector("#runRows");
+      const runs = [...(state.data.runs || [])].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+      if (!runs.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">暂无执行记录，可在左侧提交用例测试。</td></tr>';
+        return;
+      }
+      tbody.innerHTML = runs.map((run) => {
+        const testCase = state.data.cases.find((item) => item.id === run.case_id);
+        const model = state.data.models.find((item) => item.id === run.model_id);
+        const snap = run.snapshot || state.data.snapshots.find((item) => item.id === run.snapshot_id);
+        return `<tr>
+          <td>${escapeHtml((run.created_at || "").replace("T", " ").slice(0, 19))}</td>
+          <td>${escapeHtml(testCase?.label || run.case_id)}</td>
+          <td>${escapeHtml(model?.label || run.model_id)}</td>
+          <td>${escapeHtml(run.chip || "")}</td>
+          <td><span class="stat-pill ${run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral"}">${escapeHtml(run.status || "queued")}</span></td>
+          <td>${snap ? `${snap.total_time_ms.toFixed(1)} ms` : "—"}</td>
+          <td>${escapeHtml(run.created_by || "—")}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll(".perf-tabs button").forEach((button) => button.classList.toggle("active", button.dataset.tab === tab));
+      document.querySelectorAll(".perf-tab").forEach((section) => section.classList.toggle("active", section.id === `tab-${tab}`));
+    }
+
+    function destroyChart(name) {
+      if (state.charts[name]) {
+        state.charts[name].destroy();
+        delete state.charts[name];
+      }
+    }
+
+    function operatorLabel(id) {
+      const fromCatalog = state.operators.find((item) => item.id === id);
+      return fromCatalog?.label || OPERATOR_LABELS[id] || id;
+    }
+
+    function pct(value) {
+      return value == null ? "—" : `${Math.round(Number(value) * 100)}%`;
+    }
+
+    function numberOr(value, fallback) {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : fallback ?? null;
+    }
+
+    function todayYmd() {
+      const now = new Date();
+      const offset = now.getTimezoneOffset();
+      return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>
