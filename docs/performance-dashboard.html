@@ -258,21 +258,28 @@
     }
 
     async function loadData() {
+      const stamp = Date.now();
+      let source = "local";
       if (WORKER_API_BASE) {
-        const [perfRes, exportRes] = await Promise.all([
-          fetch(`${WORKER_API_BASE}/api/perf`, { headers: authHeaders() }),
-          fetch(`${WORKER_API_BASE}/api/export`),
-        ]);
-        if (!perfRes.ok) throw new Error(`Worker perf API ${perfRes.status}`);
-        state.data = await perfRes.json();
-        if (exportRes.ok) {
-          const exported = await exportRes.json();
-          state.operators = exported.operators || [];
+        try {
+          const perfRes = await fetch(`${WORKER_API_BASE}/api/perf`, { headers: authHeaders() });
+          if (perfRes.ok) {
+            state.data = await perfRes.json();
+            source = "worker";
+            const exportRes = await fetch(`${WORKER_API_BASE}/api/export`);
+            if (exportRes.ok) {
+              const exported = await exportRes.json();
+              state.operators = exported.operators || [];
+            }
+          }
+        } catch {
+          // Worker 未部署 /api/perf 或网络不可达时，回退本地快照。
         }
-      } else {
+      }
+      if (source !== "worker") {
         const [perfRes, stateRes] = await Promise.all([
-          fetch(`./performance-data.json?v=${Date.now()}`),
-          fetch(`./project-state.json?v=${Date.now()}`),
+          fetch(`./performance-data.json?v=${stamp}`),
+          fetch(`./project-state.json?v=${stamp}`),
         ]);
         if (!perfRes.ok) throw new Error("未读取到 performance-data.json");
         state.data = await perfRes.json();
@@ -280,6 +287,9 @@
           const exported = await stateRes.json();
           state.operators = exported.operators || [];
         }
+        state.dataSource = WORKER_API_BASE ? "local-fallback" : "local";
+      } else {
+        state.dataSource = "worker";
       }
       state.compareOps = (currentSnapshot()?.operators || []).slice(0, 2).map((item) => item.operator_id);
     }
@@ -335,7 +345,7 @@
       const label = prompt("请输入新模型名称（如 GDNv2）：");
       if (!label) return;
       const id = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `model-${Date.now()}`;
-      if (WORKER_API_BASE) {
+      if (useWorkerWrite()) {
         const result = await workerPost("/api/perf/models", { model: { id, label } });
         state.data = result.data || state.data;
       } else {
@@ -359,7 +369,7 @@
         notes: document.querySelector("#triggerNotes").value.trim(),
       };
       const payload = { case_id: caseId, model_id: modelId, chip, device: "722", attributes };
-      if (WORKER_API_BASE) {
+      if (useWorkerWrite()) {
         const result = await workerPost("/api/perf/runs", payload);
         state.data = result.data || state.data;
       } else {
@@ -422,20 +432,28 @@
       renderRuns();
     }
 
+    function useWorkerWrite() {
+      return Boolean(WORKER_API_BASE && state.dataSource === "worker");
+    }
+
     function renderAuth() {
       const isAdmin = state.user?.role === "admin";
       const loggedIn = Boolean(state.user);
       document.body.classList.toggle("admin-editing", isAdmin);
-      document.querySelector("#authStatus").textContent = loggedIn ? `${state.user.username}（${state.user.role}）` : WORKER_API_BASE ? "只读模式 · 登录后可触发测试" : "本地模式 · 可模拟执行";
-      document.querySelector("#workerLogin").classList.toggle("hidden", loggedIn || !WORKER_API_BASE);
+      let status = loggedIn ? `${state.user.username}（${state.user.role}）` : "本地模式 · 可模拟执行";
+      if (useWorkerWrite()) status = loggedIn ? status : "只读模式 · 登录后可触发测试";
+      else if (WORKER_API_BASE && state.dataSource === "local-fallback") status = "本地快照模式 · Worker /api/perf 未就绪";
+      document.querySelector("#authStatus").textContent = status;
+      document.querySelector("#workerLogin").classList.toggle("hidden", loggedIn || !useWorkerWrite());
       document.querySelector("#logoutBtn").classList.toggle("hidden", !loggedIn);
-      document.querySelector("#addModelBtn").classList.toggle("hidden", !isAdmin);
+      document.querySelector("#addModelBtn").classList.toggle("hidden", !isAdmin || !useWorkerWrite());
     }
 
     function renderMeta() {
       const snapCount = state.data.snapshots.length;
       const runCount = state.data.runs.length;
-      document.querySelector("#meta").textContent = `数据版本：${state.data.version || "未知"} · ${state.data.models.length} 个模型 · ${state.data.cases.length} 个用例 · ${snapCount} 条快照 · ${runCount} 次执行`;
+      const sourceLabel = state.dataSource === "worker" ? "Cloudflare D1" : state.dataSource === "local-fallback" ? "本地快照（Worker 回退）" : "本地快照";
+      document.querySelector("#meta").textContent = `数据来源：${sourceLabel} · 数据版本：${state.data.version || "未知"} · ${state.data.models.length} 个模型 · ${state.data.cases.length} 个用例 · ${snapCount} 条快照 · ${runCount} 次执行`;
       document.querySelector("#summary").innerHTML = [
         ["模型", state.data.models.length],
         ["用例", state.data.cases.length],
