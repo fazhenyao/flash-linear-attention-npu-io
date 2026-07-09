@@ -1960,15 +1960,8 @@ function emptyPrCatalog() {
 function emptyPerfData() {
   return {
     version: nowIso(),
-    models: [
-      { id: "gdn", label: "GDN", position: 0, active: true },
-      { id: "kdn", label: "KDN", position: 1, active: true },
-    ],
-    cases: [
-      { id: "case-b", label: "用例B", category: "standard", hv: null, hk: null, attributes: { seq_len: 4096, batch: 1, hidden: 2048 }, position: 0, active: true },
-      { id: "case-hv-8k", label: "H_v=8192", category: "H_v", hv: 8192, hk: null, attributes: { seq_len: 8192, batch: 1 }, position: 1, active: true },
-      { id: "case-hk-64", label: "H_k=64", category: "H_k", hv: null, hk: 64, attributes: { seq_len: 4096, batch: 1 }, position: 2, active: true },
-    ],
+    models: [{ id: "gdn", label: "GDN", position: 0, active: true }],
+    cases: [],
     snapshots: [],
     runs: [],
   };

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>性能看板 - flash-linear-attention-npu</title>
-  <link rel="stylesheet" href="./styles.css?v=20260707-perf-dashboard">
+  <link rel="stylesheet" href="./styles.css?v=20260709-perf-run-context">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -44,29 +44,55 @@
 
     <section id="tab-network" class="perf-tab active panel">
       <div class="perf-filters">
-        <label>用例
-          <select id="netCase"></select>
-        </label>
-        <label>用例属性
-          <select id="netCaseAttr">
-            <option value="">全部</option>
-            <option value="standard">用例B</option>
-            <option value="H_v">H_v</option>
-            <option value="H_k">H_k</option>
-          </select>
-        </label>
-        <label>日期（主线）
-          <select id="netDate"></select>
-        </label>
-        <label>模型
-          <select id="netModel"></select>
-        </label>
-        <label>芯片
-          <select id="netChip">
-            <option value="A2">A2</option>
-            <option value="A3">A3</option>
-          </select>
-        </label>
+        <section class="perf-filter-group">
+          <h3 class="perf-filter-group-title">用例配置</h3>
+          <label class="perf-attr-filter">用例属性
+            <div class="perf-attr-filter-box">
+              <div id="netCaseAttrChips" class="perf-attr-chips"></div>
+              <div class="perf-attr-menu">
+                <select id="netCaseAttrKey" aria-label="用例属性类型"></select>
+                <select id="netCaseAttrOp" aria-label="筛选方式">
+                  <option value="any">不限</option>
+                  <option value="eq">精确</option>
+                  <option value="range">范围</option>
+                </select>
+                <span id="netCaseAttrEqWrap" class="perf-attr-value-wrap hidden">
+                  <input id="netCaseAttrEq" list="netCaseAttrEqList" placeholder="输入或选择值" aria-label="精确值">
+                  <datalist id="netCaseAttrEqList"></datalist>
+                </span>
+                <span id="netCaseAttrRangeWrap" class="perf-attr-value-wrap hidden">
+                  <input id="netCaseAttrMin" type="number" placeholder="最小" aria-label="最小值">
+                  <span class="perf-attr-range-sep">~</span>
+                  <input id="netCaseAttrMax" type="number" placeholder="最大" aria-label="最大值">
+                </span>
+                <div class="perf-attr-actions">
+                  <button type="button" class="perf-attr-add" id="netCaseAttrAdd">添加</button>
+                  <button type="button" class="perf-attr-clear" id="netCaseAttrClear">清空</button>
+                </div>
+              </div>
+            </div>
+          </label>
+          <div class="perf-filters-row">
+            <label>用例
+              <select id="netCase"></select>
+            </label>
+          </div>
+          <div id="netRunContext" class="perf-run-context hidden">
+            <p class="perf-filter-subtitle">运行环境</p>
+            <p class="perf-run-context-text">—</p>
+          </div>
+        </section>
+        <section class="perf-filter-group">
+          <h3 class="perf-filter-group-title">图表选项</h3>
+          <div class="perf-filters-row">
+            <label>算子范围
+              <span class="perf-check-field">
+                <input id="netGdnOnly" type="checkbox" checked>
+                <span>仅 GDN 算子</span>
+              </span>
+            </label>
+          </div>
+        </section>
       </div>
       <div class="perf-chart-grid">
         <div class="perf-chart-card">
@@ -93,54 +119,73 @@
 
     <section id="tab-case" class="perf-tab panel">
       <div class="perf-filters">
-        <label>算子
-          <select id="caseOperator"></select>
-        </label>
-        <label>日期（主线）
-          <select id="caseDate"></select>
-        </label>
-        <label>用例属性
-          <select id="caseAttr">
-            <option value="">全部</option>
-            <option value="standard">用例B</option>
-            <option value="H_v">H_v</option>
-            <option value="H_k">H_k</option>
-          </select>
-        </label>
-        <label>模型
-          <select id="caseModel"></select>
-        </label>
-        <label>芯片
-          <select id="caseChip">
-            <option value="A2">A2</option>
-            <option value="A3">A3</option>
-          </select>
-        </label>
+        <section class="perf-filter-group">
+          <h3 class="perf-filter-group-title">用例配置</h3>
+          <label class="perf-attr-filter">用例属性
+            <div class="perf-attr-filter-box">
+              <div id="caseAttrChips" class="perf-attr-chips"></div>
+              <div class="perf-attr-menu">
+                <select id="caseAttrKey" aria-label="用例属性类型"></select>
+                <select id="caseAttrOp" aria-label="筛选方式">
+                  <option value="any">不限</option>
+                  <option value="eq">精确</option>
+                  <option value="range">范围</option>
+                </select>
+                <span id="caseAttrEqWrap" class="perf-attr-value-wrap hidden">
+                  <input id="caseAttrEq" list="caseAttrEqList" placeholder="输入或选择值" aria-label="精确值">
+                  <datalist id="caseAttrEqList"></datalist>
+                </span>
+                <span id="caseAttrRangeWrap" class="perf-attr-value-wrap hidden">
+                  <input id="caseAttrMin" type="number" placeholder="最小" aria-label="最小值">
+                  <span class="perf-attr-range-sep">~</span>
+                  <input id="caseAttrMax" type="number" placeholder="最大" aria-label="最大值">
+                </span>
+                <div class="perf-attr-actions">
+                  <button type="button" class="perf-attr-add" id="caseAttrAdd">添加</button>
+                  <button type="button" class="perf-attr-clear" id="caseAttrClear">清空</button>
+                </div>
+              </div>
+            </div>
+          </label>
+          <div class="perf-compare-case-toolbar">
+            <label>选择用例
+              <select id="caseCompareAdd"></select>
+            </label>
+            <button type="button" class="perf-compare-add-btn" id="caseCompareAddBtn">添加</button>
+          </div>
+          <div class="perf-compare-case-toolbar">
+            <label>对比用例
+              <select id="caseCompareList" size="4" aria-label="已添加对比用例"></select>
+            </label>
+            <button type="button" class="perf-compare-remove-btn" id="caseCompareRemoveBtn">移除</button>
+            <button type="button" class="perf-compare-clear-btn" id="caseCompareClearBtn">清空</button>
+          </div>
+          <small class="perf-compare-hint">每次 Prof 导入为独立用例（标签含时间），选中后点「移除」可删除</small>
+          <div id="caseRunContext" class="perf-run-context hidden">
+            <p class="perf-filter-subtitle">运行环境</p>
+            <p class="perf-run-context-text">—</p>
+          </div>
+        </section>
+        <section class="perf-filter-group">
+          <h3 class="perf-filter-group-title">图表选项</h3>
+          <div class="perf-filters-row">
+            <label>对比指标
+              <select id="caseMetric"></select>
+            </label>
+            <label>算子
+              <select id="caseOperator"></select>
+            </label>
+          </div>
+        </section>
       </div>
       <div class="perf-chart-grid">
         <div class="perf-chart-card perf-chart-wide">
-          <div class="panel-title-row"><h2>MBU / MFU 对比</h2></div>
+          <div class="panel-title-row"><h2 id="caseMetricChartTitle">MBU 对比</h2><small id="caseMetricChartHint">每个用例对应一次 Prof，横轴为用例、纵轴为所选指标</small></div>
           <canvas id="caseMbuMfu"></canvas>
         </div>
         <div class="perf-chart-card perf-chart-wide">
-          <div class="panel-title-row"><h2>资源利用率与瓶颈</h2></div>
-          <div class="table-wrap stats-table-wrap">
-            <table class="stats-table perf-table">
-              <thead>
-                <tr>
-                  <th>用例</th>
-                  <th>耗时(ms)</th>
-                  <th>MBU</th>
-                  <th>MFU</th>
-                  <th>瓶颈</th>
-                  <th>Cube</th>
-                  <th>Vector</th>
-                  <th>Mem</th>
-                </tr>
-              </thead>
-              <tbody id="caseDetailRows"></tbody>
-            </table>
-          </div>
+          <div class="panel-title-row"><h2>资源利用率与瓶颈</h2><small id="caseDetailHint">相同用例属性合并为一张表，列头为各次 Prof 时间</small></div>
+          <div id="caseDetailTables" class="perf-case-detail-tables"></div>
         </div>
       </div>
     </section>
@@ -166,12 +211,30 @@
               <input id="triggerDevice" value="722" readonly>
             </label>
             <fieldset class="perf-attr-fieldset">
-              <legend>用例属性</legend>
-              <label>seq_len <input id="attrSeqLen" type="number" min="1" placeholder="4096"></label>
-              <label>batch <input id="attrBatch" type="number" min="1" placeholder="1"></label>
-              <label>H_v <input id="attrHv" type="number" min="1" placeholder="可选"></label>
-              <label>H_k <input id="attrHk" type="number" min="1" placeholder="可选"></label>
-              <label>hidden <input id="attrHidden" type="number" min="1" placeholder="可选"></label>
+              <legend>形状/规模</legend>
+              <label>batch <input id="attrBatch" type="number" min="1" value="1"></label>
+              <label>query-heads <input id="attrQueryHeads" type="number" min="1" placeholder="32"></label>
+              <label>value-heads <input id="attrValueHeads" type="number" min="1" placeholder="32"></label>
+              <label>tokens <input id="attrTokens" type="number" min="1" placeholder="4087"></label>
+              <label>key-dim <input id="attrKeyDim" type="number" min="1" placeholder="128"></label>
+              <label>value-dim <input id="attrValueDim" type="number" min="1" placeholder="128"></label>
+              <label>chunk-size <input id="attrChunkSize" type="number" min="1" placeholder="64"></label>
+              <label>scale <input id="attrScale" type="number" min="0" step="0.000001" placeholder="自动 key-dim^-0.5"></label>
+              <label>dtype
+                <select id="attrDtype">
+                  <option value="bf16">bf16</option>
+                  <option value="fp16">fp16</option>
+                </select>
+              </label>
+            </fieldset>
+            <fieldset class="perf-attr-fieldset">
+              <legend>变长序列</legend>
+              <label>mean-len <input id="attrMeanLen" type="number" min="1" placeholder="1024"></label>
+              <label>cu-seqlens <input id="attrCuSeqlens" placeholder="留空则自动生成，如 0,64,128"></label>
+              <label class="perf-check-field">
+                <input id="attrVarlen" type="checkbox" checked>
+                <span>varlen</span>
+              </label>
             </fieldset>
             <label>备注 <input id="triggerNotes" placeholder="可选说明"></label>
             <button type="submit" class="primary">执行测试</button>
@@ -215,10 +278,16 @@
       prepare_wy_repr_bwd_da: "prepare_wy_da",
       prepare_wy_repr_bwd_full: "prepare_wy_full",
       solve_tril: "solve_tril",
+      chunk_scaled_dot_kkt_fwd: "chunk_scaled_dot_kkt",
+      l2norm_fwd: "l2norm_fwd",
+      l2norm_bwd: "l2norm_bwd",
+      chunk_local_cumsum: "chunk_local_cumsum",
+      other_runtime: "其他运行时",
       kimi_delta_attention_triton: "KDA triton",
       causal_conv1d_fwd: "causal_conv1d_fwd",
       causal_conv1d_bwd: "causal_conv1d_bwd",
     };
+    const OTHER_RUNTIME_ID = "other_runtime";
 
     const state = {
       data: null,
@@ -227,6 +296,8 @@
       user: null,
       charts: {},
       compareOps: [],
+      compareCases: [],
+      caseAttrFilters: { net: [], case: [] },
     };
 
     init().catch((error) => {
@@ -244,12 +315,29 @@
       document.querySelectorAll(".perf-tabs button").forEach((button) => {
         button.addEventListener("click", () => switchTab(button.dataset.tab));
       });
-      ["netCase", "netCaseAttr", "netDate", "netModel", "netChip"].forEach((id) => {
-        document.querySelector(`#${id}`).addEventListener("change", renderNetworkTab);
+      ["netCase", "netGdnOnly"].forEach((id) => {
+        document.querySelector(`#${id}`).addEventListener("change", () => {
+          updateRunContextDisplay("net");
+          renderNetworkTab();
+        });
       });
-      ["caseOperator", "caseDate", "caseAttr", "caseModel", "caseChip"].forEach((id) => {
+      document.querySelector("#netCaseAttrKey").addEventListener("change", () => onCaseAttrKeyChange("net"));
+      document.querySelector("#netCaseAttrOp").addEventListener("change", () => updateAttrPickerUI("net"));
+      document.querySelector("#netCaseAttrAdd").addEventListener("click", () => addCaseAttrFilter("net"));
+      document.querySelector("#netCaseAttrClear").addEventListener("click", () => clearCaseAttrFilters("net"));
+      document.querySelector("#netCaseAttrChips").addEventListener("click", (event) => onCaseAttrChipClick(event, "net"));
+      ["caseMetric", "caseOperator"].forEach((id) => {
         document.querySelector(`#${id}`).addEventListener("change", renderCaseTab);
       });
+      document.querySelector("#caseCompareList").addEventListener("change", () => updateRunContextDisplay("case"));
+      document.querySelector("#caseAttrKey").addEventListener("change", () => onCaseAttrKeyChange("case"));
+      document.querySelector("#caseAttrOp").addEventListener("change", () => updateAttrPickerUI("case"));
+      document.querySelector("#caseAttrAdd").addEventListener("click", () => addCaseAttrFilter("case"));
+      document.querySelector("#caseAttrClear").addEventListener("click", () => clearCaseAttrFilters("case"));
+      document.querySelector("#caseAttrChips").addEventListener("click", (event) => onCaseAttrChipClick(event, "case"));
+      document.querySelector("#caseCompareAddBtn").addEventListener("click", addSelectedCaseToCompare);
+      document.querySelector("#caseCompareRemoveBtn").addEventListener("click", removeSelectedCaseFromCompare);
+      document.querySelector("#caseCompareClearBtn").addEventListener("click", clearCompareCases);
       document.querySelector("#triggerForm").addEventListener("submit", onTriggerSubmit);
       document.querySelector("#loginBtn").addEventListener("click", onLogin);
       document.querySelector("#logoutBtn").addEventListener("click", onLogout);
@@ -360,14 +448,10 @@
       const modelId = document.querySelector("#triggerModel").value;
       const chip = document.querySelector("#triggerChip").value;
       const testCase = state.data.cases.find((item) => item.id === caseId);
-      const attributes = {
-        seq_len: numberOr(document.querySelector("#attrSeqLen").value, testCase?.attributes?.seq_len),
-        batch: numberOr(document.querySelector("#attrBatch").value, testCase?.attributes?.batch),
-        hidden: numberOr(document.querySelector("#attrHidden").value, testCase?.attributes?.hidden),
-        hv: numberOr(document.querySelector("#attrHv").value, testCase?.hv),
-        hk: numberOr(document.querySelector("#attrHk").value, testCase?.hk),
-        notes: document.querySelector("#triggerNotes").value.trim(),
-      };
+      const attributes = buildTriggerAttributes(testCase);
+      if (document.querySelector("#triggerNotes").value.trim()) {
+        attributes.notes = document.querySelector("#triggerNotes").value.trim();
+      }
       const payload = { case_id: caseId, model_id: modelId, chip, device: "722", attributes };
       if (useWorkerWrite()) {
         const result = await workerPost("/api/perf/runs", payload);
@@ -462,18 +546,503 @@
       ].map(([label, value]) => `<div class="summary-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`).join("");
     }
 
+    const CASE_ATTR_ORDER = [
+      "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size", "scale", "dtype",
+      "mean_len", "cu_seqlens", "varlen",
+    ];
+    const CASE_ATTR_LABELS = {
+      batch: "batch",
+      query_heads: "query-heads",
+      value_heads: "value-heads",
+      tokens: "tokens",
+      key_dim: "key-dim",
+      value_dim: "value-dim",
+      chunk_size: "chunk-size",
+      scale: "scale",
+      dtype: "dtype",
+      mean_len: "mean-len",
+      cu_seqlens: "cu-seqlens",
+      varlen: "varlen",
+    };
+
+    function defaultScale(keyDim) {
+      const dim = Number(keyDim) || 128;
+      return Math.round((dim ** -0.5) * 1e6) / 1e6;
+    }
+
+    function buildTriggerAttributes(testCase) {
+      const attrs = testCase?.attributes || {};
+      const keyDim = numberOr(document.querySelector("#attrKeyDim").value, attrs.key_dim);
+      const scaleRaw = document.querySelector("#attrScale").value.trim();
+      const scale = scaleRaw ? Number(scaleRaw) : (attrs.scale ?? defaultScale(keyDim));
+      return {
+        batch: numberOr(document.querySelector("#attrBatch").value, attrs.batch),
+        query_heads: numberOr(document.querySelector("#attrQueryHeads").value, attrs.query_heads),
+        value_heads: numberOr(document.querySelector("#attrValueHeads").value, attrs.value_heads),
+        tokens: numberOr(document.querySelector("#attrTokens").value, attrs.tokens),
+        key_dim: keyDim,
+        value_dim: numberOr(document.querySelector("#attrValueDim").value, attrs.value_dim),
+        chunk_size: numberOr(document.querySelector("#attrChunkSize").value, attrs.chunk_size),
+        scale,
+        dtype: document.querySelector("#attrDtype").value || attrs.dtype || "bf16",
+        mean_len: numberOr(document.querySelector("#attrMeanLen").value, attrs.mean_len),
+        cu_seqlens: document.querySelector("#attrCuSeqlens").value.trim() || attrs.cu_seqlens || "",
+        varlen: document.querySelector("#attrVarlen").checked,
+      };
+    }
+
+    function normalizeAttrStoreValue(key, value) {
+      if (key === "varlen") return value ? "true" : "false";
+      return String(value);
+    }
+
+    function formatAttrValueLabel(key, value) {
+      if (key === "varlen") return value === "true" ? "是" : "否";
+      if (key === "scale") return Number(value).toFixed(6).replace(/\.?0+$/, "");
+      if (key === "cu_seqlens" && !value) return "(自动)";
+      return value;
+    }
+
+    function collectCaseAttrValues() {
+      const index = new Map();
+      (state.data.cases || []).filter((item) => item.active !== false).forEach((item) => {
+        const attrs = item.attributes || {};
+        CASE_ATTR_ORDER.forEach((key) => {
+          const value = attrs[key];
+          if (value == null || value === "") return;
+          if (!index.has(key)) index.set(key, new Set());
+          index.get(key).add(normalizeAttrStoreValue(key, value));
+        });
+      });
+      return index;
+    }
+
+    const CASE_ATTR_NUMERIC = new Set([
+      "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size", "scale", "mean_len",
+    ]);
+    const CASE_ATTR_BOOLEAN = new Set(["varlen"]);
+
+    function attrPickerIds(prefix) {
+      const stem = prefix === "net" ? "netCaseAttr" : "caseAttr";
+      return {
+        key: `#${stem}Key`,
+        op: `#${stem}Op`,
+        eq: `#${stem}Eq`,
+        eqList: `#${stem}EqList`,
+        eqWrap: `#${stem}EqWrap`,
+        rangeWrap: `#${stem}RangeWrap`,
+        min: `#${stem}Min`,
+        max: `#${stem}Max`,
+      };
+    }
+
+    function attrOpOptions(key) {
+      const options = [["any", "不限"], ["eq", "精确"]];
+      if (CASE_ATTR_NUMERIC.has(key)) options.push(["range", "范围"]);
+      return options;
+    }
+
+    function populateEqDatalist(prefix, key) {
+      const ids = attrPickerIds(prefix);
+      const values = collectCaseAttrValues().get(key);
+      const datalist = document.querySelector(ids.eqList);
+      if (!values || values.size === 0) {
+        datalist.innerHTML = "";
+        return;
+      }
+      const sorted = [...values].sort((a, b) => {
+        if (key === "varlen") return a.localeCompare(b);
+        const na = Number(a);
+        const nb = Number(b);
+        if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+        return a.localeCompare(b);
+      });
+      datalist.innerHTML = sorted.map((value) => `<option value="${escapeHtml(formatAttrValueLabel(key, value))}"></option>`).join("");
+    }
+
+    function updateAttrPickerUI(prefix) {
+      const ids = attrPickerIds(prefix);
+      const key = document.querySelector(ids.key).value;
+      const opSelect = document.querySelector(ids.op);
+      const currentOp = opSelect.value;
+      if (!key) {
+        opSelect.disabled = true;
+        document.querySelector(ids.eqWrap).classList.add("hidden");
+        document.querySelector(ids.rangeWrap).classList.add("hidden");
+        return;
+      }
+      opSelect.disabled = false;
+      fillSelect(ids.op, attrOpOptions(key));
+      opSelect.value = [...opSelect.options].some((option) => option.value === currentOp) ? currentOp : "any";
+      const op = opSelect.value;
+      document.querySelector(ids.eqWrap).classList.toggle("hidden", op !== "eq");
+      document.querySelector(ids.rangeWrap).classList.toggle("hidden", op !== "range");
+      if (op === "eq") populateEqDatalist(prefix, key);
+      if (CASE_ATTR_BOOLEAN.has(key)) {
+        document.querySelector(ids.eq).placeholder = "是 / 否";
+      } else {
+        document.querySelector(ids.eq).placeholder = "输入或选择值";
+      }
+    }
+
+    function normalizeEqInput(key, raw) {
+      const text = String(raw || "").trim();
+      if (!text) return "";
+      if (!CASE_ATTR_BOOLEAN.has(key)) return text;
+      const lower = text.toLowerCase();
+      if (["是", "true", "1", "yes"].includes(lower)) return "true";
+      if (["否", "false", "0", "no"].includes(lower)) return "false";
+      return text;
+    }
+
+    function normalizeFilterEntry(filter) {
+      if (filter.op) return filter;
+      if (!filter.value) return { key: filter.key, op: "any" };
+      return { key: filter.key, op: "eq", value: filter.value };
+    }
+
+    function readAttrPickerEntry(prefix) {
+      const ids = attrPickerIds(prefix);
+      const key = document.querySelector(ids.key).value;
+      if (!key) return null;
+      const op = document.querySelector(ids.op).value;
+      if (op === "any") return { key, op: "any" };
+      if (op === "eq") {
+        const value = normalizeEqInput(key, document.querySelector(ids.eq).value);
+        if (!value) return alert("精确筛选请输入属性值。"), null;
+        return { key, op: "eq", value };
+      }
+      const minRaw = document.querySelector(ids.min).value.trim();
+      const maxRaw = document.querySelector(ids.max).value.trim();
+      if (!minRaw && !maxRaw) return alert("范围筛选请至少填写最小值或最大值。"), null;
+      const min = minRaw === "" ? null : Number(minRaw);
+      const max = maxRaw === "" ? null : Number(maxRaw);
+      if ((minRaw && Number.isNaN(min)) || (maxRaw && Number.isNaN(max))) return alert("范围筛选请输入有效数字。"), null;
+      if (min != null && max != null && min > max) return alert("最小值不能大于最大值。"), null;
+      return { key, op: "range", min, max };
+    }
+
+    function caseAttrKeyOptions() {
+      return [["", "选择属性"], ...CASE_ATTR_ORDER.map((key) => [key, CASE_ATTR_LABELS[key] || key])];
+    }
+
+    function fillCaseAttrFilter(prefix) {
+      const ids = attrPickerIds(prefix);
+      const keySelect = document.querySelector(ids.key);
+      const currentKey = keySelect.value;
+      fillSelect(ids.key, caseAttrKeyOptions());
+      keySelect.value = [...keySelect.options].some((option) => option.value === currentKey) ? currentKey : "";
+      updateAttrPickerUI(prefix);
+    }
+
+    function getCaseAttrFilters(prefix) {
+      return state.caseAttrFilters[prefix] || [];
+    }
+
+    function formatFilterChipLabel(filter) {
+      const entry = normalizeFilterEntry(filter);
+      const label = CASE_ATTR_LABELS[entry.key] || entry.key;
+      if (entry.op === "any") return `${label}=不限`;
+      if (entry.op === "eq") return `${label}=${formatAttrValueLabel(entry.key, entry.value)}`;
+      if (entry.op === "range") {
+        const { min, max } = entry;
+        if (min != null && max != null) return `${label}=${min}~${max}`;
+        if (min != null) return `${label}≥${min}`;
+        return `${label}≤${max}`;
+      }
+      return label;
+    }
+
+    function renderCaseAttrChips(prefix) {
+      const chipsId = prefix === "net" ? "#netCaseAttrChips" : "#caseAttrChips";
+      const filters = getCaseAttrFilters(prefix);
+      const container = document.querySelector(chipsId);
+      if (!filters.length) {
+        container.innerHTML = '<span class="perf-attr-empty">未添加条件，显示全部用例</span>';
+        return;
+      }
+      container.innerHTML = filters.map((filter, index) => `
+        <button type="button" class="perf-attr-chip" data-index="${index}" title="移除条件">
+          <span>${escapeHtml(formatFilterChipLabel(filter))}</span>
+          <em aria-hidden="true">×</em>
+        </button>
+      `).join("");
+    }
+
+    function applyCaseAttrFilters(prefix) {
+      renderCaseAttrChips(prefix);
+      if (prefix === "net") {
+        refreshFilteredCaseSelect("net");
+        updateRunContextDisplay("net");
+        renderNetworkTab();
+      } else {
+        renderCaseTab();
+      }
+    }
+
+    function addCaseAttrFilter(prefix) {
+      const entry = readAttrPickerEntry(prefix);
+      if (!entry) return;
+      const filters = getCaseAttrFilters(prefix);
+      const existing = filters.findIndex((item) => item.key === entry.key);
+      if (existing >= 0) filters[existing] = entry;
+      else filters.push(entry);
+      applyCaseAttrFilters(prefix);
+    }
+
+    function removeCaseAttrFilter(prefix, index) {
+      const filters = getCaseAttrFilters(prefix);
+      filters.splice(index, 1);
+      applyCaseAttrFilters(prefix);
+    }
+
+    function clearCaseAttrFilters(prefix) {
+      state.caseAttrFilters[prefix] = [];
+      applyCaseAttrFilters(prefix);
+    }
+
+    function onCaseAttrChipClick(event, prefix) {
+      const chip = event.target.closest(".perf-attr-chip");
+      if (!chip) return;
+      removeCaseAttrFilter(prefix, Number(chip.dataset.index));
+    }
+
+    function onCaseAttrKeyChange(prefix) {
+      const ids = attrPickerIds(prefix);
+      document.querySelector(ids.eq).value = "";
+      document.querySelector(ids.min).value = "";
+      document.querySelector(ids.max).value = "";
+      updateAttrPickerUI(prefix);
+    }
+
+    function attrValuesEqual(key, caseValue, filterValue) {
+      if (key === "varlen") {
+        const actual = caseValue === true || caseValue === "true";
+        const expected = filterValue === "true";
+        return actual === expected;
+      }
+      if (key === "scale") return Number(caseValue) === Number(filterValue);
+      return String(caseValue) === String(filterValue);
+    }
+
+    function matchesCaseAttr(testCase, filter) {
+      const entry = normalizeFilterEntry(filter);
+      const { key, op } = entry;
+      if (!key) return true;
+      const attrs = testCase.attributes || {};
+      if (!(key in attrs)) return false;
+      if (op === "any") return true;
+      const caseValue = attrs[key];
+      if (op === "eq") return attrValuesEqual(key, caseValue, entry.value);
+      if (op === "range") {
+        const num = Number(caseValue);
+        if (Number.isNaN(num)) return false;
+        if (entry.min != null && num < entry.min) return false;
+        if (entry.max != null && num > entry.max) return false;
+        return true;
+      }
+      return true;
+    }
+
+    function matchesAllCaseAttrs(testCase, filters) {
+      return filters.every((filter) => matchesCaseAttr(testCase, filter));
+    }
+
+    function snapshotsForCase(caseId) {
+      return state.data.snapshots
+        .filter((snap) => snap.case_id === caseId)
+        .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    }
+
+    function primarySnapshotForCase(caseId) {
+      return snapshotsForCase(caseId)[0] || null;
+    }
+
+    function formatRunContextText(snap) {
+      const model = state.data.models.find((item) => item.id === snap.model_id);
+      const parts = [
+        `日期：${snap.label}`,
+        `模型：${model?.label || snap.model_id}`,
+        `芯片：${snap.chip}`,
+      ];
+      if (snap.prof_source) parts.push(`Prof：${snap.prof_source}`);
+      return parts.join("\n");
+    }
+
+    function updateRunContextDisplay(prefix) {
+      const isNet = prefix === "net";
+      const panel = document.querySelector(isNet ? "#netRunContext" : "#caseRunContext");
+      const textNode = panel.querySelector(".perf-run-context-text");
+      let caseId = "";
+      if (isNet) {
+        caseId = document.querySelector("#netCase").value;
+      } else {
+        const selected = state.compareCases || [];
+        const picked = document.querySelector("#caseCompareList")?.value;
+        if (picked && selected.includes(picked)) {
+          caseId = picked;
+        } else if (selected.length === 1) {
+          caseId = selected[0];
+        } else {
+          panel.classList.add("hidden");
+          textNode.textContent = "—";
+          return;
+        }
+      }
+      if (!caseId) {
+        panel.classList.add("hidden");
+        textNode.textContent = "—";
+        return;
+      }
+      const snap = primarySnapshotForCase(caseId);
+      if (!snap) {
+        panel.classList.add("hidden");
+        textNode.textContent = "—";
+        return;
+      }
+      panel.classList.remove("hidden");
+      textNode.textContent = snap ? formatRunContextText(snap) : "该用例暂无性能快照";
+    }
+
+    function allCompareableCases() {
+      return (state.data?.cases || []).filter((item) => item.active !== false);
+    }
+
+    function pruneCompareCases() {
+      const valid = new Set(allCompareableCases().map((item) => item.id));
+      state.compareCases = (state.compareCases || []).filter((id) => valid.has(id));
+    }
+
+    function initCompareCasesIfEmpty() {
+      if (state.compareCases?.length) return;
+      const first = allCompareableCases().find((item) => primarySnapshotForCase(item.id));
+      if (first) state.compareCases = [first.id];
+    }
+
+    function refreshCaseCompareAddSelect() {
+      const cases = allCompareableCases();
+      const select = document.querySelector("#caseCompareAdd");
+      const addBtn = document.querySelector("#caseCompareAddBtn");
+      const inList = new Set(state.compareCases || []);
+      const available = cases.filter((item) => !inList.has(item.id));
+      if (!available.length) {
+        fillSelect("#caseCompareAdd", [["", cases.length ? "已全部添加" : "无可用用例"]]);
+        select.disabled = true;
+        addBtn.disabled = true;
+        return;
+      }
+      select.disabled = false;
+      addBtn.disabled = false;
+      fillSelect("#caseCompareAdd", available.map((item) => [item.id, item.label]));
+    }
+
+    function renderCaseCompareList() {
+      const select = document.querySelector("#caseCompareList");
+      const removeBtn = document.querySelector("#caseCompareRemoveBtn");
+      const cases = state.compareCases || [];
+      const current = select.value;
+      if (!cases.length) {
+        fillSelect("#caseCompareList", [["", "对比列表为空"]]);
+        select.disabled = true;
+        removeBtn.disabled = true;
+        return;
+      }
+      select.disabled = false;
+      removeBtn.disabled = false;
+      fillSelect(
+        "#caseCompareList",
+        cases.map((caseId) => {
+          const testCase = state.data.cases.find((item) => item.id === caseId);
+          return [caseId, testCase?.label || caseId];
+        }),
+      );
+      if ([...select.options].some((option) => option.value === current)) {
+        select.value = current;
+      } else {
+        select.value = cases[0];
+      }
+    }
+
+    function setupCaseCompareUI() {
+      pruneCompareCases();
+      initCompareCasesIfEmpty();
+      refreshCaseCompareAddSelect();
+      renderCaseCompareList();
+      updateRunContextDisplay("case");
+    }
+
+    function addSelectedCaseToCompare() {
+      const caseId = document.querySelector("#caseCompareAdd").value;
+      if (!caseId) return;
+      if (!state.compareCases) state.compareCases = [];
+      if (state.compareCases.includes(caseId)) return;
+      state.compareCases.push(caseId);
+      refreshCaseCompareAddSelect();
+      renderCaseCompareList();
+      document.querySelector("#caseCompareList").value = caseId;
+      updateRunContextDisplay("case");
+      renderCaseTab();
+    }
+
+    function removeSelectedCaseFromCompare() {
+      const caseId = document.querySelector("#caseCompareList").value;
+      if (!caseId) return;
+      removeCaseFromCompare(caseId);
+    }
+
+    function removeCaseFromCompare(caseId) {
+      state.compareCases = (state.compareCases || []).filter((id) => id !== caseId);
+      refreshCaseCompareAddSelect();
+      renderCaseCompareList();
+      updateRunContextDisplay("case");
+      renderCaseTab();
+    }
+
+    function clearCompareCases() {
+      state.compareCases = [];
+      refreshCaseCompareAddSelect();
+      renderCaseCompareList();
+      updateRunContextDisplay("case");
+      renderCaseTab();
+    }
+
+    function refreshFilteredCaseSelect(prefix) {
+      const caseSelector = "#netCase";
+      const candidates = filteredCases(getCaseAttrFilters(prefix), "");
+      const select = document.querySelector(caseSelector);
+      const current = select.value;
+      const entries = candidates.map((item) => [item.id, item.label]);
+      if (!candidates.length) {
+        fillSelect(caseSelector, [["", "无匹配用例"]]);
+        select.disabled = true;
+        select.value = "";
+        updateRunContextDisplay("net");
+        return;
+      }
+      select.disabled = false;
+      fillSelect(caseSelector, entries);
+      if (entries.some(([id]) => id === current)) select.value = current;
+      else {
+        const profCase = candidates.find((item) => item.id.startsWith("case-gdn-"));
+        select.value = profCase?.id || entries[0][0];
+      }
+      updateRunContextDisplay("net");
+    }
+
     function fillFilters() {
-      fillSelect("#netCase", state.data.cases.map((item) => [item.id, item.label]));
-      fillSelect("#netModel", state.data.models.map((item) => [item.id, item.label]));
-      fillSelect("#caseModel", state.data.models.map((item) => [item.id, item.label]));
+      fillCaseAttrFilter("net");
+      fillCaseAttrFilter("case");
+      renderCaseAttrChips("net");
+      renderCaseAttrChips("case");
+      refreshFilteredCaseSelect("net");
+      setupCaseCompareUI();
+      updateRunContextDisplay("net");
       fillSelect("#triggerCase", state.data.cases.map((item) => [item.id, item.label]));
       fillSelect("#triggerModel", state.data.models.map((item) => [item.id, item.label]));
       fillSelect("#caseOperator", operatorOptions());
-      refreshDateSelects();
-      if (!document.querySelector("#netCase").value && state.data.cases[0]) document.querySelector("#netCase").value = state.data.cases[0].id;
-      if (!document.querySelector("#netModel").value && state.data.models[0]) document.querySelector("#netModel").value = state.data.models[0].id;
-      if (!document.querySelector("#caseModel").value && state.data.models[0]) document.querySelector("#caseModel").value = state.data.models[0].id;
       if (!document.querySelector("#caseOperator").value) document.querySelector("#caseOperator").value = operatorOptions()[0]?.[0] || "";
+      fillSelect("#caseMetric", caseChartMetricOptions());
+      if (!document.querySelector("#caseMetric").value) document.querySelector("#caseMetric").value = "mbu";
       fillTriggerAttrs();
     }
 
@@ -481,16 +1050,6 @@
       const ids = new Set();
       state.data.snapshots.forEach((snap) => (snap.operators || []).forEach((item) => ids.add(item.operator_id)));
       return [...ids].map((id) => [id, operatorLabel(id)]);
-    }
-
-    function refreshDateSelects() {
-      const dates = [...new Set(state.data.snapshots.map((item) => item.label))];
-      fillSelect("#netDate", dates.map((item) => [item, item]));
-      fillSelect("#caseDate", dates.map((item) => [item, item]));
-      if (dates[0]) {
-        document.querySelector("#netDate").value = dates[dates.length - 1];
-        document.querySelector("#caseDate").value = dates[dates.length - 1];
-      }
     }
 
     function fillSelect(selector, entries) {
@@ -503,30 +1062,50 @@
     function fillTriggerAttrs() {
       const testCase = state.data.cases.find((item) => item.id === document.querySelector("#triggerCase").value);
       if (!testCase) return;
-      document.querySelector("#attrSeqLen").value = testCase.attributes?.seq_len ?? "";
-      document.querySelector("#attrBatch").value = testCase.attributes?.batch ?? "";
-      document.querySelector("#attrHidden").value = testCase.attributes?.hidden ?? "";
-      document.querySelector("#attrHv").value = testCase.hv ?? "";
-      document.querySelector("#attrHk").value = testCase.hk ?? "";
+      const attrs = testCase.attributes || {};
+      document.querySelector("#attrBatch").value = attrs.batch ?? "";
+      document.querySelector("#attrQueryHeads").value = attrs.query_heads ?? "";
+      document.querySelector("#attrValueHeads").value = attrs.value_heads ?? "";
+      document.querySelector("#attrTokens").value = attrs.tokens ?? "";
+      document.querySelector("#attrKeyDim").value = attrs.key_dim ?? "";
+      document.querySelector("#attrValueDim").value = attrs.value_dim ?? "";
+      document.querySelector("#attrChunkSize").value = attrs.chunk_size ?? "";
+      document.querySelector("#attrScale").value = attrs.scale ?? "";
+      document.querySelector("#attrDtype").value = attrs.dtype || "bf16";
+      document.querySelector("#attrMeanLen").value = attrs.mean_len ?? "";
+      document.querySelector("#attrCuSeqlens").value = attrs.cu_seqlens ?? "";
+      document.querySelector("#attrVarlen").checked = attrs.varlen !== false;
+    }
+
+    function normalizeSnapshotOperators(snap) {
+      if (!snap) return null;
+      const gdnOnly = document.querySelector("#netGdnOnly")?.checked;
+      let operators = [...(snap.operators || [])];
+      if (gdnOnly) operators = operators.filter((item) => item.operator_id !== OTHER_RUNTIME_ID);
+      const total = operators.reduce((sum, item) => sum + Number(item.time_ms || 0), 0);
+      operators = operators.map((item) => ({
+        ...item,
+        share_pct: total ? Math.round((Number(item.time_ms || 0) / total) * 1000) / 10 : 0,
+      }));
+      return {
+        ...snap,
+        operators,
+        total_time_ms: Math.round(total * 1000) / 1000,
+      };
     }
 
     function currentSnapshot() {
       const caseId = document.querySelector("#netCase").value;
-      const caseAttr = document.querySelector("#netCaseAttr").value;
-      const dateLabel = document.querySelector("#netDate").value;
-      const modelId = document.querySelector("#netModel").value;
-      const chip = document.querySelector("#netChip").value;
-      const cases = filteredCases(caseAttr, caseId);
-      const allowed = new Set(cases.map((item) => item.id));
-      return state.data.snapshots.find((item) => item.label === dateLabel && item.model_id === modelId && item.chip === chip && allowed.has(item.case_id))
-        || state.data.snapshots.find((item) => item.label === dateLabel && item.model_id === modelId && item.chip === chip)
-        || null;
+      if (!caseId) return null;
+      const filters = getCaseAttrFilters("net");
+      if (!filteredCases(filters, caseId).some((item) => item.id === caseId)) return null;
+      return normalizeSnapshotOperators(primarySnapshotForCase(caseId));
     }
 
-    function filteredCases(attr, caseId) {
+    function filteredCases(filters, caseId) {
       return state.data.cases.filter((item) => {
         if (caseId && item.id !== caseId) return false;
-        if (attr && item.category !== attr) return false;
+        if (!matchesAllCaseAttrs(item, filters)) return false;
         return item.active !== false;
       });
     }
@@ -546,14 +1125,14 @@
         return;
       }
       const operators = [...(snap.operators || [])].sort((a, b) => b.time_ms - a.time_ms);
-      totalNode.textContent = `总耗时 ${snap.total_time_ms.toFixed(1)} ms`;
-      center.innerHTML = `<strong>${snap.total_time_ms.toFixed(0)}</strong><span>ms</span><em>${escapeHtml(snap.label)}</em>`;
+      totalNode.textContent = `总耗时 ${snap.total_time_ms.toFixed(3)} ms`;
+      center.innerHTML = `<strong>${snap.total_time_ms.toFixed(2)}</strong><span>ms</span><em>${escapeHtml(snap.label)}</em>${snap.prof_source ? `<small>${escapeHtml(snap.prof_source)}</small>` : ""}`;
       legend.innerHTML = operators.map((item, index) => `
         <div class="perf-legend-item">
           <i style="background:${PIE_COLORS[index % PIE_COLORS.length]}"></i>
           <span>${escapeHtml(operatorLabel(item.operator_id))}</span>
           <b>${item.share_pct.toFixed(1)}%</b>
-          <em>${item.time_ms.toFixed(1)} ms</em>
+          <em>${item.time_ms.toFixed(3)} ms${item.call_count ? ` · ${item.call_count}次` : ""}</em>
         </div>
       `).join("");
       destroyChart("networkPie");
@@ -624,54 +1203,202 @@
       });
     }
 
+    const CASE_DETAIL_METRICS = [
+      { key: "mbu", label: "MBU", format: "pct", chartOption: "MBU（访存利用率）" },
+      { key: "mfu", label: "MFU", format: "pct", chartOption: "MFU（算力利用率）" },
+      { key: "bottleneck", label: "bound类型", format: "bound" },
+      { key: "mte1_ratio", label: "MTE1 ratio", format: "pct", chartOption: "MTE1 ratio" },
+      { key: "mte2_ratio", label: "MTE2 ratio", format: "pct", chartOption: "MTE2 ratio" },
+      { key: "mte3_ratio", label: "MTE3 ratio", format: "pct", chartOption: "MTE3 ratio" },
+      { key: "cube_util", label: "cube", format: "pct", chartOption: "cube 利用率" },
+      { key: "vector_util", label: "vec", format: "pct", chartOption: "vec 利用率" },
+    ];
+    const CASE_METRIC_CHART_COLORS = {
+      mbu: { line: "#2f73c8", fill: "rgba(47,115,200,.12)" },
+      mfu: { line: "#b87508", fill: "rgba(184,117,8,.12)" },
+      mte1_ratio: { line: "#277560", fill: "rgba(39,117,96,.12)" },
+      mte2_ratio: { line: "#8b5a2b", fill: "rgba(139,90,43,.12)" },
+      mte3_ratio: { line: "#6b4c9a", fill: "rgba(107,76,154,.12)" },
+      cube_util: { line: "#c43d3d", fill: "rgba(196,61,61,.12)" },
+      vector_util: { line: "#2a6f8f", fill: "rgba(42,111,143,.12)" },
+    };
+
+    function caseChartMetricOptions() {
+      return CASE_DETAIL_METRICS
+        .filter((item) => item.format === "pct")
+        .map((item) => [item.key, item.chartOption || item.label]);
+    }
+
+    function findCaseMetricSpec(metricKey) {
+      return CASE_DETAIL_METRICS.find((item) => item.key === metricKey)
+        || CASE_DETAIL_METRICS.find((item) => item.key === "mbu");
+    }
+
+    function caseMetricChartColors(metricKey) {
+      return CASE_METRIC_CHART_COLORS[metricKey] || CASE_METRIC_CHART_COLORS.mbu;
+    }
+
+    function caseAttributesKey(attrs) {
+      const normalized = {};
+      CASE_ATTR_ORDER.forEach((key) => {
+        const value = attrs?.[key];
+        if (value == null || value === "") return;
+        normalized[key] = value;
+      });
+      return JSON.stringify(normalized);
+    }
+
+    function caseAttributesTitle(testCase) {
+      const label = testCase?.label || testCase?.id || "";
+      const splitAt = label.lastIndexOf(" @ ");
+      return splitAt >= 0 ? label.slice(0, splitAt) : label;
+    }
+
+    function groupSelectedCasesByAttributes(selectedCases) {
+      const groups = new Map();
+      const order = [];
+      selectedCases.forEach((caseId) => {
+        const testCase = state.data.cases.find((item) => item.id === caseId);
+        if (!testCase) return;
+        const key = caseAttributesKey(testCase.attributes || {});
+        if (!groups.has(key)) {
+          groups.set(key, { testCase, caseIds: [] });
+          order.push(key);
+        }
+        groups.get(key).caseIds.push(caseId);
+      });
+      return order.map((key) => groups.get(key));
+    }
+
+    function formatSnapshotTime(snap) {
+      const raw = snap.created_at || snap.snapshot_date || snap.label || "";
+      return String(raw).replace("T", " ").slice(0, 16);
+    }
+
+    function formatCaseDetailValue(metric, spec) {
+      const value = metric?.[spec.key];
+      if (spec.format === "bound") {
+        const bound = value || "—";
+        if (bound === "—") return "—";
+        return `<span class="bottleneck-pill bottleneck-${escapeHtml(bound)}">${escapeHtml(bound)}</span>`;
+      }
+      if (value == null || Number.isNaN(Number(value))) return "—";
+      return pct(value);
+    }
+
+    function renderCaseDetailTables(operatorId, selectedCases) {
+      const host = document.querySelector("#caseDetailTables");
+      const operatorName = operatorLabel(operatorId);
+      document.querySelector("#caseDetailHint").textContent =
+        `算子：${operatorName} · 相同用例属性合并为一张表，列头为各次 Prof 时间`;
+      if (!selectedCases.length) {
+        host.innerHTML = '<p class="empty">请至少添加 1 个用例至对比列表。</p>';
+        return false;
+      }
+
+      const sections = [];
+      groupSelectedCasesByAttributes(selectedCases).forEach(({ testCase, caseIds }) => {
+        const columns = caseIds
+          .map((caseId) => {
+            const snap = primarySnapshotForCase(caseId);
+            const metric = snap?.operators?.find((item) => item.operator_id === operatorId);
+            if (!snap || !metric) return null;
+            return { snap, metric, time: formatSnapshotTime(snap) };
+          })
+          .filter(Boolean)
+          .sort((a, b) => String(a.snap.created_at || "").localeCompare(String(b.snap.created_at || "")));
+        if (!columns.length) return;
+
+        const header = columns.map(({ time }) => `<th>${escapeHtml(time)}</th>`).join("");
+        const body = CASE_DETAIL_METRICS.map((spec) => {
+          const cells = columns.map(({ metric }) => `<td>${formatCaseDetailValue(metric, spec)}</td>`).join("");
+          return `<tr><th scope="row">${escapeHtml(spec.label)}</th>${cells}</tr>`;
+        }).join("");
+
+        sections.push(`
+          <section class="perf-case-detail-block">
+            <div class="perf-case-detail-heading">
+              <h3 class="perf-case-detail-title">${escapeHtml(caseAttributesTitle(testCase))}</h3>
+              <p class="perf-case-detail-operator">算子：${escapeHtml(operatorName)}</p>
+            </div>
+            <div class="table-wrap stats-table-wrap">
+              <table class="stats-table perf-table perf-case-detail-table">
+                <thead>
+                  <tr>
+                    <th scope="col">指标</th>
+                    ${header}
+                  </tr>
+                </thead>
+                <tbody>${body}</tbody>
+              </table>
+            </div>
+          </section>
+        `);
+      });
+
+      if (!sections.length) {
+        host.innerHTML = '<p class="empty">所选用例在当前算子下没有性能数据。</p>';
+        return false;
+      }
+      host.innerHTML = sections.join("");
+      return true;
+    }
+
     function renderCaseTab() {
       const operatorId = document.querySelector("#caseOperator").value;
-      const dateLabel = document.querySelector("#caseDate").value;
-      const attr = document.querySelector("#caseAttr").value;
-      const modelId = document.querySelector("#caseModel").value;
-      const chip = document.querySelector("#caseChip").value;
+      const selectedCases = state.compareCases || [];
+      renderCaseDetailTables(operatorId, selectedCases);
       const rows = [];
-      state.data.snapshots
-        .filter((snap) => snap.label === dateLabel && snap.model_id === modelId && snap.chip === chip)
-        .forEach((snap) => {
-          const testCase = state.data.cases.find((item) => item.id === snap.case_id);
-          if (!testCase || (attr && testCase.category !== attr)) return;
-          const metric = (snap.operators || []).find((item) => item.operator_id === operatorId);
-          if (!metric) return;
-          rows.push({ snap, testCase, metric });
-        });
-      const tbody = document.querySelector("#caseDetailRows");
+      selectedCases.forEach((caseId) => {
+        const testCase = state.data.cases.find((item) => item.id === caseId);
+        if (!testCase) return;
+        const snap = primarySnapshotForCase(caseId);
+        if (!snap) return;
+        const metric = (snap.operators || []).find((item) => item.operator_id === operatorId);
+        if (!metric) return;
+        rows.push({ snap, testCase, metric });
+      });
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty">当前筛选条件下没有该算子的用例数据。</td></tr>';
         destroyChart("caseMbuMfu");
         return;
       }
-      tbody.innerHTML = rows.map(({ testCase, metric }) => `
-        <tr>
-          <td>${escapeHtml(testCase.label)}</td>
-          <td>${metric.time_ms.toFixed(1)}</td>
-          <td>${pct(metric.mbu)}</td>
-          <td>${pct(metric.mfu)}</td>
-          <td><span class="bottleneck-pill bottleneck-${escapeHtml(metric.bottleneck || "none")}">${escapeHtml(metric.bottleneck || "—")}</span></td>
-          <td>${pct(metric.cube_util)}</td>
-          <td>${pct(metric.vector_util)}</td>
-          <td>${pct(metric.mem_util)}</td>
-        </tr>
-      `).join("");
       destroyChart("caseMbuMfu");
+      const metricKey = document.querySelector("#caseMetric").value;
+      const metricSpec = findCaseMetricSpec(metricKey);
+      const colors = caseMetricChartColors(metricKey);
+      document.querySelector("#caseMetricChartTitle").textContent = `${metricSpec.label} 对比`;
+      document.querySelector("#caseMetricChartHint").textContent = "每个用例对应一次 Prof，横轴为用例、纵轴为所选指标";
       state.charts.caseMbuMfu = new Chart(document.querySelector("#caseMbuMfu"), {
-        type: "bar",
+        type: "line",
         data: {
           labels: rows.map(({ testCase }) => testCase.label),
-          datasets: [
-            { label: "MBU", data: rows.map(({ metric }) => metric.mbu), backgroundColor: "#2f73c8", borderRadius: 6 },
-            { label: "MFU", data: rows.map(({ metric }) => metric.mfu), backgroundColor: "#b87508", borderRadius: 6 },
-          ],
+          datasets: [{
+            label: metricSpec.chartOption || metricSpec.label,
+            data: rows.map(({ metric }) => metric[metricKey]),
+            borderColor: colors.line,
+            backgroundColor: colors.fill,
+            borderWidth: 2.5,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: colors.line,
+            pointBorderColor: "#fffaf1",
+            pointBorderWidth: 2,
+            fill: true,
+            tension: 0.25,
+          }],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          scales: { y: { beginAtZero: true, max: 1, ticks: { callback: (v) => `${Math.round(v * 100)}%` } } },
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            x: { ticks: { maxRotation: 45, minRotation: 0 } },
+            y: { beginAtZero: true, max: 1, title: { display: true, text: metricSpec.label }, ticks: { callback: (v) => `${Math.round(v * 100)}%` } },
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${pct(ctx.parsed.y)}` } },
+          },
         },
       });
     }

@@ -644,7 +644,7 @@ def default_perf_data() -> dict[str, Any]:
     return {
         "version": now_iso(),
         "models": [{"id": "gdn", "label": "GDN", "position": 0, "active": True}],
-        "cases": [{"id": "case-b", "label": "用例B", "category": "standard", "hv": None, "hk": None, "attributes": {"seq_len": 4096}, "position": 0, "active": True}],
+        "cases": [],
         "snapshots": [],
         "runs": [],
     }
