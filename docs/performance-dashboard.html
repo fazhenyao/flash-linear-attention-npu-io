@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>性能看板 - flash-linear-attention-npu</title>
-  <link rel="stylesheet" href="./styles.css?v=20260709-perf-run-context">
+  <link rel="stylesheet" href="./styles.css?v=20260714-run-download">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -199,7 +199,7 @@
     <section id="tab-trigger" class="perf-tab panel">
       <div class="perf-trigger-grid">
         <div class="perf-chart-card">
-          <div class="panel-title-row"><h2>触发用例测试</h2><small>msprof或msprof op（需配置 FLASH_IO_LOCAL_API）</small></div>
+          <div class="panel-title-row"><h2>触发用例测试</h2></div>
           <form id="triggerForm" class="perf-form">
             <p id="triggerEnvHint" class="perf-trigger-env-hint">执行环境：连接后端后显示 PERF_CHIP 与默认 NPU 卡号。</p>
             <label>采集模式
@@ -209,8 +209,9 @@
                 <option value="msprof_op_sim">msprof op simulator（仿真）</option>
               </select>
             </label>
-            <label id="triggerKernelWrap" class="hidden">目标算子 / kernel
-              <select id="triggerKernel"></select>
+            <label id="triggerKernelWrap" class="hidden perf-form-fieldwide">目标算子 / kernel
+              <input id="triggerKernel" type="text" placeholder="例如 ChunkGatedDeltaRuleFwdH_fc2a70c4a72e8f2b344fa13de449cc34_0_mix_aic">
+              <span class="perf-field-hint">msprof op 需填写运行时 kernel 全名（可从上次采集日志或 task_time.csv 复制），精确匹配。</span>
             </label>
             <label class="perf-form-fieldwide">NPU 卡号
               <input id="triggerDevice" type="number" min="0" step="1" placeholder="2">
@@ -219,12 +220,12 @@
             <fieldset class="perf-attr-fieldset">
               <legend>形状/规模</legend>
               <label>batch <input id="attrBatch" type="number" min="1" value="1"></label>
-              <label>query-heads <input id="attrQueryHeads" type="number" min="1" placeholder="32"></label>
-              <label>value-heads <input id="attrValueHeads" type="number" min="1" placeholder="32"></label>
-              <label>tokens <input id="attrTokens" type="number" min="1" placeholder="4087"></label>
-              <label>key-dim <input id="attrKeyDim" type="number" min="1" placeholder="128"></label>
-              <label>value-dim <input id="attrValueDim" type="number" min="1" placeholder="128"></label>
-              <label>chunk-size <input id="attrChunkSize" type="number" min="1" placeholder="64"></label>
+              <label>query-heads <input id="attrQueryHeads" type="number" min="1" value="32"></label>
+              <label>value-heads <input id="attrValueHeads" type="number" min="1" value="32"></label>
+              <label>tokens <input id="attrTokens" type="number" min="1" value="4087"></label>
+              <label>key-dim <input id="attrKeyDim" type="number" min="1" value="128"></label>
+              <label>value-dim <input id="attrValueDim" type="number" min="1" value="128"></label>
+              <label>chunk-size <input id="attrChunkSize" type="number" min="1" value="64"></label>
               <label>scale <input id="attrScale" type="number" min="0" step="0.000001" placeholder="自动 key-dim^-0.5"></label>
               <label>dtype
                 <select id="attrDtype">
@@ -241,7 +242,7 @@
                 </span>
               </label>
               <div id="varlenFields" class="perf-varlen-fields">
-                <label>mean-len <input id="attrMeanLen" type="number" min="1" placeholder="1024"></label>
+                <label>mean-len <input id="attrMeanLen" type="number" min="1" value="1024"></label>
                 <label class="perf-form-fieldwide">cu-seqlens
                   <input id="attrCuSeqlens" placeholder="留空则自动生成">
                   <span class="perf-field-hint">留空时：按 tokens ÷ mean-len 估算子序列条数，在均值附近生成高低交替长度，并微调使总和等于 tokens。手动填写：逗号分隔的严格递增整数，从 0 开始、以 tokens 结束，如 0,1024,2048,4087。</span>
@@ -265,6 +266,7 @@
                   <th>采集</th>
                   <th>状态</th>
                   <th>总耗时</th>
+                  <th>结果</th>
                   <th>命令</th>
                   <th>操作人</th>
                 </tr>
@@ -276,6 +278,21 @@
       </div>
     </section>
   </main>
+
+  <div id="commandDialog" class="perf-command-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="commandDialogTitle">
+    <div class="perf-command-dialog-backdrop" data-command-close></div>
+    <div class="perf-command-dialog-panel">
+      <div class="perf-command-dialog-header">
+        <h3 id="commandDialogTitle">完整命令</h3>
+        <button type="button" class="perf-command-dialog-close" aria-label="关闭" data-command-close>&times;</button>
+      </div>
+      <pre id="commandDialogBody" class="perf-command-dialog-body"></pre>
+      <div class="perf-command-dialog-actions">
+        <button type="button" id="commandCopyBtn" class="primary">复制命令</button>
+        <button type="button" data-command-close>关闭</button>
+      </div>
+    </div>
+  </div>
 
   <script src="./config.js?v=20260707-perf-dashboard"></script>
   <script>
@@ -408,6 +425,90 @@
       document.querySelector("#addModelBtn").addEventListener("click", onAddModel);
       document.querySelector("#triggerProfTool").addEventListener("change", updateTriggerProfToolUI);
       document.querySelector("#attrVarlen").addEventListener("change", updateVarlenFieldsUI);
+      bindCommandDialogEvents();
+    }
+
+    function bindCommandDialogEvents() {
+      const dialog = document.querySelector("#commandDialog");
+      const copyBtn = document.querySelector("#commandCopyBtn");
+      document.querySelector("#runRows").addEventListener("click", (event) => {
+        const downloadBtn = event.target.closest("[data-run-download]");
+        if (downloadBtn) {
+          downloadRunResult(downloadBtn.dataset.runDownload);
+          return;
+        }
+        const button = event.target.closest("[data-run-command]");
+        if (!button) return;
+        const run = (state.data?.runs || []).find((item) => item.id === button.dataset.runCommand);
+        if (!run) return;
+        showCommandDialog(run.command || run.message || "");
+      });
+      dialog.addEventListener("click", (event) => {
+        if (event.target.closest("[data-command-close]")) hideCommandDialog();
+      });
+      copyBtn.addEventListener("click", copyActiveCommand);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !dialog.classList.contains("hidden")) hideCommandDialog();
+      });
+    }
+
+    function showCommandDialog(command) {
+      const dialog = document.querySelector("#commandDialog");
+      const body = document.querySelector("#commandDialogBody");
+      state.activeCommand = String(command || "");
+      body.textContent = state.activeCommand || "—";
+      dialog.classList.remove("hidden");
+    }
+
+    function hideCommandDialog() {
+      document.querySelector("#commandDialog").classList.add("hidden");
+      state.activeCommand = "";
+    }
+
+    async function copyActiveCommand() {
+      const command = state.activeCommand || "";
+      if (!command) return;
+      const copyBtn = document.querySelector("#commandCopyBtn");
+      const original = copyBtn.textContent;
+      try {
+        await navigator.clipboard.writeText(command);
+        copyBtn.textContent = "已复制";
+      } catch (_error) {
+        copyBtn.textContent = "复制失败";
+      }
+      window.setTimeout(() => {
+        copyBtn.textContent = original;
+      }, 1200);
+    }
+
+    async function downloadRunResult(runId) {
+      if (!LOCAL_API_BASE) {
+        alert("未配置本地 API，无法下载执行结果");
+        return;
+      }
+      try {
+        const response = await fetch(`${LOCAL_API_BASE}/api/perf/runs/${encodeURIComponent(runId)}/download`);
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || `下载失败（HTTP ${response.status}）`);
+        }
+        const blob = await response.blob();
+        const disposition = response.headers.get("Content-Disposition") || "";
+        const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i);
+        const rawName = decodeURIComponent(match?.[1] || match?.[2] || `${runId}.zip`);
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = rawName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        alert(error.message || String(error));
+      }
+    }
+
+    function canDownloadRunResult(run, snap) {
+      return run.status === "done" && Boolean(run.snapshot_id || snap);
     }
 
     function profToolLabel(profTool) {
@@ -583,17 +684,10 @@
       document.querySelector("#attrCuSeqlens").disabled = !enabled;
     }
 
-    function fillTriggerKernelOptions() {
-      const entries = Object.entries(OPERATOR_LABELS)
-        .filter(([id]) => id !== OTHER_RUNTIME_ID)
-        .map(([id, label]) => [id, `${label} (${id})`]);
-      fillSelect("#triggerKernel", [["", "自动（首个 kernel）"], ...entries]);
-    }
-
     async function loadData() {
       const stamp = Date.now();
       let source = "local";
-      if (hasPendingPerfRuns() && LOCAL_API_BASE) {
+      if (LOCAL_API_BASE) {
         try {
           const perfRes = await fetch(`${LOCAL_API_BASE}/api/perf`);
           if (perfRes.ok) {
@@ -601,7 +695,7 @@
             source = "local-api";
           }
         } catch {
-          // 回退到常规数据源
+          // 本地后端不可达时回退到静态快照。
         }
       }
       if (source === "local" && WORKER_API_BASE) {
@@ -768,18 +862,41 @@
         return;
       }
       const attributes = buildTriggerAttributes();
+      const requiredPositive = [
+        ["query_heads", "query-heads"],
+        ["value_heads", "value-heads"],
+        ["tokens", "tokens"],
+        ["key_dim", "key-dim"],
+        ["value_dim", "value-dim"],
+        ["chunk_size", "chunk-size"],
+      ];
+      for (const [key, label] of requiredPositive) {
+        if (!Number(attributes[key]) || Number(attributes[key]) <= 0) {
+          alert(`${label} 必须为正整数。`);
+          return;
+        }
+      }
+      if (attributes.varlen && (!Number(attributes.mean_len) || Number(attributes.mean_len) <= 0)) {
+        alert("mean-len 必须为正整数。");
+        return;
+      }
       if (document.querySelector("#triggerNotes").value.trim()) {
         attributes.notes = document.querySelector("#triggerNotes").value.trim();
+      }
+      const profTool = document.querySelector("#triggerProfTool").value;
+      const kernelName = document.querySelector("#triggerKernel").value.trim();
+      if ((profTool === "msprof_op" || profTool === "msprof_op_sim") && !kernelName) {
+        alert("请输入目标算子 / kernel 名。");
+        return;
       }
       const payload = {
         model_id: "gdn",
         chip,
         device,
-        prof_tool: document.querySelector("#triggerProfTool").value,
+        prof_tool: profTool,
         attributes,
       };
-      const kernelName = document.querySelector("#triggerKernel").value;
-      if (kernelName) {
+      if ((profTool === "msprof_op" || profTool === "msprof_op_sim") && kernelName) {
         payload.kernel_name = kernelName;
         payload.operator_id = kernelName;
       }
@@ -1509,7 +1626,6 @@
       refreshFilteredCaseSelect("net");
       setupCaseCompareUI();
       updateRunContextDisplay("net");
-      fillTriggerKernelOptions();
       updateTriggerProfToolUI();
       updateVarlenFieldsUI();
       syncTriggerDeviceFromRunner();
@@ -1980,7 +2096,7 @@
       const tbody = document.querySelector("#runRows");
       const runs = [...(state.data.runs || [])].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
       if (!runs.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty">暂无执行记录，可在左侧提交用例测试。</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="empty">暂无执行记录，可在左侧提交用例测试。</td></tr>';
         return;
       }
       tbody.innerHTML = runs.map((run) => {
@@ -1989,6 +2105,12 @@
         const command = run.command || run.message || "—";
         const shortCommand = command.length > 48 ? `${command.slice(0, 48)}…` : command;
         const scriptPath = run.script_path || "—";
+        const commandCell = command !== "—"
+          ? `<button type="button" class="perf-command-cell-btn" data-run-command="${escapeHtml(run.id)}" title="点击查看完整命令">${escapeHtml(shortCommand)}</button>`
+          : escapeHtml(shortCommand);
+        const resultCell = canDownloadRunResult(run, snap)
+          ? `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载 profiling 原始结果">下载</button>`
+          : "—";
         return `<tr>
           <td>${escapeHtml((run.created_at || "").replace("T", " ").slice(0, 19))}</td>
           <td>${escapeHtml(testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—")}</td>
@@ -1997,7 +2119,8 @@
           <td>${escapeHtml(profToolLabel(run.prof_tool || snap?.prof_tool || "msprof"))}</td>
           <td><span class="stat-pill ${run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral"}">${escapeHtml(run.status || "queued")}</span></td>
           <td>${snap ? `${snap.total_time_ms.toFixed(1)} ms` : "—"}</td>
-          <td title="${escapeHtml(command)}">${escapeHtml(shortCommand)}</td>
+          <td>${resultCell}</td>
+          <td>${commandCell}</td>
           <td>${escapeHtml(run.created_by || "—")}</td>
         </tr>`;
       }).join("");
@@ -2030,7 +2153,9 @@
     }
 
     function numberOr(value, fallback) {
-      const num = Number(value);
+      const raw = String(value ?? "").trim();
+      if (!raw) return fallback ?? null;
+      const num = Number(raw);
       return Number.isFinite(num) ? num : fallback ?? null;
     }
 

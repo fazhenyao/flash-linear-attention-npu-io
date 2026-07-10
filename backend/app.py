@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import queue
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -17,12 +18,13 @@ try:
         complete_perf_run,
         connect,
         export_all,
+        find_perf_run,
         init_db,
         list_audit_entries,
         load_perf_data,
         load_repo_state_or_seed,
         make_id,
-        now_iso,
+        recover_stale_perf_runs,
         seed_audit_if_empty,
         seed_if_empty,
         task_to_dict,
@@ -31,7 +33,7 @@ try:
         update_task,
         upsert_task,
     )
-    from .perf_runner import execute as execute_perf_test, runner_status
+    from .perf_runner import build_perf_run_download, execute as execute_perf_test, prof_tool_label, runner_status
     from .repo_store import persist_change
 except ImportError:
     from db import (  # type: ignore
@@ -42,12 +44,13 @@ except ImportError:
         complete_perf_run,
         connect,
         export_all,
+        find_perf_run,
         init_db,
         list_audit_entries,
         load_perf_data,
         load_repo_state_or_seed,
         make_id,
-        now_iso,
+        recover_stale_perf_runs,
         seed_audit_if_empty,
         seed_if_empty,
         task_to_dict,
@@ -56,11 +59,14 @@ except ImportError:
         update_task,
         upsert_task,
     )
-    from perf_runner import execute as execute_perf_test, prof_tool_label, runner_status  # type: ignore
+    from perf_runner import build_perf_run_download, execute as execute_perf_test, prof_tool_label, runner_status  # type: ignore
     from repo_store import persist_change  # type: ignore
 
 
 FRONTEND = ROOT / "frontend"
+_PERF_JOB_QUEUE: queue.Queue[tuple[str, dict]] = queue.Queue()
+_PERF_WORKER_STARTED = False
+_PERF_WORKER_LOCK = threading.Lock()
 ALLOWED_TASK_FIELDS = {
     "title",
     "scope",
@@ -130,6 +136,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(load_perf_data(conn))
             elif path == "/api/perf/runner":
                 self.send_json(runner_status())
+            elif path.startswith("/api/perf/runs/") and path.endswith("/download"):
+                run_id = path.removeprefix("/api/perf/runs/").removesuffix("/download")
+                self.download_perf_run(conn, run_id)
             elif path == "/api/tasks":
                 self.send_json(list_tasks(conn, query))
             elif path.startswith("/api/tasks/"):
@@ -174,11 +183,7 @@ class Handler(BaseHTTPRequestHandler):
                     conn.commit()
                     run = result.get("run") or {}
                     if run.get("status") == "queued":
-                        threading.Thread(
-                            target=execute_perf_run_job,
-                            args=(run["id"], payload),
-                            daemon=True,
-                        ).start()
+                        enqueue_perf_run_job(run["id"], payload)
                     self.send_json({"ok": True, **result}, status=201)
                 elif path == "/api/groups" and method == "POST":
                     self.create_group(conn, payload)
@@ -401,6 +406,31 @@ class Handler(BaseHTTPRequestHandler):
     def send_error_json(self, status: int, message: str) -> None:
         self.send_json({"ok": False, "error": message}, status)
 
+    def send_download(self, filename: str, data: bytes, content_type: str = "application/zip") -> None:
+        from urllib.parse import quote
+
+        safe_name = quote(filename)
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"; filename*=UTF-8\'\'{safe_name}')
+        self._send_cors_headers()
+        self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def download_perf_run(self, conn, run_id: str) -> None:
+        try:
+            data = load_perf_data(conn)
+            run = find_perf_run(conn, run_id)
+            if not run:
+                self.send_error_json(404, "run not found")
+                return
+            filename, payload = build_perf_run_download(run, data)
+            self.send_download(filename, payload)
+        except ValueError as exc:
+            self.send_error_json(400, str(exc))
+
 
 def list_tasks(conn, query: dict[str, list[str]]) -> list[dict]:
     where = []
@@ -444,6 +474,24 @@ def next_day(value: str) -> str:
     return (date.fromisoformat(value) + timedelta(days=1)).isoformat()
 
 
+def enqueue_perf_run_job(run_id: str, payload: dict) -> None:
+    global _PERF_WORKER_STARTED
+    with _PERF_WORKER_LOCK:
+        if not _PERF_WORKER_STARTED:
+            threading.Thread(target=_perf_run_worker, daemon=True, name="perf-run-worker").start()
+            _PERF_WORKER_STARTED = True
+    _PERF_JOB_QUEUE.put((run_id, payload))
+
+
+def _perf_run_worker() -> None:
+    while True:
+        run_id, payload = _PERF_JOB_QUEUE.get()
+        try:
+            execute_perf_run_job(run_id, payload)
+        finally:
+            _PERF_JOB_QUEUE.task_done()
+
+
 def execute_perf_run_job(run_id: str, payload: dict) -> None:
     try:
         from .db import now_iso
@@ -475,17 +523,22 @@ def execute_perf_run_job(run_id: str, payload: dict) -> None:
             snapshot=result["snapshot"],
             command=result.get("command", ""),
             message=result.get("message", "测试执行完成"),
+            prof_dir=str(result.get("prof_dir") or ""),
+            prof_source=str(result.get("prof_source") or result["snapshot"].get("prof_source") or ""),
         )
         conn.commit()
     except Exception as exc:
-        update_perf_run(
-            conn,
-            run_id,
-            status="failed",
-            finished_at=now_iso(),
-            message=str(exc),
-        )
-        conn.commit()
+        try:
+            update_perf_run(
+                conn,
+                run_id,
+                status="failed",
+                finished_at=now_iso(),
+                message=str(exc),
+            )
+            conn.commit()
+        except Exception as mark_exc:
+            print(f"[perf] failed to mark run {run_id} as failed: {mark_exc} (original: {exc})")
     finally:
         conn.close()
 
@@ -500,6 +553,10 @@ def main() -> None:
     with connect() as conn:
         init_db(conn)
         load_repo_state_or_seed(conn)
+        recovered = recover_stale_perf_runs(conn)
+        conn.commit()
+        if recovered:
+            print(f"[perf] recovered {recovered} stale run(s)")
 
     if args.init_only:
         print(f"database ready: {DB_PATH}")

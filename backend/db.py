@@ -682,7 +682,18 @@ def trigger_perf_run(conn: sqlite3.Connection, payload: dict[str, Any], created_
         from perf_runner import TRIGGER_SCRIPTS, build_command, ensure_runner_configured, load_config, resolve_npu_device  # type: ignore
 
     ensure_runner_configured()
-    return create_queued_perf_run(conn, payload, created_by, build_command(payload))
+    try:
+        from .perf_runner import normalize_attributes
+    except ImportError:
+        from perf_runner import normalize_attributes  # type: ignore
+    payload = {**payload, "attributes": normalize_attributes(payload.get("attributes"))}
+    return create_queued_perf_run(
+        conn,
+        payload,
+        created_by,
+        build_command(payload),
+        default_script_path=TRIGGER_SCRIPTS[0]["id"],
+    )
 
 
 def resolve_run_device(payload: dict[str, Any]) -> str:
@@ -716,6 +727,8 @@ def create_queued_perf_run(
     payload: dict[str, Any],
     created_by: str,
     command: str,
+    *,
+    default_script_path: str = "flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
 ) -> dict[str, Any]:
     data = load_perf_data(conn)
     case_id = str(payload.get("case_id") or "").strip()
@@ -737,7 +750,7 @@ def create_queued_perf_run(
         "device": resolve_run_device(payload),
         "attributes": payload.get("attributes") or {},
         "prof_tool": prof_tool,
-        "script_path": str(payload.get("script_path") or TRIGGER_SCRIPTS[0]["id"]),
+        "script_path": str(payload.get("script_path") or default_script_path),
         "kernel_name": payload.get("kernel_name") or "",
         "status": "queued",
         "snapshot_id": "",
@@ -775,6 +788,8 @@ def complete_perf_run(
     snapshot: dict[str, Any],
     command: str,
     message: str,
+    prof_dir: str = "",
+    prof_source: str = "",
 ) -> dict[str, Any]:
     data = load_perf_data(conn)
     for index, run in enumerate(data.get("runs", [])):
@@ -790,6 +805,8 @@ def complete_perf_run(
             "command": command,
             "prof_tool": snapshot.get("prof_tool", run.get("prof_tool", "msprof")),
             "kernel_name": snapshot.get("kernel_name", run.get("kernel_name", "")),
+            "prof_dir": prof_dir or snapshot.get("prof_dir") or run.get("prof_dir") or "",
+            "prof_source": prof_source or snapshot.get("prof_source") or run.get("prof_source") or "",
             "snapshot": snapshot,
         }
         break
@@ -804,8 +821,35 @@ def apply_imported_perf_data(conn: sqlite3.Connection, imported_data: dict[str, 
     data = load_perf_data(conn)
     data["cases"] = imported_data.get("cases", data.get("cases", []))
     data["snapshots"] = imported_data.get("snapshots", data.get("snapshots", []))
-    imported_run_ids = {item.get("id") for item in imported_data.get("runs", [])}
-    preserved_runs = [item for item in data.get("runs", []) if item.get("id") not in imported_run_ids]
-    data["runs"] = preserved_runs
+    # 仅合并 cases/snapshots；runs 由 trigger/update/complete 维护。
+    # import 脚本会原样带回 JSON 里已有的 trigger runs，若按 imported_run_ids 过滤会误删 running 记录。
     data["version"] = now_iso()
     return save_perf_data(conn, data)
+
+
+def find_perf_run(conn: sqlite3.Connection, run_id: str) -> dict[str, Any] | None:
+    data = load_perf_data(conn)
+    return next((item for item in data.get("runs", []) if item.get("id") == run_id), None)
+
+
+def recover_stale_perf_runs(
+    conn: sqlite3.Connection,
+    *,
+    reason: str = "服务重启或任务异常中断，已标记失败",
+) -> int:
+    data = load_perf_data(conn)
+    recovered = 0
+    for index, run in enumerate(data.get("runs", [])):
+        if run.get("status") not in {"running", "queued"}:
+            continue
+        data["runs"][index] = {
+            **run,
+            "status": "failed",
+            "finished_at": now_iso(),
+            "message": reason,
+        }
+        recovered += 1
+    if recovered:
+        data["version"] = now_iso()
+        save_perf_data(conn, data)
+    return recovered

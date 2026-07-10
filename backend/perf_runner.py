@@ -13,6 +13,27 @@ ROOT = Path(__file__).resolve().parents[1]
 PROF_APP_ROOT = ROOT / "data" / "prof_gdr"
 PROF_OP_ROOT = ROOT / "data" / "prof_op"
 VALID_PROF_TOOLS = {"msprof", "msprof_op", "msprof_op_sim"}
+ATTR_DEFAULTS = {
+    "batch": 1,
+    "query_heads": 32,
+    "value_heads": 32,
+    "tokens": 4087,
+    "key_dim": 128,
+    "value_dim": 128,
+    "chunk_size": 64,
+    "mean_len": 1024,
+    "dtype": "bf16",
+    "varlen": True,
+}
+
+TRIGGER_SCRIPTS = [
+    {
+        "id": "flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
+        "label": "flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
+        "remote": "examples/flash_gated_delta_rule.py",
+        "local": "ref/flash_gated_delta_rule.py",
+    },
+]
 
 TRIGGER_SCRIPTS = [
     {
@@ -87,7 +108,7 @@ def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> t
     if entry is None:
         allowed = ", ".join(item["label"] for item in TRIGGER_SCRIPTS)
         raise ValueError(f"未知脚本路径：{script_path}（可选：{allowed}）")
-    local = Path(entry["local"])
+    local = config.local_script
     if not local.is_absolute():
         local = ROOT / local
     return entry["remote"], local
@@ -212,8 +233,36 @@ def runner_status() -> dict[str, Any]:
     }
 
 
+def normalize_attributes(attributes: dict[str, Any] | None) -> dict[str, Any]:
+    attrs = dict(attributes or {})
+    for key, default in ATTR_DEFAULTS.items():
+        value = attrs.get(key)
+        if key == "dtype":
+            if not value:
+                attrs[key] = default
+            continue
+        if key == "varlen":
+            if value is None:
+                attrs[key] = default
+            continue
+        if value is None or value == "":
+            attrs[key] = default
+            continue
+        try:
+            numeric = int(value)
+        except (TypeError, ValueError):
+            attrs[key] = default
+            continue
+        if numeric <= 0:
+            attrs[key] = default
+    if attrs.get("scale") in (None, "", 0):
+        key_dim = int(attrs.get("key_dim") or ATTR_DEFAULTS["key_dim"])
+        attrs["scale"] = key_dim ** -0.5
+    return attrs
+
+
 def attributes_to_cli_args(attributes: dict[str, Any], npu_device: int) -> list[str]:
-    attrs = attributes or {}
+    attrs = normalize_attributes(attributes)
     args = ["--device", str(npu_device)]
     int_fields = {
         "batch": "--batch",
@@ -473,6 +522,78 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
         "command": command,
         "prof_tool": prof_tool,
         "prof_dir": str(prof_dir),
+        "prof_source": prof_dir.name,
         "snapshot": snapshot,
         "data": data,
     }
+
+
+def run_snapshot(run: dict[str, Any], data: dict[str, Any]) -> dict[str, Any] | None:
+    snapshot = run.get("snapshot")
+    if isinstance(snapshot, dict):
+        return snapshot
+    snapshot_id = str(run.get("snapshot_id") or "").strip()
+    if not snapshot_id:
+        return None
+    return next((item for item in data.get("snapshots", []) if item.get("id") == snapshot_id), None)
+
+
+def find_prof_dir(root: Path, prof_source: str) -> Path | None:
+    source = str(prof_source or "").strip()
+    if not source:
+        return None
+    direct = root / source
+    if direct.is_dir():
+        return direct
+    lowered = source.lower()
+    if not root.is_dir():
+        return None
+    for child in root.iterdir():
+        if child.is_dir() and child.name.lower() == lowered:
+            return child
+    return None
+
+
+def resolve_run_prof_dir(run: dict[str, Any], data: dict[str, Any]) -> Path | None:
+    stored = str(run.get("prof_dir") or "").strip()
+    if stored:
+        path = Path(stored)
+        if path.is_dir():
+            return path
+
+    snapshot = run_snapshot(run, data)
+    prof_source = str(run.get("prof_source") or (snapshot or {}).get("prof_source") or "").strip()
+    if not prof_source:
+        return None
+
+    prof_tool = str((snapshot or {}).get("prof_tool") or run.get("prof_tool") or "msprof").strip()
+    return find_prof_dir(prof_output_root(prof_tool, local=True), prof_source)
+
+
+def build_perf_run_download(run: dict[str, Any], data: dict[str, Any]) -> tuple[str, bytes]:
+    import io
+    import json
+    import zipfile
+
+    if run.get("status") != "done":
+        raise ValueError("仅已完成的执行记录可下载")
+
+    prof_dir = resolve_run_prof_dir(run, data)
+    if prof_dir is None:
+        raise ValueError("未找到对应的 profiling 输出目录")
+
+    snapshot = run_snapshot(run, data)
+    summary = {
+        "run": {key: value for key, value in run.items() if key != "snapshot"},
+        "snapshot": snapshot,
+        "prof_dir": str(prof_dir),
+    }
+    filename = f"{run.get('id', 'run')}-{prof_dir.name}.zip"
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("run-summary.json", json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
+        for path in sorted(prof_dir.rglob("*")):
+            if not path.is_file():
+                continue
+            archive.write(path, f"{prof_dir.name}/{path.relative_to(prof_dir).as_posix()}")
+    return filename, buffer.getvalue()

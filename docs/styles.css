@@ -371,6 +371,104 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 }
 .perf-varlen-fields.is-disabled { opacity:.55; }
 .perf-table { min-width:760px; }
+.perf-command-cell-btn {
+  display:block;
+  width:100%;
+  max-width:220px;
+  padding:0;
+  border:0;
+  background:none;
+  color:#2f73c8;
+  font:inherit;
+  font-size:12px;
+  font-weight:800;
+  text-align:left;
+  cursor:pointer;
+  text-decoration:underline dotted;
+  text-underline-offset:2px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.perf-command-cell-btn:hover { color:#1d5aa8; }
+.perf-download-btn {
+  min-width:52px;
+  height:28px;
+  padding:0 10px;
+  border:1px solid rgba(39,117,96,.28);
+  border-radius:999px;
+  background:#edf7f2;
+  color:#1d6a56;
+  font-size:12px;
+  font-weight:900;
+}
+.perf-download-btn:hover { background:#dff1e8; }
+.perf-command-dialog {
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:grid;
+  place-items:center;
+  padding:20px;
+}
+.perf-command-dialog.hidden { display:none; }
+.perf-command-dialog-backdrop {
+  position:absolute;
+  inset:0;
+  background:rgba(33,53,46,.35);
+}
+.perf-command-dialog-panel {
+  position:relative;
+  display:grid;
+  gap:12px;
+  width:min(92vw,820px);
+  max-height:80vh;
+  padding:16px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fffdf8;
+  box-shadow:var(--shadow);
+}
+.perf-command-dialog-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.perf-command-dialog-header h3 {
+  margin:0;
+  font-size:16px;
+  color:#21352e;
+}
+.perf-command-dialog-close {
+  width:32px;
+  min-width:32px;
+  height:32px;
+  padding:0;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:#fffaf1;
+  font-size:20px;
+  line-height:1;
+}
+.perf-command-dialog-body {
+  margin:0;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fffaf1;
+  color:#21352e;
+  font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  white-space:pre-wrap;
+  word-break:break-all;
+  overflow:auto;
+  max-height:50vh;
+}
+.perf-command-dialog-actions {
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+}
 .bottleneck-pill { display:inline-flex; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:950; }
 .bottleneck-pill.bottleneck-HBM { border:1px solid rgba(47,115,200,.28); background:#edf4ff; color:#235a9f; }
 .bottleneck-pill.bottleneck-Cube { border:1px solid rgba(39,117,96,.28); background:#e7f3ee; color:#1d6a56; }
