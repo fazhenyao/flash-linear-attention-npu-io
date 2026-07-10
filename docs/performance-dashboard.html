@@ -193,20 +193,12 @@
     <section id="tab-trigger" class="perf-tab panel">
       <div class="perf-trigger-grid">
         <div class="perf-chart-card">
-          <div class="panel-title-row"><h2>触发用例测试</h2><small>支持 msprof 整网与 msprof op 算子调优（需配置 FLASH_IO_LOCAL_API）</small></div>
+          <div class="panel-title-row"><h2>触发用例测试</h2><small>msprof或msprof op（需配置 FLASH_IO_LOCAL_API）</small></div>
           <form id="triggerForm" class="perf-form">
-            <label>用例
-              <select id="triggerCase" required></select>
-            </label>
             <label>模型
               <select id="triggerModel" required></select>
             </label>
-            <label>芯片
-              <select id="triggerChip" required>
-                <option value="A2">A2</option>
-                <option value="A3">A3</option>
-              </select>
-            </label>
+            <p id="triggerEnvHint" class="perf-trigger-env-hint">执行环境：连接后端后显示 PERF_CHIP 与默认 NPU 卡号。</p>
             <label>采集模式
               <select id="triggerProfTool">
                 <option value="msprof">msprof（整网性能）</option>
@@ -217,8 +209,9 @@
             <label id="triggerKernelWrap" class="hidden">目标算子 / kernel
               <select id="triggerKernel"></select>
             </label>
-            <label>设备
-              <input id="triggerDevice" value="722" readonly>
+            <label class="perf-form-fieldwide">NPU 卡号
+              <input id="triggerDevice" type="number" min="0" step="1" placeholder="2">
+              <span class="perf-field-hint">单次执行可覆盖默认卡号，下发为脚本 --device。</span>
             </label>
             <fieldset class="perf-attr-fieldset">
               <legend>形状/规模</legend>
@@ -239,12 +232,18 @@
             </fieldset>
             <fieldset class="perf-attr-fieldset">
               <legend>变长序列</legend>
-              <label>mean-len <input id="attrMeanLen" type="number" min="1" placeholder="1024"></label>
-              <label>cu-seqlens <input id="attrCuSeqlens" placeholder="留空则自动生成，如 0,64,128"></label>
-              <label class="perf-check-field">
-                <input id="attrVarlen" type="checkbox" checked>
-                <span>varlen</span>
+              <label class="perf-form-fieldwide">varlen
+                <span class="perf-check-field perf-check-field-compact">
+                  <input id="attrVarlen" type="checkbox" checked>
+                </span>
               </label>
+              <div id="varlenFields" class="perf-varlen-fields">
+                <label>mean-len <input id="attrMeanLen" type="number" min="1" placeholder="1024"></label>
+                <label class="perf-form-fieldwide">cu-seqlens
+                  <input id="attrCuSeqlens" placeholder="留空则自动生成">
+                  <span class="perf-field-hint">留空时：按 tokens ÷ mean-len 估算子序列条数，在均值附近生成高低交替长度，并微调使总和等于 tokens。手动填写：逗号分隔的严格递增整数，从 0 开始、以 tokens 结束，如 0,1024,2048,4087。</span>
+                </label>
+              </div>
             </fieldset>
             <label>备注 <input id="triggerNotes" placeholder="可选说明"></label>
             <button type="submit" class="primary">执行测试</button>
@@ -359,8 +358,8 @@
       document.querySelector("#loginBtn").addEventListener("click", onLogin);
       document.querySelector("#logoutBtn").addEventListener("click", onLogout);
       document.querySelector("#addModelBtn").addEventListener("click", onAddModel);
-      document.querySelector("#triggerCase").addEventListener("change", fillTriggerAttrs);
       document.querySelector("#triggerProfTool").addEventListener("change", updateTriggerProfToolUI);
+      document.querySelector("#attrVarlen").addEventListener("change", updateVarlenFieldsUI);
     }
 
     function profToolLabel(profTool) {
@@ -451,6 +450,10 @@
       const snaps = compareSnapshots(selectedCases);
       const hint = document.querySelector("#caseCompareHint");
       let text = "每次 Prof 导入为独立用例（标签含时间），选中后点「移除」可删除";
+      const filters = getCaseAttrFilters("case");
+      if (filters.length) {
+        text += " · 属性筛选已生效，仅显示匹配用例";
+      }
       if (!snaps.length) {
         hint.textContent = text;
         return;
@@ -476,10 +479,59 @@
       return "msprof 整网采集，横轴为用例、纵轴为所选指标";
     }
 
+    function syncTriggerDeviceFromRunner() {
+      const input = document.querySelector("#triggerDevice");
+      const runnerDevice = state.runner?.npu_device;
+      if (runnerDevice == null) return;
+      const current = input.value.trim();
+      const synced = state.triggerDeviceSynced == null ? "" : String(state.triggerDeviceSynced);
+      if (!current || current === "722" || current === synced) {
+        input.value = String(runnerDevice);
+        state.triggerDeviceSynced = runnerDevice;
+      }
+    }
+
+    function updateTriggerEnvFromRunner() {
+      const node = document.querySelector("#triggerEnvHint");
+      if (!node) return;
+      if (!LOCAL_API_BASE) {
+        node.textContent = "执行环境：未配置 FLASH_IO_LOCAL_API。";
+        return;
+      }
+      if (!state.runner?.enabled) {
+        node.textContent = state.runner?.error
+          ? `执行环境：${state.runner.error}`
+          : "执行环境：后端未就绪，芯片与 NPU 卡号沿用 PERF_CHIP / PERF_NPU_DEVICE。";
+        return;
+      }
+      const chip = state.runner.chip || "A2";
+      const device = state.runner.npu_device ?? "—";
+      node.textContent = `执行环境：${chip} 芯片（PERF_CHIP）· 默认 NPU ${device}（PERF_NPU_DEVICE）`;
+    }
+
+    function readTriggerDevice() {
+      const raw = document.querySelector("#triggerDevice").value.trim();
+      const fallback = state.runner?.npu_device ?? 2;
+      if (!raw) return fallback;
+      const device = Number(raw);
+      if (!Number.isInteger(device) || device < 0) {
+        throw new Error("NPU 卡号必须为非负整数。");
+      }
+      return device;
+    }
+
     function updateTriggerProfToolUI() {
       const profTool = document.querySelector("#triggerProfTool").value;
       const showKernel = profTool === "msprof_op" || profTool === "msprof_op_sim";
       document.querySelector("#triggerKernelWrap").classList.toggle("hidden", !showKernel);
+    }
+
+    function updateVarlenFieldsUI() {
+      const enabled = document.querySelector("#attrVarlen").checked;
+      const panel = document.querySelector("#varlenFields");
+      panel.classList.toggle("is-disabled", !enabled);
+      document.querySelector("#attrMeanLen").disabled = !enabled;
+      document.querySelector("#attrCuSeqlens").disabled = !enabled;
     }
 
     function fillTriggerKernelOptions() {
@@ -658,19 +710,23 @@
         alert(state.runner?.error || "真实执行环境未配置。请设置 PERF_RUN_MODE=ssh 与 PERF_SSH_HOST，或 PERF_RUN_MODE=local。");
         return;
       }
-      const caseId = document.querySelector("#triggerCase").value;
       const modelId = document.querySelector("#triggerModel").value;
-      const chip = document.querySelector("#triggerChip").value;
-      const testCase = state.data.cases.find((item) => item.id === caseId);
-      const attributes = buildTriggerAttributes(testCase);
+      const chip = state.runner?.chip || "A2";
+      let device = 2;
+      try {
+        device = readTriggerDevice();
+      } catch (error) {
+        alert(error.message || String(error));
+        return;
+      }
+      const attributes = buildTriggerAttributes();
       if (document.querySelector("#triggerNotes").value.trim()) {
         attributes.notes = document.querySelector("#triggerNotes").value.trim();
       }
       const payload = {
-        case_id: caseId,
         model_id: modelId,
         chip,
-        device: "722",
+        device,
         prof_tool: document.querySelector("#triggerProfTool").value,
         attributes,
       };
@@ -699,6 +755,7 @@
       renderAuth();
       renderMeta();
       fillFilters();
+      updateTriggerEnvFromRunner();
       renderNetworkTab();
       renderCaseTab();
       renderRuns();
@@ -713,7 +770,11 @@
       const loggedIn = Boolean(state.user);
       document.body.classList.toggle("admin-editing", isAdmin);
       let status = loggedIn ? `${state.user.username}（${state.user.role}）` : "只读模式";
-      if (LOCAL_API_BASE && state.runner?.enabled) status = `真实执行 · ${state.runner.mode}`;
+      if (LOCAL_API_BASE && state.runner?.enabled) {
+        const device = state.runner.npu_device ?? "—";
+        const chip = state.runner.chip ?? "—";
+        status = `真实执行 · ${state.runner.mode} · ${chip} · NPU ${device}`;
+      }
       else if (LOCAL_API_BASE) status = `执行未就绪 · ${state.runner?.error || "未配置 PERF_RUN_MODE"}`;
       else if (useWorkerWrite()) status = loggedIn ? status : "只读模式 · 触发测试需配置 FLASH_IO_LOCAL_API";
       else if (WORKER_API_BASE && state.dataSource === "local-fallback") status = "本地快照模式 · Worker /api/perf 未就绪";
@@ -724,8 +785,6 @@
     }
 
     function renderMeta() {
-      const snapCount = state.data.snapshots.length;
-      const runCount = state.data.runs.length;
       const sourceLabel = state.dataSource === "worker"
         ? "Cloudflare D1"
         : state.dataSource === "local-api"
@@ -733,13 +792,8 @@
           : state.dataSource === "local-fallback"
             ? "本地快照（Worker 回退）"
             : "本地快照";
-      document.querySelector("#meta").textContent = `数据来源：${sourceLabel} · 数据版本：${state.data.version || "未知"} · ${state.data.models.length} 个模型 · ${state.data.cases.length} 个用例 · ${snapCount} 条快照 · ${runCount} 次执行`;
-      document.querySelector("#summary").innerHTML = [
-        ["模型", state.data.models.length],
-        ["用例", state.data.cases.length],
-        ["快照", snapCount],
-        ["执行", runCount],
-      ].map(([label, value]) => `<div class="summary-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`).join("");
+      document.querySelector("#meta").textContent = `数据来源：${sourceLabel} · ${state.data.cases.length} 个用例`;
+      document.querySelector("#summary").innerHTML = "";
     }
 
     const CASE_ATTR_ORDER = [
@@ -766,25 +820,45 @@
       return Math.round((dim ** -0.5) * 1e6) / 1e6;
     }
 
-    function buildTriggerAttributes(testCase) {
-      const attrs = testCase?.attributes || {};
-      const keyDim = numberOr(document.querySelector("#attrKeyDim").value, attrs.key_dim);
+    const TRIGGER_ATTR_DEFAULTS = {
+      batch: 1,
+      query_heads: 32,
+      value_heads: 32,
+      tokens: 4087,
+      key_dim: 128,
+      value_dim: 128,
+      chunk_size: 64,
+      dtype: "bf16",
+      mean_len: 1024,
+      cu_seqlens: "",
+      varlen: true,
+    };
+
+    function buildTriggerAttributes() {
+      const defaults = TRIGGER_ATTR_DEFAULTS;
+      const keyDim = numberOr(document.querySelector("#attrKeyDim").value, defaults.key_dim);
       const scaleRaw = document.querySelector("#attrScale").value.trim();
-      const scale = scaleRaw ? Number(scaleRaw) : (attrs.scale ?? defaultScale(keyDim));
+      const scale = scaleRaw ? Number(scaleRaw) : defaultScale(keyDim);
       return {
-        batch: numberOr(document.querySelector("#attrBatch").value, attrs.batch),
-        query_heads: numberOr(document.querySelector("#attrQueryHeads").value, attrs.query_heads),
-        value_heads: numberOr(document.querySelector("#attrValueHeads").value, attrs.value_heads),
-        tokens: numberOr(document.querySelector("#attrTokens").value, attrs.tokens),
+        batch: numberOr(document.querySelector("#attrBatch").value, defaults.batch),
+        query_heads: numberOr(document.querySelector("#attrQueryHeads").value, defaults.query_heads),
+        value_heads: numberOr(document.querySelector("#attrValueHeads").value, defaults.value_heads),
+        tokens: numberOr(document.querySelector("#attrTokens").value, defaults.tokens),
         key_dim: keyDim,
-        value_dim: numberOr(document.querySelector("#attrValueDim").value, attrs.value_dim),
-        chunk_size: numberOr(document.querySelector("#attrChunkSize").value, attrs.chunk_size),
+        value_dim: numberOr(document.querySelector("#attrValueDim").value, defaults.value_dim),
+        chunk_size: numberOr(document.querySelector("#attrChunkSize").value, defaults.chunk_size),
         scale,
-        dtype: document.querySelector("#attrDtype").value || attrs.dtype || "bf16",
-        mean_len: numberOr(document.querySelector("#attrMeanLen").value, attrs.mean_len),
-        cu_seqlens: document.querySelector("#attrCuSeqlens").value.trim() || attrs.cu_seqlens || "",
+        dtype: document.querySelector("#attrDtype").value || defaults.dtype,
+        mean_len: numberOr(document.querySelector("#attrMeanLen").value, defaults.mean_len),
+        cu_seqlens: document.querySelector("#attrCuSeqlens").value.trim() || defaults.cu_seqlens,
         varlen: document.querySelector("#attrVarlen").checked,
       };
+    }
+
+    function formatTriggerAttrLabel(attrs) {
+      if (!attrs) return "—";
+      const varlen = attrs.varlen !== false ? "varlen" : "fixed";
+      return `B=${attrs.batch ?? "?"} QH=${attrs.query_heads ?? "?"} VH=${attrs.value_heads ?? "?"} T=${attrs.tokens ?? "?"} K=${attrs.key_dim ?? "?"} V=${attrs.value_dim ?? "?"} chunk=${attrs.chunk_size ?? "?"} ${varlen}`;
     }
 
     function normalizeAttrStoreValue(key, value) {
@@ -974,6 +1048,11 @@
         updateRunContextDisplay("net");
         renderNetworkTab();
       } else {
+        pruneCompareCasesByAttrFilters();
+        initCompareCasesIfEmpty();
+        refreshCaseCompareAddSelect();
+        renderCaseCompareList();
+        updateRunContextDisplay("case");
         renderCaseTab();
       }
     }
@@ -1108,6 +1187,21 @@
       return (state.data?.cases || []).filter((item) => item.active !== false);
     }
 
+    function caseCompareAddCandidates() {
+      const filters = getCaseAttrFilters("case");
+      return filteredCases(filters, "").filter((item) => primarySnapshotForCase(item.id));
+    }
+
+    function pruneCompareCasesByAttrFilters() {
+      const allowed = new Set(caseCompareAddCandidates().map((item) => item.id));
+      state.compareCases = (state.compareCases || []).filter((id) => allowed.has(id));
+    }
+
+    function getActiveCompareCases() {
+      const allowed = new Set(caseCompareAddCandidates().map((item) => item.id));
+      return (state.compareCases || []).filter((id) => allowed.has(id));
+    }
+
     function pruneCompareCases() {
       const valid = new Set(allCompareableCases().map((item) => item.id));
       state.compareCases = (state.compareCases || []).filter((id) => valid.has(id));
@@ -1115,18 +1209,23 @@
 
     function initCompareCasesIfEmpty() {
       if (state.compareCases?.length) return;
-      const first = allCompareableCases().find((item) => primarySnapshotForCase(item.id));
+      const first = caseCompareAddCandidates()[0];
       if (first) state.compareCases = [first.id];
     }
 
     function refreshCaseCompareAddSelect() {
-      const cases = allCompareableCases();
+      const candidates = caseCompareAddCandidates();
       const select = document.querySelector("#caseCompareAdd");
       const addBtn = document.querySelector("#caseCompareAddBtn");
       const inList = new Set(state.compareCases || []);
-      const available = cases.filter((item) => !inList.has(item.id));
+      const available = candidates.filter((item) => !inList.has(item.id));
       if (!available.length) {
-        fillSelect("#caseCompareAdd", [["", cases.length ? "已全部添加" : "无可用用例"]]);
+        const emptyLabel = candidates.length
+          ? "已全部添加"
+          : getCaseAttrFilters("case").length
+            ? "无匹配用例"
+            : "无可用用例";
+        fillSelect("#caseCompareAdd", [["", emptyLabel]]);
         select.disabled = true;
         addBtn.disabled = true;
         return;
@@ -1165,6 +1264,7 @@
 
     function setupCaseCompareUI() {
       pruneCompareCases();
+      pruneCompareCasesByAttrFilters();
       initCompareCasesIfEmpty();
       refreshCaseCompareAddSelect();
       renderCaseCompareList();
@@ -1237,17 +1337,18 @@
       refreshFilteredCaseSelect("net");
       setupCaseCompareUI();
       updateRunContextDisplay("net");
-      fillSelect("#triggerCase", state.data.cases.map((item) => [item.id, item.label]));
       fillSelect("#triggerModel", state.data.models.map((item) => [item.id, item.label]));
       fillTriggerKernelOptions();
       updateTriggerProfToolUI();
+      updateVarlenFieldsUI();
+      syncTriggerDeviceFromRunner();
+      updateTriggerEnvFromRunner();
       fillSelect("#caseOperator", operatorOptions());
       if (!document.querySelector("#caseOperator").value) document.querySelector("#caseOperator").value = operatorOptions()[0]?.[0] || "";
       syncCaseOperatorSelect(state.compareCases || []);
       updateCaseCompareHint(state.compareCases || []);
       fillSelect("#caseMetric", caseChartMetricOptions());
       if (!document.querySelector("#caseMetric").value) document.querySelector("#caseMetric").value = "mbu";
-      fillTriggerAttrs();
     }
 
     function operatorOptions() {
@@ -1261,24 +1362,6 @@
       const current = select.value;
       select.innerHTML = entries.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("");
       if ([...select.options].some((option) => option.value === current)) select.value = current;
-    }
-
-    function fillTriggerAttrs() {
-      const testCase = state.data.cases.find((item) => item.id === document.querySelector("#triggerCase").value);
-      if (!testCase) return;
-      const attrs = testCase.attributes || {};
-      document.querySelector("#attrBatch").value = attrs.batch ?? "";
-      document.querySelector("#attrQueryHeads").value = attrs.query_heads ?? "";
-      document.querySelector("#attrValueHeads").value = attrs.value_heads ?? "";
-      document.querySelector("#attrTokens").value = attrs.tokens ?? "";
-      document.querySelector("#attrKeyDim").value = attrs.key_dim ?? "";
-      document.querySelector("#attrValueDim").value = attrs.value_dim ?? "";
-      document.querySelector("#attrChunkSize").value = attrs.chunk_size ?? "";
-      document.querySelector("#attrScale").value = attrs.scale ?? "";
-      document.querySelector("#attrDtype").value = attrs.dtype || "bf16";
-      document.querySelector("#attrMeanLen").value = attrs.mean_len ?? "";
-      document.querySelector("#attrCuSeqlens").value = attrs.cu_seqlens ?? "";
-      document.querySelector("#attrVarlen").checked = attrs.varlen !== false;
     }
 
     function normalizeSnapshotOperators(snap) {
@@ -1500,7 +1583,9 @@
       else if (tools.has("msprof_op") || tools.has("msprof_op_sim")) detailHint += " · msprof op 单算子数据";
       document.querySelector("#caseDetailHint").textContent = detailHint;
       if (!selectedCases.length) {
-        host.innerHTML = '<p class="empty">请至少添加 1 个用例至对比列表。</p>';
+        host.innerHTML = getCaseAttrFilters("case").length
+          ? '<p class="empty">当前筛选条件下无匹配用例，请调整属性条件或添加用例。</p>'
+          : '<p class="empty">请至少添加 1 个用例至对比列表。</p>';
         return false;
       }
 
@@ -1560,7 +1645,7 @@
     }
 
     function renderCaseTab() {
-      const selectedCases = state.compareCases || [];
+      const selectedCases = getActiveCompareCases();
       syncCaseOperatorSelect(selectedCases);
       updateCaseCompareHint(selectedCases);
       const operatorId = document.querySelector("#caseOperator").value;
@@ -1583,7 +1668,9 @@
         destroyChart("caseMbuMfu");
         document.querySelector("#caseMetricChartHint").textContent = skipped.length
           ? `对比列表中无算子「${operatorLabel(operatorId)}」的数据`
-          : "请添加用例至对比列表";
+          : getCaseAttrFilters("case").length
+            ? "当前筛选条件下无匹配用例，请调整属性条件或添加用例"
+            : "请添加用例至对比列表";
         return;
       }
       destroyChart("caseMbuMfu");
@@ -1654,7 +1741,7 @@
         const shortCommand = command.length > 48 ? `${command.slice(0, 48)}…` : command;
         return `<tr>
           <td>${escapeHtml((run.created_at || "").replace("T", " ").slice(0, 19))}</td>
-          <td>${escapeHtml(testCase?.label || run.case_id)}</td>
+          <td>${escapeHtml(testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—")}</td>
           <td>${escapeHtml(model?.label || run.model_id)}</td>
           <td>${escapeHtml(run.chip || "")}</td>
           <td>${escapeHtml(profToolLabel(run.prof_tool || snap?.prof_tool || "msprof"))}</td>

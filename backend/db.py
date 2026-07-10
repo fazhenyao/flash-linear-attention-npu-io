@@ -677,12 +677,38 @@ def add_perf_model(conn: sqlite3.Connection, model: dict[str, Any]) -> dict[str,
 
 def trigger_perf_run(conn: sqlite3.Connection, payload: dict[str, Any], created_by: str = "backend") -> dict[str, Any]:
     try:
-        from .perf_runner import build_command, ensure_runner_configured
+        from .perf_runner import build_command, ensure_runner_configured, load_config, resolve_npu_device
     except ImportError:
-        from perf_runner import build_command, ensure_runner_configured  # type: ignore
+        from perf_runner import build_command, ensure_runner_configured, load_config, resolve_npu_device  # type: ignore
 
     ensure_runner_configured()
     return create_queued_perf_run(conn, payload, created_by, build_command(payload))
+
+
+def resolve_run_device(payload: dict[str, Any]) -> str:
+    try:
+        try:
+            from .perf_runner import load_config, resolve_npu_device
+        except ImportError:
+            from perf_runner import load_config, resolve_npu_device  # type: ignore
+        return str(resolve_npu_device(payload, load_config()))
+    except (ImportError, ValueError, TypeError):
+        raw = payload.get("device")
+        if raw is not None and str(raw).strip() != "":
+            return str(int(raw))
+        return "2"
+
+
+def resolve_run_chip(payload: dict[str, Any]) -> str:
+    try:
+        try:
+            from .perf_runner import load_config, resolve_chip
+        except ImportError:
+            from perf_runner import load_config, resolve_chip  # type: ignore
+        return resolve_chip(payload, load_config())
+    except (ImportError, ValueError, TypeError):
+        raw = str(payload.get("chip") or "").strip().upper()
+        return raw if raw in {"A2", "A3"} else "A2"
 
 
 def create_queued_perf_run(
@@ -692,12 +718,12 @@ def create_queued_perf_run(
     command: str,
 ) -> dict[str, Any]:
     data = load_perf_data(conn)
-    case_id = payload.get("case_id")
+    case_id = str(payload.get("case_id") or "").strip()
     model_id = payload.get("model_id")
-    chip = payload.get("chip") or "A2"
+    chip = resolve_run_chip(payload)
     if chip not in {"A2", "A3"}:
         raise ValueError("chip must be A2 or A3")
-    if not any(item.get("id") == case_id for item in data["cases"]):
+    if case_id and not any(item.get("id") == case_id for item in data["cases"]):
         raise ValueError("case not found")
     if not any(item.get("id") == model_id for item in data["models"]):
         raise ValueError("model not found")
@@ -708,7 +734,7 @@ def create_queued_perf_run(
         "case_id": case_id,
         "model_id": model_id,
         "chip": chip,
-        "device": payload.get("device") or "722",
+        "device": resolve_run_device(payload),
         "attributes": payload.get("attributes") or {},
         "prof_tool": prof_tool,
         "kernel_name": payload.get("kernel_name") or "",

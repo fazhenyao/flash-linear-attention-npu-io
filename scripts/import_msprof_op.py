@@ -248,6 +248,7 @@ def import_msprof_op(
     kernel_name: str | None = None,
     operator_id: str | None = None,
     prof_tool: str = "msprof_op",
+    device_id: int = 2,
 ) -> dict[str, Any]:
     prof_dir = prof_dir.resolve()
     if not prof_dir.exists():
@@ -298,7 +299,7 @@ def import_msprof_op(
         "prof_source": prof_dir.name,
         "prof_tool": prof_tool,
         "kernel_name": resolved_kernel,
-        "device_id": 2,
+        "device_id": device_id,
         "operators": [operator],
     }
 

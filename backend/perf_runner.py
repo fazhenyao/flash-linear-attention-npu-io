@@ -26,6 +26,7 @@ class PerfRunnerConfig:
     remote_script: str
     local_script: Path
     npu_device: int
+    chip: str
     prof_output_app: str
     prof_output_op: str
     soc_version: str
@@ -60,6 +61,7 @@ def load_config() -> PerfRunnerConfig:
         remote_script=os.environ.get("PERF_REMOTE_SCRIPT", "").strip() or "examples/flash_gated_delta_rule.py",
         local_script=Path(os.environ.get("PERF_LOCAL_SCRIPT", "ref/flash_gated_delta_rule.py")),
         npu_device=int(os.environ.get("PERF_NPU_DEVICE", "2")),
+        chip=os.environ.get("PERF_CHIP", "").strip().upper() or "A2",
         prof_output_app=os.environ.get("PERF_PROF_OUTPUT", "./prof_gdr").strip() or "./prof_gdr",
         prof_output_op=os.environ.get("PERF_OP_OUTPUT", "./prof_op").strip() or "./prof_op",
         soc_version=os.environ.get("PERF_SOC_VERSION", "").strip() or "Ascend910B",
@@ -90,6 +92,30 @@ def prof_tool_label(prof_tool: str) -> str:
         "msprof_op": "msprof op（算子）",
         "msprof_op_sim": "msprof op simulator（仿真）",
     }.get(prof_tool, prof_tool)
+
+
+def resolve_npu_device(payload: dict[str, Any], config: PerfRunnerConfig | None = None) -> int:
+    raw = payload.get("device")
+    if raw is not None and str(raw).strip() != "":
+        device = int(raw)
+        if device < 0:
+            raise ValueError("device must be a non-negative integer")
+        return device
+    config = config or load_config()
+    return config.npu_device
+
+
+def resolve_chip(payload: dict[str, Any], config: PerfRunnerConfig | None = None) -> str:
+    raw = str(payload.get("chip") or "").strip().upper()
+    if raw:
+        if raw not in {"A2", "A3"}:
+            raise ValueError("chip must be A2 or A3")
+        return raw
+    config = config or load_config()
+    chip = str(config.chip or "A2").strip().upper()
+    if chip not in {"A2", "A3"}:
+        raise ValueError("PERF_CHIP must be A2 or A3")
+    return chip
 
 
 def ensure_runner_configured() -> PerfRunnerConfig:
@@ -148,6 +174,7 @@ def runner_status() -> dict[str, Any]:
         "remote_workdir": config.remote_workdir if config.mode == "ssh" else None,
         "local_script": str(config.local_script) if config.mode == "local" else None,
         "npu_device": config.npu_device,
+        "chip": config.chip,
         "soc_version": config.soc_version,
         "example_command_msprof": build_command(payload) if enabled else None,
         "example_command_msprof_op": build_command(payload_op) if enabled else None,
@@ -211,7 +238,7 @@ def build_command(payload: dict[str, Any]) -> str:
     prof_tool = normalize_prof_tool(payload)
     attrs = payload.get("attributes") or {}
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
-    py_args = attributes_to_cli_args(attrs, config.npu_device)
+    py_args = attributes_to_cli_args(attrs, resolve_npu_device(payload, config))
     output = str(prof_output_root(prof_tool, local=False))
     script = config.remote_script
     invocation = build_prof_invocation(
@@ -320,12 +347,13 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             "dry_run": True,
         }
 
-    chip = payload.get("chip") or "A2"
+    chip = resolve_chip(payload, config)
     model_id = payload.get("model_id") or "gdn"
     attrs = payload.get("attributes") or {}
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
     operator_id = str(payload.get("operator_id") or "").strip() or None
-    py_args = attributes_to_cli_args(attrs, config.npu_device)
+    npu_device = resolve_npu_device(payload, config)
+    py_args = attributes_to_cli_args(attrs, npu_device)
     local_root = prof_output_root(prof_tool, local=True)
     remote_output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
 
@@ -381,7 +409,7 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
 
     if prof_tool == "msprof":
         import_module = _import_module("import_prof_gdr.py")
-        data = import_module.import_prof(prof_dir, model_id, chip, replace_mock=False)
+        data = import_module.import_prof(prof_dir, model_id, chip, replace_mock=False, device_id=npu_device)
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
         snapshot["prof_tool"] = prof_tool
     else:
@@ -394,6 +422,7 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             kernel_name=kernel_name,
             operator_id=operator_id,
             prof_tool=prof_tool,
+            device_id=npu_device,
         )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
 

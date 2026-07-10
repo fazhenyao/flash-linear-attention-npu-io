@@ -293,8 +293,30 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-trigger-grid { display:grid; grid-template-columns:minmax(280px,420px) 1fr; gap:14px; }
 .perf-form { display:grid; gap:10px; }
 .perf-form label { display:grid; gap:5px; font-size:12px; font-weight:900; color:#5f564a; }
+.perf-form-fieldwide { grid-column:1 / -1; }
+.perf-field-hint { color:#8a7a67; font-size:11px; font-weight:700; line-height:1.45; }
+.perf-trigger-env-hint {
+  margin:0;
+  padding:8px 10px;
+  border:1px solid rgba(184,117,8,.18);
+  border-radius:10px;
+  background:#fff8eb;
+  color:#6f5a3f;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.45;
+}
 .perf-attr-fieldset { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fffdf8; }
 .perf-attr-fieldset legend { padding:0 6px; color:#87570a; font-size:12px; font-weight:950; }
+.perf-attr-fieldset .perf-check-field { width:100%; box-sizing:border-box; }
+.perf-check-field-compact { width:auto; min-width:34px; justify-content:center; }
+.perf-varlen-fields {
+  grid-column:1 / -1;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.perf-varlen-fields.is-disabled { opacity:.55; }
 .perf-table { min-width:760px; }
 .bottleneck-pill { display:inline-flex; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:950; }
 .bottleneck-pill.bottleneck-HBM { border:1px solid rgba(47,115,200,.28); background:#edf4ff; color:#235a9f; }

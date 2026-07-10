@@ -394,6 +394,8 @@ def build_snapshot(
     statistic_ops: list[dict[str, Any]],
     summary_metrics: dict[str, dict[str, Any]],
     total_ms: float,
+    *,
+    device_id: int = 2,
 ) -> dict[str, Any]:
     snapshot_date, created_at = parse_prof_timestamp(prof_dir)
     operators = []
@@ -430,12 +432,19 @@ def build_snapshot(
         "status": "done",
         "created_at": created_at,
         "prof_source": prof_dir.name,
-        "device_id": 2,
+        "device_id": device_id,
         "operators": operators,
     }
 
 
-def import_prof(prof_dir: Path, model_id: str, chip: str, replace_mock: bool = False) -> dict[str, Any]:
+def import_prof(
+    prof_dir: Path,
+    model_id: str,
+    chip: str,
+    replace_mock: bool = False,
+    *,
+    device_id: int = 2,
+) -> dict[str, Any]:
     prof_dir = prof_dir.resolve()
     if not prof_dir.exists():
         raise FileNotFoundError(prof_dir)
@@ -445,7 +454,9 @@ def import_prof(prof_dir: Path, model_id: str, chip: str, replace_mock: bool = F
     case = infer_case_from_summary(summary_rows, prof_dir)
     statistic_ops, total_ms = aggregate_statistic_rows(statistic_rows)
     summary_metrics = aggregate_summary_metrics(summary_rows)
-    snapshot = build_snapshot(prof_dir, model_id, chip, case, statistic_ops, summary_metrics, total_ms)
+    snapshot = build_snapshot(
+        prof_dir, model_id, chip, case, statistic_ops, summary_metrics, total_ms, device_id=device_id,
+    )
 
     data = load_perf_data()
     upsert_case(data, case)
@@ -463,7 +474,7 @@ def import_prof(prof_dir: Path, model_id: str, chip: str, replace_mock: bool = F
         "case_id": case["id"],
         "model_id": model_id,
         "chip": chip,
-        "device": str(snapshot.get("device_id", "722")),
+        "device": str(snapshot.get("device_id", device_id)),
         "attributes": case.get("attributes", {}),
         "status": "done",
         "snapshot_id": snapshot["id"],
