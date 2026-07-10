@@ -160,7 +160,7 @@
             <button type="button" class="perf-compare-remove-btn" id="caseCompareRemoveBtn">移除</button>
             <button type="button" class="perf-compare-clear-btn" id="caseCompareClearBtn">清空</button>
           </div>
-          <small class="perf-compare-hint">每次 Prof 导入为独立用例（标签含时间），选中后点「移除」可删除</small>
+          <small id="caseCompareHint" class="perf-compare-hint">每次 Prof 导入为独立用例（标签含时间），选中后点「移除」可删除</small>
           <div id="caseRunContext" class="perf-run-context hidden">
             <p class="perf-filter-subtitle">运行环境</p>
             <p class="perf-run-context-text">—</p>
@@ -193,7 +193,7 @@
     <section id="tab-trigger" class="perf-tab panel">
       <div class="perf-trigger-grid">
         <div class="perf-chart-card">
-          <div class="panel-title-row"><h2>触发用例测试</h2><small>通过本地 IO 后端下发 msprof 真实命令（需配置 FLASH_IO_LOCAL_API）</small></div>
+          <div class="panel-title-row"><h2>触发用例测试</h2><small>支持 msprof 整网与 msprof op 算子调优（需配置 FLASH_IO_LOCAL_API）</small></div>
           <form id="triggerForm" class="perf-form">
             <label>用例
               <select id="triggerCase" required></select>
@@ -206,6 +206,16 @@
                 <option value="A2">A2</option>
                 <option value="A3">A3</option>
               </select>
+            </label>
+            <label>采集模式
+              <select id="triggerProfTool">
+                <option value="msprof">msprof（整网性能）</option>
+                <option value="msprof_op">msprof op（算子调优）</option>
+                <option value="msprof_op_sim">msprof op simulator（仿真）</option>
+              </select>
+            </label>
+            <label id="triggerKernelWrap" class="hidden">目标算子 / kernel
+              <select id="triggerKernel"></select>
             </label>
             <label>设备
               <input id="triggerDevice" value="722" readonly>
@@ -250,6 +260,7 @@
                   <th>用例</th>
                   <th>模型</th>
                   <th>芯片</th>
+                  <th>采集</th>
                   <th>状态</th>
                   <th>总耗时</th>
                   <th>命令</th>
@@ -349,6 +360,133 @@
       document.querySelector("#logoutBtn").addEventListener("click", onLogout);
       document.querySelector("#addModelBtn").addEventListener("click", onAddModel);
       document.querySelector("#triggerCase").addEventListener("change", fillTriggerAttrs);
+      document.querySelector("#triggerProfTool").addEventListener("change", updateTriggerProfToolUI);
+    }
+
+    function profToolLabel(profTool) {
+      return ({
+        msprof: "msprof 整网",
+        msprof_op: "msprof op",
+        msprof_op_sim: "msprof op 仿真",
+      })[profTool] || profTool || "msprof 整网";
+    }
+
+    function snapshotProfTool(snap) {
+      return snap?.prof_tool || "msprof";
+    }
+
+    function isOpProfSnapshot(snap) {
+      const tool = snapshotProfTool(snap);
+      return tool === "msprof_op" || tool === "msprof_op_sim";
+    }
+
+    function isMsprofSnapshot(snap) {
+      return Boolean(snap) && snapshotProfTool(snap) === "msprof";
+    }
+
+    function caseEligibleForNetworkTab(caseId) {
+      return isMsprofSnapshot(primarySnapshotForCase(caseId));
+    }
+
+    function networkCases(filters, caseId) {
+      return filteredCases(filters, caseId).filter((item) => caseEligibleForNetworkTab(item.id));
+    }
+
+    function compareSnapshots(selectedCases) {
+      return (selectedCases || [])
+        .map((caseId) => primarySnapshotForCase(caseId))
+        .filter(Boolean);
+    }
+
+    function operatorIdsForCompareCases(selectedCases) {
+      const counts = new Map();
+      compareSnapshots(selectedCases).forEach((snap) => {
+        (snap.operators || []).forEach((item) => {
+          counts.set(item.operator_id, (counts.get(item.operator_id) || 0) + 1);
+        });
+      });
+      return counts;
+    }
+
+    function syncCaseOperatorSelect(selectedCases) {
+      const snaps = compareSnapshots(selectedCases);
+      const select = document.querySelector("#caseOperator");
+      if (!snaps.length) {
+        select.disabled = false;
+        return;
+      }
+
+      const operatorCounts = operatorIdsForCompareCases(selectedCases);
+      const operatorEntries = [...operatorCounts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([id]) => [id, operatorLabel(id)]);
+
+      const opSnaps = snaps.filter(isOpProfSnapshot);
+      const allOpOnly = opSnaps.length === snaps.length;
+      const opOperatorIds = opSnaps
+        .map((snap) => snap.operators?.[0]?.operator_id)
+        .filter(Boolean);
+      const sameOpKernel = opOperatorIds.length > 0 && new Set(opOperatorIds).size === 1;
+
+      let preferred = "";
+      if (allOpOnly && sameOpKernel) {
+        preferred = opOperatorIds[0];
+      } else if (opSnaps.length === 1 && opSnaps[0].operators?.length === 1) {
+        preferred = opSnaps[0].operators[0].operator_id;
+      } else {
+        const shared = [...operatorCounts.entries()].filter(([, count]) => count === snaps.length).map(([id]) => id);
+        if (shared.length === 1) preferred = shared[0];
+      }
+
+      fillSelect("#caseOperator", operatorEntries.length ? operatorEntries : operatorOptions());
+      if (preferred && [...select.options].some((option) => option.value === preferred)) {
+        select.value = preferred;
+      } else if (![...select.options].some((option) => option.value === select.value)) {
+        select.value = select.options[0]?.value || "";
+      }
+      select.disabled = allOpOnly && sameOpKernel;
+    }
+
+    function updateCaseCompareHint(selectedCases) {
+      const snaps = compareSnapshots(selectedCases);
+      const hint = document.querySelector("#caseCompareHint");
+      let text = "每次 Prof 导入为独立用例（标签含时间），选中后点「移除」可删除";
+      if (!snaps.length) {
+        hint.textContent = text;
+        return;
+      }
+      const tools = new Set(snaps.map(snapshotProfTool));
+      if (tools.size > 1) {
+        text += " · 对比列表含 msprof 整网与 msprof op 单算子数据，仅比较共有算子";
+      } else if (tools.has("msprof_op") || tools.has("msprof_op_sim")) {
+        text += " · 当前对比为 msprof op 单算子调优数据，算子选择已锁定";
+      }
+      hint.textContent = text;
+    }
+
+    function caseMetricChartHintText(rows, selectedCases) {
+      const snaps = compareSnapshots(selectedCases);
+      const tools = new Set(snaps.map(snapshotProfTool));
+      if (tools.size > 1) {
+        return "含整网与单算子采集，对比仅供参考；仅展示所选算子在各用例中的指标";
+      }
+      if (tools.has("msprof_op") || tools.has("msprof_op_sim")) {
+        return "msprof op 单算子采集，横轴为用例、纵轴为所选指标";
+      }
+      return "msprof 整网采集，横轴为用例、纵轴为所选指标";
+    }
+
+    function updateTriggerProfToolUI() {
+      const profTool = document.querySelector("#triggerProfTool").value;
+      const showKernel = profTool === "msprof_op" || profTool === "msprof_op_sim";
+      document.querySelector("#triggerKernelWrap").classList.toggle("hidden", !showKernel);
+    }
+
+    function fillTriggerKernelOptions() {
+      const entries = Object.entries(OPERATOR_LABELS)
+        .filter(([id]) => id !== OTHER_RUNTIME_ID)
+        .map(([id, label]) => [id, `${label} (${id})`]);
+      fillSelect("#triggerKernel", [["", "自动（首个 kernel）"], ...entries]);
     }
 
     async function loadData() {
@@ -528,7 +666,19 @@
       if (document.querySelector("#triggerNotes").value.trim()) {
         attributes.notes = document.querySelector("#triggerNotes").value.trim();
       }
-      const payload = { case_id: caseId, model_id: modelId, chip, device: "722", attributes };
+      const payload = {
+        case_id: caseId,
+        model_id: modelId,
+        chip,
+        device: "722",
+        prof_tool: document.querySelector("#triggerProfTool").value,
+        attributes,
+      };
+      const kernelName = document.querySelector("#triggerKernel").value;
+      if (kernelName) {
+        payload.kernel_name = kernelName;
+        payload.operator_id = kernelName;
+      }
       try {
         const result = await localPost("/api/perf/runs", payload);
         state.data = result.data || state.data;
@@ -804,7 +954,9 @@
       const filters = getCaseAttrFilters(prefix);
       const container = document.querySelector(chipsId);
       if (!filters.length) {
-        container.innerHTML = '<span class="perf-attr-empty">未添加条件，显示全部用例</span>';
+        container.innerHTML = prefix === "net"
+          ? '<span class="perf-attr-empty">未添加条件，显示全部 msprof 用例</span>'
+          : '<span class="perf-attr-empty">未添加条件，显示全部用例</span>';
         return;
       }
       container.innerHTML = filters.map((filter, index) => `
@@ -910,7 +1062,9 @@
         `日期：${snap.label}`,
         `模型：${model?.label || snap.model_id}`,
         `芯片：${snap.chip}`,
+        `采集：${profToolLabel(snapshotProfTool(snap))}`,
       ];
+      if (snap.kernel_name) parts.push(`Kernel：${snap.kernel_name}`);
       if (snap.prof_source) parts.push(`Prof：${snap.prof_source}`);
       return parts.join("\n");
     }
@@ -1054,12 +1208,12 @@
 
     function refreshFilteredCaseSelect(prefix) {
       const caseSelector = "#netCase";
-      const candidates = filteredCases(getCaseAttrFilters(prefix), "");
+      const candidates = networkCases(getCaseAttrFilters(prefix), "");
       const select = document.querySelector(caseSelector);
       const current = select.value;
       const entries = candidates.map((item) => [item.id, item.label]);
       if (!candidates.length) {
-        fillSelect(caseSelector, [["", "无匹配用例"]]);
+        fillSelect(caseSelector, [["", "无 msprof 用例"]]);
         select.disabled = true;
         select.value = "";
         updateRunContextDisplay("net");
@@ -1085,8 +1239,12 @@
       updateRunContextDisplay("net");
       fillSelect("#triggerCase", state.data.cases.map((item) => [item.id, item.label]));
       fillSelect("#triggerModel", state.data.models.map((item) => [item.id, item.label]));
+      fillTriggerKernelOptions();
+      updateTriggerProfToolUI();
       fillSelect("#caseOperator", operatorOptions());
       if (!document.querySelector("#caseOperator").value) document.querySelector("#caseOperator").value = operatorOptions()[0]?.[0] || "";
+      syncCaseOperatorSelect(state.compareCases || []);
+      updateCaseCompareHint(state.compareCases || []);
       fillSelect("#caseMetric", caseChartMetricOptions());
       if (!document.querySelector("#caseMetric").value) document.querySelector("#caseMetric").value = "mbu";
       fillTriggerAttrs();
@@ -1144,7 +1302,7 @@
       const caseId = document.querySelector("#netCase").value;
       if (!caseId) return null;
       const filters = getCaseAttrFilters("net");
-      if (!filteredCases(filters, caseId).some((item) => item.id === caseId)) return null;
+      if (!networkCases(filters, caseId).some((item) => item.id === caseId)) return null;
       return normalizeSnapshotOperators(primarySnapshotForCase(caseId));
     }
 
@@ -1164,7 +1322,7 @@
       if (!snap) {
         totalNode.textContent = "无匹配数据";
         center.innerHTML = "";
-        legend.innerHTML = '<p class="empty">当前筛选条件下没有性能快照。</p>';
+        legend.innerHTML = '<p class="empty">当前筛选条件下没有 msprof 整网快照。</p>';
         destroyChart("networkPie");
         destroyChart("networkCompare");
         document.querySelector("#networkComparePick").innerHTML = "";
@@ -1335,8 +1493,12 @@
     function renderCaseDetailTables(operatorId, selectedCases) {
       const host = document.querySelector("#caseDetailTables");
       const operatorName = operatorLabel(operatorId);
-      document.querySelector("#caseDetailHint").textContent =
-        `算子：${operatorName} · 相同用例属性合并为一张表，列头为各次 Prof 时间`;
+      const snaps = compareSnapshots(selectedCases);
+      const tools = new Set(snaps.map(snapshotProfTool));
+      let detailHint = `算子：${operatorName} · 相同用例属性合并为一张表，列头为各次 Prof 时间`;
+      if (tools.size > 1) detailHint += " · 含整网与单算子采集";
+      else if (tools.has("msprof_op") || tools.has("msprof_op_sim")) detailHint += " · msprof op 单算子数据";
+      document.querySelector("#caseDetailHint").textContent = detailHint;
       if (!selectedCases.length) {
         host.innerHTML = '<p class="empty">请至少添加 1 个用例至对比列表。</p>';
         return false;
@@ -1355,7 +1517,10 @@
           .sort((a, b) => String(a.snap.created_at || "").localeCompare(String(b.snap.created_at || "")));
         if (!columns.length) return;
 
-        const header = columns.map(({ time }) => `<th>${escapeHtml(time)}</th>`).join("");
+        const header = columns.map(({ snap, time }) => {
+          const tag = isOpProfSnapshot(snap) ? ` · ${profToolLabel(snapshotProfTool(snap))}` : "";
+          return `<th>${escapeHtml(time + tag)}</th>`;
+        }).join("");
         const body = CASE_DETAIL_METRICS.map((spec) => {
           const cells = columns.map(({ metric }) => `<td>${formatCaseDetailValue(metric, spec)}</td>`).join("");
           return `<tr><th scope="row">${escapeHtml(spec.label)}</th>${cells}</tr>`;
@@ -1383,7 +1548,11 @@
       });
 
       if (!sections.length) {
-        host.innerHTML = '<p class="empty">所选用例在当前算子下没有性能数据。</p>';
+        const hasOp = snaps.some(isOpProfSnapshot);
+        const suffix = hasOp
+          ? "msprof op 用例仅包含其 profiled 算子，请切换算子或调整对比列表。"
+          : "请切换算子或调整对比列表。";
+        host.innerHTML = `<p class="empty">所选用例在当前算子下没有性能数据。${suffix}</p>`;
         return false;
       }
       host.innerHTML = sections.join("");
@@ -1391,21 +1560,30 @@
     }
 
     function renderCaseTab() {
-      const operatorId = document.querySelector("#caseOperator").value;
       const selectedCases = state.compareCases || [];
+      syncCaseOperatorSelect(selectedCases);
+      updateCaseCompareHint(selectedCases);
+      const operatorId = document.querySelector("#caseOperator").value;
       renderCaseDetailTables(operatorId, selectedCases);
       const rows = [];
+      const skipped = [];
       selectedCases.forEach((caseId) => {
         const testCase = state.data.cases.find((item) => item.id === caseId);
         if (!testCase) return;
         const snap = primarySnapshotForCase(caseId);
         if (!snap) return;
         const metric = (snap.operators || []).find((item) => item.operator_id === operatorId);
-        if (!metric) return;
+        if (!metric) {
+          skipped.push(testCase.label);
+          return;
+        }
         rows.push({ snap, testCase, metric });
       });
       if (!rows.length) {
         destroyChart("caseMbuMfu");
+        document.querySelector("#caseMetricChartHint").textContent = skipped.length
+          ? `对比列表中无算子「${operatorLabel(operatorId)}」的数据`
+          : "请添加用例至对比列表";
         return;
       }
       destroyChart("caseMbuMfu");
@@ -1413,7 +1591,9 @@
       const metricSpec = findCaseMetricSpec(metricKey);
       const colors = caseMetricChartColors(metricKey);
       document.querySelector("#caseMetricChartTitle").textContent = `${metricSpec.label} 对比`;
-      document.querySelector("#caseMetricChartHint").textContent = "每个用例对应一次 Prof，横轴为用例、纵轴为所选指标";
+      let chartHint = caseMetricChartHintText(rows, selectedCases);
+      if (skipped.length) chartHint += ` · ${skipped.length} 个用例无该算子数据已跳过`;
+      document.querySelector("#caseMetricChartHint").textContent = chartHint;
       state.charts.caseMbuMfu = new Chart(document.querySelector("#caseMbuMfu"), {
         type: "line",
         data: {
@@ -1443,7 +1623,17 @@
           },
           plugins: {
             legend: { display: false },
-            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${pct(ctx.parsed.y)}` } },
+            tooltip: {
+              callbacks: {
+                title: (items) => {
+                  const row = rows[items[0]?.dataIndex];
+                  if (!row) return items[0]?.label || "";
+                  const tool = profToolLabel(snapshotProfTool(row.snap));
+                  return `${row.testCase.label}（${tool}）`;
+                },
+                label: (ctx) => `${ctx.dataset.label}: ${pct(ctx.parsed.y)}`,
+              },
+            },
           },
         },
       });
@@ -1453,7 +1643,7 @@
       const tbody = document.querySelector("#runRows");
       const runs = [...(state.data.runs || [])].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
       if (!runs.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无执行记录，可在左侧提交用例测试。</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">暂无执行记录，可在左侧提交用例测试。</td></tr>';
         return;
       }
       tbody.innerHTML = runs.map((run) => {
@@ -1467,6 +1657,7 @@
           <td>${escapeHtml(testCase?.label || run.case_id)}</td>
           <td>${escapeHtml(model?.label || run.model_id)}</td>
           <td>${escapeHtml(run.chip || "")}</td>
+          <td>${escapeHtml(profToolLabel(run.prof_tool || snap?.prof_tool || "msprof"))}</td>
           <td><span class="stat-pill ${run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral"}">${escapeHtml(run.status || "queued")}</span></td>
           <td>${snap ? `${snap.total_time_ms.toFixed(1)} ms` : "—"}</td>
           <td title="${escapeHtml(command)}">${escapeHtml(shortCommand)}</td>

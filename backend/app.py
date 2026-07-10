@@ -56,7 +56,7 @@ except ImportError:
         update_task,
         upsert_task,
     )
-    from perf_runner import execute as execute_perf_test, runner_status  # type: ignore
+    from perf_runner import execute as execute_perf_test, prof_tool_label, runner_status  # type: ignore
     from repo_store import persist_change  # type: ignore
 
 
@@ -453,7 +453,8 @@ def execute_perf_run_job(run_id: str, payload: dict) -> None:
     conn = connect()
     try:
         init_db(conn)
-        update_perf_run(conn, run_id, status="running", message="正在执行 msprof…")
+        prof_tool = str(payload.get("prof_tool") or "msprof")
+        update_perf_run(conn, run_id, status="running", message=f"正在执行 {prof_tool_label(prof_tool)}…")
         conn.commit()
         result = execute_perf_test(payload)
         if result.get("dry_run"):

@@ -19,17 +19,20 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--payload", type=Path, help="JSON payload file from performance dashboard trigger")
     parser.add_argument("--chip", default="A2", choices=["A2", "A3"])
     parser.add_argument("--model", default="gdn")
+    parser.add_argument("--prof-tool", default="msprof", choices=["msprof", "msprof_op", "msprof_op_sim"])
+    parser.add_argument("--kernel-name", default="")
     parser.add_argument("--status", action="store_true", help="Print runner configuration and exit")
     parser.add_argument("--dry-run", action="store_true", help="Only print the command")
     return parser.parse_args()
 
 
-def default_payload(chip: str, model: str) -> dict:
+def default_payload(chip: str, model: str, prof_tool: str = "msprof") -> dict:
     return {
         "case_id": "manual",
         "model_id": model,
         "chip": chip,
         "device": "722",
+        "prof_tool": prof_tool,
         "attributes": {
             "batch": 1,
             "query_heads": 32,
@@ -55,7 +58,10 @@ def main() -> int:
         import os
 
         os.environ["PERF_RUN_DRY_RUN"] = "1"
-    payload = default_payload(args.chip, args.model)
+    payload = default_payload(args.chip, args.model, args.prof_tool)
+    if args.kernel_name:
+        payload["kernel_name"] = args.kernel_name
+        payload["operator_id"] = args.kernel_name
     if args.payload:
         payload = json.loads(args.payload.read_text(encoding="utf-8"))
     print("Command:")

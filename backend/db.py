@@ -702,6 +702,7 @@ def create_queued_perf_run(
     if not any(item.get("id") == model_id for item in data["models"]):
         raise ValueError("model not found")
     timestamp = now_iso()
+    prof_tool = str(payload.get("prof_tool") or "msprof").strip()
     run = {
         "id": make_id("run"),
         "case_id": case_id,
@@ -709,12 +710,14 @@ def create_queued_perf_run(
         "chip": chip,
         "device": payload.get("device") or "722",
         "attributes": payload.get("attributes") or {},
+        "prof_tool": prof_tool,
+        "kernel_name": payload.get("kernel_name") or "",
         "status": "queued",
         "snapshot_id": "",
         "created_by": created_by,
         "created_at": timestamp,
         "finished_at": "",
-        "message": "已排队，等待执行 msprof",
+        "message": f"已排队，等待执行 {prof_tool}",
         "command": command,
     }
     data["runs"].insert(0, run)
@@ -758,6 +761,8 @@ def complete_perf_run(
             "finished_at": now_iso(),
             "message": message,
             "command": command,
+            "prof_tool": snapshot.get("prof_tool", run.get("prof_tool", "msprof")),
+            "kernel_name": snapshot.get("kernel_name", run.get("kernel_name", "")),
             "snapshot": snapshot,
         }
         break

@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-PROF_GDR_ROOT = ROOT / "data" / "prof_gdr"
+PROF_APP_ROOT = ROOT / "data" / "prof_gdr"
+PROF_OP_ROOT = ROOT / "data" / "prof_op"
+VALID_PROF_TOOLS = {"msprof", "msprof_op", "msprof_op_sim"}
 
 
 @dataclass
@@ -24,7 +26,9 @@ class PerfRunnerConfig:
     remote_script: str
     local_script: Path
     npu_device: int
-    prof_output: str
+    prof_output_app: str
+    prof_output_op: str
+    soc_version: str
     dry_run: bool
 
 
@@ -56,9 +60,36 @@ def load_config() -> PerfRunnerConfig:
         remote_script=os.environ.get("PERF_REMOTE_SCRIPT", "").strip() or "examples/flash_gated_delta_rule.py",
         local_script=Path(os.environ.get("PERF_LOCAL_SCRIPT", "ref/flash_gated_delta_rule.py")),
         npu_device=int(os.environ.get("PERF_NPU_DEVICE", "2")),
-        prof_output=os.environ.get("PERF_PROF_OUTPUT", "./prof_gdr").strip() or "./prof_gdr",
+        prof_output_app=os.environ.get("PERF_PROF_OUTPUT", "./prof_gdr").strip() or "./prof_gdr",
+        prof_output_op=os.environ.get("PERF_OP_OUTPUT", "./prof_op").strip() or "./prof_op",
+        soc_version=os.environ.get("PERF_SOC_VERSION", "").strip() or "Ascend910B",
         dry_run=_env_bool("PERF_RUN_DRY_RUN"),
     )
+
+
+def normalize_prof_tool(payload: dict[str, Any]) -> str:
+    prof_tool = str(payload.get("prof_tool") or "msprof").strip()
+    if prof_tool not in VALID_PROF_TOOLS:
+        raise ValueError(f"prof_tool must be one of {sorted(VALID_PROF_TOOLS)}")
+    return prof_tool
+
+
+def prof_output_root(prof_tool: str, *, local: bool) -> Path:
+    if prof_tool in {"msprof_op", "msprof_op_sim"}:
+        return PROF_OP_ROOT if local else Path(load_config().prof_output_op)
+    return PROF_APP_ROOT if local else Path(load_config().prof_output_app)
+
+
+def prof_dir_prefix(prof_tool: str) -> str:
+    return "OPPROF_" if prof_tool in {"msprof_op", "msprof_op_sim"} else "PROF_"
+
+
+def prof_tool_label(prof_tool: str) -> str:
+    return {
+        "msprof": "msprof（整网）",
+        "msprof_op": "msprof op（算子）",
+        "msprof_op_sim": "msprof op simulator（仿真）",
+    }.get(prof_tool, prof_tool)
 
 
 def ensure_runner_configured() -> PerfRunnerConfig:
@@ -105,16 +136,21 @@ def runner_status() -> dict[str, Any]:
         "cu_seqlens": "",
         "varlen": True,
     }
+    payload = {"attributes": attrs, "prof_tool": "msprof"}
+    payload_op = {**payload, "prof_tool": "msprof_op", "kernel_name": "chunk_bwd_dqkwg"}
     return {
         "enabled": enabled,
         "mode": config.mode,
         "dry_run": config.dry_run,
         "error": error,
+        "prof_tools": sorted(VALID_PROF_TOOLS),
         "ssh_host": config.ssh_host or None,
         "remote_workdir": config.remote_workdir if config.mode == "ssh" else None,
         "local_script": str(config.local_script) if config.mode == "local" else None,
         "npu_device": config.npu_device,
-        "example_command": build_command({"attributes": attrs}) if enabled else None,
+        "soc_version": config.soc_version,
+        "example_command_msprof": build_command(payload) if enabled else None,
+        "example_command_msprof_op": build_command(payload_op) if enabled else None,
     }
 
 
@@ -147,22 +183,59 @@ def attributes_to_cli_args(attributes: dict[str, Any], npu_device: int) -> list[
     return args
 
 
+def build_prof_invocation(
+    config: PerfRunnerConfig,
+    *,
+    prof_tool: str,
+    output: str,
+    script: str,
+    py_args: list[str],
+    kernel_name: str | None = None,
+) -> str:
+    py = " ".join(shlex.quote(part) for part in py_args)
+    if prof_tool == "msprof":
+        return f"msprof --output={shlex.quote(output)} python3 {shlex.quote(script)} {py}"
+    parts = ["msprof", "op"]
+    if prof_tool == "msprof_op_sim":
+        parts.append("simulator")
+        parts.append(f"--soc-version={shlex.quote(config.soc_version)}")
+    parts.append(f"--output={shlex.quote(output)}")
+    if kernel_name:
+        parts.append(f"--kernel-name={shlex.quote(kernel_name)}")
+    parts.append(f"python3 {shlex.quote(script)} {py}")
+    return " ".join(parts)
+
+
 def build_command(payload: dict[str, Any]) -> str:
     config = load_config()
+    prof_tool = normalize_prof_tool(payload)
     attrs = payload.get("attributes") or {}
-    py_args = " ".join(shlex.quote(part) for part in attributes_to_cli_args(attrs, config.npu_device))
-    if config.mode == "ssh":
-        remote = (
-            f"cd {shlex.quote(config.remote_workdir)} && "
-            f"msprof --output={shlex.quote(config.prof_output)} "
-            f"python3 {shlex.quote(config.remote_script)} {py_args}"
-        )
-        return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
-    script = config.local_script if config.local_script.is_absolute() else ROOT / config.local_script
-    return (
-        f"msprof --output={shlex.quote(str(PROF_GDR_ROOT))} "
-        f"{shlex.quote(sys.executable)} {shlex.quote(str(script))} {py_args}"
+    kernel_name = str(payload.get("kernel_name") or "").strip() or None
+    py_args = attributes_to_cli_args(attrs, config.npu_device)
+    output = str(prof_output_root(prof_tool, local=False))
+    script = config.remote_script
+    invocation = build_prof_invocation(
+        config,
+        prof_tool=prof_tool,
+        output=output,
+        script=script,
+        py_args=py_args,
+        kernel_name=kernel_name,
     )
+    if config.mode == "ssh":
+        remote = f"cd {shlex.quote(config.remote_workdir)} && {invocation}"
+        return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
+    local_script = config.local_script if config.local_script.is_absolute() else ROOT / config.local_script
+    local_output = str(prof_output_root(prof_tool, local=True))
+    invocation = build_prof_invocation(
+        config,
+        prof_tool=prof_tool,
+        output=local_output,
+        script=str(local_script),
+        py_args=py_args,
+        kernel_name=kernel_name,
+    )
+    return invocation
 
 
 def _ssh_command(config: PerfRunnerConfig, remote_command: str) -> list[str]:
@@ -194,8 +267,10 @@ def _run_command(command: list[str] | str, *, cwd: Path | None = None) -> subpro
     return subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
 
 
-def _list_remote_prof_dirs(config: PerfRunnerConfig) -> set[str]:
-    remote = f"ls -1 {shlex.quote(config.prof_output)}/PROF_* 2>/dev/null || true"
+def _list_remote_prof_dirs(config: PerfRunnerConfig, prof_tool: str) -> set[str]:
+    output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
+    prefix = prof_dir_prefix(prof_tool).lower()
+    remote = f"ls -1 {shlex.quote(output)}/{prefix}* 2>/dev/null || true"
     result = _run_command(_ssh_command(config, remote))
     names = set()
     for line in result.stdout.splitlines():
@@ -206,22 +281,25 @@ def _list_remote_prof_dirs(config: PerfRunnerConfig) -> set[str]:
     return names
 
 
-def _list_local_prof_dirs() -> set[str]:
-    if not PROF_GDR_ROOT.exists():
+def _list_local_prof_dirs(prof_tool: str) -> set[str]:
+    root = prof_output_root(prof_tool, local=True)
+    prefix = prof_dir_prefix(prof_tool)
+    if not root.exists():
         return set()
-    return {path.name for path in PROF_GDR_ROOT.glob("PROF_*") if path.is_dir()}
+    return {path.name for path in root.glob(f"{prefix}*") if path.is_dir()}
 
 
-def _resolve_new_prof_dir(before: set[str], after: set[str]) -> str:
-    created = sorted(name for name in after - before if name.startswith("PROF_"))
+def _resolve_new_prof_dir(before: set[str], after: set[str], prof_tool: str) -> str:
+    prefix = prof_dir_prefix(prof_tool)
+    created = sorted(name for name in after - before if name.upper().startswith(prefix))
     if not created:
-        raise RuntimeError("msprof 执行完成，但未发现新的 PROF_* 目录")
+        raise RuntimeError(f"{prof_tool_label(prof_tool)} 执行完成，但未发现新的 {prefix}* 目录")
     return created[-1]
 
 
-def _import_prof_module():
-    module_path = ROOT / "scripts" / "import_prof_gdr.py"
-    spec = importlib.util.spec_from_file_location("import_prof_gdr", module_path)
+def _import_module(script_name: str):
+    module_path = ROOT / "scripts" / script_name
+    spec = importlib.util.spec_from_file_location(script_name.replace(".py", ""), module_path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"无法加载导入脚本：{module_path}")
     module = importlib.util.module_from_spec(spec)
@@ -231,35 +309,45 @@ def _import_prof_module():
 
 def execute(payload: dict[str, Any]) -> dict[str, Any]:
     config = ensure_runner_configured()
+    prof_tool = normalize_prof_tool(payload)
     command = build_command(payload)
     if config.dry_run:
         return {
             "status": "done",
             "message": "dry-run：未实际执行",
             "command": command,
+            "prof_tool": prof_tool,
             "dry_run": True,
         }
 
     chip = payload.get("chip") or "A2"
     model_id = payload.get("model_id") or "gdn"
     attrs = payload.get("attributes") or {}
+    kernel_name = str(payload.get("kernel_name") or "").strip() or None
+    operator_id = str(payload.get("operator_id") or "").strip() or None
     py_args = attributes_to_cli_args(attrs, config.npu_device)
+    local_root = prof_output_root(prof_tool, local=True)
+    remote_output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
 
     if config.mode == "ssh":
         if not config.ssh_host:
             raise RuntimeError("PERF_SSH_HOST 未配置")
-        before = _list_remote_prof_dirs(config)
-        remote = (
-            f"cd {shlex.quote(config.remote_workdir)} && "
-            f"msprof --output={shlex.quote(config.prof_output)} "
-            f"python3 {shlex.quote(config.remote_script)} {' '.join(shlex.quote(part) for part in py_args)}"
+        before = _list_remote_prof_dirs(config, prof_tool)
+        invocation = build_prof_invocation(
+            config,
+            prof_tool=prof_tool,
+            output=remote_output,
+            script=config.remote_script,
+            py_args=py_args,
+            kernel_name=kernel_name,
         )
+        remote = f"cd {shlex.quote(config.remote_workdir)} && {invocation}"
         _run_command(_ssh_command(config, remote))
-        after = _list_remote_prof_dirs(config)
-        prof_name = _resolve_new_prof_dir(before, after)
-        local_dir = PROF_GDR_ROOT / prof_name
+        after = _list_remote_prof_dirs(config, prof_tool)
+        prof_name = _resolve_new_prof_dir(before, after, prof_tool)
+        local_dir = local_root / prof_name
         local_dir.parent.mkdir(parents=True, exist_ok=True)
-        remote_prof = f"{config.prof_output.rstrip('/')}/{prof_name}"
+        remote_prof = f"{remote_output.rstrip('/')}/{prof_name}"
         if local_dir.exists():
             import shutil
 
@@ -267,26 +355,52 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
         _run_command(_scp_command(config, remote_prof, local_dir.parent))
         prof_dir = local_dir
     elif config.mode == "local":
-        before = _list_local_prof_dirs()
+        before = _list_local_prof_dirs(prof_tool)
         script = config.local_script if config.local_script.is_absolute() else ROOT / config.local_script
-        PROF_GDR_ROOT.mkdir(parents=True, exist_ok=True)
+        local_root.mkdir(parents=True, exist_ok=True)
+        invocation_parts = shlex.split(
+            build_prof_invocation(
+                config,
+                prof_tool=prof_tool,
+                output=str(local_root),
+                script=str(script),
+                py_args=py_args,
+                kernel_name=kernel_name,
+            ),
+            posix=(os.name != "nt"),
+        )
         try:
-            _run_command(["msprof", f"--output={PROF_GDR_ROOT}", str(script), *py_args], cwd=ROOT)
+            _run_command(invocation_parts, cwd=ROOT)
         except FileNotFoundError as exc:
             raise RuntimeError("未找到 msprof，请在 NPU 主机上执行，或配置 PERF_RUN_MODE=ssh") from exc
-        after = _list_local_prof_dirs()
-        prof_name = _resolve_new_prof_dir(before, after)
-        prof_dir = PROF_GDR_ROOT / prof_name
+        after = _list_local_prof_dirs(prof_tool)
+        prof_name = _resolve_new_prof_dir(before, after, prof_tool)
+        prof_dir = local_root / prof_name
     else:
         raise RuntimeError(f"不支持的执行模式：{config.mode}")
 
-    import_module = _import_prof_module()
-    data = import_module.import_prof(prof_dir, model_id, chip, replace_mock=False)
-    snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
+    if prof_tool == "msprof":
+        import_module = _import_module("import_prof_gdr.py")
+        data = import_module.import_prof(prof_dir, model_id, chip, replace_mock=False)
+        snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
+        snapshot["prof_tool"] = prof_tool
+    else:
+        import_module = _import_module("import_msprof_op.py")
+        data = import_module.import_msprof_op(
+            prof_dir,
+            model_id,
+            chip,
+            attributes=attrs,
+            kernel_name=kernel_name,
+            operator_id=operator_id,
+            prof_tool=prof_tool,
+        )
+        snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
+
     data["runs"] = [
         item
         for item in data.get("runs", [])
-        if not (item.get("created_by") == "import_prof_gdr" and item.get("snapshot_id") == snapshot["id"])
+        if not (item.get("created_by") in {"import_prof_gdr", "import_msprof_op"} and item.get("snapshot_id") == snapshot["id"])
     ]
     for path in import_module.PERF_PATHS:
         path.write_text(
@@ -295,8 +409,9 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
         )
     return {
         "status": "done",
-        "message": f"msprof 执行并导入：{prof_dir.name}",
+        "message": f"{prof_tool_label(prof_tool)} 执行并导入：{prof_dir.name}",
         "command": command,
+        "prof_tool": prof_tool,
         "prof_dir": str(prof_dir),
         "snapshot": snapshot,
         "data": data,
