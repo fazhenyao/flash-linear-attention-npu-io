@@ -162,6 +162,20 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
   flex:0 0 88px;
   max-width:88px;
 }
+.perf-attr-eq-select {
+  min-width:132px;
+  height:34px;
+  flex:1 1 120px;
+  max-width:180px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#fffdf8;
+  font-size:12px;
+  font-weight:900;
+  color:#4f4336;
+}
+.perf-attr-eq-select.hidden { display:none; }
 .perf-attr-range-sep { color:#8a7a67; font-size:12px; font-weight:900; }
 .perf-attr-actions { display:inline-flex; gap:8px; align-items:center; margin-left:auto; }
 .perf-attr-add,.perf-attr-clear {

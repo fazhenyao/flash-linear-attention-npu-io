@@ -82,6 +82,16 @@ def parse_prof_timestamp(prof_dir: Path) -> tuple[str, str]:
     return datetime.now(BJ_TZ).date().isoformat(), now_iso()
 
 
+def normalize_layout(layout: str | None = None, *, varlen: bool | None = None) -> str:
+    if layout:
+        normalized = str(layout).strip().upper()
+        if normalized in {"TND", "BSND"}:
+            return normalized
+    if varlen is False:
+        return "BSND"
+    return "TND"
+
+
 def build_case_attributes(
     *,
     batch: int = 1,
@@ -92,13 +102,15 @@ def build_case_attributes(
     value_dim: int = 128,
     chunk_size: int = 64,
     dtype: str = "bf16",
-    varlen: bool = True,
+    layout: str | None = None,
+    varlen: bool | None = None,
     mean_len: int = 1024,
     cu_seqlens: str = "",
     scale: float | None = None,
 ) -> dict[str, Any]:
     if scale is None:
         scale = round(key_dim ** -0.5, 6)
+    resolved_layout = normalize_layout(layout, varlen=varlen)
     return {
         "batch": batch,
         "query_heads": query_heads,
@@ -111,16 +123,74 @@ def build_case_attributes(
         "dtype": dtype,
         "mean_len": mean_len,
         "cu_seqlens": cu_seqlens,
-        "varlen": varlen,
+        "layout": resolved_layout,
     }
 
 
+def parse_shape_parts(raw: str) -> list[str]:
+    text = (raw or "").strip()
+    if not text:
+        return []
+    return [part.strip().strip('"') for part in text.split(";") if part.strip().strip('"')]
+
+
+def parse_dtype_parts(raw: str) -> list[str]:
+    return [part.strip() for part in (raw or "").split(";") if part.strip()]
+
+
+def parse_batch_from_shapes(shapes: str) -> int | None:
+    for match in re.finditer(r"(\d+),(\d+),(\d+),(\d+)", shapes):
+        batch, heads, tokens, dim = (int(match.group(i)) for i in range(1, 5))
+        if heads <= 128 and tokens >= 256 and dim in {16, 32, 64, 128}:
+            return batch
+    return None
+
+
+def core_gdn_row_is_varlen(row: dict[str, str]) -> bool | None:
+    op_type = row.get("OP Type", "")
+    if op_type not in OP_TYPE_MAP or OP_TYPE_MAP[op_type] not in CORE_GDN_OPS:
+        return None
+    shapes = parse_shape_parts(row.get("Input Shapes", ""))
+    dtypes = parse_dtype_parts(row.get("Input Data Types", ""))
+    if not shapes or not dtypes:
+        return None
+    if not any(dtype.upper() == "INT64" for dtype in dtypes):
+        return False
+    for idx, dtype in enumerate(dtypes):
+        if dtype.upper() != "INT64" or idx >= len(shapes):
+            continue
+        part = shapes[idx]
+        if re.fullmatch(r"\d+", part):
+            return True
+        if "," in part:
+            nums = [int(item) for item in part.split(",")]
+            if nums and max(nums) <= 4096:
+                return True
+    return True
+
+
+def infer_varlen_from_summary(rows: list[dict[str, str]]) -> bool:
+    saw_varlen = False
+    saw_fixed = False
+    for row in rows:
+        verdict = core_gdn_row_is_varlen(row)
+        if verdict is True:
+            saw_varlen = True
+        elif verdict is False:
+            saw_fixed = True
+    if saw_varlen:
+        return True
+    if saw_fixed:
+        return False
+    return True
+
+
 def parse_qkv_dims_from_shapes(shapes: str) -> tuple[int | None, int | None, int | None, int | None]:
-    """Parse query_heads, tokens, key_dim, value_dim from ordered 1,H,T,D tensors."""
+    """Parse query_heads, tokens, key_dim, value_dim from ordered B,H,T,D tensors."""
     matches: list[tuple[int, int, int]] = []
-    for match in re.finditer(r"1,(\d+),(\d+),(\d+)", shapes):
-        heads, tokens, dim = int(match.group(1)), int(match.group(2)), int(match.group(3))
-        if heads <= 128 and tokens >= 256:
+    for match in re.finditer(r"(\d+),(\d+),(\d+),(\d+)", shapes):
+        batch, heads, tokens, dim = int(match.group(1)), int(match.group(2)), int(match.group(3)), int(match.group(4))
+        if batch >= 1 and heads <= 128 and tokens >= 256 and dim in {16, 32, 64, 128}:
             matches.append((heads, tokens, dim))
     if not matches:
         return None, None, None, None
@@ -172,6 +242,10 @@ def infer_case_from_summary(rows: list[dict[str, str]], prof_dir: Path) -> dict[
         elif "FLOAT" in dtypes.upper() and dtype != "bf16":
             dtype = "fp32"
 
+        parsed_batch = parse_batch_from_shapes(shapes)
+        if parsed_batch is not None:
+            batch = parsed_batch
+
         qh, tk, kd, vd = parse_qkv_dims_from_shapes(shapes)
         if qh is not None:
             query_heads = query_heads or qh
@@ -179,13 +253,13 @@ def infer_case_from_summary(rows: list[dict[str, str]], prof_dir: Path) -> dict[
             key_dim = key_dim or kd
             value_dim = value_dim or vd
 
-        for match in re.finditer(r"1,(\d+),(\d+),(\d+)", shapes):
-            a, b, c = int(match.group(1)), int(match.group(2)), int(match.group(3))
-            if a >= 256 and b <= 128:
-                tokens = tokens or a
-                value_heads = value_heads or b
-                if c in {16, 32, 64, 128}:
-                    chunk_size = chunk_size or c
+        for match in re.finditer(r"(\d+),(\d+),(\d+),(\d+)", shapes):
+            _, heads, token_count, dim = (int(match.group(i)) for i in range(1, 5))
+            if token_count >= 256 and heads <= 128:
+                tokens = tokens or token_count
+                value_heads = value_heads or heads
+                if dim in {16, 32, 64, 128}:
+                    chunk_size = chunk_size or dim
 
     if key_dim is None:
         for row in rows:
@@ -208,7 +282,8 @@ def infer_case_from_summary(rows: list[dict[str, str]], prof_dir: Path) -> dict[
     key_dim = key_dim or 128
     value_dim = value_dim or key_dim
     chunk_size = chunk_size or 64
-    varlen = batch == 1
+    varlen = infer_varlen_from_summary(rows)
+    layout = normalize_layout(varlen=varlen)
 
     snapshot_date, created_at = parse_prof_timestamp(prof_dir)
     time_slug_match = re.search(r"(\d{8})(\d{6})", prof_dir.name)
@@ -222,12 +297,12 @@ def infer_case_from_summary(rows: list[dict[str, str]], prof_dir: Path) -> dict[
     case_id = f"case-gdn-t{tokens}-k{key_dim}-v{value_dim}-c{chunk_size}-{time_slug}"
     label = (
         f"B={batch} QH={query_heads} VH={value_heads} T={tokens} "
-        f"K={key_dim} V={value_dim} chunk={chunk_size} varlen @ {time_label}"
+        f"K={key_dim} V={value_dim} chunk={chunk_size} {layout} @ {time_label}"
     )
     return {
         "id": case_id,
         "label": label,
-        "category": "varlen" if varlen else "fixed",
+        "category": layout.lower(),
         "attributes": build_case_attributes(
             batch=batch,
             query_heads=query_heads,
@@ -237,6 +312,7 @@ def infer_case_from_summary(rows: list[dict[str, str]], prof_dir: Path) -> dict[
             value_dim=value_dim,
             chunk_size=chunk_size,
             dtype=dtype,
+            layout=layout,
             varlen=varlen,
         ),
         "position": 0,

@@ -11,8 +11,8 @@
   "cases": [
     {
       "id": "case-gdn-t4087-k128-v128-c64-20260709t094300",
-      "label": "B=1 QH=32 VH=32 T=4087 K=128 V=128 chunk=64 varlen @ 2026-07-09 09:43",
-      "category": "varlen",
+      "label": "B=1 QH=32 VH=32 T=4087 K=128 V=128 chunk=64 TND @ 2026-07-09 09:43",
+      "category": "tnd",
       "attributes": {
         "batch": 1,
         "query_heads": 32,
@@ -25,15 +25,15 @@
         "dtype": "bf16",
         "mean_len": 1024,
         "cu_seqlens": "",
-        "varlen": true
+        "layout": "TND"
       },
       "position": 3,
       "active": true
     },
     {
       "id": "case-gdn-t4087-k128-v128-c64-20260709t163847",
-      "label": "B=1 QH=32 VH=32 T=4087 K=128 V=128 chunk=64 varlen @ 2026-07-09 16:38",
-      "category": "varlen",
+      "label": "B=1 QH=32 VH=32 T=4087 K=128 V=128 chunk=64 TND @ 2026-07-09 16:38",
+      "category": "tnd",
       "attributes": {
         "batch": 1,
         "query_heads": 32,
@@ -46,15 +46,15 @@
         "dtype": "bf16",
         "mean_len": 1024,
         "cu_seqlens": "",
-        "varlen": true
+        "layout": "TND"
       },
       "position": 1,
       "active": true
     },
     {
       "id": "case-gdn-t4087-k64-v128-c64-20260709t164013",
-      "label": "B=1 QH=32 VH=32 T=4087 K=64 V=128 chunk=64 varlen @ 2026-07-09 16:40",
-      "category": "varlen",
+      "label": "B=1 QH=32 VH=32 T=4087 K=64 V=128 chunk=64 TND @ 2026-07-09 16:40",
+      "category": "tnd",
       "attributes": {
         "batch": 1,
         "query_heads": 32,
@@ -67,15 +67,15 @@
         "dtype": "bf16",
         "mean_len": 1024,
         "cu_seqlens": "",
-        "varlen": true
+        "layout": "TND"
       },
       "position": 2,
       "active": true
     },
     {
       "id": "case-gdn-t4087-k64-v64-c64-20260709t165517",
-      "label": "B=1 QH=32 VH=32 T=4087 K=64 V=64 chunk=64 varlen @ 2026-07-09 16:55",
-      "category": "varlen",
+      "label": "B=1 QH=32 VH=32 T=4087 K=64 V=64 chunk=64 TND @ 2026-07-09 16:55",
+      "category": "tnd",
       "attributes": {
         "batch": 1,
         "query_heads": 32,
@@ -88,7 +88,7 @@
         "dtype": "bf16",
         "mean_len": 1024,
         "cu_seqlens": "",
-        "varlen": true
+        "layout": "TND"
       },
       "position": 3,
       "active": true
@@ -835,7 +835,7 @@
         "dtype": "bf16",
         "mean_len": 1024,
         "cu_seqlens": "",
-        "varlen": true
+        "layout": "TND"
       },
       "status": "done",
       "snapshot_id": "snap-prof_000001_20260709165517210_01470552jildmaea",
@@ -958,7 +958,7 @@
         "dtype": "bf16",
         "mean_len": 1024,
         "cu_seqlens": "",
-        "varlen": true
+        "layout": "TND"
       },
       "status": "done",
       "snapshot_id": "snap-prof_000001_20260709164013314_01382394benrnlqr",
@@ -1129,7 +1129,7 @@
         "dtype": "bf16",
         "mean_len": 1024,
         "cu_seqlens": "",
-        "varlen": true
+        "layout": "TND"
       },
       "status": "done",
       "snapshot_id": "snap-prof_000001_20260709163847554_01374329bqkdkeia",
@@ -1396,7 +1396,7 @@
         "dtype": "bf16",
         "mean_len": 1024,
         "cu_seqlens": "",
-        "varlen": true
+        "layout": "TND"
       },
       "status": "done",
       "snapshot_id": "snap-prof_000001_20260709094300839_03178234hkndflkb",

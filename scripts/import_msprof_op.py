@@ -214,12 +214,12 @@ def build_case_from_attributes(
     tool_label = "msprof op" if prof_tool == "msprof_op" else "msprof op sim"
     label = (
         f"B={batch} QH={query_heads} VH={value_heads} T={tokens} "
-        f"K={key_dim} V={value_dim} chunk={chunk_size} varlen @ {time_label}{kernel_suffix} [{tool_label}]"
+        f"K={key_dim} V={value_dim} chunk={chunk_size} {gdr.normalize_layout(attrs.get('layout'), varlen=attrs.get('varlen'))} @ {time_label}{kernel_suffix} [{tool_label}]"
     )
     return {
         "id": case_id,
         "label": label,
-        "category": "varlen" if attrs.get("varlen", True) else "fixed",
+        "category": gdr.normalize_layout(attrs.get("layout"), varlen=attrs.get("varlen")).lower(),
         "attributes": gdr.build_case_attributes(
             batch=batch,
             query_heads=query_heads,
@@ -229,7 +229,8 @@ def build_case_from_attributes(
             value_dim=value_dim,
             chunk_size=chunk_size,
             dtype=str(attrs.get("dtype") or "bf16"),
-            varlen=bool(attrs.get("varlen", True)),
+            layout=attrs.get("layout"),
+            varlen=attrs.get("varlen"),
             mean_len=int(attrs.get("mean_len") or 1024),
             cu_seqlens=str(attrs.get("cu_seqlens") or ""),
             scale=attrs.get("scale"),

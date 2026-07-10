@@ -52,13 +52,13 @@
               <div class="perf-attr-menu">
                 <select id="netCaseAttrKey" aria-label="用例属性类型"></select>
                 <select id="netCaseAttrOp" aria-label="筛选方式">
-                  <option value="any">不限</option>
                   <option value="eq">精确</option>
                   <option value="range">范围</option>
                 </select>
                 <span id="netCaseAttrEqWrap" class="perf-attr-value-wrap hidden">
                   <input id="netCaseAttrEq" list="netCaseAttrEqList" placeholder="输入或选择值" aria-label="精确值">
                   <datalist id="netCaseAttrEqList"></datalist>
+                  <select id="netCaseAttrEqSelect" class="perf-attr-eq-select hidden" aria-label="精确值"></select>
                 </span>
                 <span id="netCaseAttrRangeWrap" class="perf-attr-value-wrap hidden">
                   <input id="netCaseAttrMin" type="number" placeholder="最小" aria-label="最小值">
@@ -127,13 +127,13 @@
               <div class="perf-attr-menu">
                 <select id="caseAttrKey" aria-label="用例属性类型"></select>
                 <select id="caseAttrOp" aria-label="筛选方式">
-                  <option value="any">不限</option>
                   <option value="eq">精确</option>
                   <option value="range">范围</option>
                 </select>
                 <span id="caseAttrEqWrap" class="perf-attr-value-wrap hidden">
                   <input id="caseAttrEq" list="caseAttrEqList" placeholder="输入或选择值" aria-label="精确值">
                   <datalist id="caseAttrEqList"></datalist>
+                  <select id="caseAttrEqSelect" class="perf-attr-eq-select hidden" aria-label="精确值"></select>
                 </span>
                 <span id="caseAttrRangeWrap" class="perf-attr-value-wrap hidden">
                   <input id="caseAttrMin" type="number" placeholder="最小" aria-label="最小值">
@@ -417,6 +417,7 @@
 
       const operatorCounts = operatorIdsForCompareCases(selectedCases);
       const operatorEntries = [...operatorCounts.entries()]
+        .filter(([id]) => id !== OTHER_RUNTIME_ID)
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
         .map(([id]) => [id, operatorLabel(id)]);
 
@@ -798,7 +799,7 @@
 
     const CASE_ATTR_ORDER = [
       "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size", "scale", "dtype",
-      "mean_len", "cu_seqlens", "varlen",
+      "mean_len", "cu_seqlens", "layout",
     ];
     const CASE_ATTR_LABELS = {
       batch: "batch",
@@ -812,7 +813,11 @@
       dtype: "dtype",
       mean_len: "mean-len",
       cu_seqlens: "cu-seqlens",
-      varlen: "varlen",
+      layout: "layout",
+    };
+    const CASE_ATTR_ENUM = {
+      layout: ["TND", "BSND"],
+      dtype: ["bf16", "fp16"],
     };
 
     function defaultScale(keyDim) {
@@ -852,22 +857,36 @@
         mean_len: numberOr(document.querySelector("#attrMeanLen").value, defaults.mean_len),
         cu_seqlens: document.querySelector("#attrCuSeqlens").value.trim() || defaults.cu_seqlens,
         varlen: document.querySelector("#attrVarlen").checked,
+        layout: document.querySelector("#attrVarlen").checked ? "TND" : "BSND",
       };
+    }
+
+    function caseLayoutValue(attrs) {
+      if (attrs?.layout) return String(attrs.layout).toUpperCase();
+      if (attrs?.varlen === false) return "BSND";
+      return "TND";
+    }
+
+    function caseAttributeValue(attrs, key) {
+      if (key === "layout") return caseLayoutValue(attrs);
+      const value = attrs?.[key];
+      if (value == null || value === "") return null;
+      return value;
     }
 
     function formatTriggerAttrLabel(attrs) {
       if (!attrs) return "—";
-      const varlen = attrs.varlen !== false ? "varlen" : "fixed";
-      return `B=${attrs.batch ?? "?"} QH=${attrs.query_heads ?? "?"} VH=${attrs.value_heads ?? "?"} T=${attrs.tokens ?? "?"} K=${attrs.key_dim ?? "?"} V=${attrs.value_dim ?? "?"} chunk=${attrs.chunk_size ?? "?"} ${varlen}`;
+      const layout = caseLayoutValue(attrs);
+      return `B=${attrs.batch ?? "?"} QH=${attrs.query_heads ?? "?"} VH=${attrs.value_heads ?? "?"} T=${attrs.tokens ?? "?"} K=${attrs.key_dim ?? "?"} V=${attrs.value_dim ?? "?"} chunk=${attrs.chunk_size ?? "?"} ${layout}`;
     }
 
     function normalizeAttrStoreValue(key, value) {
-      if (key === "varlen") return value ? "true" : "false";
+      if (key === "layout") return String(value).toUpperCase();
       return String(value);
     }
 
     function formatAttrValueLabel(key, value) {
-      if (key === "varlen") return value === "true" ? "是" : "否";
+      if (key === "layout") return String(value).toUpperCase();
       if (key === "scale") return Number(value).toFixed(6).replace(/\.?0+$/, "");
       if (key === "cu_seqlens" && !value) return "(自动)";
       return value;
@@ -878,8 +897,8 @@
       (state.data.cases || []).filter((item) => item.active !== false).forEach((item) => {
         const attrs = item.attributes || {};
         CASE_ATTR_ORDER.forEach((key) => {
-          const value = attrs[key];
-          if (value == null || value === "") return;
+          const value = caseAttributeValue(attrs, key);
+          if (value == null) return;
           if (!index.has(key)) index.set(key, new Set());
           index.get(key).add(normalizeAttrStoreValue(key, value));
         });
@@ -890,7 +909,6 @@
     const CASE_ATTR_NUMERIC = new Set([
       "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size", "scale", "mean_len",
     ]);
-    const CASE_ATTR_BOOLEAN = new Set(["varlen"]);
 
     function attrPickerIds(prefix) {
       const stem = prefix === "net" ? "netCaseAttr" : "caseAttr";
@@ -898,6 +916,7 @@
         key: `#${stem}Key`,
         op: `#${stem}Op`,
         eq: `#${stem}Eq`,
+        eqSelect: `#${stem}EqSelect`,
         eqList: `#${stem}EqList`,
         eqWrap: `#${stem}EqWrap`,
         rangeWrap: `#${stem}RangeWrap`,
@@ -906,68 +925,99 @@
       };
     }
 
+    function attrEqEnumValues(key) {
+      return CASE_ATTR_ENUM[key] || null;
+    }
+
+    function sortEqSelectValues(key, values) {
+      return [...values].sort((a, b) => {
+        if (CASE_ATTR_NUMERIC.has(key)) {
+          const na = Number(a);
+          const nb = Number(b);
+          if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+        }
+        return String(a).localeCompare(String(b));
+      });
+    }
+
+    function attrEqSelectValues(key) {
+      const values = new Set();
+      const enumValues = attrEqEnumValues(key);
+      if (enumValues) {
+        enumValues.forEach((value) => values.add(key === "layout" ? String(value).toUpperCase() : String(value)));
+      }
+      const collected = collectCaseAttrValues().get(key);
+      if (collected) collected.forEach((value) => values.add(String(value)));
+      return sortEqSelectValues(key, values);
+    }
+
+    function attrEqUsesSelect(key) {
+      return attrEqSelectValues(key).length > 0;
+    }
+
+    function populateEqSelect(prefix, key) {
+      const ids = attrPickerIds(prefix);
+      const values = attrEqSelectValues(key);
+      const entries = values.map((value) => [value, formatAttrValueLabel(key, value)]);
+      const select = document.querySelector(ids.eqSelect);
+      const current = select.value;
+      fillSelect(ids.eqSelect, entries);
+      if (entries.some(([value]) => value === current)) select.value = current;
+      else select.value = entries[0]?.[0] || "";
+    }
+
     function attrOpOptions(key) {
-      const options = [["any", "不限"], ["eq", "精确"]];
+      const options = [["eq", "精确"]];
       if (CASE_ATTR_NUMERIC.has(key)) options.push(["range", "范围"]);
       return options;
     }
 
-    function populateEqDatalist(prefix, key) {
-      const ids = attrPickerIds(prefix);
-      const values = collectCaseAttrValues().get(key);
-      const datalist = document.querySelector(ids.eqList);
-      if (!values || values.size === 0) {
-        datalist.innerHTML = "";
-        return;
-      }
-      const sorted = [...values].sort((a, b) => {
-        if (key === "varlen") return a.localeCompare(b);
-        const na = Number(a);
-        const nb = Number(b);
-        if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-        return a.localeCompare(b);
-      });
-      datalist.innerHTML = sorted.map((value) => `<option value="${escapeHtml(formatAttrValueLabel(key, value))}"></option>`).join("");
-    }
-
     function updateAttrPickerUI(prefix) {
       const ids = attrPickerIds(prefix);
-      const key = document.querySelector(ids.key).value;
+      let key = document.querySelector(ids.key).value;
+      if (!key) {
+        key = defaultCaseAttrKey();
+        document.querySelector(ids.key).value = key;
+      }
       const opSelect = document.querySelector(ids.op);
       const currentOp = opSelect.value;
-      if (!key) {
-        opSelect.disabled = true;
-        document.querySelector(ids.eqWrap).classList.add("hidden");
-        document.querySelector(ids.rangeWrap).classList.add("hidden");
-        return;
-      }
-      opSelect.disabled = false;
       fillSelect(ids.op, attrOpOptions(key));
-      opSelect.value = [...opSelect.options].some((option) => option.value === currentOp) ? currentOp : "any";
+      opSelect.value = [...opSelect.options].some((option) => option.value === currentOp) ? currentOp : "eq";
       const op = opSelect.value;
+      const eqInput = document.querySelector(ids.eq);
+      const eqSelect = document.querySelector(ids.eqSelect);
       document.querySelector(ids.eqWrap).classList.toggle("hidden", op !== "eq");
       document.querySelector(ids.rangeWrap).classList.toggle("hidden", op !== "range");
-      if (op === "eq") populateEqDatalist(prefix, key);
-      if (CASE_ATTR_BOOLEAN.has(key)) {
-        document.querySelector(ids.eq).placeholder = "是 / 否";
+      if (op === "eq" && attrEqUsesSelect(key)) {
+        eqInput.classList.add("hidden");
+        eqSelect.classList.remove("hidden");
+        populateEqSelect(prefix, key);
+      } else if (op === "eq") {
+        eqInput.classList.remove("hidden");
+        eqSelect.classList.add("hidden");
+        eqInput.removeAttribute("list");
+        eqInput.type = CASE_ATTR_NUMERIC.has(key) ? "number" : "text";
+        eqInput.placeholder = CASE_ATTR_NUMERIC.has(key) ? "输入数值" : "输入值";
       } else {
-        document.querySelector(ids.eq).placeholder = "输入或选择值";
+        eqInput.classList.remove("hidden");
+        eqSelect.classList.add("hidden");
       }
     }
 
     function normalizeEqInput(key, raw) {
       const text = String(raw || "").trim();
       if (!text) return "";
-      if (!CASE_ATTR_BOOLEAN.has(key)) return text;
-      const lower = text.toLowerCase();
-      if (["是", "true", "1", "yes"].includes(lower)) return "true";
-      if (["否", "false", "0", "no"].includes(lower)) return "false";
+      if (key === "layout") {
+        const upper = text.toUpperCase();
+        if (upper === "TND" || upper === "BSND") return upper;
+        return alert("layout 仅支持 TND 或 BSND。"), "";
+      }
       return text;
     }
 
     function normalizeFilterEntry(filter) {
-      if (filter.op) return filter;
-      if (!filter.value) return { key: filter.key, op: "any" };
+      if (filter.op) return filter.op === "any" ? { key: filter.key, op: "eq" } : filter;
+      if (!filter.value) return { key: filter.key, op: "eq", value: "" };
       return { key: filter.key, op: "eq", value: filter.value };
     }
 
@@ -976,10 +1026,13 @@
       const key = document.querySelector(ids.key).value;
       if (!key) return null;
       const op = document.querySelector(ids.op).value;
-      if (op === "any") return { key, op: "any" };
       if (op === "eq") {
-        const value = normalizeEqInput(key, document.querySelector(ids.eq).value);
-        if (!value) return alert("精确筛选请输入属性值。"), null;
+        const usesSelect = attrEqUsesSelect(key);
+        const raw = usesSelect
+          ? document.querySelector(ids.eqSelect).value
+          : document.querySelector(ids.eq).value;
+        const value = normalizeEqInput(key, raw);
+        if (!value) return alert(usesSelect ? "精确筛选请选择属性值。" : "精确筛选请输入属性值。"), null;
         return { key, op: "eq", value };
       }
       const minRaw = document.querySelector(ids.min).value.trim();
@@ -992,16 +1045,29 @@
       return { key, op: "range", min, max };
     }
 
+    function caseAttrKeysWithData() {
+      const index = collectCaseAttrValues();
+      return CASE_ATTR_ORDER.filter((key) => index.has(key));
+    }
+
+    function defaultCaseAttrKey() {
+      const keys = caseAttrKeysWithData();
+      const preferred = ["layout", "dtype"].find((key) => keys.includes(key));
+      return preferred || keys[0] || CASE_ATTR_ORDER[0];
+    }
+
     function caseAttrKeyOptions() {
-      return [["", "选择属性"], ...CASE_ATTR_ORDER.map((key) => [key, CASE_ATTR_LABELS[key] || key])];
+      return caseAttrKeysWithData().map((key) => [key, CASE_ATTR_LABELS[key] || key]);
     }
 
     function fillCaseAttrFilter(prefix) {
       const ids = attrPickerIds(prefix);
       const keySelect = document.querySelector(ids.key);
       const currentKey = keySelect.value;
-      fillSelect(ids.key, caseAttrKeyOptions());
-      keySelect.value = [...keySelect.options].some((option) => option.value === currentKey) ? currentKey : "";
+      const options = caseAttrKeyOptions();
+      fillSelect(ids.key, options);
+      const validKeys = new Set(options.map(([key]) => key));
+      keySelect.value = validKeys.has(currentKey) ? currentKey : defaultCaseAttrKey();
       updateAttrPickerUI(prefix);
     }
 
@@ -1012,7 +1078,6 @@
     function formatFilterChipLabel(filter) {
       const entry = normalizeFilterEntry(filter);
       const label = CASE_ATTR_LABELS[entry.key] || entry.key;
-      if (entry.op === "any") return `${label}=不限`;
       if (entry.op === "eq") return `${label}=${formatAttrValueLabel(entry.key, entry.value)}`;
       if (entry.op === "range") {
         const { min, max } = entry;
@@ -1049,7 +1114,6 @@
         renderNetworkTab();
       } else {
         pruneCompareCasesByAttrFilters();
-        initCompareCasesIfEmpty();
         refreshCaseCompareAddSelect();
         renderCaseCompareList();
         updateRunContextDisplay("case");
@@ -1087,29 +1151,33 @@
     function onCaseAttrKeyChange(prefix) {
       const ids = attrPickerIds(prefix);
       document.querySelector(ids.eq).value = "";
+      document.querySelector(ids.eqSelect).value = "";
       document.querySelector(ids.min).value = "";
       document.querySelector(ids.max).value = "";
       updateAttrPickerUI(prefix);
     }
 
     function attrValuesEqual(key, caseValue, filterValue) {
-      if (key === "varlen") {
-        const actual = caseValue === true || caseValue === "true";
-        const expected = filterValue === "true";
-        return actual === expected;
+      if (key === "layout") {
+        return String(caseValue).toUpperCase() === String(filterValue).toUpperCase();
       }
       if (key === "scale") return Number(caseValue) === Number(filterValue);
       return String(caseValue) === String(filterValue);
+    }
+
+    function caseAttrValueForMatch(testCase, key) {
+      const attrs = testCase.attributes || {};
+      if (key === "layout") return caseLayoutValue(attrs);
+      if (!(key in attrs)) return undefined;
+      return attrs[key];
     }
 
     function matchesCaseAttr(testCase, filter) {
       const entry = normalizeFilterEntry(filter);
       const { key, op } = entry;
       if (!key) return true;
-      const attrs = testCase.attributes || {};
-      if (!(key in attrs)) return false;
-      if (op === "any") return true;
-      const caseValue = attrs[key];
+      const caseValue = caseAttrValueForMatch(testCase, key);
+      if (caseValue === undefined) return false;
       if (op === "eq") return attrValuesEqual(key, caseValue, entry.value);
       if (op === "range") {
         const num = Number(caseValue);
@@ -1207,12 +1275,6 @@
       state.compareCases = (state.compareCases || []).filter((id) => valid.has(id));
     }
 
-    function initCompareCasesIfEmpty() {
-      if (state.compareCases?.length) return;
-      const first = caseCompareAddCandidates()[0];
-      if (first) state.compareCases = [first.id];
-    }
-
     function refreshCaseCompareAddSelect() {
       const candidates = caseCompareAddCandidates();
       const select = document.querySelector("#caseCompareAdd");
@@ -1265,7 +1327,6 @@
     function setupCaseCompareUI() {
       pruneCompareCases();
       pruneCompareCasesByAttrFilters();
-      initCompareCasesIfEmpty();
       refreshCaseCompareAddSelect();
       renderCaseCompareList();
       updateRunContextDisplay("case");
@@ -1354,7 +1415,9 @@
     function operatorOptions() {
       const ids = new Set();
       state.data.snapshots.forEach((snap) => (snap.operators || []).forEach((item) => ids.add(item.operator_id)));
-      return [...ids].map((id) => [id, operatorLabel(id)]);
+      return [...ids]
+        .filter((id) => id !== OTHER_RUNTIME_ID)
+        .map((id) => [id, operatorLabel(id)]);
     }
 
     function fillSelect(selector, entries) {
@@ -1528,9 +1591,9 @@
     function caseAttributesKey(attrs) {
       const normalized = {};
       CASE_ATTR_ORDER.forEach((key) => {
-        const value = attrs?.[key];
-        if (value == null || value === "") return;
-        normalized[key] = value;
+        const value = caseAttributeValue(attrs, key);
+        if (value == null) return;
+        normalized[key] = key === "layout" ? String(value).toUpperCase() : value;
       });
       return JSON.stringify(normalized);
     }

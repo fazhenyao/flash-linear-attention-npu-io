@@ -160,6 +160,7 @@ def runner_status() -> dict[str, Any]:
         "dtype": "bf16",
         "mean_len": 1024,
         "cu_seqlens": "",
+        "layout": "TND",
         "varlen": True,
     }
     payload = {"attributes": attrs, "prof_tool": "msprof"}
