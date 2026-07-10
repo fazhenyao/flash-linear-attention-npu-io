@@ -14,6 +14,15 @@ PROF_APP_ROOT = ROOT / "data" / "prof_gdr"
 PROF_OP_ROOT = ROOT / "data" / "prof_op"
 VALID_PROF_TOOLS = {"msprof", "msprof_op", "msprof_op_sim"}
 
+TRIGGER_SCRIPTS = [
+    {
+        "id": "flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
+        "label": "flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
+        "remote": "examples/flash_gated_delta_rule.py",
+        "local": "ref/flash_gated_delta_rule.py",
+    },
+]
+
 
 @dataclass
 class PerfRunnerConfig:
@@ -67,6 +76,25 @@ def load_config() -> PerfRunnerConfig:
         soc_version=os.environ.get("PERF_SOC_VERSION", "").strip() or "Ascend910B",
         dry_run=_env_bool("PERF_RUN_DRY_RUN"),
     )
+
+
+def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> tuple[str, Path]:
+    script_path = str(payload.get("script_path") or "").strip() or TRIGGER_SCRIPTS[0]["id"]
+    entry = next(
+        (item for item in TRIGGER_SCRIPTS if item["id"] == script_path or item["label"] == script_path),
+        None,
+    )
+    if entry is None:
+        allowed = ", ".join(item["label"] for item in TRIGGER_SCRIPTS)
+        raise ValueError(f"未知脚本路径：{script_path}（可选：{allowed}）")
+    local = Path(entry["local"])
+    if not local.is_absolute():
+        local = ROOT / local
+    return entry["remote"], local
+
+
+def script_options() -> list[dict[str, str]]:
+    return [{"id": item["id"], "label": item["label"]} for item in TRIGGER_SCRIPTS]
 
 
 def normalize_prof_tool(payload: dict[str, Any]) -> str:
@@ -179,6 +207,8 @@ def runner_status() -> dict[str, Any]:
         "soc_version": config.soc_version,
         "example_command_msprof": build_command(payload) if enabled else None,
         "example_command_msprof_op": build_command(payload_op) if enabled else None,
+        "script_options": script_options(),
+        "default_script_path": TRIGGER_SCRIPTS[0]["id"],
     }
 
 
@@ -241,19 +271,18 @@ def build_command(payload: dict[str, Any]) -> str:
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
     py_args = attributes_to_cli_args(attrs, resolve_npu_device(payload, config))
     output = str(prof_output_root(prof_tool, local=False))
-    script = config.remote_script
+    remote_script, local_script = resolve_script_paths(payload, config)
     invocation = build_prof_invocation(
         config,
         prof_tool=prof_tool,
         output=output,
-        script=script,
+        script=remote_script,
         py_args=py_args,
         kernel_name=kernel_name,
     )
     if config.mode == "ssh":
         remote = f"cd {shlex.quote(config.remote_workdir)} && {invocation}"
         return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
-    local_script = config.local_script if config.local_script.is_absolute() else ROOT / config.local_script
     local_output = str(prof_output_root(prof_tool, local=True))
     invocation = build_prof_invocation(
         config,
@@ -354,6 +383,7 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
     operator_id = str(payload.get("operator_id") or "").strip() or None
     npu_device = resolve_npu_device(payload, config)
+    remote_script, local_script = resolve_script_paths(payload, config)
     py_args = attributes_to_cli_args(attrs, npu_device)
     local_root = prof_output_root(prof_tool, local=True)
     remote_output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
@@ -366,7 +396,7 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             config,
             prof_tool=prof_tool,
             output=remote_output,
-            script=config.remote_script,
+            script=remote_script,
             py_args=py_args,
             kernel_name=kernel_name,
         )
@@ -385,7 +415,7 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
         prof_dir = local_dir
     elif config.mode == "local":
         before = _list_local_prof_dirs(prof_tool)
-        script = config.local_script if config.local_script.is_absolute() else ROOT / config.local_script
+        script = local_script
         local_root.mkdir(parents=True, exist_ok=True)
         invocation_parts = shlex.split(
             build_prof_invocation(

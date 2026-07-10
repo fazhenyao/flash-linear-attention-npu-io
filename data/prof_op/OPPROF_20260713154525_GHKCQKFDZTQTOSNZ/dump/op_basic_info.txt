@@ -1,0 +1,9 @@
+Op Name=ChunkBwdDqkwg_052dc5d24903c149b009b6261b0cca13_1_mix_aic
+Block Dim=20
+Run Soc Version=Ascend910B3
+Device Id=2
+Pid=1069126
+Current Freq=1800
+Rated Freq=1800
+Is MC2=0
+Is Lccl=0

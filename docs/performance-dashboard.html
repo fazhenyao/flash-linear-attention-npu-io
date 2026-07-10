@@ -86,10 +86,16 @@
           <h3 class="perf-filter-group-title">图表选项</h3>
           <div class="perf-filters-row">
             <label>算子范围
-              <span class="perf-check-field">
-                <input id="netGdnOnly" type="checkbox" checked>
-                <span>仅 GDN 算子</span>
-              </span>
+              <div class="perf-operator-scope">
+                <label class="perf-check-field">
+                  <input id="netShowAscendc" type="checkbox" checked>
+                  <span>ascendc 算子</span>
+                </label>
+                <label class="perf-check-field">
+                  <input id="netShowTriton" type="checkbox" checked>
+                  <span>triton 算子</span>
+                </label>
+              </div>
             </label>
           </div>
         </section>
@@ -195,9 +201,6 @@
         <div class="perf-chart-card">
           <div class="panel-title-row"><h2>触发用例测试</h2><small>msprof或msprof op（需配置 FLASH_IO_LOCAL_API）</small></div>
           <form id="triggerForm" class="perf-form">
-            <label>模型
-              <select id="triggerModel" required></select>
-            </label>
             <p id="triggerEnvHint" class="perf-trigger-env-hint">执行环境：连接后端后显示 PERF_CHIP 与默认 NPU 卡号。</p>
             <label>采集模式
               <select id="triggerProfTool">
@@ -257,7 +260,7 @@
                 <tr>
                   <th>时间</th>
                   <th>用例</th>
-                  <th>模型</th>
+                  <th>脚本</th>
                   <th>芯片</th>
                   <th>采集</th>
                   <th>状态</th>
@@ -279,7 +282,11 @@
     const WORKER_API_BASE = String(window.FLASH_IO_API_BASE || localStorage.getItem("flashWorkerApiBase") || "").replace(/\/+$/, "");
     const LOCAL_API_BASE = String(window.FLASH_IO_LOCAL_API || localStorage.getItem("flashLocalApiBase") || "").replace(/\/+$/, "");
     const TOKEN_KEY = "flashWorkerToken";
-    const PIE_COLORS = ["#277560", "#2f73c8", "#b87508", "#cf3d32", "#6b5b95", "#88b04b", "#f7cac9", "#92a8d1", "#955251", "#b565a7"];
+    const OPERATOR_PALETTE = [
+      "#277560", "#2f73c8", "#b87508", "#cf3d32", "#6b5b95", "#5c7cfa", "#9e5a8f",
+      "#3d8b7a", "#c97b2d", "#4a90a4", "#a63d3d", "#7d6b9e", "#6b9e3d", "#d4a574",
+      "#5b8a72", "#8b6914", "#8a8a8a",
+    ];
     const OPERATOR_LABELS = {
       chunk_gated_delta_rule_fwd_h: "fwd_h",
       chunk_fwd_o: "fwd_o",
@@ -300,6 +307,48 @@
       causal_conv1d_bwd: "causal_conv1d_bwd",
     };
     const OTHER_RUNTIME_ID = "other_runtime";
+    const ASCENDC_OPERATORS = new Set([
+      "chunk_gated_delta_rule_fwd_h",
+      "chunk_fwd_o",
+      "recompute_wu_fwd",
+      "chunk_bwd_dv_local",
+      "chunk_bwd_dqkwg",
+      "chunk_gated_delta_rule_bwd_dhu",
+      "prepare_wy_repr_bwd_full",
+      "prepare_wy_repr_bwd_da",
+      "causal_conv1d_fwd",
+      "causal_conv1d_bwd",
+    ]);
+    const TRITON_OPERATORS = new Set([
+      "chunk_local_cumsum",
+      "chunk_scaled_dot_kkt_fwd",
+      "l2norm_fwd",
+      "l2norm_bwd",
+      "solve_tril",
+      "kimi_delta_attention_triton",
+    ]);
+    const OPERATOR_COLOR_ORDER = [
+      "chunk_gated_delta_rule_fwd_h",
+      "recompute_wu_fwd",
+      "chunk_fwd_o",
+      "chunk_bwd_dv_local",
+      "chunk_bwd_dqkwg",
+      "chunk_gated_delta_rule_bwd_dhu",
+      "prepare_wy_repr_bwd_da",
+      "prepare_wy_repr_bwd_full",
+      "causal_conv1d_fwd",
+      "causal_conv1d_bwd",
+      "solve_tril",
+      "chunk_scaled_dot_kkt_fwd",
+      "l2norm_fwd",
+      "l2norm_bwd",
+      "chunk_local_cumsum",
+      "kimi_delta_attention_triton",
+      "other_runtime",
+    ];
+    const OPERATOR_COLOR_MAP = Object.fromEntries(
+      OPERATOR_COLOR_ORDER.map((id, index) => [id, OPERATOR_PALETTE[index]]),
+    );
 
     const state = {
       data: null,
@@ -332,7 +381,7 @@
       document.querySelectorAll(".perf-tabs button").forEach((button) => {
         button.addEventListener("click", () => switchTab(button.dataset.tab));
       });
-      ["netCase", "netGdnOnly"].forEach((id) => {
+      ["netCase", "netShowTriton", "netShowAscendc"].forEach((id) => {
         document.querySelector(`#${id}`).addEventListener("change", () => {
           updateRunContextDisplay("net");
           renderNetworkTab();
@@ -710,7 +759,6 @@
         alert(state.runner?.error || "真实执行环境未配置。请设置 PERF_RUN_MODE=ssh 与 PERF_SSH_HOST，或 PERF_RUN_MODE=local。");
         return;
       }
-      const modelId = document.querySelector("#triggerModel").value;
       const chip = state.runner?.chip || "A2";
       let device = 2;
       try {
@@ -724,7 +772,7 @@
         attributes.notes = document.querySelector("#triggerNotes").value.trim();
       }
       const payload = {
-        model_id: modelId,
+        model_id: "gdn",
         chip,
         device,
         prof_tool: document.querySelector("#triggerProfTool").value,
@@ -819,14 +867,14 @@
       dtype: ["bf16", "fp16"],
     };
     const CASE_DETAIL_METRICS = [
-      { key: "mbu", label: "MBU", format: "pct", chartOption: "MBU（访存利用率）" },
-      { key: "mfu", label: "MFU", format: "pct", chartOption: "MFU（算力利用率）" },
-      { key: "bottleneck", label: "bound类型", format: "bound" },
-      { key: "mte1_ratio", label: "MTE1 ratio", format: "pct", chartOption: "MTE1 ratio" },
-      { key: "mte2_ratio", label: "MTE2 ratio", format: "pct", chartOption: "MTE2 ratio" },
-      { key: "mte3_ratio", label: "MTE3 ratio", format: "pct", chartOption: "MTE3 ratio" },
-      { key: "cube_util", label: "cube", format: "pct", chartOption: "cube 利用率" },
-      { key: "vector_util", label: "vec", format: "pct", chartOption: "vec 利用率" },
+      { key: "mbu", label: "MBU", format: "pct", chartOption: "MBU（访存带宽利用率）" },
+      { key: "mfu", label: "MFU", format: "pct", chartOption: "MFU（Cube 峰值算力利用率）" },
+      { key: "bottleneck", label: "瓶颈", format: "bound" },
+      { key: "mte1_ratio", label: "MTE1 占比", format: "pct", chartOption: "MTE1 流水线时间占比" },
+      { key: "mte2_ratio", label: "MTE2 占比", format: "pct", chartOption: "MTE2 流水线时间占比" },
+      { key: "mte3_ratio", label: "MTE3 占比", format: "pct", chartOption: "MTE3 流水线时间占比" },
+      { key: "cube_util", label: "Cube 占比", format: "pct", chartOption: "Cube 流水线时间占比" },
+      { key: "vector_util", label: "Vector 占比", format: "pct", chartOption: "Vector 流水线时间占比" },
     ];
     const CASE_METRIC_CHART_COLORS = {
       mbu: { line: "#2f73c8", fill: "rgba(47,115,200,.12)" },
@@ -845,6 +893,42 @@
 
     function caseMetricChartColors(metricKey) {
       return CASE_METRIC_CHART_COLORS[metricKey] || CASE_METRIC_CHART_COLORS.mbu;
+    }
+
+    const CASE_CHART_RATIO_ONLY = new Set(["mbu", "mfu", "cube_util", "vector_util"]);
+
+    function formatUs(value) {
+      if (value == null || value === "" || Number.isNaN(Number(value))) return "—";
+      const num = Number(value);
+      if (num >= 100) return String(Math.round(num));
+      if (num >= 10) return num.toFixed(1).replace(/\.0$/, "");
+      return num.toFixed(2).replace(/\.?0+$/, "");
+    }
+
+    function estimatePipeTimeUs(metric, ratioKey) {
+      const ratio = Number(metric?.[ratioKey]);
+      const timeMs = Number(metric?.time_ms);
+      if (Number.isNaN(ratio) || Number.isNaN(timeMs)) return null;
+      return timeMs * 1000 * ratio;
+    }
+
+    function caseMetricTooltipLines(metricKey, metric) {
+      const spec = findCaseMetricSpec(metricKey);
+      const label = spec.chartOption || spec.label;
+      const lines = [`${label}: ${pct(metric?.[metricKey])}`];
+      if (CASE_CHART_RATIO_ONLY.has(metricKey)) return lines;
+      const pipeMatch = metricKey.match(/^(mte[123])_ratio$/);
+      if (!pipeMatch) return lines;
+      const pipe = pipeMatch[1];
+      const pipeLabel = pipe.toUpperCase();
+      let avg = metric?.[`${pipe}_time_avg_us`];
+      let min = metric?.[`${pipe}_time_min_us`];
+      let max = metric?.[`${pipe}_time_max_us`];
+      if (avg == null) avg = estimatePipeTimeUs(metric, metricKey);
+      lines.push(`${pipeLabel} 平均耗时: ${formatUs(avg)} us`);
+      lines.push(`${pipeLabel} 最短耗时: ${formatUs(min)} us`);
+      lines.push(`${pipeLabel} 最长耗时: ${formatUs(max)} us`);
+      return lines;
     }
 
     function defaultScale(keyDim) {
@@ -1425,7 +1509,6 @@
       refreshFilteredCaseSelect("net");
       setupCaseCompareUI();
       updateRunContextDisplay("net");
-      fillSelect("#triggerModel", state.data.models.map((item) => [item.id, item.label]));
       fillTriggerKernelOptions();
       updateTriggerProfToolUI();
       updateVarlenFieldsUI();
@@ -1484,9 +1567,13 @@
     function caseMetricChartTitle(metricKeys) {
       if (!metricKeys.length) return "指标对比";
       if (metricKeys.length === 1) {
-        return `${findCaseMetricSpec(metricKeys[0]).label} 对比`;
+        const spec = findCaseMetricSpec(metricKeys[0]);
+        return `${spec.chartOption || spec.label} 对比`;
       }
-      const labels = metricKeys.map((key) => findCaseMetricSpec(key).label);
+      const labels = metricKeys.map((key) => {
+        const spec = findCaseMetricSpec(key);
+        return spec.label;
+      });
       return `指标对比（${labels.join(" / ")}）`;
     }
 
@@ -1505,11 +1592,32 @@
       if ([...select.options].some((option) => option.value === current)) select.value = current;
     }
 
+    function operatorBackend(operatorId) {
+      if (ASCENDC_OPERATORS.has(operatorId)) return "ascendc";
+      if (TRITON_OPERATORS.has(operatorId)) return "triton";
+      return null;
+    }
+
+    function passesOperatorScope(operatorId) {
+      if (operatorId === OTHER_RUNTIME_ID) return false;
+      const backend = operatorBackend(operatorId);
+      if (!backend) return false;
+      const showAscendc = document.querySelector("#netShowAscendc")?.checked;
+      const showTriton = document.querySelector("#netShowTriton")?.checked;
+      if (!showAscendc && !showTriton) return false;
+      return (backend === "ascendc" && showAscendc) || (backend === "triton" && showTriton);
+    }
+
+    function operatorColor(operatorId) {
+      if (OPERATOR_COLOR_MAP[operatorId]) return OPERATOR_COLOR_MAP[operatorId];
+      let hash = 0;
+      for (const ch of String(operatorId)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+      return `hsl(${hash % 360} 42% 42%)`;
+    }
+
     function normalizeSnapshotOperators(snap) {
       if (!snap) return null;
-      const gdnOnly = document.querySelector("#netGdnOnly")?.checked;
-      let operators = [...(snap.operators || [])];
-      if (gdnOnly) operators = operators.filter((item) => item.operator_id !== OTHER_RUNTIME_ID);
+      let operators = [...(snap.operators || [])].filter((item) => passesOperatorScope(item.operator_id));
       const total = operators.reduce((sum, item) => sum + Number(item.time_ms || 0), 0);
       operators = operators.map((item) => ({
         ...item,
@@ -1546,18 +1654,31 @@
       if (!snap) {
         totalNode.textContent = "无匹配数据";
         center.innerHTML = "";
-        legend.innerHTML = '<p class="empty">当前筛选条件下没有 msprof 整网快照。</p>';
+        const scopeEmpty = !document.querySelector("#netShowAscendc")?.checked
+          && !document.querySelector("#netShowTriton")?.checked;
+        legend.innerHTML = scopeEmpty
+          ? '<p class="empty">请至少勾选 ascendc 或 triton 算子。</p>'
+          : '<p class="empty">当前筛选条件下没有 msprof 整网快照。</p>';
         destroyChart("networkPie");
         destroyChart("networkCompare");
         document.querySelector("#networkComparePick").innerHTML = "";
         return;
       }
       const operators = [...(snap.operators || [])].sort((a, b) => b.time_ms - a.time_ms);
+      if (!operators.length) {
+        totalNode.textContent = "无匹配算子";
+        center.innerHTML = "";
+        legend.innerHTML = '<p class="empty">当前算子范围下没有可展示的算子。</p>';
+        destroyChart("networkPie");
+        destroyChart("networkCompare");
+        document.querySelector("#networkComparePick").innerHTML = "";
+        return;
+      }
       totalNode.textContent = `总耗时 ${snap.total_time_ms.toFixed(3)} ms`;
       center.innerHTML = `<strong>${snap.total_time_ms.toFixed(2)}</strong><span>ms</span><em>${escapeHtml(snap.label)}</em>${snap.prof_source ? `<small>${escapeHtml(snap.prof_source)}</small>` : ""}`;
-      legend.innerHTML = operators.map((item, index) => `
+      legend.innerHTML = operators.map((item) => `
         <div class="perf-legend-item">
-          <i style="background:${PIE_COLORS[index % PIE_COLORS.length]}"></i>
+          <i style="background:${operatorColor(item.operator_id)}"></i>
           <span>${escapeHtml(operatorLabel(item.operator_id))}</span>
           <b>${item.share_pct.toFixed(1)}%</b>
           <em>${item.time_ms.toFixed(3)} ms${item.call_count ? ` · ${item.call_count}次` : ""}</em>
@@ -1570,7 +1691,7 @@
           labels: operators.map((item) => operatorLabel(item.operator_id)),
           datasets: [{
             data: operators.map((item) => item.time_ms),
-            backgroundColor: operators.map((_, index) => PIE_COLORS[index % PIE_COLORS.length]),
+            backgroundColor: operators.map((item) => operatorColor(item.operator_id)),
             borderWidth: 2,
             borderColor: "#fffaf1",
           }],
@@ -1588,6 +1709,8 @@
 
     function renderComparePick(operators) {
       const host = document.querySelector("#networkComparePick");
+      const visible = new Set(operators.map((item) => item.operator_id));
+      state.compareOps = (state.compareOps || []).filter((id) => visible.has(id));
       if (!state.compareOps.length) state.compareOps = operators.slice(0, 2).map((item) => item.operator_id);
       host.innerHTML = operators.map((item) => {
         const checked = state.compareOps.includes(item.operator_id) ? "checked" : "";
@@ -1616,7 +1739,7 @@
           datasets: [{
             label: `${snap?.label || ""} 耗时(ms)`,
             data: selected.map((item) => item.time_ms),
-            backgroundColor: "#277560",
+            backgroundColor: selected.map((item) => operatorColor(item.operator_id)),
             borderRadius: 8,
           }],
         },
@@ -1806,6 +1929,7 @@
             const metricSpec = findCaseMetricSpec(metricKey);
             const colors = caseMetricChartColors(metricKey);
             return {
+              metricKey,
               label: metricSpec.chartOption || metricSpec.label,
               data: rows.map(({ metric }) => metric[metricKey]),
               borderColor: colors.line,
@@ -1824,27 +1948,27 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
+          interaction: { mode: "nearest", intersect: true },
           scales: {
             x: { ticks: { maxRotation: 45, minRotation: 0 } },
             y: {
               beginAtZero: true,
               max: 1,
-              title: { display: true, text: multiMetric ? "利用率" : findCaseMetricSpec(metricKeys[0]).label },
-              ticks: { callback: (v) => `${Math.round(v * 100)}%` },
+              title: { display: true, text: multiMetric ? "指标值" : findCaseMetricSpec(metricKeys[0]).chartOption || findCaseMetricSpec(metricKeys[0]).label },
+              ticks: { callback: (v) => pctAxis(v) },
             },
           },
           plugins: {
             legend: { display: multiMetric, position: "top" },
             tooltip: {
+              displayColors: false,
               callbacks: {
-                title: (items) => {
-                  const row = rows[items[0]?.dataIndex];
-                  if (!row) return items[0]?.label || "";
-                  const tool = profToolLabel(snapshotProfTool(row.snap));
-                  return `${row.testCase.label}（${tool}）`;
+                title: () => "",
+                label: (ctx) => {
+                  const row = rows[ctx.dataIndex];
+                  if (!row) return "";
+                  return caseMetricTooltipLines(ctx.dataset.metricKey, row.metric);
                 },
-                label: (ctx) => `${ctx.dataset.label}: ${pct(ctx.parsed.y)}`,
               },
             },
           },
@@ -1861,14 +1985,14 @@
       }
       tbody.innerHTML = runs.map((run) => {
         const testCase = state.data.cases.find((item) => item.id === run.case_id);
-        const model = state.data.models.find((item) => item.id === run.model_id);
         const snap = run.snapshot || state.data.snapshots.find((item) => item.id === run.snapshot_id);
         const command = run.command || run.message || "—";
         const shortCommand = command.length > 48 ? `${command.slice(0, 48)}…` : command;
+        const scriptPath = run.script_path || "—";
         return `<tr>
           <td>${escapeHtml((run.created_at || "").replace("T", " ").slice(0, 19))}</td>
           <td>${escapeHtml(testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—")}</td>
-          <td>${escapeHtml(model?.label || run.model_id)}</td>
+          <td>${escapeHtml(scriptPath)}</td>
           <td>${escapeHtml(run.chip || "")}</td>
           <td>${escapeHtml(profToolLabel(run.prof_tool || snap?.prof_tool || "msprof"))}</td>
           <td><span class="stat-pill ${run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral"}">${escapeHtml(run.status || "queued")}</span></td>
@@ -1896,8 +2020,13 @@
       return fromCatalog?.label || OPERATOR_LABELS[id] || id;
     }
 
-    function pct(value) {
-      return value == null ? "—" : `${Math.round(Number(value) * 100)}%`;
+    function pct(value, digits = 2) {
+      if (value == null || Number.isNaN(Number(value))) return "—";
+      return `${(Number(value) * 100).toFixed(digits)}%`;
+    }
+
+    function pctAxis(value) {
+      return pct(value, 1);
     }
 
     function numberOr(value, fallback) {

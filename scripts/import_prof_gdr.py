@@ -14,6 +14,13 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 PERF_PATHS = [ROOT / "data" / "performance-data.json", ROOT / "docs" / "performance-data.json"]
 BJ_TZ = timezone(timedelta(hours=8))
+RATIO_PRECISION = 4
+
+
+def round_ratio(value: float | None) -> float:
+    if value is None:
+        return 0.0
+    return round(value, RATIO_PRECISION)
 
 # OP Type / kernel name -> project operator id
 OP_TYPE_MAP = {
@@ -185,6 +192,20 @@ def infer_varlen_from_summary(rows: list[dict[str, str]]) -> bool:
     return True
 
 
+def parse_chunk_from_shapes(shapes: str) -> int | None:
+    """Parse chunk_size from B,H,chunk,K,V tensors such as 1,32,64,128,128."""
+    for match in re.finditer(r"(\d+),(\d+),(\d+),(\d+),(\d+)", shapes):
+        _, heads, chunk_candidate, key_dim, value_dim = (int(match.group(i)) for i in range(1, 6))
+        if (
+            heads <= 128
+            and chunk_candidate in {16, 32, 64, 128}
+            and key_dim in {16, 32, 64, 128}
+            and value_dim in {16, 32, 64, 128}
+        ):
+            return chunk_candidate
+    return None
+
+
 def parse_qkv_dims_from_shapes(shapes: str) -> tuple[int | None, int | None, int | None, int | None]:
     """Parse query_heads, tokens, key_dim, value_dim from ordered B,H,T,D tensors."""
     matches: list[tuple[int, int, int]] = []
@@ -253,13 +274,9 @@ def infer_case_from_summary(rows: list[dict[str, str]], prof_dir: Path) -> dict[
             key_dim = key_dim or kd
             value_dim = value_dim or vd
 
-        for match in re.finditer(r"(\d+),(\d+),(\d+),(\d+)", shapes):
-            _, heads, token_count, dim = (int(match.group(i)) for i in range(1, 5))
-            if token_count >= 256 and heads <= 128:
-                tokens = tokens or token_count
-                value_heads = value_heads or heads
-                if dim in {16, 32, 64, 128}:
-                    chunk_size = chunk_size or dim
+        chunk_from_shapes = parse_chunk_from_shapes(shapes)
+        if chunk_from_shapes is not None:
+            chunk_size = chunk_size or chunk_from_shapes
 
     if key_dim is None:
         for row in rows:
@@ -331,7 +348,7 @@ def to_float(value: str | None) -> float | None:
 
 def pick_bottleneck(row: dict[str, str]) -> str:
     candidates = {
-        "Cube": max(to_float(row.get("aic_mac_ratio")) or 0, to_float(row.get("cube_utilization(%)")) or 0 / 100),
+        "Cube": to_float(row.get("aic_mac_ratio")) or 0,
         "HBM": to_float(row.get("aic_mte2_ratio")) or 0,
         "L2": to_float(row.get("aiv_mte2_ratio")) or 0,
         "Vector": to_float(row.get("aiv_vec_ratio")) or 0,
@@ -340,8 +357,37 @@ def pick_bottleneck(row: dict[str, str]) -> str:
     return max(candidates, key=candidates.get)
 
 
+def row_pipe_time_us(row: dict[str, str], pipe: str) -> float | None:
+    if pipe == "mte1":
+        return to_float(row.get("aic_mte1_time(us)"))
+    if pipe == "mte2":
+        aic = to_float(row.get("aic_mte2_time(us)"))
+        aiv = to_float(row.get("aiv_mte2_time(us)"))
+        if aic is None and aiv is None:
+            return None
+        return max(aic or 0, aiv or 0)
+    if pipe == "mte3":
+        return to_float(row.get("aiv_mte3_time(us)"))
+    return None
+
+
+def pipe_time_stats(metrics: list[dict[str, Any]], pipe: str) -> dict[str, float]:
+    field = f"{pipe}_time_us"
+    picked = [item for item in metrics if item.get(field) is not None]
+    if not picked:
+        return {}
+    values = [float(item[field]) for item in picked]
+    denom = sum(item["time_ms"] for item in picked) or 1
+    avg = sum(float(item[field]) * item["time_ms"] for item in picked) / denom
+    return {
+        f"{pipe}_time_avg_us": round(avg, 2),
+        f"{pipe}_time_min_us": round(min(values), 2),
+        f"{pipe}_time_max_us": round(max(values), 2),
+    }
+
+
 def metric_from_summary_row(row: dict[str, str]) -> dict[str, Any]:
-    cube_util = to_float(row.get("cube_utilization(%)"))
+    cube_util_pct = to_float(row.get("cube_utilization(%)"))
     aic_mac = to_float(row.get("aic_mac_ratio"))
     aic_mte1 = to_float(row.get("aic_mte1_ratio"))
     aic_mte2 = to_float(row.get("aic_mte2_ratio"))
@@ -349,23 +395,28 @@ def metric_from_summary_row(row: dict[str, str]) -> dict[str, Any]:
     aiv_mte3 = to_float(row.get("aiv_mte3_ratio"))
     aiv_vec = to_float(row.get("aiv_vec_ratio"))
     duration = to_float(row.get("Task Duration(us)")) or to_float(row.get("aicore_time(us)")) or 0
-    mfu = (cube_util / 100) if cube_util else (aic_mac or 0)
+    mfu = (cube_util_pct / 100) if cube_util_pct is not None else None
     mte2 = max(aic_mte2 or 0, aiv_mte2 or 0)
     mbu = max(mte2, aiv_mte3 or 0)
-    return {
+    payload = {
         "time_ms": round(duration / 1000, 3),
-        "mbu": round(mbu, 3),
-        "mfu": round(mfu, 3),
+        "mbu": round_ratio(mbu),
+        "mfu": round_ratio(mfu) if mfu is not None else None,
         "bottleneck": pick_bottleneck(row),
-        "mte1_ratio": round(aic_mte1 or 0, 3),
-        "mte2_ratio": round(mte2, 3),
-        "mte3_ratio": round(aiv_mte3 or 0, 3),
-        "cube_util": round((cube_util or (aic_mac or 0) * 100) / 100 if cube_util else (aic_mac or 0), 3),
-        "vector_util": round(aiv_vec or 0, 3),
-        "mem_util": round(mbu, 3),
+        "mte1_ratio": round_ratio(aic_mte1 or 0),
+        "mte2_ratio": round_ratio(mte2),
+        "mte3_ratio": round_ratio(aiv_mte3 or 0),
+        "cube_util": round_ratio(aic_mac or 0),
+        "vector_util": round_ratio(aiv_vec or 0),
+        "mem_util": round_ratio(mbu),
         "core_type": row.get("Task Type") or row.get("Core Type") or "",
         "count": 1,
     }
+    for pipe in ("mte1", "mte2", "mte3"):
+        time_us = row_pipe_time_us(row, pipe)
+        if time_us is not None:
+            payload[f"{pipe}_time_us"] = round(time_us, 2)
+    return payload
 
 
 def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[str, dict[str, Any]]:
@@ -384,8 +435,12 @@ def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[str, dict[str,
         weight = [item["time_ms"] for item in metrics]
         denom = sum(weight) or 1
 
-        def wavg(field: str) -> float:
-            return round(sum(item[field] * item["time_ms"] for item in metrics) / denom, 3)
+        def wavg(field: str) -> float | None:
+            picked = [item for item in metrics if item.get(field) is not None]
+            if not picked:
+                return None
+            denom = sum(item["time_ms"] for item in picked) or 1
+            return round_ratio(sum(float(item[field]) * item["time_ms"] for item in picked) / denom)
 
         bottlenecks = {}
         for item in metrics:
@@ -403,6 +458,8 @@ def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[str, dict[str,
             "mem_util": wavg("mem_util"),
             "count": len(metrics),
         }
+        for pipe in ("mte1", "mte2", "mte3"):
+            result[operator_id].update(pipe_time_stats(metrics, pipe))
     return result
 
 
@@ -489,6 +546,15 @@ def build_snapshot(
                 "mte1_ratio": detail.get("mte1_ratio", 0),
                 "mte2_ratio": detail.get("mte2_ratio", 0),
                 "mte3_ratio": detail.get("mte3_ratio", 0),
+                "mte1_time_avg_us": detail.get("mte1_time_avg_us"),
+                "mte1_time_min_us": detail.get("mte1_time_min_us"),
+                "mte1_time_max_us": detail.get("mte1_time_max_us"),
+                "mte2_time_avg_us": detail.get("mte2_time_avg_us"),
+                "mte2_time_min_us": detail.get("mte2_time_min_us"),
+                "mte2_time_max_us": detail.get("mte2_time_max_us"),
+                "mte3_time_avg_us": detail.get("mte3_time_avg_us"),
+                "mte3_time_min_us": detail.get("mte3_time_min_us"),
+                "mte3_time_max_us": detail.get("mte3_time_max_us"),
                 "cube_util": detail.get("cube_util", 0),
                 "vector_util": detail.get("vector_util", 0),
                 "mem_util": detail.get("mem_util", 0),

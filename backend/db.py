@@ -677,9 +677,9 @@ def add_perf_model(conn: sqlite3.Connection, model: dict[str, Any]) -> dict[str,
 
 def trigger_perf_run(conn: sqlite3.Connection, payload: dict[str, Any], created_by: str = "backend") -> dict[str, Any]:
     try:
-        from .perf_runner import build_command, ensure_runner_configured, load_config, resolve_npu_device
+        from .perf_runner import TRIGGER_SCRIPTS, build_command, ensure_runner_configured, load_config, resolve_npu_device
     except ImportError:
-        from perf_runner import build_command, ensure_runner_configured, load_config, resolve_npu_device  # type: ignore
+        from perf_runner import TRIGGER_SCRIPTS, build_command, ensure_runner_configured, load_config, resolve_npu_device  # type: ignore
 
     ensure_runner_configured()
     return create_queued_perf_run(conn, payload, created_by, build_command(payload))
@@ -737,6 +737,7 @@ def create_queued_perf_run(
         "device": resolve_run_device(payload),
         "attributes": payload.get("attributes") or {},
         "prof_tool": prof_tool,
+        "script_path": str(payload.get("script_path") or TRIGGER_SCRIPTS[0]["id"]),
         "kernel_name": payload.get("kernel_name") or "",
         "status": "queued",
         "snapshot_id": "",

@@ -220,6 +220,11 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 }
 .perf-attr-add { border-color:rgba(39,117,96,.28); color:#1d6a56; background:#edf7f2; }
 .perf-attr-clear { border-color:rgba(184,117,8,.28); color:#8a570c; background:#fff8eb; }
+.perf-operator-scope {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 12px;
+}
 .perf-check-field {
   display:inline-flex;
   align-items:center;

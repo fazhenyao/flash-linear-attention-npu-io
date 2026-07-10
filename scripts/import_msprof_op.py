@@ -61,12 +61,21 @@ def parse_opprof_timestamp(prof_dir: Path) -> tuple[str, str]:
     return datetime.now(BJ_TZ).date().isoformat(), now_iso()
 
 
+RATIO_PRECISION = 4
+
+
+def round_ratio(value: float | None) -> float:
+    if value is None:
+        return 0.0
+    return round(value, RATIO_PRECISION)
+
+
 def normalize_ratio(value: float | None) -> float:
     if value is None:
         return 0.0
     if value > 1:
-        return round(value / 100, 3)
-    return round(value, 3)
+        return round_ratio(value / 100)
+    return round_ratio(value)
 
 
 def match_pipe_key(name: str) -> str | None:
@@ -78,8 +87,133 @@ def match_pipe_key(name: str) -> str | None:
     return None
 
 
+def pipe_time_stats_from_rows(pipe_rows: list[dict[str, Any]], pipe_key: str) -> dict[str, float]:
+    times = [
+        float(row["time_us"])
+        for row in pipe_rows
+        if row.get("time_us") is not None and match_pipe_key(str(row.get("pipe", ""))) == pipe_key
+    ]
+    if not times:
+        return {}
+    return {
+        f"{pipe_key}_time_avg_us": round(sum(times) / len(times), 2),
+        f"{pipe_key}_time_min_us": round(min(times), 2),
+        f"{pipe_key}_time_max_us": round(max(times), 2),
+    }
+
+
+def is_wide_pipe_format(rows: list[dict[str, str]]) -> bool:
+    if not rows:
+        return False
+    keys = {str(key).lower() for key in rows[0]}
+    return "aiv_vec_ratio" in keys and "block_id" in keys
+
+
+def weighted_avg(items: list[tuple[float, float | None]]) -> float:
+    picked = [(weight, value) for weight, value in items if value is not None]
+    if not picked:
+        return 0.0
+    if all(weight > 0 for weight, _ in picked):
+        denom = sum(weight for weight, _ in picked)
+        return round_ratio(sum(weight * value for weight, value in picked) / denom)
+    return round_ratio(sum(value for _, value in picked) / len(picked))
+
+
+def pipe_time_stats_wide(rows: list[dict[str, str]], pipe: str) -> dict[str, float]:
+    if pipe == "mte1":
+        col = "aic_mte1_time(us)"
+        picked = [row for row in rows if "cube" in str(row.get("sub_block_id", "")).lower()]
+    elif pipe == "mte2":
+        col = "aic_mte2_time(us)"
+        picked = [row for row in rows if "cube" in str(row.get("sub_block_id", "")).lower()]
+        aiv_col = "aiv_mte2_time(us)"
+        aiv_rows = [row for row in rows if "vector" in str(row.get("sub_block_id", "")).lower()]
+        aiv_times = [to_float(row.get(aiv_col)) for row in aiv_rows if to_float(row.get(aiv_col)) is not None]
+        times = [to_float(row.get(col)) for row in picked if to_float(row.get(col)) is not None]
+        if aiv_times:
+            times.extend(aiv_times)
+        if not times:
+            return {}
+        return {
+            "mte2_time_avg_us": round(sum(times) / len(times), 2),
+            "mte2_time_min_us": round(min(times), 2),
+            "mte2_time_max_us": round(max(times), 2),
+        }
+    elif pipe == "mte3":
+        col = "aiv_mte3_time(us)"
+        picked = [row for row in rows if "vector" in str(row.get("sub_block_id", "")).lower()]
+    else:
+        return {}
+    times = [to_float(row.get(col)) for row in picked if to_float(row.get(col)) is not None]
+    if not times:
+        return {}
+    return {
+        f"{pipe}_time_avg_us": round(sum(times) / len(times), 2),
+        f"{pipe}_time_min_us": round(min(times), 2),
+        f"{pipe}_time_max_us": round(max(times), 2),
+    }
+
+
+def parse_wide_pipe_utilization(rows: list[dict[str, str]]) -> dict[str, Any]:
+    cube_items: list[dict[str, float | None]] = []
+    vector_items: list[dict[str, float | None]] = []
+    for row in rows:
+        sub_block = str(row.get("sub_block_id", "")).lower()
+        if "cube" in sub_block:
+            cube_items.append(
+                {
+                    "weight": to_float(row.get("aic_time(us)")) or 0.0,
+                    "cube": to_float(row.get("aic_cube_ratio")) or to_float(row.get("aic_mac_ratio")),
+                    "mte1": to_float(row.get("aic_mte1_ratio")),
+                    "mte2": to_float(row.get("aic_mte2_ratio")),
+                    "mte3": to_float(row.get("aic_mte3_ratio")),
+                }
+            )
+        elif "vector" in sub_block:
+            vector_items.append(
+                {
+                    "weight": to_float(row.get("aiv_time(us)")) or 0.0,
+                    "vector": to_float(row.get("aiv_vec_ratio")),
+                    "mte2": to_float(row.get("aiv_mte2_ratio")),
+                    "mte3": to_float(row.get("aiv_mte3_ratio")),
+                }
+            )
+
+    def wavg(items: list[dict[str, float | None]], key: str) -> float:
+        return weighted_avg([(float(item["weight"]), item.get(key)) for item in items])
+
+    cube = wavg(cube_items, "cube")
+    vector = wavg(vector_items, "vector")
+    mte1 = wavg(cube_items, "mte1")
+    mte2 = round_ratio(max(wavg(cube_items, "mte2"), wavg(vector_items, "mte2")))
+    mte3 = wavg(vector_items, "mte3")
+    mbu = round_ratio(max(mte2, mte3))
+    bottleneck_candidates = {
+        "Cube": cube,
+        "HBM": mte2,
+        "Vector": vector,
+        "MTE3": mte3,
+        "MTE1": mte1,
+    }
+    payload = {
+        "pipe_rows": [],
+        "mte1_ratio": mte1,
+        "mte2_ratio": mte2,
+        "mte3_ratio": mte3,
+        "cube_util": cube,
+        "vector_util": vector,
+        "mbu": mbu,
+        "bottleneck": max(bottleneck_candidates, key=bottleneck_candidates.get),
+    }
+    for pipe_key in ("mte1", "mte2", "mte3"):
+        payload.update(pipe_time_stats_wide(rows, pipe_key))
+    return payload
+
+
 def parse_pipe_utilization(path: Path) -> dict[str, Any]:
     rows = read_csv_rows(path)
+    if is_wide_pipe_format(rows):
+        return parse_wide_pipe_utilization(rows)
     ratios: dict[str, list[float]] = {key: [] for key in PIPE_NAME_MAP}
     pipe_rows: list[dict[str, Any]] = []
 
@@ -119,7 +253,7 @@ def parse_pipe_utilization(path: Path) -> dict[str, Any]:
         )
 
     def avg(values: list[float]) -> float:
-        return round(sum(values) / len(values), 3) if values else 0.0
+        return round_ratio(sum(values) / len(values)) if values else 0.0
 
     merged = {key: avg(values) for key, values in ratios.items()}
     mte2 = max(merged.get("mte2", 0), 0)
@@ -134,7 +268,7 @@ def parse_pipe_utilization(path: Path) -> dict[str, Any]:
         "MTE1": merged.get("mte1", 0),
     }
     bottleneck = max(bottleneck_candidates, key=bottleneck_candidates.get)
-    return {
+    payload = {
         "pipe_rows": pipe_rows,
         "mte1_ratio": merged.get("mte1", 0),
         "mte2_ratio": mte2,
@@ -142,9 +276,40 @@ def parse_pipe_utilization(path: Path) -> dict[str, Any]:
         "cube_util": cube,
         "vector_util": vector,
         "mbu": mbu,
-        "mfu": cube,
         "bottleneck": bottleneck,
     }
+    for pipe_key in ("mte1", "mte2", "mte3"):
+        payload.update(pipe_time_stats_from_rows(pipe_rows, pipe_key))
+    return payload
+
+
+def parse_mfu_from_arithmetic(prof_dir: Path) -> float | None:
+    """Estimate MFU from ArithmeticUtilization.csv when cube_utilization(%) is unavailable."""
+    path = prof_dir / "ArithmeticUtilization.csv"
+    if not path.exists():
+        return None
+    rows = read_csv_rows(path)
+    weighted: list[tuple[float, float]] = []
+    throughputs: list[float] = []
+    for row in rows:
+        if "cube" not in str(row.get("sub_block_id", "")).lower():
+            continue
+        flops = to_float(row.get("aic_cube_fops"))
+        ratio = to_float(row.get("aic_cube_ratio"))
+        time_us = to_float(row.get("aic_time(us)"))
+        if flops is None or ratio is None or time_us is None or ratio <= 0 or time_us <= 0:
+            continue
+        active_us = ratio * time_us
+        if active_us <= 0:
+            continue
+        throughput = flops / active_us
+        throughputs.append(throughput)
+        weighted.append((time_us, throughput))
+    if not throughputs:
+        return None
+    peak = max(throughputs)
+    denom = sum(weight for weight, _ in weighted) or 1
+    return round_ratio(sum(weight * (throughput / peak) for weight, throughput in weighted) / denom)
 
 
 def parse_op_basic_info(path: Path) -> dict[str, Any]:
@@ -261,6 +426,7 @@ def import_msprof_op(
         raise FileNotFoundError(f"Missing PipeUtilization.csv under {prof_dir}")
 
     pipe_metrics = parse_pipe_utilization(pipe_path)
+    pipe_metrics["mfu"] = parse_mfu_from_arithmetic(prof_dir)
     basic = parse_op_basic_info(basic_path) if basic_path.exists() else {}
     resolved_kernel = kernel_name or basic.get("kernel_name") or ""
     resolved_operator = resolve_operator_id(resolved_kernel, operator_id)
@@ -278,6 +444,15 @@ def import_msprof_op(
         "mte1_ratio": pipe_metrics["mte1_ratio"],
         "mte2_ratio": pipe_metrics["mte2_ratio"],
         "mte3_ratio": pipe_metrics["mte3_ratio"],
+        "mte1_time_avg_us": pipe_metrics.get("mte1_time_avg_us"),
+        "mte1_time_min_us": pipe_metrics.get("mte1_time_min_us"),
+        "mte1_time_max_us": pipe_metrics.get("mte1_time_max_us"),
+        "mte2_time_avg_us": pipe_metrics.get("mte2_time_avg_us"),
+        "mte2_time_min_us": pipe_metrics.get("mte2_time_min_us"),
+        "mte2_time_max_us": pipe_metrics.get("mte2_time_max_us"),
+        "mte3_time_avg_us": pipe_metrics.get("mte3_time_avg_us"),
+        "mte3_time_min_us": pipe_metrics.get("mte3_time_min_us"),
+        "mte3_time_max_us": pipe_metrics.get("mte3_time_max_us"),
         "cube_util": pipe_metrics["cube_util"],
         "vector_util": pipe_metrics["vector_util"],
         "mem_util": pipe_metrics["mbu"],
