@@ -193,7 +193,7 @@
     <section id="tab-trigger" class="perf-tab panel">
       <div class="perf-trigger-grid">
         <div class="perf-chart-card">
-          <div class="panel-title-row"><h2>触发用例测试</h2><small>722 设备，支持 A2 / A3</small></div>
+          <div class="panel-title-row"><h2>触发用例测试</h2><small>通过本地 IO 后端下发 msprof 真实命令（需配置 FLASH_IO_LOCAL_API）</small></div>
           <form id="triggerForm" class="perf-form">
             <label>用例
               <select id="triggerCase" required></select>
@@ -252,6 +252,7 @@
                   <th>芯片</th>
                   <th>状态</th>
                   <th>总耗时</th>
+                  <th>命令</th>
                   <th>操作人</th>
                 </tr>
               </thead>
@@ -266,6 +267,7 @@
   <script src="./config.js?v=20260707-perf-dashboard"></script>
   <script>
     const WORKER_API_BASE = String(window.FLASH_IO_API_BASE || localStorage.getItem("flashWorkerApiBase") || "").replace(/\/+$/, "");
+    const LOCAL_API_BASE = String(window.FLASH_IO_LOCAL_API || localStorage.getItem("flashLocalApiBase") || "").replace(/\/+$/, "");
     const TOKEN_KEY = "flashWorkerToken";
     const PIE_COLORS = ["#277560", "#2f73c8", "#b87508", "#cf3d32", "#6b5b95", "#88b04b", "#f7cac9", "#92a8d1", "#955251", "#b565a7"];
     const OPERATOR_LABELS = {
@@ -298,6 +300,8 @@
       compareOps: [],
       compareCases: [],
       caseAttrFilters: { net: [], case: [] },
+      runner: null,
+      perfPollTimer: null,
     };
 
     init().catch((error) => {
@@ -307,8 +311,10 @@
     async function init() {
       bindEvents();
       await loadData();
+      await loadRunnerStatus();
       if (WORKER_API_BASE && state.token) await refreshUser();
       renderAll();
+      maybeStartPerfPolling();
     }
 
     function bindEvents() {
@@ -348,7 +354,18 @@
     async function loadData() {
       const stamp = Date.now();
       let source = "local";
-      if (WORKER_API_BASE) {
+      if (hasPendingPerfRuns() && LOCAL_API_BASE) {
+        try {
+          const perfRes = await fetch(`${LOCAL_API_BASE}/api/perf`);
+          if (perfRes.ok) {
+            state.data = await perfRes.json();
+            source = "local-api";
+          }
+        } catch {
+          // 回退到常规数据源
+        }
+      }
+      if (source === "local" && WORKER_API_BASE) {
         try {
           const perfRes = await fetch(`${WORKER_API_BASE}/api/perf`, { headers: authHeaders() });
           if (perfRes.ok) {
@@ -364,7 +381,7 @@
           // Worker 未部署 /api/perf 或网络不可达时，回退本地快照。
         }
       }
-      if (source !== "worker") {
+      if (source === "local") {
         const [perfRes, stateRes] = await Promise.all([
           fetch(`./performance-data.json?v=${stamp}`),
           fetch(`./project-state.json?v=${stamp}`),
@@ -376,10 +393,61 @@
           state.operators = exported.operators || [];
         }
         state.dataSource = WORKER_API_BASE ? "local-fallback" : "local";
+      } else if (source === "local-api") {
+        state.dataSource = "local-api";
       } else {
         state.dataSource = "worker";
       }
       state.compareOps = (currentSnapshot()?.operators || []).slice(0, 2).map((item) => item.operator_id);
+    }
+
+    async function loadRunnerStatus() {
+      if (!LOCAL_API_BASE) {
+        state.runner = null;
+        return;
+      }
+      try {
+        const response = await fetch(`${LOCAL_API_BASE}/api/perf/runner`);
+        state.runner = response.ok ? await response.json() : null;
+      } catch {
+        state.runner = null;
+      }
+    }
+
+    function hasPendingPerfRuns() {
+      return (state.data?.runs || []).some((run) => run.status === "queued" || run.status === "running");
+    }
+
+    function maybeStartPerfPolling() {
+      if (!LOCAL_API_BASE || !hasPendingPerfRuns()) {
+        if (state.perfPollTimer) {
+          clearInterval(state.perfPollTimer);
+          state.perfPollTimer = null;
+        }
+        return;
+      }
+      if (state.perfPollTimer) return;
+      state.perfPollTimer = setInterval(async () => {
+        await loadData();
+        renderRuns();
+        renderMeta();
+        if (!hasPendingPerfRuns()) {
+          clearInterval(state.perfPollTimer);
+          state.perfPollTimer = null;
+          renderAll();
+        }
+      }, 3000);
+    }
+
+    async function localPost(path, body) {
+      const response = await fetch(`${LOCAL_API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `API ${response.status}`);
+      return payload;
     }
 
     function authHeaders() {
@@ -444,6 +512,14 @@
 
     async function onTriggerSubmit(event) {
       event.preventDefault();
+      if (!LOCAL_API_BASE) {
+        alert("未配置 FLASH_IO_LOCAL_API。请在 docs/config.js 中设置本地后端地址（如 http://127.0.0.1:8787），并运行 python backend/app.py。");
+        return;
+      }
+      if (!state.runner?.enabled) {
+        alert(state.runner?.error || "真实执行环境未配置。请设置 PERF_RUN_MODE=ssh 与 PERF_SSH_HOST，或 PERF_RUN_MODE=local。");
+        return;
+      }
       const caseId = document.querySelector("#triggerCase").value;
       const modelId = document.querySelector("#triggerModel").value;
       const chip = document.querySelector("#triggerChip").value;
@@ -453,58 +529,20 @@
         attributes.notes = document.querySelector("#triggerNotes").value.trim();
       }
       const payload = { case_id: caseId, model_id: modelId, chip, device: "722", attributes };
-      if (useWorkerWrite()) {
-        const result = await workerPost("/api/perf/runs", payload);
+      try {
+        const result = await localPost("/api/perf/runs", payload);
         state.data = result.data || state.data;
-      } else {
-        const run = simulateRun(payload, testCase);
-        state.data.runs.unshift(run);
-        state.data.snapshots.unshift(run.snapshot);
+        await loadRunnerStatus();
+        renderAll();
+        maybeStartPerfPolling();
+        const run = result.run || {};
+        const message = run.status === "queued"
+          ? `已下发真实命令，后台执行中。\n\n${run.command || ""}`
+          : (run.message || "测试已提交");
+        alert(message);
+      } catch (error) {
+        alert(error.message || String(error));
       }
-      renderAll();
-      switchTab("network");
-      alert("测试已提交，结果已写入性能看板。");
-    }
-
-    function simulateRun(payload, testCase) {
-      const now = new Date().toISOString();
-      const base = state.data.snapshots.find((item) => item.model_id === payload.model_id && item.case_id === payload.case_id && item.chip === payload.chip)
-        || state.data.snapshots[0];
-      const jitter = () => 0.92 + Math.random() * 0.16;
-      const operators = (base?.operators || []).map((item) => {
-        const time = Math.round(item.time_ms * jitter() * 10) / 10;
-        return { ...item, time_ms: time };
-      });
-      const total = Math.round(operators.reduce((sum, item) => sum + item.time_ms, 0) * 10) / 10;
-      operators.forEach((item) => { item.share_pct = Math.round(item.time_ms / total * 1000) / 10; });
-      const snapshot = {
-        id: `snap-run-${Date.now()}`,
-        label: `${todayYmd()} 主线`,
-        snapshot_date: todayYmd(),
-        branch: "main",
-        model_id: payload.model_id,
-        case_id: payload.case_id,
-        chip: payload.chip,
-        total_time_ms: total,
-        status: "done",
-        created_at: now,
-        operators,
-      };
-      return {
-        id: `run-${Date.now()}`,
-        case_id: payload.case_id,
-        model_id: payload.model_id,
-        chip: payload.chip,
-        device: "722",
-        attributes: payload.attributes,
-        status: "done",
-        snapshot_id: snapshot.id,
-        created_by: state.user?.username || "local",
-        created_at: now,
-        finished_at: now,
-        message: "本地模拟执行完成",
-        snapshot,
-      };
     }
 
     function renderAll() {
@@ -524,8 +562,10 @@
       const isAdmin = state.user?.role === "admin";
       const loggedIn = Boolean(state.user);
       document.body.classList.toggle("admin-editing", isAdmin);
-      let status = loggedIn ? `${state.user.username}（${state.user.role}）` : "本地模式 · 可模拟执行";
-      if (useWorkerWrite()) status = loggedIn ? status : "只读模式 · 登录后可触发测试";
+      let status = loggedIn ? `${state.user.username}（${state.user.role}）` : "只读模式";
+      if (LOCAL_API_BASE && state.runner?.enabled) status = `真实执行 · ${state.runner.mode}`;
+      else if (LOCAL_API_BASE) status = `执行未就绪 · ${state.runner?.error || "未配置 PERF_RUN_MODE"}`;
+      else if (useWorkerWrite()) status = loggedIn ? status : "只读模式 · 触发测试需配置 FLASH_IO_LOCAL_API";
       else if (WORKER_API_BASE && state.dataSource === "local-fallback") status = "本地快照模式 · Worker /api/perf 未就绪";
       document.querySelector("#authStatus").textContent = status;
       document.querySelector("#workerLogin").classList.toggle("hidden", loggedIn || !useWorkerWrite());
@@ -536,7 +576,13 @@
     function renderMeta() {
       const snapCount = state.data.snapshots.length;
       const runCount = state.data.runs.length;
-      const sourceLabel = state.dataSource === "worker" ? "Cloudflare D1" : state.dataSource === "local-fallback" ? "本地快照（Worker 回退）" : "本地快照";
+      const sourceLabel = state.dataSource === "worker"
+        ? "Cloudflare D1"
+        : state.dataSource === "local-api"
+          ? "本地 IO 后端"
+          : state.dataSource === "local-fallback"
+            ? "本地快照（Worker 回退）"
+            : "本地快照";
       document.querySelector("#meta").textContent = `数据来源：${sourceLabel} · 数据版本：${state.data.version || "未知"} · ${state.data.models.length} 个模型 · ${state.data.cases.length} 个用例 · ${snapCount} 条快照 · ${runCount} 次执行`;
       document.querySelector("#summary").innerHTML = [
         ["模型", state.data.models.length],
@@ -1407,13 +1453,15 @@
       const tbody = document.querySelector("#runRows");
       const runs = [...(state.data.runs || [])].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
       if (!runs.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty">暂无执行记录，可在左侧提交用例测试。</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无执行记录，可在左侧提交用例测试。</td></tr>';
         return;
       }
       tbody.innerHTML = runs.map((run) => {
         const testCase = state.data.cases.find((item) => item.id === run.case_id);
         const model = state.data.models.find((item) => item.id === run.model_id);
         const snap = run.snapshot || state.data.snapshots.find((item) => item.id === run.snapshot_id);
+        const command = run.command || run.message || "—";
+        const shortCommand = command.length > 48 ? `${command.slice(0, 48)}…` : command;
         return `<tr>
           <td>${escapeHtml((run.created_at || "").replace("T", " ").slice(0, 19))}</td>
           <td>${escapeHtml(testCase?.label || run.case_id)}</td>
@@ -1421,6 +1469,7 @@
           <td>${escapeHtml(run.chip || "")}</td>
           <td><span class="stat-pill ${run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral"}">${escapeHtml(run.status || "queued")}</span></td>
           <td>${snap ? `${snap.total_time_ms.toFixed(1)} ms` : "—"}</td>
+          <td title="${escapeHtml(command)}">${escapeHtml(shortCommand)}</td>
           <td>${escapeHtml(run.created_by || "—")}</td>
         </tr>`;
       }).join("");

@@ -676,6 +676,21 @@ def add_perf_model(conn: sqlite3.Connection, model: dict[str, Any]) -> dict[str,
 
 
 def trigger_perf_run(conn: sqlite3.Connection, payload: dict[str, Any], created_by: str = "backend") -> dict[str, Any]:
+    try:
+        from .perf_runner import build_command, ensure_runner_configured
+    except ImportError:
+        from perf_runner import build_command, ensure_runner_configured  # type: ignore
+
+    ensure_runner_configured()
+    return create_queued_perf_run(conn, payload, created_by, build_command(payload))
+
+
+def create_queued_perf_run(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any],
+    created_by: str,
+    command: str,
+) -> dict[str, Any]:
     data = load_perf_data(conn)
     case_id = payload.get("case_id")
     model_id = payload.get("model_id")
@@ -686,37 +701,7 @@ def trigger_perf_run(conn: sqlite3.Connection, payload: dict[str, Any], created_
         raise ValueError("case not found")
     if not any(item.get("id") == model_id for item in data["models"]):
         raise ValueError("model not found")
-    base = next(
-        (item for item in data["snapshots"] if item.get("model_id") == model_id and item.get("case_id") == case_id and item.get("chip") == chip),
-        data["snapshots"][0] if data["snapshots"] else None,
-    )
-    operators = []
-    for item in base.get("operators", []) if base else []:
-        time_ms = round(float(item.get("time_ms", 0)) * (0.92 + (hash(f"{case_id}-{model_id}-{chip}-{item.get('operator_id')}") % 16) / 100), 1)
-        operators.append({**item, "time_ms": time_ms})
-    if not operators:
-        operators = [
-            {"operator_id": "chunk_fwd_o", "time_ms": 360.0, "share_pct": 45.0, "mbu": 0.72, "mfu": 0.64, "bottleneck": "HBM", "cube_util": 0.64, "vector_util": 0.5, "mem_util": 0.72},
-            {"operator_id": "chunk_gated_delta_rule_fwd_h", "time_ms": 320.0, "share_pct": 40.0, "mbu": 0.68, "mfu": 0.7, "bottleneck": "Cube", "cube_util": 0.7, "vector_util": 0.55, "mem_util": 0.5},
-            {"operator_id": "chunk_bwd_dv_local", "time_ms": 120.0, "share_pct": 15.0, "mbu": 0.58, "mfu": 0.66, "bottleneck": "L2", "cube_util": 0.66, "vector_util": 0.6, "mem_util": 0.58},
-        ]
-    total_time_ms = round(sum(item["time_ms"] for item in operators), 1)
-    for item in operators:
-        item["share_pct"] = round(item["time_ms"] / total_time_ms * 1000) / 10 if total_time_ms else 0
     timestamp = now_iso()
-    snapshot = {
-        "id": make_id("snap"),
-        "label": f"{timestamp[:10]} 主线",
-        "snapshot_date": timestamp[:10],
-        "branch": "main",
-        "model_id": model_id,
-        "case_id": case_id,
-        "chip": chip,
-        "total_time_ms": total_time_ms,
-        "status": "done",
-        "created_at": timestamp,
-        "operators": operators,
-    }
     run = {
         "id": make_id("run"),
         "case_id": case_id,
@@ -724,16 +709,71 @@ def trigger_perf_run(conn: sqlite3.Connection, payload: dict[str, Any], created_
         "chip": chip,
         "device": payload.get("device") or "722",
         "attributes": payload.get("attributes") or {},
-        "status": "done",
-        "snapshot_id": snapshot["id"],
+        "status": "queued",
+        "snapshot_id": "",
         "created_by": created_by,
         "created_at": timestamp,
-        "finished_at": timestamp,
-        "message": "测试执行完成",
-        "snapshot": snapshot,
+        "finished_at": "",
+        "message": "已排队，等待执行 msprof",
+        "command": command,
     }
-    data["snapshots"].insert(0, snapshot)
     data["runs"].insert(0, run)
     data["version"] = timestamp
     save_perf_data(conn, data)
-    return {"data": data, "run": run}
+    return {"data": data, "run": run, "execution_mode": "real"}
+
+
+def update_perf_run(conn: sqlite3.Connection, run_id: str, **fields: Any) -> dict[str, Any]:
+    data = load_perf_data(conn)
+    updated = None
+    for index, run in enumerate(data.get("runs", [])):
+        if run.get("id") == run_id:
+            data["runs"][index] = {**run, **fields}
+            updated = data["runs"][index]
+            break
+    if updated is None:
+        raise ValueError(f"run not found: {run_id}")
+    data["version"] = now_iso()
+    save_perf_data(conn, data)
+    return updated
+
+
+def complete_perf_run(
+    conn: sqlite3.Connection,
+    run_id: str,
+    *,
+    snapshot: dict[str, Any],
+    command: str,
+    message: str,
+) -> dict[str, Any]:
+    data = load_perf_data(conn)
+    for index, run in enumerate(data.get("runs", [])):
+        if run.get("id") != run_id:
+            continue
+        data["runs"][index] = {
+            **run,
+            "case_id": snapshot.get("case_id", run.get("case_id")),
+            "status": "done",
+            "snapshot_id": snapshot["id"],
+            "finished_at": now_iso(),
+            "message": message,
+            "command": command,
+            "snapshot": snapshot,
+        }
+        break
+    else:
+        raise ValueError(f"run not found: {run_id}")
+    data["version"] = now_iso()
+    save_perf_data(conn, data)
+    return {"data": data, "run": next(item for item in data["runs"] if item.get("id") == run_id)}
+
+
+def apply_imported_perf_data(conn: sqlite3.Connection, imported_data: dict[str, Any]) -> dict[str, Any]:
+    data = load_perf_data(conn)
+    data["cases"] = imported_data.get("cases", data.get("cases", []))
+    data["snapshots"] = imported_data.get("snapshots", data.get("snapshots", []))
+    imported_run_ids = {item.get("id") for item in imported_data.get("runs", [])}
+    preserved_runs = [item for item in data.get("runs", []) if item.get("id") not in imported_run_ids]
+    data["runs"] = preserved_runs
+    data["version"] = now_iso()
+    return save_perf_data(conn, data)

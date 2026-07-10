@@ -1,0 +1,303 @@
+from __future__ import annotations
+
+import importlib.util
+import os
+import shlex
+import subprocess
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+PROF_GDR_ROOT = ROOT / "data" / "prof_gdr"
+
+
+@dataclass
+class PerfRunnerConfig:
+    mode: str
+    ssh_host: str
+    ssh_user: str
+    ssh_port: str
+    ssh_identity: str
+    remote_workdir: str
+    remote_script: str
+    local_script: Path
+    npu_device: int
+    prof_output: str
+    dry_run: bool
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name, "").strip().lower()
+    if not value:
+        return default
+    return value in {"1", "true", "yes", "on"}
+
+
+def load_config() -> PerfRunnerConfig:
+    mode = os.environ.get("PERF_RUN_MODE", "auto").strip().lower()
+    if mode == "mock":
+        raise ValueError("已禁用模拟执行，请配置 PERF_RUN_MODE=ssh 或 local")
+    if mode == "auto":
+        if _env_bool("PERF_LOCAL_MODE") or os.environ.get("PERF_LOCAL_MODE", "").lower() == "local":
+            mode = "local"
+        elif os.environ.get("PERF_SSH_HOST", "").strip():
+            mode = "ssh"
+        else:
+            mode = "unset"
+    return PerfRunnerConfig(
+        mode=mode,
+        ssh_host=os.environ.get("PERF_SSH_HOST", "").strip(),
+        ssh_user=os.environ.get("PERF_SSH_USER", "").strip() or "root",
+        ssh_port=os.environ.get("PERF_SSH_PORT", "").strip(),
+        ssh_identity=os.environ.get("PERF_SSH_IDENTITY_FILE", "").strip(),
+        remote_workdir=os.environ.get("PERF_REMOTE_WORKDIR", "").strip() or "/data/flash-linear-attention-npu",
+        remote_script=os.environ.get("PERF_REMOTE_SCRIPT", "").strip() or "examples/flash_gated_delta_rule.py",
+        local_script=Path(os.environ.get("PERF_LOCAL_SCRIPT", "ref/flash_gated_delta_rule.py")),
+        npu_device=int(os.environ.get("PERF_NPU_DEVICE", "2")),
+        prof_output=os.environ.get("PERF_PROF_OUTPUT", "./prof_gdr").strip() or "./prof_gdr",
+        dry_run=_env_bool("PERF_RUN_DRY_RUN"),
+    )
+
+
+def ensure_runner_configured() -> PerfRunnerConfig:
+    config = load_config()
+    if config.mode == "unset":
+        raise ValueError(
+            "未配置真实执行环境。请设置 PERF_RUN_MODE=ssh 与 PERF_SSH_HOST，"
+            "或 PERF_RUN_MODE=local。参考 data/perf-runner.example.env"
+        )
+    if config.mode == "ssh" and not config.ssh_host:
+        raise ValueError("PERF_SSH_HOST 未配置")
+    if config.mode not in {"ssh", "local"}:
+        raise ValueError(f"不支持的 PERF_RUN_MODE：{config.mode}")
+    return config
+
+
+def is_real_enabled() -> bool:
+    try:
+        ensure_runner_configured()
+        return True
+    except ValueError:
+        return False
+
+
+def runner_status() -> dict[str, Any]:
+    error = None
+    try:
+        config = ensure_runner_configured()
+        enabled = True
+    except ValueError as exc:
+        config = load_config()
+        enabled = False
+        error = str(exc)
+    attrs = {
+        "batch": 1,
+        "query_heads": 32,
+        "value_heads": 32,
+        "tokens": 4087,
+        "key_dim": 128,
+        "value_dim": 128,
+        "chunk_size": 64,
+        "dtype": "bf16",
+        "mean_len": 1024,
+        "cu_seqlens": "",
+        "varlen": True,
+    }
+    return {
+        "enabled": enabled,
+        "mode": config.mode,
+        "dry_run": config.dry_run,
+        "error": error,
+        "ssh_host": config.ssh_host or None,
+        "remote_workdir": config.remote_workdir if config.mode == "ssh" else None,
+        "local_script": str(config.local_script) if config.mode == "local" else None,
+        "npu_device": config.npu_device,
+        "example_command": build_command({"attributes": attrs}) if enabled else None,
+    }
+
+
+def attributes_to_cli_args(attributes: dict[str, Any], npu_device: int) -> list[str]:
+    attrs = attributes or {}
+    args = ["--device", str(npu_device)]
+    int_fields = {
+        "batch": "--batch",
+        "query_heads": "--query-heads",
+        "value_heads": "--value-heads",
+        "tokens": "--tokens",
+        "key_dim": "--key-dim",
+        "value_dim": "--value-dim",
+        "chunk_size": "--chunk-size",
+        "mean_len": "--mean-len",
+    }
+    for key, flag in int_fields.items():
+        if attrs.get(key) is not None:
+            args.extend([flag, str(attrs[key])])
+    if attrs.get("scale") is not None:
+        args.extend(["--scale", str(attrs["scale"])])
+    if attrs.get("dtype"):
+        args.extend(["--dtype", str(attrs["dtype"])])
+    if attrs.get("cu_seqlens"):
+        args.extend(["--cu-seqlens", str(attrs["cu_seqlens"])])
+    if attrs.get("varlen", True):
+        args.append("--varlen")
+    else:
+        args.append("--no-varlen")
+    return args
+
+
+def build_command(payload: dict[str, Any]) -> str:
+    config = load_config()
+    attrs = payload.get("attributes") or {}
+    py_args = " ".join(shlex.quote(part) for part in attributes_to_cli_args(attrs, config.npu_device))
+    if config.mode == "ssh":
+        remote = (
+            f"cd {shlex.quote(config.remote_workdir)} && "
+            f"msprof --output={shlex.quote(config.prof_output)} "
+            f"python3 {shlex.quote(config.remote_script)} {py_args}"
+        )
+        return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
+    script = config.local_script if config.local_script.is_absolute() else ROOT / config.local_script
+    return (
+        f"msprof --output={shlex.quote(str(PROF_GDR_ROOT))} "
+        f"{shlex.quote(sys.executable)} {shlex.quote(str(script))} {py_args}"
+    )
+
+
+def _ssh_command(config: PerfRunnerConfig, remote_command: str) -> list[str]:
+    cmd = ["ssh"]
+    if config.ssh_port:
+        cmd.extend(["-p", config.ssh_port])
+    if config.ssh_identity:
+        cmd.extend(["-i", config.ssh_identity])
+    cmd.extend(["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new"])
+    cmd.append(f"{config.ssh_user}@{config.ssh_host}")
+    cmd.append(remote_command)
+    return cmd
+
+
+def _scp_command(config: PerfRunnerConfig, remote_path: str, local_path: Path) -> list[str]:
+    cmd = ["scp", "-r"]
+    if config.ssh_port:
+        cmd.extend(["-P", config.ssh_port])
+    if config.ssh_identity:
+        cmd.extend(["-i", config.ssh_identity])
+    cmd.append(f"{config.ssh_user}@{config.ssh_host}:{remote_path}")
+    cmd.append(str(local_path))
+    return cmd
+
+
+def _run_command(command: list[str] | str, *, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+    if isinstance(command, str):
+        return subprocess.run(command, shell=True, cwd=cwd, check=True, capture_output=True, text=True)
+    return subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
+
+
+def _list_remote_prof_dirs(config: PerfRunnerConfig) -> set[str]:
+    remote = f"ls -1 {shlex.quote(config.prof_output)}/PROF_* 2>/dev/null || true"
+    result = _run_command(_ssh_command(config, remote))
+    names = set()
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        names.add(Path(line).name)
+    return names
+
+
+def _list_local_prof_dirs() -> set[str]:
+    if not PROF_GDR_ROOT.exists():
+        return set()
+    return {path.name for path in PROF_GDR_ROOT.glob("PROF_*") if path.is_dir()}
+
+
+def _resolve_new_prof_dir(before: set[str], after: set[str]) -> str:
+    created = sorted(name for name in after - before if name.startswith("PROF_"))
+    if not created:
+        raise RuntimeError("msprof 执行完成，但未发现新的 PROF_* 目录")
+    return created[-1]
+
+
+def _import_prof_module():
+    module_path = ROOT / "scripts" / "import_prof_gdr.py"
+    spec = importlib.util.spec_from_file_location("import_prof_gdr", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"无法加载导入脚本：{module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def execute(payload: dict[str, Any]) -> dict[str, Any]:
+    config = ensure_runner_configured()
+    command = build_command(payload)
+    if config.dry_run:
+        return {
+            "status": "done",
+            "message": "dry-run：未实际执行",
+            "command": command,
+            "dry_run": True,
+        }
+
+    chip = payload.get("chip") or "A2"
+    model_id = payload.get("model_id") or "gdn"
+    attrs = payload.get("attributes") or {}
+    py_args = attributes_to_cli_args(attrs, config.npu_device)
+
+    if config.mode == "ssh":
+        if not config.ssh_host:
+            raise RuntimeError("PERF_SSH_HOST 未配置")
+        before = _list_remote_prof_dirs(config)
+        remote = (
+            f"cd {shlex.quote(config.remote_workdir)} && "
+            f"msprof --output={shlex.quote(config.prof_output)} "
+            f"python3 {shlex.quote(config.remote_script)} {' '.join(shlex.quote(part) for part in py_args)}"
+        )
+        _run_command(_ssh_command(config, remote))
+        after = _list_remote_prof_dirs(config)
+        prof_name = _resolve_new_prof_dir(before, after)
+        local_dir = PROF_GDR_ROOT / prof_name
+        local_dir.parent.mkdir(parents=True, exist_ok=True)
+        remote_prof = f"{config.prof_output.rstrip('/')}/{prof_name}"
+        if local_dir.exists():
+            import shutil
+
+            shutil.rmtree(local_dir)
+        _run_command(_scp_command(config, remote_prof, local_dir.parent))
+        prof_dir = local_dir
+    elif config.mode == "local":
+        before = _list_local_prof_dirs()
+        script = config.local_script if config.local_script.is_absolute() else ROOT / config.local_script
+        PROF_GDR_ROOT.mkdir(parents=True, exist_ok=True)
+        try:
+            _run_command(["msprof", f"--output={PROF_GDR_ROOT}", str(script), *py_args], cwd=ROOT)
+        except FileNotFoundError as exc:
+            raise RuntimeError("未找到 msprof，请在 NPU 主机上执行，或配置 PERF_RUN_MODE=ssh") from exc
+        after = _list_local_prof_dirs()
+        prof_name = _resolve_new_prof_dir(before, after)
+        prof_dir = PROF_GDR_ROOT / prof_name
+    else:
+        raise RuntimeError(f"不支持的执行模式：{config.mode}")
+
+    import_module = _import_prof_module()
+    data = import_module.import_prof(prof_dir, model_id, chip, replace_mock=False)
+    snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
+    data["runs"] = [
+        item
+        for item in data.get("runs", [])
+        if not (item.get("created_by") == "import_prof_gdr" and item.get("snapshot_id") == snapshot["id"])
+    ]
+    for path in import_module.PERF_PATHS:
+        path.write_text(
+            __import__("json").dumps(data, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    return {
+        "status": "done",
+        "message": f"msprof 执行并导入：{prof_dir.name}",
+        "command": command,
+        "prof_dir": str(prof_dir),
+        "snapshot": snapshot,
+        "data": data,
+    }

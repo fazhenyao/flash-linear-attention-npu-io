@@ -2013,69 +2013,11 @@ async function addPerfModel(env, model) {
 }
 
 async function triggerPerfRun(env, payload, user) {
-  const data = await getPerfData(env);
-  const caseId = String(payload?.case_id || "").trim();
-  const modelId = String(payload?.model_id || "").trim();
-  const chip = String(payload?.chip || "A2").trim();
-  if (!["A2", "A3"].includes(chip)) throw withStatus(400, "chip must be A2 or A3");
-  if (!data.cases.some((item) => item.id === caseId)) throw withStatus(400, "case not found");
-  if (!data.models.some((item) => item.id === modelId)) throw withStatus(400, "model not found");
-  const base = data.snapshots.find((item) => item.model_id === modelId && item.case_id === caseId && item.chip === chip) || data.snapshots[0];
-  const operators = (base?.operators || [
-    { operator_id: "chunk_fwd_o", time_ms: 360, share_pct: 45, mbu: 0.72, mfu: 0.64, bottleneck: "HBM", cube_util: 0.64, vector_util: 0.5, mem_util: 0.72 },
-    { operator_id: "chunk_gated_delta_rule_fwd_h", time_ms: 320, share_pct: 40, mbu: 0.68, mfu: 0.7, bottleneck: "Cube", cube_util: 0.7, vector_util: 0.55, mem_util: 0.5 },
-    { operator_id: "chunk_bwd_dv_local", time_ms: 120, share_pct: 15, mbu: 0.58, mfu: 0.66, bottleneck: "L2", cube_util: 0.66, vector_util: 0.6, mem_util: 0.58 },
-  ]).map((item, index) => {
-    const timeMs = Math.round(Number(item.time_ms || 0) * (0.92 + (index % 5) * 0.02) * 10) / 10;
-    return { ...item, time_ms: timeMs };
-  });
-  const totalTimeMs = Math.round(operators.reduce((sum, item) => sum + Number(item.time_ms || 0), 0) * 10) / 10;
-  operators.forEach((item) => {
-    item.share_pct = totalTimeMs ? Math.round((Number(item.time_ms || 0) / totalTimeMs) * 1000) / 10 : 0;
-  });
-  const timestamp = nowIso();
-  const snapshot = {
-    id: `snap-${Date.now()}`,
-    label: `${timestamp.slice(0, 10)} 主线`,
-    snapshot_date: timestamp.slice(0, 10),
-    branch: "main",
-    model_id: modelId,
-    case_id: caseId,
-    chip,
-    total_time_ms: totalTimeMs,
-    status: "done",
-    created_at: timestamp,
-    operators,
-  };
-  const run = {
-    id: `run-${Date.now()}`,
-    case_id: caseId,
-    model_id: modelId,
-    chip,
-    device: String(payload?.device || "722"),
-    attributes: payload?.attributes || {},
-    status: "done",
-    snapshot_id: snapshot.id,
-    created_by: user?.username || "unknown",
-    created_at: timestamp,
-    finished_at: timestamp,
-    message: "测试执行完成",
-    snapshot,
-  };
-  data.snapshots.unshift(snapshot);
-  data.runs.unshift(run);
-  data.version = timestamp;
-  const saved = await savePerfData(env, data);
-  await insertAudit(env, {
-    ts: timestamp,
-    action: "perf.run.trigger",
-    entity: "perf_run",
-    id: run.id,
-    summary: `触发性能测试：${caseId} / ${modelId} / ${chip}`,
-    detail: { case_id: caseId, model_id: modelId, chip, device: run.device },
-    source: "cloudflare-d1",
-  });
-  return { ok: true, data: saved, run };
+  throw withStatus(
+    501,
+    "Cloudflare Worker 不支持直接执行 msprof。请配置 docs/config.js 中的 FLASH_IO_LOCAL_API，"
+      + "启动 python backend/app.py，并设置 PERF_RUN_MODE=ssh 或 local。",
+  );
 }
 
 function parseJson(value, fallback) {
