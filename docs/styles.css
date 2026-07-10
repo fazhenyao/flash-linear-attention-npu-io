@@ -134,6 +134,40 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
   cursor:pointer;
 }
 .perf-attr-chip em { font-style:normal; font-size:14px; line-height:1; opacity:.7; }
+.perf-metric-filter {
+  display:grid;
+  gap:5px;
+  min-width:0;
+  color:#5f564a;
+  font-size:12px;
+  font-weight:900;
+}
+.perf-metric-picker {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  min-height:34px;
+  align-items:center;
+}
+.perf-metric-chip {
+  display:inline-flex;
+  align-items:center;
+  padding:6px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:#fffdf8;
+  color:#5f564a;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+  transition:background .15s ease, border-color .15s ease, color .15s ease;
+}
+.perf-metric-chip.is-active {
+  border-color:rgba(39,117,96,.34);
+  background:#edf7f2;
+  color:#1d6a56;
+}
+.perf-metric-chip:hover { border-color:rgba(39,117,96,.24); }
 .perf-attr-menu select,
 .perf-attr-value-wrap input,
 .perf-attr-add,

@@ -169,9 +169,9 @@
         <section class="perf-filter-group">
           <h3 class="perf-filter-group-title">图表选项</h3>
           <div class="perf-filters-row">
-            <label>对比指标
-              <select id="caseMetric"></select>
-            </label>
+            <div class="perf-metric-filter">对比指标
+              <div id="caseMetricPicker" class="perf-metric-picker" aria-label="对比指标"></div>
+            </div>
             <label>算子
               <select id="caseOperator"></select>
             </label>
@@ -180,7 +180,7 @@
       </div>
       <div class="perf-chart-grid">
         <div class="perf-chart-card perf-chart-wide">
-          <div class="panel-title-row"><h2 id="caseMetricChartTitle">MBU 对比</h2><small id="caseMetricChartHint">每个用例对应一次 Prof，横轴为用例、纵轴为所选指标</small></div>
+          <div class="panel-title-row"><h2 id="caseMetricChartTitle">指标对比</h2><small id="caseMetricChartHint">未选择对比指标，请点击上方指标标签</small></div>
           <canvas id="caseMbuMfu"></canvas>
         </div>
         <div class="perf-chart-card perf-chart-wide">
@@ -309,6 +309,7 @@
       charts: {},
       compareOps: [],
       compareCases: [],
+      caseMetrics: [],
       caseAttrFilters: { net: [], case: [] },
       runner: null,
       perfPollTimer: null,
@@ -342,9 +343,7 @@
       document.querySelector("#netCaseAttrAdd").addEventListener("click", () => addCaseAttrFilter("net"));
       document.querySelector("#netCaseAttrClear").addEventListener("click", () => clearCaseAttrFilters("net"));
       document.querySelector("#netCaseAttrChips").addEventListener("click", (event) => onCaseAttrChipClick(event, "net"));
-      ["caseMetric", "caseOperator"].forEach((id) => {
-        document.querySelector(`#${id}`).addEventListener("change", renderCaseTab);
-      });
+      document.querySelector("#caseOperator").addEventListener("change", renderCaseTab);
       document.querySelector("#caseCompareList").addEventListener("change", () => updateRunContextDisplay("case"));
       document.querySelector("#caseAttrKey").addEventListener("change", () => onCaseAttrKeyChange("case"));
       document.querySelector("#caseAttrOp").addEventListener("change", () => updateAttrPickerUI("case"));
@@ -819,6 +818,34 @@
       layout: ["TND", "BSND"],
       dtype: ["bf16", "fp16"],
     };
+    const CASE_DETAIL_METRICS = [
+      { key: "mbu", label: "MBU", format: "pct", chartOption: "MBU（访存利用率）" },
+      { key: "mfu", label: "MFU", format: "pct", chartOption: "MFU（算力利用率）" },
+      { key: "bottleneck", label: "bound类型", format: "bound" },
+      { key: "mte1_ratio", label: "MTE1 ratio", format: "pct", chartOption: "MTE1 ratio" },
+      { key: "mte2_ratio", label: "MTE2 ratio", format: "pct", chartOption: "MTE2 ratio" },
+      { key: "mte3_ratio", label: "MTE3 ratio", format: "pct", chartOption: "MTE3 ratio" },
+      { key: "cube_util", label: "cube", format: "pct", chartOption: "cube 利用率" },
+      { key: "vector_util", label: "vec", format: "pct", chartOption: "vec 利用率" },
+    ];
+    const CASE_METRIC_CHART_COLORS = {
+      mbu: { line: "#2f73c8", fill: "rgba(47,115,200,.12)" },
+      mfu: { line: "#b87508", fill: "rgba(184,117,8,.12)" },
+      mte1_ratio: { line: "#277560", fill: "rgba(39,117,96,.12)" },
+      mte2_ratio: { line: "#8b5a2b", fill: "rgba(139,90,43,.12)" },
+      mte3_ratio: { line: "#6b4c9a", fill: "rgba(107,76,154,.12)" },
+      cube_util: { line: "#c43d3d", fill: "rgba(196,61,61,.12)" },
+      vector_util: { line: "#2a6f8f", fill: "rgba(42,111,143,.12)" },
+    };
+
+    function findCaseMetricSpec(metricKey) {
+      return CASE_DETAIL_METRICS.find((item) => item.key === metricKey)
+        || CASE_DETAIL_METRICS.find((item) => item.key === "mbu");
+    }
+
+    function caseMetricChartColors(metricKey) {
+      return CASE_METRIC_CHART_COLORS[metricKey] || CASE_METRIC_CHART_COLORS.mbu;
+    }
 
     function defaultScale(keyDim) {
       const dim = Number(keyDim) || 128;
@@ -1408,8 +1435,59 @@
       if (!document.querySelector("#caseOperator").value) document.querySelector("#caseOperator").value = operatorOptions()[0]?.[0] || "";
       syncCaseOperatorSelect(state.compareCases || []);
       updateCaseCompareHint(state.compareCases || []);
-      fillSelect("#caseMetric", caseChartMetricOptions());
-      if (!document.querySelector("#caseMetric").value) document.querySelector("#caseMetric").value = "mbu";
+      renderCaseMetricPicker();
+    }
+
+    function chartableCaseMetrics() {
+      return CASE_DETAIL_METRICS.filter((item) => item.format === "pct");
+    }
+
+    function getSelectedCaseMetrics() {
+      const selected = new Set(state.caseMetrics || []);
+      return chartableCaseMetrics()
+        .map((item) => item.key)
+        .filter((key) => selected.has(key));
+    }
+
+    function renderCaseMetricPicker() {
+      const host = document.querySelector("#caseMetricPicker");
+      const selected = new Set(getSelectedCaseMetrics());
+      host.innerHTML = chartableCaseMetrics().map((item) => `
+        <button
+          type="button"
+          class="perf-metric-chip${selected.has(item.key) ? " is-active" : ""}"
+          data-metric="${item.key}"
+          aria-pressed="${selected.has(item.key)}"
+        >${escapeHtml(item.chartOption || item.label)}</button>
+      `).join("");
+      host.querySelectorAll(".perf-metric-chip").forEach((chip) => {
+        chip.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleCaseMetric(chip.dataset.metric);
+        });
+      });
+    }
+
+    function toggleCaseMetric(key) {
+      if (!key) return;
+      const selected = new Set(getSelectedCaseMetrics());
+      if (selected.has(key)) selected.delete(key);
+      else selected.add(key);
+      state.caseMetrics = chartableCaseMetrics()
+        .map((item) => item.key)
+        .filter((itemKey) => selected.has(itemKey));
+      renderCaseMetricPicker();
+      renderCaseTab();
+    }
+
+    function caseMetricChartTitle(metricKeys) {
+      if (!metricKeys.length) return "指标对比";
+      if (metricKeys.length === 1) {
+        return `${findCaseMetricSpec(metricKeys[0]).label} 对比`;
+      }
+      const labels = metricKeys.map((key) => findCaseMetricSpec(key).label);
+      return `指标对比（${labels.join(" / ")}）`;
     }
 
     function operatorOptions() {
@@ -1553,41 +1631,6 @@
       });
     }
 
-    const CASE_DETAIL_METRICS = [
-      { key: "mbu", label: "MBU", format: "pct", chartOption: "MBU（访存利用率）" },
-      { key: "mfu", label: "MFU", format: "pct", chartOption: "MFU（算力利用率）" },
-      { key: "bottleneck", label: "bound类型", format: "bound" },
-      { key: "mte1_ratio", label: "MTE1 ratio", format: "pct", chartOption: "MTE1 ratio" },
-      { key: "mte2_ratio", label: "MTE2 ratio", format: "pct", chartOption: "MTE2 ratio" },
-      { key: "mte3_ratio", label: "MTE3 ratio", format: "pct", chartOption: "MTE3 ratio" },
-      { key: "cube_util", label: "cube", format: "pct", chartOption: "cube 利用率" },
-      { key: "vector_util", label: "vec", format: "pct", chartOption: "vec 利用率" },
-    ];
-    const CASE_METRIC_CHART_COLORS = {
-      mbu: { line: "#2f73c8", fill: "rgba(47,115,200,.12)" },
-      mfu: { line: "#b87508", fill: "rgba(184,117,8,.12)" },
-      mte1_ratio: { line: "#277560", fill: "rgba(39,117,96,.12)" },
-      mte2_ratio: { line: "#8b5a2b", fill: "rgba(139,90,43,.12)" },
-      mte3_ratio: { line: "#6b4c9a", fill: "rgba(107,76,154,.12)" },
-      cube_util: { line: "#c43d3d", fill: "rgba(196,61,61,.12)" },
-      vector_util: { line: "#2a6f8f", fill: "rgba(42,111,143,.12)" },
-    };
-
-    function caseChartMetricOptions() {
-      return CASE_DETAIL_METRICS
-        .filter((item) => item.format === "pct")
-        .map((item) => [item.key, item.chartOption || item.label]);
-    }
-
-    function findCaseMetricSpec(metricKey) {
-      return CASE_DETAIL_METRICS.find((item) => item.key === metricKey)
-        || CASE_DETAIL_METRICS.find((item) => item.key === "mbu");
-    }
-
-    function caseMetricChartColors(metricKey) {
-      return CASE_METRIC_CHART_COLORS[metricKey] || CASE_METRIC_CHART_COLORS.mbu;
-    }
-
     function caseAttributesKey(attrs) {
       const normalized = {};
       CASE_ATTR_ORDER.forEach((key) => {
@@ -1709,6 +1752,8 @@
 
     function renderCaseTab() {
       const selectedCases = getActiveCompareCases();
+      const metricKeys = getSelectedCaseMetrics();
+      document.querySelector("#caseMetricChartTitle").textContent = caseMetricChartTitle(metricKeys);
       syncCaseOperatorSelect(selectedCases);
       updateCaseCompareHint(selectedCases);
       const operatorId = document.querySelector("#caseOperator").value;
@@ -1729,39 +1774,52 @@
       });
       if (!rows.length) {
         destroyChart("caseMbuMfu");
-        document.querySelector("#caseMetricChartHint").textContent = skipped.length
-          ? `对比列表中无算子「${operatorLabel(operatorId)}」的数据`
-          : getCaseAttrFilters("case").length
-            ? "当前筛选条件下无匹配用例，请调整属性条件或添加用例"
-            : "请添加用例至对比列表";
+        if (!metricKeys.length) {
+          document.querySelector("#caseMetricChartHint").textContent = "未选择对比指标，请点击上方指标标签";
+        } else if (!selectedCases.length) {
+          const labels = metricKeys.map((key) => findCaseMetricSpec(key).chartOption || findCaseMetricSpec(key).label);
+          document.querySelector("#caseMetricChartHint").textContent = `已选择 ${labels.join(" / ")}，请添加用例至对比列表`;
+        } else {
+          document.querySelector("#caseMetricChartHint").textContent = skipped.length
+            ? `对比列表中无算子「${operatorLabel(operatorId)}」的数据`
+            : getCaseAttrFilters("case").length
+              ? "当前筛选条件下无匹配用例，请调整属性条件或添加用例"
+              : "请添加用例至对比列表";
+        }
         return;
       }
       destroyChart("caseMbuMfu");
-      const metricKey = document.querySelector("#caseMetric").value;
-      const metricSpec = findCaseMetricSpec(metricKey);
-      const colors = caseMetricChartColors(metricKey);
-      document.querySelector("#caseMetricChartTitle").textContent = `${metricSpec.label} 对比`;
+      if (!metricKeys.length) {
+        document.querySelector("#caseMetricChartHint").textContent = "未选择对比指标，请点击上方指标标签";
+        return;
+      }
+      const multiMetric = metricKeys.length > 1;
       let chartHint = caseMetricChartHintText(rows, selectedCases);
+      if (multiMetric) chartHint += " · 同色折线表示同一指标在不同用例间的变化";
       if (skipped.length) chartHint += ` · ${skipped.length} 个用例无该算子数据已跳过`;
       document.querySelector("#caseMetricChartHint").textContent = chartHint;
       state.charts.caseMbuMfu = new Chart(document.querySelector("#caseMbuMfu"), {
         type: "line",
         data: {
           labels: rows.map(({ testCase }) => testCase.label),
-          datasets: [{
-            label: metricSpec.chartOption || metricSpec.label,
-            data: rows.map(({ metric }) => metric[metricKey]),
-            borderColor: colors.line,
-            backgroundColor: colors.fill,
-            borderWidth: 2.5,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            pointBackgroundColor: colors.line,
-            pointBorderColor: "#fffaf1",
-            pointBorderWidth: 2,
-            fill: true,
-            tension: 0.25,
-          }],
+          datasets: metricKeys.map((metricKey) => {
+            const metricSpec = findCaseMetricSpec(metricKey);
+            const colors = caseMetricChartColors(metricKey);
+            return {
+              label: metricSpec.chartOption || metricSpec.label,
+              data: rows.map(({ metric }) => metric[metricKey]),
+              borderColor: colors.line,
+              backgroundColor: colors.fill,
+              borderWidth: 2.5,
+              pointRadius: multiMetric ? 4 : 5,
+              pointHoverRadius: multiMetric ? 6 : 7,
+              pointBackgroundColor: colors.line,
+              pointBorderColor: "#fffaf1",
+              pointBorderWidth: 2,
+              fill: !multiMetric,
+              tension: 0.25,
+            };
+          }),
         },
         options: {
           responsive: true,
@@ -1769,10 +1827,15 @@
           interaction: { mode: "index", intersect: false },
           scales: {
             x: { ticks: { maxRotation: 45, minRotation: 0 } },
-            y: { beginAtZero: true, max: 1, title: { display: true, text: metricSpec.label }, ticks: { callback: (v) => `${Math.round(v * 100)}%` } },
+            y: {
+              beginAtZero: true,
+              max: 1,
+              title: { display: true, text: multiMetric ? "利用率" : findCaseMetricSpec(metricKeys[0]).label },
+              ticks: { callback: (v) => `${Math.round(v * 100)}%` },
+            },
           },
           plugins: {
-            legend: { display: false },
+            legend: { display: multiMetric, position: "top" },
             tooltip: {
               callbacks: {
                 title: (items) => {
