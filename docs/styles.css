@@ -391,6 +391,28 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
   white-space:nowrap;
 }
 .perf-command-cell-btn:hover { color:#1d5aa8; }
+.perf-case-io-toolbar {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+.perf-case-download-btn,
+.perf-case-import-btn {
+  min-width:108px;
+  height:30px;
+  padding:0 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+}
+.perf-case-download-btn {
+  border:1px solid rgba(39,117,96,.28);
+  background:#edf7f2;
+  color:#1d6a56;
+}
+.perf-case-download-btn:hover { background:#dff1e8; }
+.perf-case-import-btn:hover { background:#dfeafb; }
 .perf-download-btn {
   min-width:52px;
   height:28px;
@@ -468,6 +490,31 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
   display:flex;
   justify-content:flex-end;
   gap:8px;
+}
+.perf-import-dialog-body {
+  display:grid;
+  gap:10px;
+  padding:0 2px 4px;
+}
+.perf-import-dialog-body label {
+  display:grid;
+  gap:6px;
+  width:100%;
+}
+.perf-import-dialog-body select {
+  width:100%;
+  min-height:34px;
+}
+.perf-import-upload-actions {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.perf-import-selection {
+  margin:0;
+  font-size:12px;
+  color:var(--muted);
+  word-break:break-all;
 }
 .bottleneck-pill { display:inline-flex; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:950; }
 .bottleneck-pill.bottleneck-HBM { border:1px solid rgba(47,115,200,.28); background:#edf4ff; color:#235a9f; }

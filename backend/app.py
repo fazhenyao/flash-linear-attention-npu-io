@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import cgi
 import json
 import mimetypes
 import queue
@@ -19,6 +20,8 @@ try:
         connect,
         export_all,
         find_perf_run,
+        import_perf_cases,
+        import_prof_dir,
         init_db,
         list_audit_entries,
         load_perf_data,
@@ -31,9 +34,18 @@ try:
         trigger_perf_run,
         update_perf_run,
         update_task,
+        upload_and_import_prof_dir,
         upsert_task,
     )
-    from .perf_runner import build_perf_run_download, execute as execute_perf_test, prof_tool_label, runner_status
+    from .perf_runner import (
+        build_perf_cases_csv_download,
+        build_perf_run_download,
+        execute as execute_perf_test,
+        list_prof_directories,
+        match_prof_dir_from_paths,
+        prof_tool_label,
+        runner_status,
+    )
     from .repo_store import persist_change
 except ImportError:
     from db import (  # type: ignore
@@ -45,6 +57,8 @@ except ImportError:
         connect,
         export_all,
         find_perf_run,
+        import_perf_cases,
+        import_prof_dir,
         init_db,
         list_audit_entries,
         load_perf_data,
@@ -57,9 +71,18 @@ except ImportError:
         trigger_perf_run,
         update_perf_run,
         update_task,
+        upload_and_import_prof_dir,
         upsert_task,
     )
-    from perf_runner import build_perf_run_download, execute as execute_perf_test, prof_tool_label, runner_status  # type: ignore
+    from perf_runner import (  # type: ignore
+        build_perf_cases_csv_download,
+        build_perf_run_download,
+        execute as execute_perf_test,
+        list_prof_directories,
+        match_prof_dir_from_paths,
+        prof_tool_label,
+        runner_status,
+    )
     from repo_store import persist_change  # type: ignore
 
 
@@ -136,6 +159,11 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(load_perf_data(conn))
             elif path == "/api/perf/runner":
                 self.send_json(runner_status())
+            elif path == "/api/perf/cases/download":
+                ids = [item for item in (query.get("ids") or [""])[0].split(",") if item.strip()]
+                self.download_perf_cases(conn, ids)
+            elif path == "/api/perf/prof-dirs":
+                self.send_json({"dirs": list_prof_directories()})
             elif path.startswith("/api/perf/runs/") and path.endswith("/download"):
                 run_id = path.removeprefix("/api/perf/runs/").removesuffix("/download")
                 self.download_perf_run(conn, run_id)
@@ -154,12 +182,15 @@ class Handler(BaseHTTPRequestHandler):
     def handle_write(self, method: str) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
-        payload = self.read_json()
         with connect() as conn:
             init_db(conn)
             seed_if_empty(conn)
             seed_audit_if_empty(conn)
             try:
+                if path == "/api/perf/cases/upload-prof" and method == "POST":
+                    self.upload_prof_case(conn)
+                    return
+                payload = self.read_json()
                 if path == "/api/tasks" and method == "POST":
                     self.create_task(conn, payload)
                 elif path.startswith("/api/tasks/") and method == "PATCH":
@@ -185,6 +216,17 @@ class Handler(BaseHTTPRequestHandler):
                     if run.get("status") == "queued":
                         enqueue_perf_run_job(run["id"], payload)
                     self.send_json({"ok": True, **result}, status=201)
+                elif path == "/api/perf/cases/import" and method == "POST":
+                    result = import_perf_cases(conn, payload)
+                    conn.commit()
+                    self.send_json({"ok": True, **result}, status=201)
+                elif path == "/api/perf/cases/import-prof" and method == "POST":
+                    result = import_prof_dir(conn, payload)
+                    conn.commit()
+                    self.send_json({"ok": True, **result}, status=201)
+                elif path == "/api/perf/prof-dirs/match" and method == "POST":
+                    prof_dir = match_prof_dir_from_paths(payload.get("paths") or [])
+                    self.send_json({"ok": True, "prof_dir": prof_dir})
                 elif path == "/api/groups" and method == "POST":
                     self.create_group(conn, payload)
                 elif path.startswith("/api/groups/") and method == "PATCH":
@@ -200,6 +242,10 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self.send_error_json(404, "api not found")
             except ValueError as exc:
+                self.send_error_json(400, str(exc))
+            except FileNotFoundError as exc:
+                self.send_error_json(400, str(exc))
+            except OSError as exc:
                 self.send_error_json(400, str(exc))
             except RuntimeError as exc:
                 self.send_error_json(500, "仓库同步失败：" + str(exc))
@@ -384,6 +430,50 @@ class Handler(BaseHTTPRequestHandler):
             return {}
         return json.loads(self.rfile.read(length).decode("utf-8"))
 
+    def upload_prof_case(self, conn) -> None:
+        content_type = self.headers.get("Content-Type", "")
+        if "multipart/form-data" not in content_type:
+            raise ValueError("multipart/form-data required")
+        form = cgi.FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ={
+                "REQUEST_METHOD": "POST",
+                "CONTENT_TYPE": content_type,
+                "CONTENT_LENGTH": self.headers.get("Content-Length", "0"),
+            },
+        )
+        prof_source = str(form.getfirst("prof_source", "") or "").strip()
+        kernel_name = str(form.getfirst("kernel_name", "") or "").strip()
+        archive_field = form["archive"] if "archive" in form else None
+        if archive_field is not None and getattr(archive_field, "file", None) is not None and archive_field.filename:
+            archive_bytes = archive_field.file.read()
+            result = upload_and_import_prof_dir(
+                conn,
+                archive=archive_bytes,
+                prof_source=prof_source,
+                kernel_name=kernel_name,
+            )
+        else:
+            file_fields = form["files"] if "files" in form else None
+            if file_fields is None:
+                raise ValueError("archive or files required")
+            if not isinstance(file_fields, list):
+                file_fields = [file_fields]
+            entries: list[tuple[str, bytes]] = []
+            for item in file_fields:
+                if not getattr(item, "file", None) or not item.filename:
+                    continue
+                entries.append((item.filename, item.file.read()))
+            result = upload_and_import_prof_dir(
+                conn,
+                files=entries,
+                prof_source=prof_source,
+                kernel_name=kernel_name,
+            )
+        conn.commit()
+        self.send_json({"ok": True, **result}, status=201)
+
     def _send_cors_headers(self) -> None:
         origin = self.headers.get("Origin")
         if origin:
@@ -418,6 +508,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
         self.end_headers()
         self.wfile.write(data)
+
+    def download_perf_cases(self, conn, case_ids: list[str]) -> None:
+        try:
+            filename, payload = build_perf_cases_csv_download(load_perf_data(conn), case_ids)
+            self.send_download(filename, payload)
+        except ValueError as exc:
+            self.send_error_json(400, str(exc))
 
     def download_perf_run(self, conn, run_id: str) -> None:
         try:

@@ -17,6 +17,30 @@ BJ_TZ = timezone(timedelta(hours=8))
 RATIO_PRECISION = 4
 
 
+def load_cube_theoretical_flops_module():
+    import importlib.util
+
+    path = ROOT / "scripts" / "cube_theoretical_flops.py"
+    spec = importlib.util.spec_from_file_location("cube_theoretical_flops", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_hbm_theoretical_bytes_module():
+    import importlib.util
+
+    path = ROOT / "scripts" / "hbm_theoretical_bytes.py"
+    spec = importlib.util.spec_from_file_location("hbm_theoretical_bytes", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def round_ratio(value: float | None) -> float:
     if value is None:
         return 0.0
@@ -368,6 +392,10 @@ def row_pipe_time_us(row: dict[str, str], pipe: str) -> float | None:
         return max(aic or 0, aiv or 0)
     if pipe == "mte3":
         return to_float(row.get("aiv_mte3_time(us)"))
+    if pipe == "cube":
+        return to_float(row.get("aic_mac_time(us)"))
+    if pipe == "vector":
+        return to_float(row.get("aiv_vec_time(us)"))
     return None
 
 
@@ -387,6 +415,8 @@ def pipe_time_stats(metrics: list[dict[str, Any]], pipe: str) -> dict[str, float
 
 
 def metric_from_summary_row(row: dict[str, str]) -> dict[str, Any]:
+    duration = to_float(row.get("Task Duration(us)")) or to_float(row.get("aicore_time(us)")) or 0
+    block_dim = to_float(row.get("Block Num") or row.get("block_dim") or row.get("BlockDim"))
     cube_util_pct = to_float(row.get("cube_utilization(%)"))
     aic_mac = to_float(row.get("aic_mac_ratio"))
     aic_mte1 = to_float(row.get("aic_mte1_ratio"))
@@ -394,13 +424,12 @@ def metric_from_summary_row(row: dict[str, str]) -> dict[str, Any]:
     aiv_mte2 = to_float(row.get("aiv_mte2_ratio"))
     aiv_mte3 = to_float(row.get("aiv_mte3_ratio"))
     aiv_vec = to_float(row.get("aiv_vec_ratio"))
-    duration = to_float(row.get("Task Duration(us)")) or to_float(row.get("aicore_time(us)")) or 0
     mfu = (cube_util_pct / 100) if cube_util_pct is not None else None
     mte2 = max(aic_mte2 or 0, aiv_mte2 or 0)
-    mbu = max(mte2, aiv_mte3 or 0)
     payload = {
         "time_ms": round(duration / 1000, 3),
-        "mbu": round_ratio(mbu),
+        "duration_us": duration if duration > 0 else None,
+        "mbu": None,
         "mfu": round_ratio(mfu) if mfu is not None else None,
         "bottleneck": pick_bottleneck(row),
         "mte1_ratio": round_ratio(aic_mte1 or 0),
@@ -408,11 +437,12 @@ def metric_from_summary_row(row: dict[str, str]) -> dict[str, Any]:
         "mte3_ratio": round_ratio(aiv_mte3 or 0),
         "cube_util": round_ratio(aic_mac or 0),
         "vector_util": round_ratio(aiv_vec or 0),
-        "mem_util": round_ratio(mbu),
+        "mem_util": None,
+        "block_dim": int(block_dim) if block_dim is not None else None,
         "core_type": row.get("Task Type") or row.get("Core Type") or "",
         "count": 1,
     }
-    for pipe in ("mte1", "mte2", "mte3"):
+    for pipe in ("mte1", "mte2", "mte3", "cube", "vector"):
         time_us = row_pipe_time_us(row, pipe)
         if time_us is not None:
             payload[f"{pipe}_time_us"] = round(time_us, 2)
@@ -447,6 +477,7 @@ def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[str, dict[str,
             bottlenecks[item["bottleneck"]] = bottlenecks.get(item["bottleneck"], 0) + item["time_ms"]
         result[operator_id] = {
             "time_ms": round(total_ms, 3),
+            "duration_us": sum(float(item.get("duration_us") or 0) for item in metrics) or None,
             "mbu": wavg("mbu"),
             "mfu": wavg("mfu"),
             "bottleneck": max(bottlenecks, key=bottlenecks.get),
@@ -457,8 +488,9 @@ def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[str, dict[str,
             "vector_util": wavg("vector_util"),
             "mem_util": wavg("mem_util"),
             "count": len(metrics),
+            "block_dim": max((item.get("block_dim") or 0) for item in metrics) or None,
         }
-        for pipe in ("mte1", "mte2", "mte3"):
+        for pipe in ("mte1", "mte2", "mte3", "cube", "vector"):
             result[operator_id].update(pipe_time_stats(metrics, pipe))
     return result
 
@@ -539,9 +571,10 @@ def build_snapshot(
             {
                 "operator_id": operator_id,
                 "time_ms": item["time_ms"],
+                "duration_us": detail.get("duration_us"),
                 "share_pct": item["share_pct"],
-                "mbu": detail.get("mbu", 0),
-                "mfu": detail.get("mfu", 0),
+                "mbu": detail.get("mbu"),
+                "mfu": detail.get("mfu"),
                 "bottleneck": detail.get("bottleneck", "—"),
                 "mte1_ratio": detail.get("mte1_ratio", 0),
                 "mte2_ratio": detail.get("mte2_ratio", 0),
@@ -557,7 +590,14 @@ def build_snapshot(
                 "mte3_time_max_us": detail.get("mte3_time_max_us"),
                 "cube_util": detail.get("cube_util", 0),
                 "vector_util": detail.get("vector_util", 0),
-                "mem_util": detail.get("mem_util", 0),
+                "cube_time_avg_us": detail.get("cube_time_avg_us"),
+                "cube_time_min_us": detail.get("cube_time_min_us"),
+                "cube_time_max_us": detail.get("cube_time_max_us"),
+                "vector_time_avg_us": detail.get("vector_time_avg_us"),
+                "vector_time_min_us": detail.get("vector_time_min_us"),
+                "vector_time_max_us": detail.get("vector_time_max_us"),
+                "mem_util": detail.get("mem_util"),
+                "block_dim": detail.get("block_dim"),
                 "op_type": item.get("op_type", ""),
                 "call_count": detail.get("count", 0),
             }
@@ -599,6 +639,30 @@ def import_prof(
     snapshot = build_snapshot(
         prof_dir, model_id, chip, case, statistic_ops, summary_metrics, total_ms, device_id=device_id,
     )
+    cube_mod = load_cube_theoretical_flops_module()
+    hbm_mod = load_hbm_theoretical_bytes_module()
+    attrs = case.get("attributes") or {}
+    for operator in snapshot.get("operators", []):
+        operator_id = str(operator.get("operator_id") or "")
+        task_duration_us = cube_mod.resolve_task_duration_us(operator)
+        analytical_mfu = cube_mod.compute_mfu(
+            operator_id,
+            attrs,
+            task_duration_us=task_duration_us,
+            block_dim=operator.get("block_dim"),
+            chip=chip,
+        )
+        if analytical_mfu is not None:
+            operator["mfu"] = analytical_mfu
+        analytical_mbu = hbm_mod.compute_mbu(
+            operator_id,
+            attrs,
+            task_duration_us=task_duration_us,
+            chip=chip,
+        )
+        if analytical_mbu is not None:
+            operator["mbu"] = analytical_mbu
+            operator["mem_util"] = analytical_mbu
 
     data = load_perf_data()
     upsert_case(data, case)

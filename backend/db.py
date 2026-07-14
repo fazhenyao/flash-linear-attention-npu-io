@@ -660,6 +660,120 @@ def normalize_perf_data(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def export_perf_cases(data: dict[str, Any], case_ids: list[str]) -> dict[str, Any]:
+    wanted = {str(case_id).strip() for case_id in case_ids if str(case_id).strip()}
+    if not wanted:
+        raise ValueError("case ids required")
+    cases = [item for item in data.get("cases", []) if item.get("id") in wanted]
+    if not cases:
+        raise ValueError("case not found")
+    snapshots = [item for item in data.get("snapshots", []) if item.get("case_id") in wanted]
+    model_ids = {item.get("model_id") for item in cases if item.get("model_id")}
+    model_ids.update(item.get("model_id") for item in snapshots if item.get("model_id"))
+    models = [item for item in data.get("models", []) if item.get("id") in model_ids]
+    return {
+        "kind": "perf-case-bundle",
+        "version": now_iso(),
+        "cases": cases,
+        "snapshots": snapshots,
+        "models": models,
+    }
+
+
+def import_perf_cases(conn: sqlite3.Connection, bundle: dict[str, Any]) -> dict[str, Any]:
+    incoming_cases = list(bundle.get("cases") or [])
+    if not incoming_cases:
+        raise ValueError("cases required")
+    data = load_perf_data(conn)
+    imported_case_ids: set[str] = set()
+    for case in incoming_cases:
+        case_id = str(case.get("id") or "").strip()
+        if not case_id:
+            raise ValueError("case id required")
+        imported_case_ids.add(case_id)
+        for index, existing in enumerate(data.get("cases", [])):
+            if existing.get("id") == case_id:
+                data["cases"][index] = case
+                break
+        else:
+            data["cases"].append(case)
+
+    for snapshot in bundle.get("snapshots") or []:
+        snapshot_id = str(snapshot.get("id") or "").strip()
+        if not snapshot_id:
+            continue
+        if snapshot.get("case_id") not in imported_case_ids:
+            continue
+        for index, existing in enumerate(data.get("snapshots", [])):
+            if existing.get("id") == snapshot_id:
+                data["snapshots"][index] = snapshot
+                break
+        else:
+            data["snapshots"].insert(0, snapshot)
+
+    for model in bundle.get("models") or []:
+        model_id = str(model.get("id") or "").strip()
+        if not model_id:
+            continue
+        if any(item.get("id") == model_id for item in data.get("models", [])):
+            continue
+        data["models"].append(model)
+
+    data["version"] = now_iso()
+    save_perf_data(conn, data)
+    return {
+        "data": data,
+        "imported_cases": len(imported_case_ids),
+        "imported_snapshots": len([item for item in bundle.get("snapshots", []) if item.get("case_id") in imported_case_ids]),
+    }
+
+
+def import_prof_dir(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        from .perf_runner import import_prof_directory
+    except ImportError:
+        from perf_runner import import_prof_directory  # type: ignore
+
+    result = import_prof_directory(payload)
+    snapshot = result["snapshot"]
+    case_id = str(result.get("case_id") or snapshot.get("case_id") or "").strip()
+    data = apply_imported_perf_data(conn, result["data"])
+    return {
+        "data": data,
+        "imported_cases": 1 if case_id else 0,
+        "imported_snapshots": 1,
+        "case_id": case_id,
+        "snapshot_id": snapshot.get("id"),
+        "prof_source": result.get("prof_source"),
+        "prof_dir": result.get("prof_dir"),
+        "prof_tool": result.get("prof_tool"),
+        "message": result.get("message"),
+    }
+
+
+def upload_and_import_prof_dir(
+    conn: sqlite3.Connection,
+    *,
+    archive: bytes | None = None,
+    files: list[tuple[str, bytes]] | None = None,
+    prof_source: str = "",
+    kernel_name: str = "",
+) -> dict[str, Any]:
+    try:
+        from .perf_runner import ingest_uploaded_prof
+    except ImportError:
+        from perf_runner import ingest_uploaded_prof  # type: ignore
+
+    uploaded = ingest_uploaded_prof(archive=archive, files=files, prof_source=prof_source)
+    payload: dict[str, Any] = {"prof_dir": uploaded["prof_dir"]}
+    if kernel_name.strip():
+        payload["kernel_name"] = kernel_name.strip()
+    result = import_prof_dir(conn, payload)
+    result["uploaded"] = True
+    result["message"] = f"已上传并导入：{uploaded['prof_source']}"
+    return result
+
+
 def add_perf_model(conn: sqlite3.Connection, model: dict[str, Any]) -> dict[str, Any]:
     data = load_perf_data(conn)
     model_id = model.get("id") or make_id("model")
@@ -728,7 +842,7 @@ def create_queued_perf_run(
     created_by: str,
     command: str,
     *,
-    default_script_path: str = "flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
+    default_script_path: str = "scripts/flash_gated_delta_rule.py",
 ) -> dict[str, Any]:
     data = load_perf_data(conn)
     case_id = str(payload.get("case_id") or "").strip()

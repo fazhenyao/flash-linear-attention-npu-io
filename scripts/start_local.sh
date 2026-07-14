@@ -20,11 +20,11 @@ if [[ -f "${CANN_SET_ENV}" ]]; then
 fi
 
 export PERF_RUN_MODE=local
-export PERF_LOCAL_SCRIPT="${PERF_LOCAL_SCRIPT:-/data/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py}"
+export PERF_LOCAL_SCRIPT="${PERF_LOCAL_SCRIPT:-scripts/flash_gated_delta_rule.py}"
 export PERF_NPU_DEVICE="${PERF_NPU_DEVICE:-2}"
 export PERF_CHIP="${PERF_CHIP:-A2}"
-export PERF_PROF_OUTPUT="${PERF_PROF_OUTPUT:-${ROOT}/data/prof_gdr}"
-export PERF_OP_OUTPUT="${PERF_OP_OUTPUT:-${ROOT}/data/prof_op}"
+export PERF_PROF_OUTPUT="${PERF_PROF_OUTPUT:-data/prof_gdr}"
+export PERF_OP_OUTPUT="${PERF_OP_OUTPUT:-data/prof_op}"
 export PERF_SOC_VERSION="${PERF_SOC_VERSION:-Ascend910B}"
 
 stop_port() {
@@ -49,4 +49,4 @@ nohup python3 backend/app.py --host "${HOST}" --port "${BACKEND_PORT}" >"${ROOT}
 echo "backend api: http://${HOST}:${BACKEND_PORT}/io"
 echo "perf runner mode: ${PERF_RUN_MODE}"
 echo "python: $(command -v python3)"
-echo "msprof: $(command -v msprof || echo 'not found')"
+echo "msopprof: $(command -v msopprof || echo 'not found')"

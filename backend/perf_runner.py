@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import importlib.util
+import io
+import json
 import os
+import re
 import shlex
+import shutil
 import subprocess
 import sys
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -12,6 +17,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 PROF_APP_ROOT = ROOT / "data" / "prof_gdr"
 PROF_OP_ROOT = ROOT / "data" / "prof_op"
+PROF_SOURCE_PATTERN = re.compile(r"^(OPPROF_|PROF_)", re.IGNORECASE)
+MAX_PROF_UPLOAD_BYTES = 512 * 1024 * 1024
 VALID_PROF_TOOLS = {"msprof", "msprof_op", "msprof_op_sim"}
 ATTR_DEFAULTS = {
     "batch": 1,
@@ -26,23 +33,24 @@ ATTR_DEFAULTS = {
     "varlen": True,
 }
 
-TRIGGER_SCRIPTS = [
-    {
-        "id": "flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
-        "label": "flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
-        "remote": "examples/flash_gated_delta_rule.py",
-        "local": "ref/flash_gated_delta_rule.py",
-    },
-]
+DEFAULT_TRIGGER_SCRIPT = "scripts/flash_gated_delta_rule.py"
+LOCAL_PROF_OUTPUT_APP = "data/prof_gdr"
+LOCAL_PROF_OUTPUT_OP = "data/prof_op"
 
 TRIGGER_SCRIPTS = [
     {
-        "id": "flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
-        "label": "flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
-        "remote": "examples/flash_gated_delta_rule.py",
-        "local": "ref/flash_gated_delta_rule.py",
+        "id": DEFAULT_TRIGGER_SCRIPT,
+        "label": DEFAULT_TRIGGER_SCRIPT,
+        "remote": DEFAULT_TRIGGER_SCRIPT,
+        "local": DEFAULT_TRIGGER_SCRIPT,
     },
 ]
+
+LEGACY_TRIGGER_SCRIPT_IDS = {
+    "flash-linear-attention-npu/examples/flash_gated_delta_rule.py": DEFAULT_TRIGGER_SCRIPT,
+    "ref/flash_gated_delta_rule.py": DEFAULT_TRIGGER_SCRIPT,
+    "examples/flash_gated_delta_rule.py": DEFAULT_TRIGGER_SCRIPT,
+}
 
 
 @dataclass
@@ -87,20 +95,37 @@ def load_config() -> PerfRunnerConfig:
         ssh_user=os.environ.get("PERF_SSH_USER", "").strip() or "root",
         ssh_port=os.environ.get("PERF_SSH_PORT", "").strip(),
         ssh_identity=os.environ.get("PERF_SSH_IDENTITY_FILE", "").strip(),
-        remote_workdir=os.environ.get("PERF_REMOTE_WORKDIR", "").strip() or "/data/flash-linear-attention-npu",
-        remote_script=os.environ.get("PERF_REMOTE_SCRIPT", "").strip() or "examples/flash_gated_delta_rule.py",
-        local_script=Path(os.environ.get("PERF_LOCAL_SCRIPT", "ref/flash_gated_delta_rule.py")),
+        remote_workdir=os.environ.get("PERF_REMOTE_WORKDIR", "").strip() or ".",
+        remote_script=os.environ.get("PERF_REMOTE_SCRIPT", "").strip() or DEFAULT_TRIGGER_SCRIPT,
+        local_script=Path(os.environ.get("PERF_LOCAL_SCRIPT", DEFAULT_TRIGGER_SCRIPT)),
         npu_device=int(os.environ.get("PERF_NPU_DEVICE", "2")),
         chip=os.environ.get("PERF_CHIP", "").strip().upper() or "A2",
-        prof_output_app=os.environ.get("PERF_PROF_OUTPUT", "./prof_gdr").strip() or "./prof_gdr",
-        prof_output_op=os.environ.get("PERF_OP_OUTPUT", "./prof_op").strip() or "./prof_op",
+        prof_output_app=os.environ.get("PERF_PROF_OUTPUT", LOCAL_PROF_OUTPUT_APP).strip() or LOCAL_PROF_OUTPUT_APP,
+        prof_output_op=os.environ.get("PERF_OP_OUTPUT", LOCAL_PROF_OUTPUT_OP).strip() or LOCAL_PROF_OUTPUT_OP,
         soc_version=os.environ.get("PERF_SOC_VERSION", "").strip() or "Ascend910B",
         dry_run=_env_bool("PERF_RUN_DRY_RUN"),
     )
 
 
-def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> tuple[str, Path]:
+def to_repo_relative_path(path: Path | str) -> str:
+    candidate = Path(path)
+    if candidate.is_absolute():
+        try:
+            return candidate.resolve().relative_to(ROOT.resolve()).as_posix()
+        except ValueError:
+            return candidate.as_posix()
+    return candidate.as_posix()
+
+
+def local_prof_output_path(prof_tool: str) -> str:
+    if prof_tool in {"msprof_op", "msprof_op_sim"}:
+        return to_repo_relative_path(LOCAL_PROF_OUTPUT_OP)
+    return to_repo_relative_path(LOCAL_PROF_OUTPUT_APP)
+
+
+def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> tuple[str, str]:
     script_path = str(payload.get("script_path") or "").strip() or TRIGGER_SCRIPTS[0]["id"]
+    script_path = LEGACY_TRIGGER_SCRIPT_IDS.get(script_path, script_path)
     entry = next(
         (item for item in TRIGGER_SCRIPTS if item["id"] == script_path or item["label"] == script_path),
         None,
@@ -108,10 +133,11 @@ def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> t
     if entry is None:
         allowed = ", ".join(item["label"] for item in TRIGGER_SCRIPTS)
         raise ValueError(f"未知脚本路径：{script_path}（可选：{allowed}）")
-    local = config.local_script
-    if not local.is_absolute():
-        local = ROOT / local
-    return entry["remote"], local
+    configured = config.local_script or Path(entry["local"])
+    local_abs = configured if configured.is_absolute() else ROOT / configured
+    if not local_abs.exists():
+        raise FileNotFoundError(f"本地脚本不存在：{local_abs}")
+    return entry["remote"], to_repo_relative_path(local_abs)
 
 
 def script_options() -> list[dict[str, str]]:
@@ -138,8 +164,8 @@ def prof_dir_prefix(prof_tool: str) -> str:
 def prof_tool_label(prof_tool: str) -> str:
     return {
         "msprof": "msprof（整网）",
-        "msprof_op": "msprof op（算子）",
-        "msprof_op_sim": "msprof op simulator（仿真）",
+        "msprof_op": "msopprof（算子）",
+        "msprof_op_sim": "msopprof simulator（仿真）",
     }.get(prof_tool, prof_tool)
 
 
@@ -213,7 +239,13 @@ def runner_status() -> dict[str, Any]:
         "varlen": True,
     }
     payload = {"attributes": attrs, "prof_tool": "msprof"}
-    payload_op = {**payload, "prof_tool": "msprof_op", "kernel_name": "chunk_bwd_dqkwg"}
+    payload_op = {
+        **payload,
+        "prof_tool": "msprof_op",
+        "kernel_name": "chunk_bwd_dqkwg",
+        "warm_up": resolve_op_warm_up({"prof_tool": "msprof_op"}),
+        "launch_count": resolve_op_launch_count({"prof_tool": "msprof_op"}),
+    }
     return {
         "enabled": enabled,
         "mode": config.mode,
@@ -222,10 +254,12 @@ def runner_status() -> dict[str, Any]:
         "prof_tools": sorted(VALID_PROF_TOOLS),
         "ssh_host": config.ssh_host or None,
         "remote_workdir": config.remote_workdir if config.mode == "ssh" else None,
-        "local_script": str(config.local_script) if config.mode == "local" else None,
+        "local_script": to_repo_relative_path(config.local_script) if config.mode == "local" else None,
         "npu_device": config.npu_device,
         "chip": config.chip,
         "soc_version": config.soc_version,
+        "op_warm_up": resolve_op_warm_up({"prof_tool": "msprof_op"}),
+        "op_launch_count": resolve_op_launch_count({"prof_tool": "msprof_op"}),
         "example_command_msprof": build_command(payload) if enabled else None,
         "example_command_msprof_op": build_command(payload_op) if enabled else None,
         "script_options": script_options(),
@@ -290,6 +324,46 @@ def attributes_to_cli_args(attributes: dict[str, Any], npu_device: int) -> list[
     return args
 
 
+def split_kernel_names(kernel_name: str | None) -> list[str]:
+    if not kernel_name:
+        return []
+    return [part.strip() for part in re.split(r"[|,;\n]+", kernel_name) if part.strip()]
+
+
+def format_kernel_name_arg(kernel_name: str | None) -> str | None:
+    names = split_kernel_names(kernel_name)
+    if not names:
+        return None
+    return "|".join(names)
+
+
+def single_kernel_name_override(kernel_name: str | None) -> str | None:
+    names = split_kernel_names(kernel_name)
+    return names[0] if len(names) == 1 else None
+
+
+def resolve_op_warm_up(payload: dict[str, Any]) -> int | None:
+    prof_tool = str(payload.get("prof_tool") or "msprof").strip()
+    if prof_tool not in {"msprof_op", "msprof_op_sim"}:
+        return None
+    raw = payload.get("warm_up")
+    if raw is not None and str(raw).strip() != "":
+        return max(0, int(raw))
+    env = os.environ.get("PERF_OP_WARM_UP", "10").strip()
+    return int(env) if env else None
+
+
+def resolve_op_launch_count(payload: dict[str, Any]) -> int | None:
+    prof_tool = str(payload.get("prof_tool") or "msprof").strip()
+    if prof_tool not in {"msprof_op", "msprof_op_sim"}:
+        return None
+    raw = payload.get("launch_count")
+    if raw is not None and str(raw).strip() != "":
+        return max(1, int(raw))
+    env = os.environ.get("PERF_OP_LAUNCH_COUNT", "10").strip()
+    return int(env) if env else None
+
+
 def build_prof_invocation(
     config: PerfRunnerConfig,
     *,
@@ -298,17 +372,24 @@ def build_prof_invocation(
     script: str,
     py_args: list[str],
     kernel_name: str | None = None,
+    warm_up: int | None = None,
+    launch_count: int | None = None,
 ) -> str:
     py = " ".join(shlex.quote(part) for part in py_args)
     if prof_tool == "msprof":
         return f"msprof --output={shlex.quote(output)} python3 {shlex.quote(script)} {py}"
-    parts = ["msprof", "op"]
+    parts = ["msopprof"]
     if prof_tool == "msprof_op_sim":
         parts.append("simulator")
         parts.append(f"--soc-version={shlex.quote(config.soc_version)}")
+    if warm_up is not None:
+        parts.append(f"--warm-up={warm_up}")
+    if launch_count is not None:
+        parts.append(f"--launch-count={launch_count}")
     parts.append(f"--output={shlex.quote(output)}")
-    if kernel_name:
-        parts.append(f"--kernel-name={shlex.quote(kernel_name)}")
+    kernel_arg = format_kernel_name_arg(kernel_name)
+    if kernel_arg:
+        parts.append(f"--kernel-name={shlex.quote(kernel_arg)}")
     parts.append(f"python3 {shlex.quote(script)} {py}")
     return " ".join(parts)
 
@@ -318,6 +399,8 @@ def build_command(payload: dict[str, Any]) -> str:
     prof_tool = normalize_prof_tool(payload)
     attrs = payload.get("attributes") or {}
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
+    warm_up = resolve_op_warm_up(payload)
+    launch_count = resolve_op_launch_count(payload)
     py_args = attributes_to_cli_args(attrs, resolve_npu_device(payload, config))
     output = str(prof_output_root(prof_tool, local=False))
     remote_script, local_script = resolve_script_paths(payload, config)
@@ -328,18 +411,22 @@ def build_command(payload: dict[str, Any]) -> str:
         script=remote_script,
         py_args=py_args,
         kernel_name=kernel_name,
+        warm_up=warm_up,
+        launch_count=launch_count,
     )
     if config.mode == "ssh":
         remote = f"cd {shlex.quote(config.remote_workdir)} && {invocation}"
         return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
-    local_output = str(prof_output_root(prof_tool, local=True))
+    local_output = local_prof_output_path(prof_tool)
     invocation = build_prof_invocation(
         config,
         prof_tool=prof_tool,
         output=local_output,
-        script=str(local_script),
+        script=local_script,
         py_args=py_args,
         kernel_name=kernel_name,
+        warm_up=warm_up,
+        launch_count=launch_count,
     )
     return invocation
 
@@ -431,6 +518,8 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
     attrs = payload.get("attributes") or {}
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
     operator_id = str(payload.get("operator_id") or "").strip() or None
+    warm_up = resolve_op_warm_up(payload)
+    launch_count = resolve_op_launch_count(payload)
     npu_device = resolve_npu_device(payload, config)
     remote_script, local_script = resolve_script_paths(payload, config)
     py_args = attributes_to_cli_args(attrs, npu_device)
@@ -448,6 +537,8 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             script=remote_script,
             py_args=py_args,
             kernel_name=kernel_name,
+            warm_up=warm_up,
+            launch_count=launch_count,
         )
         remote = f"cd {shlex.quote(config.remote_workdir)} && {invocation}"
         _run_command(_ssh_command(config, remote))
@@ -470,17 +561,19 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             build_prof_invocation(
                 config,
                 prof_tool=prof_tool,
-                output=str(local_root),
-                script=str(script),
+                output=local_prof_output_path(prof_tool),
+                script=script,
                 py_args=py_args,
                 kernel_name=kernel_name,
+                warm_up=warm_up,
+                launch_count=launch_count,
             ),
             posix=(os.name != "nt"),
         )
         try:
             _run_command(invocation_parts, cwd=ROOT)
         except FileNotFoundError as exc:
-            raise RuntimeError("未找到 msprof，请在 NPU 主机上执行，或配置 PERF_RUN_MODE=ssh") from exc
+            raise RuntimeError("未找到 msopprof，请在 NPU 主机上执行，或配置 PERF_RUN_MODE=ssh") from exc
         after = _list_local_prof_dirs(prof_tool)
         prof_name = _resolve_new_prof_dir(before, after, prof_tool)
         prof_dir = local_root / prof_name
@@ -500,7 +593,7 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             chip,
             attributes=attrs,
             kernel_name=kernel_name,
-            operator_id=operator_id,
+            operator_id=single_kernel_name_override(operator_id or kernel_name),
             prof_tool=prof_tool,
             device_id=npu_device,
         )
@@ -528,6 +621,237 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def resolve_prof_dir_path(raw: str) -> Path:
+    value = str(raw or "").strip()
+    if not value:
+        raise ValueError("prof_dir required")
+    path = Path(value)
+    if not path.is_absolute():
+        path = (ROOT / path).resolve()
+    else:
+        path = path.resolve()
+    try:
+        path.relative_to(ROOT.resolve())
+    except ValueError as exc:
+        raise ValueError("prof_dir must be under project root") from exc
+    if not path.is_dir():
+        raise ValueError(f"prof_dir not found: {path}")
+    return path
+
+
+def infer_prof_tool_from_dir(prof_dir: Path, prof_tool: str | None = None) -> str:
+    if prof_tool:
+        normalized = str(prof_tool).strip()
+        if normalized not in VALID_PROF_TOOLS:
+            raise ValueError(f"prof_tool must be one of {sorted(VALID_PROF_TOOLS)}")
+        return normalized
+    name = prof_dir.name.upper()
+    if name.startswith("OPPROF_"):
+        return "msprof_op"
+    if name.startswith("PROF_"):
+        return "msprof"
+    parent = prof_dir.parent.resolve()
+    if parent == PROF_OP_ROOT.resolve():
+        return "msprof_op"
+    if parent == PROF_APP_ROOT.resolve():
+        return "msprof"
+    raise ValueError("无法识别 prof 类型，请使用 OPPROF_* 或 PROF_* 目录")
+
+
+def import_prof_directory(payload: dict[str, Any]) -> dict[str, Any]:
+    prof_dir = resolve_prof_dir_path(str(payload.get("prof_dir") or ""))
+    prof_tool = infer_prof_tool_from_dir(prof_dir, payload.get("prof_tool"))
+    config = load_config()
+    chip = resolve_chip(payload, config)
+    model_id = str(payload.get("model_id") or "gdn").strip() or "gdn"
+    attrs = payload.get("attributes") or {}
+    kernel_name = str(payload.get("kernel_name") or "").strip() or None
+    operator_id = str(payload.get("operator_id") or "").strip() or None
+    npu_device = resolve_npu_device(payload, config)
+
+    if prof_tool == "msprof":
+        import_module = _import_module("import_prof_gdr.py")
+        data = import_module.import_prof(prof_dir, model_id, chip, replace_mock=False, device_id=npu_device)
+        snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
+        snapshot["prof_tool"] = prof_tool
+    else:
+        import_module = _import_module("import_msprof_op.py")
+        data = import_module.import_msprof_op(
+            prof_dir,
+            model_id,
+            chip,
+            attributes=attrs,
+            kernel_name=kernel_name,
+            operator_id=single_kernel_name_override(operator_id or kernel_name),
+            prof_tool=prof_tool,
+            device_id=npu_device,
+        )
+        snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
+
+    data["runs"] = [
+        item
+        for item in data.get("runs", [])
+        if not (
+            item.get("created_by") in {"import_prof_gdr", "import_msprof_op"}
+            and item.get("snapshot_id") == snapshot["id"]
+        )
+    ]
+    for path in import_module.PERF_PATHS:
+        path.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    return {
+        "data": data,
+        "snapshot": snapshot,
+        "prof_dir": str(prof_dir),
+        "prof_source": prof_dir.name,
+        "prof_tool": prof_tool,
+        "case_id": snapshot.get("case_id"),
+        "message": f"{prof_tool_label(prof_tool)} 目录导入：{prof_dir.name}",
+    }
+
+
+def list_prof_directories() -> list[dict[str, str]]:
+    entries: list[dict[str, str]] = []
+    for prof_dir in sorted(PROF_OP_ROOT.glob("OPPROF_*")):
+        if prof_dir.is_dir():
+            entries.append({
+                "prof_dir": f"data/prof_op/{prof_dir.name}",
+                "prof_source": prof_dir.name,
+                "prof_tool": "msprof_op",
+                "kind": "msopprof",
+            })
+    for prof_dir in sorted(PROF_APP_ROOT.glob("PROF_*")):
+        if prof_dir.is_dir():
+            entries.append({
+                "prof_dir": f"data/prof_gdr/{prof_dir.name}",
+                "prof_source": prof_dir.name,
+                "prof_tool": "msprof",
+                "kind": "msprof",
+            })
+    entries.sort(key=lambda item: item["prof_source"], reverse=True)
+    return entries
+
+
+def match_prof_dir_from_paths(sample_paths: list[str]) -> str:
+    normalized = [str(item or "").strip().replace("\\", "/") for item in sample_paths if str(item or "").strip()]
+    if not normalized:
+        raise ValueError("sample_paths required")
+    top = normalized[0].split("/")[0]
+    if top.upper().startswith("OPPROF_"):
+        return f"data/prof_op/{top}"
+    if top.upper().startswith("PROF_"):
+        return f"data/prof_gdr/{top}"
+    for entry in list_prof_directories():
+        root = resolve_prof_dir_path(entry["prof_dir"])
+        if any((root / rel_path).exists() for rel_path in normalized):
+            return entry["prof_dir"]
+    raise ValueError("无法匹配 Prof 目录，请选择 OPPROF_* 或 PROF_* 目录")
+
+
+def sanitize_upload_rel_path(rel_path: str) -> str:
+    rel = str(rel_path or "").strip().replace("\\", "/").lstrip("/")
+    parts = [part for part in rel.split("/") if part and part not in {".", ".."}]
+    if not parts or any(part == ".." for part in rel.split("/")):
+        raise ValueError(f"invalid upload path: {rel_path}")
+    return "/".join(parts)
+
+
+def extract_prof_source_from_paths(paths: list[str], explicit: str = "") -> str:
+    explicit_name = str(explicit or "").strip()
+    if explicit_name:
+        if not PROF_SOURCE_PATTERN.match(explicit_name):
+            raise ValueError("prof_source must start with OPPROF_ or PROF_")
+        return explicit_name
+    for path in paths:
+        for part in sanitize_upload_rel_path(path).split("/"):
+            if PROF_SOURCE_PATTERN.match(part):
+                return part
+    raise ValueError("无法识别 OPPROF_* 或 PROF_* 目录名，请上传正确目录或填写目录名")
+
+
+def destination_for_prof_source(prof_source: str) -> Path:
+    if prof_source.upper().startswith("OPPROF_"):
+        return PROF_OP_ROOT / prof_source
+    if prof_source.upper().startswith("PROF_"):
+        return PROF_APP_ROOT / prof_source
+    raise ValueError("prof_source must start with OPPROF_ or PROF_")
+
+
+def normalize_upload_entry_path(rel_path: str, prof_source: str) -> str:
+    rel = sanitize_upload_rel_path(rel_path)
+    parts = rel.split("/")
+    if parts and parts[0] == prof_source:
+        parts = parts[1:]
+    return "/".join(parts)
+
+
+def save_uploaded_prof_files(entries: list[tuple[str, bytes]], *, prof_source: str = "") -> Path:
+    if not entries:
+        raise ValueError("upload files required")
+    total_size = sum(len(content) for _, content in entries)
+    if total_size > MAX_PROF_UPLOAD_BYTES:
+        raise ValueError(f"upload too large (> {MAX_PROF_UPLOAD_BYTES // (1024 * 1024)} MB)")
+    source = extract_prof_source_from_paths([path for path, _ in entries], prof_source)
+    dest_root = destination_for_prof_source(source)
+    if dest_root.exists():
+        shutil.rmtree(dest_root)
+    dest_root.mkdir(parents=True, exist_ok=True)
+    wrote = False
+    for rel_path, content in entries:
+        normalized = normalize_upload_entry_path(rel_path, source)
+        if not normalized:
+            continue
+        target = dest_root / normalized
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+        wrote = True
+    if not wrote:
+        raise ValueError("upload did not contain any files")
+    return dest_root
+
+
+def save_uploaded_prof_zip(zip_bytes: bytes, *, prof_source: str = "") -> Path:
+    if len(zip_bytes) > MAX_PROF_UPLOAD_BYTES:
+        raise ValueError(f"upload too large (> {MAX_PROF_UPLOAD_BYTES // (1024 * 1024)} MB)")
+    entries: list[tuple[str, bytes]] = []
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
+        for info in archive.infolist():
+            if info.is_dir():
+                continue
+            if info.filename.startswith("__MACOSX/"):
+                continue
+            entries.append((info.filename, archive.read(info)))
+    if not entries:
+        raise ValueError("zip archive is empty")
+    return save_uploaded_prof_files(entries, prof_source=prof_source)
+
+
+def ingest_uploaded_prof(
+    *,
+    archive: bytes | None = None,
+    files: list[tuple[str, bytes]] | None = None,
+    prof_source: str = "",
+) -> dict[str, str]:
+    if archive:
+        dest_root = save_uploaded_prof_zip(archive, prof_source=prof_source)
+    elif files:
+        dest_root = save_uploaded_prof_files(files, prof_source=prof_source)
+    else:
+        raise ValueError("archive or files required")
+    try:
+        dest_root.relative_to(ROOT.resolve())
+    except ValueError as exc:
+        raise ValueError("upload destination must be under project root") from exc
+    if dest_root.parent.resolve() not in {PROF_OP_ROOT.resolve(), PROF_APP_ROOT.resolve()}:
+        raise ValueError("upload destination must be under data/prof_op or data/prof_gdr")
+    return {
+        "prof_dir": str(dest_root.relative_to(ROOT)),
+        "prof_source": dest_root.name,
+    }
+
+
 def run_snapshot(run: dict[str, Any], data: dict[str, Any]) -> dict[str, Any] | None:
     snapshot = run.get("snapshot")
     if isinstance(snapshot, dict):
@@ -536,6 +860,120 @@ def run_snapshot(run: dict[str, Any], data: dict[str, Any]) -> dict[str, Any] | 
     if not snapshot_id:
         return None
     return next((item for item in data.get("snapshots", []) if item.get("id") == snapshot_id), None)
+
+
+def infer_prof_tool(snapshot: dict[str, Any], prof_source: str) -> str:
+    tool = str(snapshot.get("prof_tool") or "").strip()
+    if tool:
+        return tool
+    if str(prof_source or "").upper().startswith("OPPROF_"):
+        return "msprof_op"
+    return "msprof"
+
+
+def primary_snapshot_for_case(data: dict[str, Any], case_id: str) -> dict[str, Any] | None:
+    snapshots = [
+        item
+        for item in data.get("snapshots", [])
+        if item.get("case_id") == case_id
+    ]
+    if not snapshots:
+        return None
+    return sorted(snapshots, key=lambda item: str(item.get("created_at") or ""), reverse=True)[0]
+
+
+def collect_case_csv_files(prof_dir: Path, prof_tool: str) -> list[Path]:
+    if prof_tool in {"msprof_op", "msprof_op_sim"}:
+        return sorted(path for path in prof_dir.rglob("*.csv") if path.is_file())
+    output_dir = prof_dir / "mindstudio_profiler_output"
+    if output_dir.is_dir():
+        return sorted(output_dir.glob("*.csv"))
+    return sorted(path for path in prof_dir.rglob("*.csv") if path.is_file())
+
+
+def case_export_slug(case: dict[str, Any], snapshot: dict[str, Any]) -> str:
+    prof_source = str(snapshot.get("prof_source") or "").strip()
+    prof_tool = infer_prof_tool(snapshot, prof_source)
+    tool = "msopprof" if prof_tool in {"msprof_op", "msprof_op_sim"} else "msprof"
+
+    case_id = str(case.get("id") or "")
+    time_match = re.search(r"(\d{8})t(\d{6})", case_id)
+    time_part = f"{time_match.group(1)}-{time_match.group(2)}" if time_match else case_id[-12:]
+
+    parts = [tool, time_part]
+    if prof_tool in {"msprof_op", "msprof_op_sim"}:
+        kernel = str(snapshot.get("kernel_name") or "").strip()
+        if kernel:
+            full_name = re.sub(r"[^a-zA-Z0-9._-]+", "-", kernel).strip("-")
+            if full_name:
+                parts.append(full_name)
+
+    if prof_source:
+        parts.append(prof_source.split("_")[-1][:10])
+
+    slug = "-".join(part for part in parts if part)
+    return re.sub(r"-+", "-", slug).strip("-")[:240]
+
+
+def build_perf_cases_csv_download(data: dict[str, Any], case_ids: list[str]) -> tuple[str, bytes]:
+    import io
+    import json
+    import zipfile
+
+    wanted = [str(case_id).strip() for case_id in case_ids if str(case_id).strip()]
+    if not wanted:
+        raise ValueError("case ids required")
+
+    entries: list[tuple[dict[str, Any], dict[str, Any], Path, list[Path]]] = []
+    for case_id in wanted:
+        case = next((item for item in data.get("cases", []) if item.get("id") == case_id), None)
+        if case is None:
+            raise ValueError(f"case not found: {case_id}")
+        snapshot = primary_snapshot_for_case(data, case_id)
+        if snapshot is None:
+            raise ValueError(f"case has no snapshot: {case_id}")
+        prof_source = str(snapshot.get("prof_source") or "").strip()
+        if not prof_source:
+            raise ValueError(f"snapshot missing prof_source: {case_id}")
+        prof_tool = infer_prof_tool(snapshot, prof_source)
+        prof_dir = find_prof_dir(prof_output_root(prof_tool, local=True), prof_source)
+        if prof_dir is None:
+            raise ValueError(f"prof dir not found: {prof_source}")
+        csv_files = collect_case_csv_files(prof_dir, prof_tool)
+        if not csv_files:
+            raise ValueError(f"no csv files under {prof_dir}")
+        entries.append((case, snapshot, prof_dir, csv_files))
+
+    slugs = [case_export_slug(case, snapshot) for case, snapshot, _, _ in entries]
+    if len(entries) == 1:
+        filename = f"perf-csv-{slugs[0]}.zip"
+    else:
+        filename = f"perf-csv-bundle-{len(entries)}-{'_'.join(slugs[:2])}"
+        if len(slugs) > 2:
+            filename += f"_plus{len(slugs) - 2}"
+        filename = f"{filename[:240]}.zip"
+    buffer = io.BytesIO()
+    manifest_cases: list[dict[str, Any]] = []
+    with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for (case, snapshot, prof_dir, csv_files), export_slug in zip(entries, slugs):
+            archive_root = f"{export_slug}/{prof_dir.name}"
+            manifest_cases.append({
+                "case_id": case["id"],
+                "export_slug": export_slug,
+                "case_label": case.get("label"),
+                "snapshot_id": snapshot.get("id"),
+                "prof_source": prof_dir.name,
+                "prof_tool": infer_prof_tool(snapshot, prof_dir.name),
+                "kernel_name": snapshot.get("kernel_name") or "",
+                "csv_files": [path.relative_to(prof_dir).as_posix() for path in csv_files],
+            })
+            for path in csv_files:
+                archive.write(path, f"{archive_root}/{path.relative_to(prof_dir).as_posix()}")
+        archive.writestr(
+            "manifest.json",
+            json.dumps({"kind": "perf-case-csv-bundle", "cases": manifest_cases}, ensure_ascii=False, indent=2) + "\n",
+        )
+    return filename, buffer.getvalue()
 
 
 def find_prof_dir(root: Path, prof_source: str) -> Path | None:
@@ -566,7 +1004,7 @@ def resolve_run_prof_dir(run: dict[str, Any], data: dict[str, Any]) -> Path | No
     if not prof_source:
         return None
 
-    prof_tool = str((snapshot or {}).get("prof_tool") or run.get("prof_tool") or "msprof").strip()
+    prof_tool = infer_prof_tool(snapshot or {}, prof_source) if snapshot else str(run.get("prof_tool") or "msprof").strip()
     return find_prof_dir(prof_output_root(prof_tool, local=True), prof_source)
 
 
