@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-24T16:25:41+08:00",
+  "generatedAt": "2026-07-25T10:32:30+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 167,
+  "total": 168,
   "items": [
+    {
+      "number": 243,
+      "title": "fix: 修复 solve_tri TND 尾块越界读取",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/243",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-07-24T17:48:00Z",
+      "createdAt": "2026-07-24T17:47:50Z",
+      "headRef": "codex/fix-v266-gdr-nan",
+      "labels": []
+    },
     {
       "number": 241,
       "title": "GDN fwd_h AscendC 优化",
@@ -23,21 +35,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-24T07:00:00Z",
+      "updatedAt": "2026-07-25T01:57:19Z",
       "createdAt": "2026-07-24T06:42:31Z",
       "headRef": "zdy_repo_v26.1.0",
-      "labels": []
-    },
-    {
-      "number": 239,
-      "title": "feat: 支持 v26.6.0 方式 A 离线编译",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/239",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-07-23T08:33:36Z",
-      "createdAt": "2026-07-23T08:33:36Z",
-      "headRef": "codex/v26.6.0-offline-wheel",
       "labels": []
     },
     {
@@ -59,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-24T08:23:36Z",
+      "updatedAt": "2026-07-24T10:16:51Z",
       "createdAt": "2026-07-20T06:40:59Z",
       "headRef": "codex/kda-recurrent-api",
       "labels": []
@@ -83,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-22T07:56:03Z",
+      "updatedAt": "2026-07-24T08:39:44Z",
       "createdAt": "2026-07-20T00:38:30Z",
       "headRef": "codex/kda-pr222-compliance",
       "labels": []
@@ -179,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-24T01:35:07Z",
+      "updatedAt": "2026-07-24T10:17:19Z",
       "createdAt": "2026-07-11T03:36:48Z",
       "headRef": "codex/prepare-wy-repr-bwd-fused",
       "labels": []
@@ -386,6 +386,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 239,
+      "title": "feat: 支持 v26.6.0 方式 A 离线编译",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/239",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-07-24T10:33:10Z",
+      "updatedAt": "2026-07-24T10:33:11Z",
+      "createdAt": "2026-07-23T08:33:36Z",
+      "headRef": "codex/v26.6.0-offline-wheel",
       "labels": []
     },
     {
