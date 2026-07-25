@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-25T10:32:30+08:00",
+  "generatedAt": "2026-07-25T16:04:20+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 168,
+  "total": 169,
   "items": [
+    {
+      "number": 244,
+      "title": "20260725 150726 chunk kda fwd intra sub chunk pr",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/244",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-07-25T07:20:11Z",
+      "createdAt": "2026-07-25T07:20:03Z",
+      "headRef": "20260725_150726_chunk-kda-fwd-intra-sub-chunk-pr",
+      "labels": []
+    },
     {
       "number": 243,
       "title": "fix: 修复 solve_tri TND 尾块越界读取",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-24T17:48:00Z",
+      "updatedAt": "2026-07-25T04:13:43Z",
       "createdAt": "2026-07-24T17:47:50Z",
       "headRef": "codex/fix-v266-gdr-nan",
       "labels": []
@@ -30,12 +42,12 @@
     },
     {
       "number": 240,
-      "title": "针对fwd_o做了适配A5的性能优化",
+      "title": "GDN fwd_o AscendC优化",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/240",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-25T01:57:19Z",
+      "updatedAt": "2026-07-25T06:46:35Z",
       "createdAt": "2026-07-24T06:42:31Z",
       "headRef": "zdy_repo_v26.1.0",
       "labels": []
