@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-07-25T16:04:20+08:00",
+  "generatedAt": "2026-07-26T10:40:29+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 169,
+  "total": 173,
   "items": [
+    {
+      "number": 249,
+      "title": "test: 增加 GDN 100 层纯异步压力复现脚本",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/249",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-07-25T15:26:08Z",
+      "createdAt": "2026-07-25T13:10:44Z",
+      "headRef": "codex/gdr-100layer-repro",
+      "labels": []
+    },
+    {
+      "number": 247,
+      "title": "bwd_dhu支持输入gk/h0/dht，输出dh0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/247",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-07-25T10:04:06Z",
+      "createdAt": "2026-07-25T10:03:58Z",
+      "headRef": "7_22_dhu",
+      "labels": []
+    },
+    {
+      "number": 246,
+      "title": "feat(kda): add chunk_kda_bwd_intra for A2/A3/A5",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/246",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-07-25T09:14:45Z",
+      "createdAt": "2026-07-25T09:01:52Z",
+      "headRef": "kda_intra",
+      "labels": []
+    },
+    {
+      "number": 245,
+      "title": "GDN AscendC 优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/245",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-07-25T08:55:21Z",
+      "createdAt": "2026-07-25T08:55:12Z",
+      "headRef": "main_fwd_o_a5_port",
+      "labels": []
+    },
     {
       "number": 244,
       "title": "20260725 150726 chunk kda fwd intra sub chunk pr",
@@ -95,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-24T08:39:44Z",
+      "updatedAt": "2026-07-25T15:13:08Z",
       "createdAt": "2026-07-20T00:38:30Z",
       "headRef": "codex/kda-pr222-compliance",
       "labels": []
@@ -191,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-24T10:17:19Z",
+      "updatedAt": "2026-07-25T21:50:28Z",
       "createdAt": "2026-07-11T03:36:48Z",
       "headRef": "codex/prepare-wy-repr-bwd-fused",
       "labels": []
