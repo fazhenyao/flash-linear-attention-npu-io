@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-26T10:40:29+08:00",
+  "generatedAt": "2026-07-26T16:25:11+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 173,
@@ -11,7 +11,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-25T15:26:08Z",
+      "updatedAt": "2026-07-26T07:19:08Z",
       "createdAt": "2026-07-25T13:10:44Z",
       "headRef": "codex/gdr-100layer-repro",
       "labels": []
