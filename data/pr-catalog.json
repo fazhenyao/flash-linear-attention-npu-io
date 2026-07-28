@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-27T17:49:55+08:00",
+  "generatedAt": "2026-07-28T10:26:54+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 173,
+  "total": 174,
   "items": [
+    {
+      "number": 252,
+      "title": "fix: 统一 RecomputeWUFwd 算子命名",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/252",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-07-27T12:17:40Z",
+      "createdAt": "2026-07-27T12:17:40Z",
+      "headRef": "codex/rename-recompute-w-u-fwd",
+      "labels": []
+    },
     {
       "number": 249,
       "title": "test: 增加 GDN 100 层纯异步压力复现脚本",
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-27T09:25:17Z",
+      "updatedAt": "2026-07-27T17:41:20Z",
       "createdAt": "2026-07-25T10:03:58Z",
       "headRef": "7_22_dhu",
       "labels": []
