@@ -1,0 +1,307 @@
+{
+  "platform": "A5",
+  "unit": "us",
+  "summary": {
+    "qk_l2norm": 10391.268014000001,
+    "beta_sigmoid": 16.17,
+    "layout_conversion": 10365.237105,
+    "KdaGateCumsum": 8308.217773,
+    "ChunkKdaFwdPrepare": 12548.344727,
+    "ChunkKdaFwdPostWu": 3269.287842,
+    "ChunkGatedDeltaRuleFwdH": 5205.976074,
+    "ChunkKdaFwdFinalize": 3285.5979,
+    "kda_core_total": 32617.424316,
+    "preprocessing_total": 10407.438014000001,
+    "public_semantics_total": 53390.099435000004
+  },
+  "tasks": [
+    {
+      "category": "qk_l2norm",
+      "op_name": "Add_FLOAT32_high_performance_8",
+      "instance": 0,
+      "duration_us": 10.71,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Add_FLOAT32_high_performance_8",
+      "instance": 1,
+      "duration_us": 7.004,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Cast_9f288b80370c6545ffe8cef142d37f5c_high_performance_0",
+      "instance": 0,
+      "duration_us": 928.993042,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Cast_9f288b80370c6545ffe8cef142d37f5c_high_performance_0",
+      "instance": 1,
+      "duration_us": 927.657043,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Cast_b2717900ea7de2d41ea9c63d23aa269b_high_performance_0",
+      "instance": 0,
+      "duration_us": 1061.751953,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Cast_b2717900ea7de2d41ea9c63d23aa269b_high_performance_0",
+      "instance": 1,
+      "duration_us": 993.811035,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "beta_sigmoid",
+      "op_name": "Cast_b2717900ea7de2d41ea9c63d23aa269b_high_performance_0",
+      "instance": 2,
+      "duration_us": 8.191,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "core/ChunkGatedDeltaRuleFwdH",
+      "op_name": "ChunkGatedDeltaRuleFwdH_91637c89c46d43802804a087973f3bc3_1_mix_aic",
+      "instance": 0,
+      "duration_us": 5205.976074,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "core/ChunkKdaFwdFinalize",
+      "op_name": "ChunkKdaFwdFinalize_438839951ba4b952bae84a5ca0ae9ac6_1_mix_aic",
+      "instance": 0,
+      "duration_us": 3285.5979,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "core/ChunkKdaFwdPostWu",
+      "op_name": "ChunkKdaFwdPostWu_fea19a3a5cb6e4d50ab31e5cbd20037c_1_mix_aic",
+      "instance": 0,
+      "duration_us": 3269.287842,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "core/ChunkKdaFwdPrepare",
+      "op_name": "ChunkKdaFwdPrepare_4806f3b2e2efe3b17b040ca87a77564e_1_mix_aic",
+      "instance": 0,
+      "duration_us": 12548.344727,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "core/KdaGateCumsum",
+      "op_name": "KdaGateCumsum_eeeeb27e6b2f39db3edc01d780ad5c56_0",
+      "instance": 0,
+      "duration_us": 8308.217773,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Mul_ee98c6628030785f610b924ab1557b31_high_performance_0",
+      "instance": 0,
+      "duration_us": 1228.178955,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Mul_ee98c6628030785f610b924ab1557b31_high_performance_0",
+      "instance": 1,
+      "duration_us": 1223.119995,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Mul_ee98c6628030785f610b924ab1557b31_high_performance_8",
+      "instance": 0,
+      "duration_us": 1261.765015,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Mul_ee98c6628030785f610b924ab1557b31_high_performance_8",
+      "instance": 1,
+      "duration_us": 1256.240967,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "ReduceSum_float32_int64_high_performance_5143",
+      "instance": 0,
+      "duration_us": 646.242004,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "ReduceSum_float32_int64_high_performance_5143",
+      "instance": 1,
+      "duration_us": 644.505005,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Rsqrt_5c5e58e043224cccf51a06108010ae13_high_performance_103",
+      "instance": 0,
+      "duration_us": 190.763,
+      "current_freq_mhz": 875,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Rsqrt_5c5e58e043224cccf51a06108010ae13_high_performance_103",
+      "instance": 1,
+      "duration_us": 10.526,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "beta_sigmoid",
+      "op_name": "Sigmoid_5c5e58e043224cccf51a06108010ae13_high_precision_300000000000100",
+      "instance": 0,
+      "duration_us": 7.979,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10002",
+      "instance": 0,
+      "duration_us": 1963.646973,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10004",
+      "instance": 0,
+      "duration_us": 625.670044,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10004",
+      "instance": 1,
+      "duration_us": 634.375977,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10004",
+      "instance": 2,
+      "duration_us": 631.028992,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10004",
+      "instance": 3,
+      "duration_us": 399.303009,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10004",
+      "instance": 4,
+      "duration_us": 374.151001,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10004",
+      "instance": 5,
+      "duration_us": 627.667969,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10004",
+      "instance": 6,
+      "duration_us": 636.223999,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10004",
+      "instance": 7,
+      "duration_us": 638.819031,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10004",
+      "instance": 8,
+      "duration_us": 638.137024,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float16_int64_high_performance_10004",
+      "instance": 9,
+      "duration_us": 639.79303,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float32_int64_high_performance_10002",
+      "instance": 0,
+      "duration_us": 17.179001,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float32_int64_high_performance_10002",
+      "instance": 1,
+      "duration_us": 15.035,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float32_int64_high_performance_10004",
+      "instance": 0,
+      "duration_us": 1256.352051,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_float32_int64_high_performance_10004",
+      "instance": 1,
+      "duration_us": 1267.854004,
+      "current_freq_mhz": 1650,
+      "rated_freq_mhz": 1650
+    }
+  ]
+}

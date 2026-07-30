@@ -1,0 +1,307 @@
+{
+  "platform": "A2",
+  "unit": "us",
+  "summary": {
+    "qk_l2norm": 11638.752820000002,
+    "beta_sigmoid": 24.240485,
+    "layout_conversion": 18139.142677,
+    "KdaGateCumsum": 9965.759766,
+    "ChunkKdaFwdPrepare": 21573.291016,
+    "ChunkKdaFwdPostWu": 5199.444336,
+    "ChunkGatedDeltaRuleFwdH": 8340.186523,
+    "ChunkKdaFwdFinalize": 5405.087891,
+    "kda_core_total": 50483.769532,
+    "preprocessing_total": 11662.993305000002,
+    "public_semantics_total": 80285.905514
+  },
+  "tasks": [
+    {
+      "category": "qk_l2norm",
+      "op_name": "Add_ee98c6628030785f610b924ab1557b31_high_performance_223010000",
+      "instance": 0,
+      "duration_us": 11.540231,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Add_ee98c6628030785f610b924ab1557b31_high_performance_223010000",
+      "instance": 1,
+      "duration_us": 9.820196,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Cast_9f288b80370c6545ffe8cef142d37f5c_high_performance_210010000",
+      "instance": 4,
+      "duration_us": 1230.224609,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Cast_9f288b80370c6545ffe8cef142d37f5c_high_performance_210010000",
+      "instance": 5,
+      "duration_us": 1229.224609,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Cast_b2717900ea7de2d41ea9c63d23aa269b_high_performance_210010000",
+      "instance": 0,
+      "duration_us": 1012.080261,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Cast_b2717900ea7de2d41ea9c63d23aa269b_high_performance_210010000",
+      "instance": 1,
+      "duration_us": 1013.040283,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "beta_sigmoid",
+      "op_name": "Cast_b2717900ea7de2d41ea9c63d23aa269b_high_performance_210010000",
+      "instance": 2,
+      "duration_us": 11.540231,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "core/ChunkGatedDeltaRuleFwdH",
+      "op_name": "ChunkGatedDeltaRuleFwdH_91637c89c46d43802804a087973f3bc3_1_mix_aic",
+      "instance": 0,
+      "duration_us": 8340.186523,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "core/ChunkKdaFwdFinalize",
+      "op_name": "ChunkKdaFwdFinalize_438839951ba4b952bae84a5ca0ae9ac6_1_mix_aic",
+      "instance": 0,
+      "duration_us": 5405.087891,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "core/ChunkKdaFwdPostWu",
+      "op_name": "ChunkKdaFwdPostWu_fea19a3a5cb6e4d50ab31e5cbd20037c_1_mix_aic",
+      "instance": 0,
+      "duration_us": 5199.444336,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "core/ChunkKdaFwdPrepare",
+      "op_name": "ChunkKdaFwdPrepare_4806f3b2e2efe3b17b040ca87a77564e_1_mix_aic",
+      "instance": 0,
+      "duration_us": 21573.291016,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "core/KdaGateCumsum",
+      "op_name": "KdaGateCumsum_eeeeb27e6b2f39db3edc01d780ad5c56_0",
+      "instance": 0,
+      "duration_us": 9965.759766,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Mul_ee98c6628030785f610b924ab1557b31_high_performance_210010000",
+      "instance": 0,
+      "duration_us": 1527.670532,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Mul_ee98c6628030785f610b924ab1557b31_high_performance_210010000",
+      "instance": 1,
+      "duration_us": 1526.450562,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Mul_ee98c6628030785f610b924ab1557b31_high_performance_212000001",
+      "instance": 0,
+      "duration_us": 1258.665161,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Mul_ee98c6628030785f610b924ab1557b31_high_performance_212000001",
+      "instance": 1,
+      "duration_us": 1258.005127,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "ReduceSum_7a09f5b7af4126487a7f726a9aac7548_high_performance_50000400_mix_aiv",
+      "instance": 0,
+      "duration_us": 771.81543,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "ReduceSum_7a09f5b7af4126487a7f726a9aac7548_high_performance_50000400_mix_aiv",
+      "instance": 1,
+      "duration_us": 770.115417,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Rsqrt_5c5e58e043224cccf51a06108010ae13_high_performance_210010000",
+      "instance": 0,
+      "duration_us": 10.0002,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "qk_l2norm",
+      "op_name": "Rsqrt_5c5e58e043224cccf51a06108010ae13_high_performance_210010000",
+      "instance": 1,
+      "duration_us": 10.100202,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "beta_sigmoid",
+      "op_name": "Sigmoid_5c5e58e043224cccf51a06108010ae13_high_precision_210010000",
+      "instance": 0,
+      "duration_us": 12.700254,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_9a632dc5b6be9e1b4215e3cf2b1aff0d_high_performance_11",
+      "instance": 0,
+      "duration_us": 23.680473,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_9a632dc5b6be9e1b4215e3cf2b1aff0d_high_performance_12",
+      "instance": 0,
+      "duration_us": 1757.355103,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_9a632dc5b6be9e1b4215e3cf2b1aff0d_high_performance_12",
+      "instance": 1,
+      "duration_us": 1515.810303,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_9a632dc5b6be9e1b4215e3cf2b1aff0d_high_performance_13",
+      "instance": 0,
+      "duration_us": 19.480391,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_10",
+      "instance": 0,
+      "duration_us": 1553.291016,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_12",
+      "instance": 0,
+      "duration_us": 1119.302368,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_12",
+      "instance": 1,
+      "duration_us": 1140.082764,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_12",
+      "instance": 2,
+      "duration_us": 1142.902832,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_12",
+      "instance": 3,
+      "duration_us": 662.13324,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_12",
+      "instance": 4,
+      "duration_us": 680.913635,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_12",
+      "instance": 5,
+      "duration_us": 1708.394165,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_12",
+      "instance": 6,
+      "duration_us": 1698.354004,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_12",
+      "instance": 7,
+      "duration_us": 1707.154175,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_12",
+      "instance": 8,
+      "duration_us": 1697.453979,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    },
+    {
+      "category": "layout_conversion",
+      "op_name": "Transpose_be837fe498fad076d01c0ce8dfd3d014_high_performance_12",
+      "instance": 9,
+      "duration_us": 1712.834229,
+      "current_freq_mhz": 1800,
+      "rated_freq_mhz": 1800
+    }
+  ]
+}

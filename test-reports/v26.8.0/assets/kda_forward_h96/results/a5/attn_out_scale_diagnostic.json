@@ -1,0 +1,11 @@
+{
+  "sample_count": 200000,
+  "ratio_count": 199890,
+  "actual_over_expected_quantiles": {
+    "p01": 1.5515102495543671,
+    "p50": 2.0,
+    "p99": 2.2875915480347375
+  },
+  "least_squares_scale": 1.9985874759471784,
+  "relative_l2_after_dividing_actual_by_2": 0.02326673467857118
+}
