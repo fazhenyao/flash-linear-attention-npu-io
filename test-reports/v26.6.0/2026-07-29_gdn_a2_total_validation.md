@@ -76,9 +76,9 @@ AscendC `solve_tri` 的 A2 64×64 FP32 kernel 完成稀疏块合并优化后：
 | 严格下三角 | 只有主对角线下方可以非零；在这里表示当前 token 只依赖同一 chunk 中更早的 token。 |
 | SolveTri | 求解 KKT 下三角系统，得到 chunk 内并行 delta-rule 所需的 WY 表示。 |
 | WY 表示 | 把 chunk 内原本逐 token 串行的多次 delta 更新整理成可并行执行的矩阵形式，不是新增模型参数。 |
-| MCH | Matrix Chain Halving。先在每个 16×16 严格下三角基块内，用矩阵幂递推求出 `(I+A)⁻¹`。 |
-| MBH | Matrix Block Halving。把相邻的 16×16 已求逆对角块按块下三角逆公式合成 32×32，再合成 64×64。 |
-| MXR | 当前实现和历史性能记录对 MBH 合并 kernel 的称呼；数学上执行的是 MBH，不是另一套求逆公式。 |
+| MCH | 论文中的 Cayley–Hamilton 直接求逆算法。这里先在每个 16×16 严格下三角基块内，用矩阵幂递推求出 `(I+A)⁻¹`。 |
+| MBH | 论文中的 Bunch–Hopcroft 递归块求逆算法。这里把相邻的 16×16 已求逆对角块合成 32×32，再合成 64×64。 |
+| MXR | Mixed Recursion，本实现采用的完整混合递归求逆算法：先用 MCH 求 16×16 小对角块的逆，再以这些结果为起点，用 MBH 合并到 32×32 和 64×64。 |
 | GEMM | 通用矩阵乘法，例如 `32×32 @ 32×32`。 |
 | AIC / AIV | AIC 主要执行矩阵乘，AIV 主要执行向量计算、数据整理和写回。 |
 | GM / L1 / workspace | GM 是大容量全局显存，L1 是芯片上的较小高速缓存，workspace 是算子运行时使用的临时存储。 |
@@ -102,6 +102,11 @@ AscendC `solve_tri` 的 A2 64×64 FP32 kernel 完成稀疏块合并优化后：
 | device task duration | `msopprof` 记录的 NPU kernel（一次实际设备计算任务）执行时长；完整链时延取一次 GDR 调用中全部 kernel 的 Task Duration 之和，不包含 Python/CPU 调度时间。 |
 | MFU | Model FLOPs Utilization，本报告指单 rank GDR 算法 FLOPs 除以“device task duration × A2 低精度理论峰值”。例如 2% 表示这段 GDR 数学工作量等价使用了约 2% 的理论峰值；它不是整模型 MFU，也不等于 AICore 占用率。 |
 
+MCH、MBH 和 MXR 的术语关系参考
+[算法解读](https://zhuanlan.zhihu.com/p/2020300622923085507)和
+[原始论文](https://arxiv.org/abs/2605.21325)。MXR 不是 MBH 阶段的别名，
+而是组合 MCH 与 MBH 的完整算法名称。
+
 ## 4. 优化内容
 
 ### 4.1 原实现瓶颈
@@ -115,8 +120,8 @@ MBH 辅助矩阵的大部分区域为零，但原实现仍执行完整 64×64 GE
 
 ### 4.2 最终算法
 
-最终方案保留 A2 上性能更好的连续 MCH GEMM，只优化两级 MBH 合并
-（当前实现的性能记录中称为 MXR merge）：
+最终方案仍是完整的 MXR：保留 A2 上性能更好的 MCH 小块求逆，只优化
+后半段的两级 MBH 合并：
 
 1. 16→32：将两组独立块打包，每阶段执行一次
    `32×16 @ 16×32` FP32 GEMM。
@@ -386,7 +391,7 @@ BF16 和 FP32 都使用 8 位指数，最大有限值接近：
 564 时相邻间隔是 4；此时 MCH/MBH 中本应保留下来参与抵消的小量会在
 每次矩阵乘结果落回 BF16 时丢失。
 
-### 8.2 误差如何在 MCH/MBH 内产生
+### 8.2 误差如何在 MXR 的 MCH/MBH 阶段产生
 
 #### 8.2.1 MCH 公式
 
@@ -444,8 +449,9 @@ Q = P R₀
 ```
 
 先令 `b=16`，把四个 16×16 基块两两合成两个 32×32 块；再令 `b=32`，
-合成最终 64×64 结果。当前代码中称为 MXR merge 的优化，改变的是这两次
-MBH 合并所需 GEMM 的打包和尺寸，没有改变上述数学公式。
+合成最终 64×64 结果。这两级 MBH 与前面的 16×16 MCH 共同构成完整
+MXR。当前优化只改变 MBH 阶段所需 GEMM 的打包和尺寸，没有改变 MXR
+的数学流程。
 
 `A²/A⁴/A⁸` 包含大量路径乘积与求和；单项可达到数百，但最终逆矩阵的
 有效元素可能仍在 1 附近。旧实现虽由 Cube 做 FP32 累加，却在每个
