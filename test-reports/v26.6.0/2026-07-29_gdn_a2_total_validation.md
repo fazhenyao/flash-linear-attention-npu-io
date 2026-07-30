@@ -4,13 +4,13 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 测试日期 | 2026-07-29 |
+| 测试日期 | 2026-07-29～2026-07-30 |
 | 软件版本 | v26.6.0 |
 | 实现仓 PR | [flashserve/flash-linear-attention-npu#249](https://github.com/flashserve/flash-linear-attention-npu/pull/249) |
 | 被测提交 | [`9aa9b324`](https://github.com/weinachuan/flash-linear-attention-npu/commit/9aa9b324455efb33419fe682fe26d95f72423082) |
 | 主要算子 | AscendC `solve_tri` |
 | 端到端范围 | causal-conv 正反向、GDR 正反向、checkpoint recompute、纯异步多层串联 |
-| 硬件范围 | A2 |
+| 硬件范围 | A2（Ascend 910B3） |
 
 本报告使用 v26.6.0 最新源码本地构建的 wheel，不使用 release 中的预编译
 wheel。报告中的性能结论来自 `msopprof BasicInfo`，不使用 Python wall
@@ -34,6 +34,10 @@ AscendC `solve_tri` 的 A2 64×64 FP32 kernel 完成稀疏块合并优化后：
 - `T=32768, H=8, BT=64` 完整 GDR 正反向链与 fla-org
   Triton-Ascend 对比，`attn_out/dq/dk/dv/dg/dbeta` 全部 finite；相对
   L2 为 0.00321～0.00503，余弦相似度均大于 0.99998。
+- 8 个主流模型场景的单 rank 完整 GDR device time 为
+  7.35～19.56 ms，fla-org Triton-Ascend 为 138.51～260.46 ms，
+  fla_npu 加速 12.72x～18.83x；对应 GDR MFU 分别为
+  1.973%～4.043% 和 0.106%～0.233%。
 - 原问题 `T=32768, H=16, BT=64` 单层正反向通过。
 - 100 层 × 20 step 纯异步压力通过，输出、输入梯度、grad norm 和全部
   参数梯度逐 step 二进制一致。
@@ -54,6 +58,7 @@ AscendC `solve_tri` 的 A2 64×64 FP32 kernel 完成稀疏块合并优化后：
 | chunk size | 64 |
 | 原问题 shape | `T=32768, H=16, K=V=128` |
 | varlen metadata | 原始 64 段 `cu_seqlens` |
+| MFU 理论峰值 | 313 TFLOPS/卡（910B3 BF16/FP16 低精度矩阵峰值；[峰值口径参考](https://jdc.huawei.com/jdc/refactor/viewthread?tid=1175654)） |
 
 测试未设置 launch blocking、关闭 task queue 或其他强串行环境变量。
 100 层压力脚本在层内、层间和 step 提交主体中不调用
@@ -92,6 +97,9 @@ AscendC `solve_tri` 的 A2 64×64 FP32 kernel 完成稀疏块合并优化后：
 | tiling / 归约 | tiling 是把大计算拆成硬件小块；归约是把很多乘积或局部结果相加。不同拆分、相加顺序会产生不同浮点舍入。 |
 | checkpoint recompute | 训练时不长期保存部分前向中间量，反向时重新计算，以计算换显存。 |
 | SolveTri 残差 | 把求解结果代回原方程后还剩多少误差；越接近 0，说明求解结果越满足原方程。 |
+| FLOP / GFLOPs | FLOP 是一次浮点加法或乘法；本报告把一次乘加（FMA）计为 2 FLOPs。GFLOPs 表示十亿次浮点运算。 |
+| device task duration | `msopprof` 记录的 NPU kernel（一次实际设备计算任务）执行时长；完整链时延取一次 GDR 调用中全部 kernel 的 Task Duration 之和，不包含 Python/CPU 调度时间。 |
+| MFU | Model FLOPs Utilization，本报告指单 rank GDR 算法 FLOPs 除以“device task duration × A2 低精度理论峰值”。例如 2% 表示这段 GDR 数学工作量等价使用了约 2% 的理论峰值；它不是整模型 MFU，也不等于 AICore 占用率。 |
 
 ## 4. 优化内容
 
@@ -274,6 +282,8 @@ cumsum。即使两端数学公式等价，最终转回 BF16 后也不要求逐�
 
 ## 7. 性能验证
 
+### 7.1 SolveTri 核心
+
 只统计 SolveTri 核心，不包含 KKT、FP32→BF16 cast 和适配层无效区清零。
 PR 前 BF16 基线从 v26.6.0 基线提交重新本地构建，不使用 release wheel。
 H=8/H=16 分别取 20/12 次稳态结果；其余实现由 `msopprof BasicInfo`
@@ -287,6 +297,70 @@ H=8/H=16 分别取 20/12 次稳态结果；其余实现由 `msopprof BasicInfo`
 相对 fla-org，优化后 H=8/H=16 时延分别降低 16.98%/17.03%。
 相对 PR 前 BF16，优化后的 FP32 路径分别慢 3.305x/3.308x；这是消除
 MCH/MXR 中间 BF16 舍入后当前实测到的稳定性成本。
+
+### 7.2 单 rank 完整 GDR 与 fla-org Triton-Ascend 对比
+
+本项覆盖第 10 节的全部模型 shape，但只统计单个 rank 的一层完整 GDR：
+
+- 训练统计一次 forward + backward；prefill 只统计 forward；
+- fla_npu 使用 PR #249 当前完整适配，fla-org 使用其仓内
+  `triton_ascend` backend；
+- 两端使用相同 seed、q/k/v/g/beta、上游梯度、chunk size 和
+  dense/packed metadata；无 `initial_state`，启用 Q/K L2Norm；
+- 输入 layout 在 profiling 前准备完成；适配器内部真正发生的
+  transpose/cast/mask 等任务仍计入完整链；
+- 每个 shape 先独立 warmup，再由 `msopprof BasicInfo` 采集一次稳态
+  调用，完整链时延为所有 device Task Duration 之和。所有被统计任务的
+  current/rated frequency 均为 1800 MHz。
+
+GDR MFU 使用跨 backend 相同的算法 FLOPs，而不是按各 kernel 的 padding
+或空算量分别计数。设 chunk size 为 `C`，总 chunk 数为 `Nc`，value
+head 数为 `HV`，key/value 维度为 `K/V`：
+
+```text
+Fsolve = C × (C - 1) × (C - 2) / 3
+Ffwd = Nc × HV × (6C²K + 4C²V + 6CKV + Fsolve)
+Frecompute = Nc × HV × (2C²(K + V) + 4CKV)
+Ftrain = 3 × Ffwd + Frecompute
+MFU = FLOPs / (device task duration × 313 TFLOPS)
+```
+
+这里一次乘加计 2 FLOPs。`3 × Ffwd` 是常用的 forward 加反向矩阵乘
+口径，`Frecompute` 另外计入当前 backward 对 W/U 和 state 的实际重算。
+L2Norm、cumsum、exp、mask、transpose 等逐元素或数据整理操作未加入
+FLOPs 分子，但它们的 device time 已在分母中，因此这里的 GDR MFU 是
+保守且可跨 backend 复算的指标。V=128 的 prefill/训练分别为
+47.59/168.53 GFLOPs，V=256 的训练为 146.54 GFLOPs。
+
+| 场景 | 单 rank shape | dtype | 算法 FLOPs | fla_npu 时延 / GDR MFU | fla-org 时延 / GDR MFU | fla_npu 加速比 |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| Qwen3.5-4B TP4 训练 | 32768 / 4 / 8 / 128 / 128 | BF16 | 168.53 GFLOPs | 19.56 ms / 2.753% | 260.46 ms / 0.207% | 13.32x |
+| Qwen3.5-4B SP4 训练 | 8192 / 16 / 32 / 128 / 128 | BF16 | 168.53 GFLOPs | 18.34 ms / 2.936% | 233.21 ms / 0.231% | 12.72x |
+| Qwen3.5-35B-A3B TP4 训练 | 32768 / 4 / 8 / 128 / 128 | BF16 | 168.53 GFLOPs | 19.56 ms / 2.753% | 260.46 ms / 0.207% | 13.32x |
+| Qwen3.5-35B-A3B CP4 训练 | 8192 / 16 / 32 / 128 / 128 | BF16 | 168.53 GFLOPs | 18.32 ms / 2.940% | 249.98 ms / 0.215% | 13.65x |
+| Qwen3-Next TP4 prefill | 32768 / 4 / 8 / 128 / 128 | BF16 | 47.59 GFLOPs | 7.70 ms / 1.973% | 143.43 ms / 0.106% | 18.62x |
+| Qwen3-Next CP4 prefill | 8192 / 16 / 32 / 128 / 128 | BF16 | 47.59 GFLOPs | 7.35 ms / 2.067% | 138.51 ms / 0.110% | 18.83x |
+| GVA V=256 TP4 训练 | 16384 / 4 / 8 / 128 / 256 | BF16 | 146.54 GFLOPs | 11.58 ms / 4.043% | 200.60 ms / 0.233% | 17.32x |
+| Qwen3.5-4B TP4 训练 | 32768 / 4 / 8 / 128 / 128 | FP16 | 168.53 GFLOPs | 19.42 ms / 2.773% | 259.36 ms / 0.208% | 13.36x |
+
+加速比定义为 `fla-org time / fla_npu time`，大于 1 表示 fla_npu
+更快。两个 TP4 BF16 模型具有完全相同的单 rank 算子 shape、dtype、
+metadata 和调用路径，因此复用同一次实测，不重复制造第二组相同数据；
+SP dense 与 CP packed 则分别实测。
+
+这里的 1.973%～4.043% 不应解读为整卡“只有这么多利用率”：GDR 由
+大量 `BT=64` 的小矩阵乘、FP32 SolveTri、向量操作和 layout/mask 任务
+组成，而 MFU 分母使用 313 TFLOPS 的低精度大矩阵理论峰值。逐元素与
+数据整理任务的时间被计入分母、FLOPs 未计入分子，SolveTri 的 FP32
+中间计算也没有改用 FP32 峰值另算，因此该数值是用于同口径比较两种
+backend 的保守 GDR 算法 MFU，不是 FP32 kernel 利用率或整模型 MFU。
+
+第 7.1 节的约 1.205x 只比较 SolveTri 核心；本表 12.72x～18.83x
+覆盖完整正反向或完整 prefill，收益来自整条 backend 算子链，不能全部
+归因于 SolveTri。
+
+机器可读的原始时延、kernel 数、op type 时长、FLOPs 和 MFU 归档在
+[`fullchain_performance_metrics.json`](assets/gdn_a2_total_validation/fullchain_performance_metrics.json)。
 
 ## 8. BF16 SolveTri 误差放大链与可用数值范围
 

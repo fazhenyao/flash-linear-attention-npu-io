@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "metric": "single_rank_complete_gdr",
+  "hardware": "A2 (Ascend 910B3)",
+  "peak_tflops": 313.0,
+  "peak_scope": "BF16/FP16 low-precision matrix peak used as the GDR MFU denominator",
+  "frequency_mhz": {
+    "current": 1800,
+    "rated": 1800
+  },
+  "timing": {
+    "tool": "msopprof BasicInfo",
+    "value": "sum of device Task Duration for one steady-state complete GDR call",
+    "training": "one forward and one backward",
+    "prefill": "one forward",
+    "warmup": "performed separately and excluded"
+  },
+  "flop_counting": {
+    "fma_flops": 2,
+    "chunk_size": 64,
+    "solve": "C * (C - 1) * (C - 2) / 3",
+    "forward": "Nc * HV * (6*C^2*K + 4*C^2*V + 6*C*K*V + Fsolve)",
+    "recompute": "Nc * HV * (2*C^2*(K + V) + 4*C*K*V)",
+    "training": "3 * Fforward + Frecompute",
+    "mfu": "algorithm_flops / (device_task_duration * 313e12)",
+    "excluded_from_numerator": [
+      "l2norm",
+      "cumsum",
+      "exp",
+      "mask",
+      "transpose"
+    ],
+    "excluded_operations_are_included_in_timing_denominator": true
+  },
+  "measurements": [
+    {
+      "case_id": "tp_train",
+      "report_scenarios": [
+        "Qwen3.5-4B TP4 训练",
+        "Qwen3.5-35B-A3B TP4 训练"
+      ],
+      "shape": [32768, 4, 8, 128, 128],
+      "dtype": "BF16",
+      "mode": "train",
+      "packed": true,
+      "algorithm_gflops": 168.527659008,
+      "fla_npu": {
+        "device_task_duration_us": 19559.111546,
+        "mfu_percent": 2.752819443349293,
+        "kernel_count": 47,
+        "duration_by_op_type_us": {
+          "mix": 17720.214753,
+          "vector": 1838.896793
+        }
+      },
+      "fla_org": {
+        "device_task_duration_us": 260456.292099,
+        "mfu_percent": 0.20672452227800558,
+        "kernel_count": 97,
+        "duration_by_op_type_us": {
+          "mix": 252409.431092,
+          "vector": 8046.861007
+        }
+      },
+      "fla_npu_speedup_x": 13.31636621052276
+    },
+    {
+      "case_id": "sp_train",
+      "report_scenarios": [
+        "Qwen3.5-4B SP4 训练"
+      ],
+      "shape": [8192, 16, 32, 128, 128],
+      "dtype": "BF16",
+      "mode": "train",
+      "packed": false,
+      "algorithm_gflops": 168.527659008,
+      "fla_npu": {
+        "device_task_duration_us": 18339.386853,
+        "mfu_percent": 2.935905272626862,
+        "kernel_count": 48,
+        "duration_by_op_type_us": {
+          "mix": 16619.51245,
+          "vector": 1719.874403
+        }
+      },
+      "fla_org": {
+        "device_task_duration_us": 233205.724139,
+        "mfu_percent": 0.23088070739796263,
+        "kernel_count": 100,
+        "duration_by_op_type_us": {
+          "mix": 225654.653081,
+          "vector": 7551.071058
+        }
+      },
+      "fla_npu_speedup_x": 12.716113467056925
+    },
+    {
+      "case_id": "cp_train",
+      "report_scenarios": [
+        "Qwen3.5-35B-A3B CP4 训练"
+      ],
+      "shape": [8192, 16, 32, 128, 128],
+      "dtype": "BF16",
+      "mode": "train",
+      "packed": true,
+      "algorithm_gflops": 168.527659008,
+      "fla_npu": {
+        "device_task_duration_us": 18316.446805,
+        "mfu_percent": 2.939582285346334,
+        "kernel_count": 47,
+        "duration_by_op_type_us": {
+          "mix": 16659.233674,
+          "vector": 1657.213131
+        }
+      },
+      "fla_org": {
+        "device_task_duration_us": 249976.439441,
+        "mfu_percent": 0.21539110917360887,
+        "kernel_count": 97,
+        "duration_by_op_type_us": {
+          "mix": 242312.126163,
+          "vector": 7664.313278
+        }
+      },
+      "fla_npu_speedup_x": 13.64764913753697
+    },
+    {
+      "case_id": "tp_prefill",
+      "report_scenarios": [
+        "Qwen3-Next TP4 prefill"
+      ],
+      "shape": [32768, 4, 8, 128, 128],
+      "dtype": "BF16",
+      "mode": "prefill",
+      "packed": true,
+      "algorithm_gflops": 47.585951744,
+      "fla_npu": {
+        "device_task_duration_us": 7704.114106,
+        "mfu_percent": 1.9733845140074198,
+        "kernel_count": 25,
+        "duration_by_op_type_us": {
+          "mix": 6591.391845,
+          "vector": 1112.722261
+        }
+      },
+      "fla_org": {
+        "device_task_duration_us": 143425.08579,
+        "mfu_percent": 0.10600083930356989,
+        "kernel_count": 58,
+        "duration_by_op_type_us": {
+          "mix": 140542.588134,
+          "vector": 2882.497656
+        }
+      },
+      "fla_npu_speedup_x": 18.61668763165124
+    },
+    {
+      "case_id": "cp_prefill",
+      "report_scenarios": [
+        "Qwen3-Next CP4 prefill"
+      ],
+      "shape": [8192, 16, 32, 128, 128],
+      "dtype": "BF16",
+      "mode": "prefill",
+      "packed": true,
+      "algorithm_gflops": 47.585951744,
+      "fla_npu": {
+        "device_task_duration_us": 7354.827178,
+        "mfu_percent": 2.067102204169089,
+        "kernel_count": 25,
+        "duration_by_op_type_us": {
+          "mix": 6260.125275,
+          "vector": 1094.701903
+        }
+      },
+      "fla_org": {
+        "device_task_duration_us": 138513.854425,
+        "mfu_percent": 0.10975926945386147,
+        "kernel_count": 58,
+        "duration_by_op_type_us": {
+          "mix": 135914.582458,
+          "vector": 2599.271967
+        }
+      },
+      "fla_npu_speedup_x": 18.833053594967833
+    },
+    {
+      "case_id": "gva_v256_train",
+      "report_scenarios": [
+        "GVA V=256 TP4 训练"
+      ],
+      "shape": [16384, 4, 8, 128, 256],
+      "dtype": "BF16",
+      "mode": "train",
+      "packed": true,
+      "algorithm_gflops": 146.540855296,
+      "fla_npu": {
+        "device_task_duration_us": 11581.211551,
+        "mfu_percent": 4.042596443829514,
+        "kernel_count": 47,
+        "duration_by_op_type_us": {
+          "mix": 10380.967546,
+          "vector": 1200.244005
+        }
+      },
+      "fla_org": {
+        "device_task_duration_us": 200596.672352,
+        "mfu_percent": 0.2333945228620494,
+        "kernel_count": 97,
+        "duration_by_op_type_us": {
+          "mix": 195905.798493,
+          "vector": 4690.873859
+        }
+      },
+      "fla_npu_speedup_x": 17.32087109095931
+    },
+    {
+      "case_id": "tp_train",
+      "report_scenarios": [
+        "Qwen3.5-4B TP4 训练"
+      ],
+      "shape": [32768, 4, 8, 128, 128],
+      "dtype": "FP16",
+      "mode": "train",
+      "packed": true,
+      "algorithm_gflops": 168.527659008,
+      "fla_npu": {
+        "device_task_duration_us": 19416.728162,
+        "mfu_percent": 2.7730059415386306,
+        "kernel_count": 47,
+        "duration_by_op_type_us": {
+          "mix": 17917.118164,
+          "vector": 1499.609998
+        }
+      },
+      "fla_org": {
+        "device_task_duration_us": 259364.165597,
+        "mfu_percent": 0.20759499460741715,
+        "kernel_count": 97,
+        "duration_by_op_type_us": {
+          "mix": 251226.862915,
+          "vector": 8137.302682
+        }
+      },
+      "fla_npu_speedup_x": 13.357768797762501
+    }
+  ]
+}
