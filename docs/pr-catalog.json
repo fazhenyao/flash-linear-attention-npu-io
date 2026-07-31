@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-07-30T16:24:15+08:00",
+  "generatedAt": "2026-07-31T10:42:32+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 174,
+  "total": 175,
   "items": [
+    {
+      "number": 253,
+      "title": "Solve-tri支持BNSD和NTD输出格式",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/253",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-07-30T10:07:50Z",
+      "createdAt": "2026-07-30T09:33:48Z",
+      "headRef": "solve-tri-trans",
+      "labels": []
+    },
     {
       "number": 252,
       "title": "fix: 统一 RecomputeWUFwd 算子命名",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-27T12:17:40Z",
+      "updatedAt": "2026-07-30T09:23:08Z",
       "createdAt": "2026-07-27T12:17:40Z",
       "headRef": "codex/rename-recompute-w-u-fwd",
       "labels": []
@@ -146,18 +158,6 @@
       "updatedAt": "2026-07-20T06:21:17Z",
       "createdAt": "2026-07-20T06:21:08Z",
       "headRef": "docs/fix-recurrent-gdn-aclnn-example-shapes",
-      "labels": []
-    },
-    {
-      "number": 228,
-      "title": "feat: 完善 KDA 正向算子的 A5、模板化与直调交付",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/228",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-07-30T03:24:57Z",
-      "createdAt": "2026-07-20T00:38:30Z",
-      "headRef": "codex/kda-pr222-compliance",
       "labels": []
     },
     {
@@ -482,6 +482,18 @@
       "updatedAt": "2026-07-23T07:52:00Z",
       "createdAt": "2026-07-22T09:01:29Z",
       "headRef": "0722-fix-torch-conv1d",
+      "labels": []
+    },
+    {
+      "number": 228,
+      "title": "feat: 完善 KDA 正向算子的 A5、模板化与直调交付",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/228",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-07-30T19:27:55Z",
+      "updatedAt": "2026-07-30T19:27:55Z",
+      "createdAt": "2026-07-20T00:38:30Z",
+      "headRef": "codex/kda-pr222-compliance",
       "labels": []
     },
     {
