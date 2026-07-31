@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-07-31T10:42:32+08:00",
+  "generatedAt": "2026-07-31T16:47:51+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 175,
+  "total": 178,
   "items": [
+    {
+      "number": 257,
+      "title": "fix: 避免内置 opapi 遮蔽 CANN 并自动激活 Conda 环境",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/257",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-07-31T07:49:31Z",
+      "createdAt": "2026-07-31T07:48:56Z",
+      "headRef": "codex/main-opapi-conda-env",
+      "labels": []
+    },
+    {
+      "number": 256,
+      "title": "fix: 避免内置 opapi 遮蔽 CANN 并自动激活 Conda 环境",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/256",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-07-31T03:45:33Z",
+      "createdAt": "2026-07-31T03:44:15Z",
+      "headRef": "codex/v26.6.0-opapi-conda-env",
+      "labels": []
+    },
     {
       "number": 253,
       "title": "Solve-tri支持BNSD和NTD输出格式",
@@ -11,21 +35,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-30T10:07:50Z",
+      "updatedAt": "2026-07-31T04:11:49Z",
       "createdAt": "2026-07-30T09:33:48Z",
       "headRef": "solve-tri-trans",
-      "labels": []
-    },
-    {
-      "number": 252,
-      "title": "fix: 统一 RecomputeWUFwd 算子命名",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/252",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-07-30T09:23:08Z",
-      "createdAt": "2026-07-27T12:17:40Z",
-      "headRef": "codex/rename-recompute-w-u-fwd",
       "labels": []
     },
     {
@@ -59,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-30T06:04:23Z",
+      "updatedAt": "2026-07-31T06:05:37Z",
       "createdAt": "2026-07-25T09:01:52Z",
       "headRef": "kda_intra",
       "labels": []
@@ -446,6 +458,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 254,
+      "title": "fix(kda): 修复 A5 BF16 满 chunk Finalize 输出翻倍",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/254",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-07-31T03:04:19Z",
+      "updatedAt": "2026-07-31T03:04:20Z",
+      "createdAt": "2026-07-31T03:03:56Z",
+      "headRef": "codex/fix-kda-a5-finalize-scale",
+      "labels": []
+    },
+    {
+      "number": 252,
+      "title": "fix: 统一 RecomputeWUFwd 算子命名",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/252",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-07-31T04:22:14Z",
+      "updatedAt": "2026-07-31T04:22:15Z",
+      "createdAt": "2026-07-27T12:17:40Z",
+      "headRef": "codex/rename-recompute-w-u-fwd",
       "labels": []
     },
     {
