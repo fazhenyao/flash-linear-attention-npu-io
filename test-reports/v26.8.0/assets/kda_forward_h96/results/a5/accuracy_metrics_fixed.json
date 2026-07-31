@@ -1,0 +1,336 @@
+{
+  "status": "PASS",
+  "environment": {
+    "platform": "A5",
+    "device": "Ascend950PR_9579",
+    "torch": "2.7.1+cpu",
+    "triton_ascend_kernels_commit": "4cd4b506d4153ac18ac1ca8f4c770eac9fd3fcc8",
+    "fla_org_reference_commit": "0f0f0c97af39343855b43bbbaddcedfda5cb9d77",
+    "torch-npu": "2.7.1.post5",
+    "triton-ascend": "3.2.1",
+    "flash-linear-attention-npu": "26.7.0.dev0"
+  },
+  "case": {
+    "B": 1,
+    "S": 18432,
+    "H": 96,
+    "K": 128,
+    "V": 128,
+    "dtype_qkv": "bfloat16",
+    "dtype_beta": "bfloat16",
+    "dtype_g": "float32",
+    "dtype_A_log": "float32",
+    "dtype_dt_bias": "float32",
+    "chunk_size": 64,
+    "initial_state": null,
+    "output_final_state": true,
+    "use_qk_l2norm_in_kernel": true,
+    "use_gate_in_kernel": true,
+    "use_beta_sigmoid_in_kernel": true,
+    "allow_neg_eigval": false,
+    "safe_gate": true,
+    "lower_bound": -5.0,
+    "state_v_first": true,
+    "cu_seqlens": null,
+    "disable_recompute": true
+  },
+  "seed": 20260731,
+  "input_distribution": {
+    "q_k_v_g_beta": "standard normal on NPU",
+    "A_log_dt_bias": "uniform [0, 1) on NPU"
+  },
+  "reference": {
+    "implementation": "independent batched PyTorch small-op KDA on NPU",
+    "fla_org_commit": "0f0f0c97af39343855b43bbbaddcedfda5cb9d77",
+    "l2norm_eps": 1e-06,
+    "gate_scale": "1 / ln(2)",
+    "state_accumulation_dtype": "float32",
+    "state_output_layout": "[B,H,V,K]"
+  },
+  "thresholds": {
+    "max_relative_l2": 0.01,
+    "min_cosine_similarity": 0.9999,
+    "nonfinite": 0
+  },
+  "timing_note": "NPU event timings are diagnostic only; use msopprof for performance conclusions.",
+  "diagnostic_event_ms": {
+    "dut_top_level": 896.7700805664062,
+    "torch_reference": 1661.78857421875
+  },
+  "peak_allocated_bytes": 23355794432,
+  "metrics": {
+    "attn_out": {
+      "shape": [
+        1,
+        18432,
+        96,
+        128
+      ],
+      "dtype_actual": "bfloat16",
+      "dtype_expected": "bfloat16",
+      "elements": 226492416,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.0009765625,
+      "mean_abs_diff": 8.915936127272693e-06,
+      "relative_l2": 0.004425108991504654,
+      "cosine_similarity": 0.9999902167064918,
+      "status": "PASS"
+    },
+    "final_state": {
+      "shape": [
+        1,
+        96,
+        128,
+        128
+      ],
+      "dtype_actual": "float32",
+      "dtype_expected": "float32",
+      "elements": 1572864,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.004791259765625,
+      "mean_abs_diff": 3.738656232599169e-05,
+      "relative_l2": 0.002674573577266311,
+      "cosine_similarity": 0.9999963787009271,
+      "status": "PASS"
+    },
+    "gk": {
+      "shape": [
+        1,
+        18432,
+        96,
+        128
+      ],
+      "dtype_actual": "float32",
+      "dtype_expected": "float32",
+      "elements": 226492416,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.000213623046875,
+      "mean_abs_diff": 1.1863045310073411e-05,
+      "relative_l2": 1.1302480730717545e-07,
+      "cosine_similarity": 1.0,
+      "status": "PASS"
+    },
+    "Aqk": {
+      "shape": [
+        1,
+        18432,
+        96,
+        64
+      ],
+      "dtype_actual": "bfloat16",
+      "dtype_expected": "bfloat16",
+      "elements": 113246208,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.000244140625,
+      "mean_abs_diff": 2.775039281164869e-07,
+      "relative_l2": 0.0031035395798316694,
+      "cosine_similarity": 0.999995187874895,
+      "status": "PASS"
+    },
+    "Akk": {
+      "shape": [
+        1,
+        18432,
+        96,
+        64
+      ],
+      "dtype_actual": "bfloat16",
+      "dtype_expected": "bfloat16",
+      "elements": 113246208,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.00048828125,
+      "mean_abs_diff": 3.2764965114724705e-07,
+      "relative_l2": 3.4323624128204356e-05,
+      "cosine_similarity": 1.000000002759148,
+      "status": "PASS"
+    },
+    "w": {
+      "shape": [
+        1,
+        18432,
+        96,
+        128
+      ],
+      "dtype_actual": "bfloat16",
+      "dtype_expected": "bfloat16",
+      "elements": 226492416,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.001953125,
+      "mean_abs_diff": 1.1098408868469454e-07,
+      "relative_l2": 0.0028458117290534966,
+      "cosine_similarity": 0.9999959483908523,
+      "status": "PASS"
+    },
+    "u": {
+      "shape": [
+        1,
+        18432,
+        96,
+        128
+      ],
+      "dtype_actual": "bfloat16",
+      "dtype_expected": "bfloat16",
+      "elements": 226492416,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.03125,
+      "mean_abs_diff": 0.0005067816657376372,
+      "relative_l2": 0.0026694811574807143,
+      "cosine_similarity": 0.9999964324575689,
+      "status": "PASS"
+    },
+    "qg": {
+      "shape": [
+        1,
+        18432,
+        96,
+        128
+      ],
+      "dtype_actual": "bfloat16",
+      "dtype_expected": "bfloat16",
+      "elements": 226492416,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.00048828125,
+      "mean_abs_diff": 1.1081401708839283e-11,
+      "relative_l2": 1.9075210097286627e-05,
+      "cosine_similarity": 1.000000001970583,
+      "status": "PASS"
+    },
+    "kg": {
+      "shape": [
+        1,
+        18432,
+        96,
+        128
+      ],
+      "dtype_actual": "bfloat16",
+      "dtype_expected": "bfloat16",
+      "elements": 226492416,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.0009765625,
+      "mean_abs_diff": 1.099270800929296e-09,
+      "relative_l2": 4.250660230023782e-05,
+      "cosine_similarity": 0.9999999989511869,
+      "status": "PASS"
+    },
+    "v_new": {
+      "shape": [
+        1,
+        18432,
+        96,
+        128
+      ],
+      "dtype_actual": "bfloat16",
+      "dtype_expected": "bfloat16",
+      "elements": 226492416,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.03125,
+      "mean_abs_diff": 0.0005069985135277319,
+      "relative_l2": 0.002669878607857941,
+      "cosine_similarity": 0.9999964343450778,
+      "status": "PASS"
+    },
+    "h": {
+      "shape": [
+        1,
+        288,
+        96,
+        128,
+        128
+      ],
+      "dtype_actual": "bfloat16",
+      "dtype_expected": "bfloat16",
+      "elements": 452984832,
+      "nonfinite_actual": 0,
+      "nonfinite_expected": 0,
+      "max_abs_diff": 0.0078125,
+      "mean_abs_diff": 4.030801183371632e-05,
+      "relative_l2": 0.002928611919741443,
+      "cosine_similarity": 0.9999957217395483,
+      "status": "PASS"
+    },
+    "initial_state": {
+      "actual": null,
+      "expected": null,
+      "status": "PASS"
+    }
+  },
+  "samples": {
+    "attn_out": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/attn_out.npy",
+      "expect": "samples/expect/attn_out.npy"
+    },
+    "final_state": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/final_state.npy",
+      "expect": "samples/expect/final_state.npy"
+    },
+    "gk": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/gk.npy",
+      "expect": "samples/expect/gk.npy"
+    },
+    "Aqk": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/aqk.npy",
+      "expect": "samples/expect/aqk.npy"
+    },
+    "Akk": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/akk.npy",
+      "expect": "samples/expect/akk.npy"
+    },
+    "w": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/w.npy",
+      "expect": "samples/expect/w.npy"
+    },
+    "u": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/u.npy",
+      "expect": "samples/expect/u.npy"
+    },
+    "qg": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/qg.npy",
+      "expect": "samples/expect/qg.npy"
+    },
+    "kg": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/kg.npy",
+      "expect": "samples/expect/kg.npy"
+    },
+    "v_new": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/v_new.npy",
+      "expect": "samples/expect/v_new.npy"
+    },
+    "h": {
+      "sample_count": 200000,
+      "sampling": "uniform_flat_index",
+      "real": "samples/real/h.npy",
+      "expect": "samples/expect/h.npy"
+    }
+  },
+  "failures": {}
+}

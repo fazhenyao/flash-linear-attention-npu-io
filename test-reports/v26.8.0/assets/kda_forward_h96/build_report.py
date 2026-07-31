@@ -38,19 +38,25 @@ def ms(value_us: float) -> str:
 
 
 def main() -> None:
-    accuracy = {platform: load(platform, "accuracy_metrics.json") for platform in ("a2", "a5")}
-    performance = {
-        platform: load(platform, "performance_summary.json")
-        for platform in ("a2", "a5")
+    accuracy = {
+        "a2": load("a2", "accuracy_metrics.json"),
+        "a5": load("a5", "accuracy_metrics_fixed.json"),
     }
-    scale = load("a5", "attn_out_scale_diagnostic.json")
+    a5_before_accuracy = load("a5", "accuracy_metrics.json")
+    performance = {
+        "a2": load("a2", "performance_summary.json"),
+        "a5": load("a5", "performance_summary_fixed.json"),
+    }
+    a5_before_performance = load("a5", "performance_summary.json")
+    scale_before = load("a5", "attn_out_scale_diagnostic.json")
+    scale_fixed = load("a5", "attn_out_scale_diagnostic_fixed.json")
 
     lines = [
         "# v26.8.0 KDA 正向精度与性能测试报告",
         "",
-        "> **结论：A2 通过；A5 不通过。** A2 的 11 个张量输出全部满足精度标准。"
-        "A5 仅 `attn_out` 失败，最小二乘倍率为 1.99859，属于稳定的近 2 倍结构性错误；"
-        "其余 10 个张量输出全部通过。",
+        "> **结论：A2、A5 均通过。** A5 `ChunkKdaFwdFinalize` 的满 chunk 融合路径曾使"
+        "`attn_out` 稳定放大近 2 倍；改为两个独立 FP32 Cube 结果写入 workspace、再由"
+        "AIV 相加后，A2/A5 的 11 个张量输出全部满足精度标准。",
         "",
         "## 1. 归档信息",
         "",
@@ -60,8 +66,10 @@ def main() -> None:
         "| 报告版本 | v26.8.0 |",
         "| 实现仓 PR | [flashserve/flash-linear-attention-npu#228]"
         "(https://github.com/flashserve/flash-linear-attention-npu/pull/228) |",
-        "| 被测提交 | [`c25b0bca`](https://github.com/flashserve/flash-linear-attention-npu/commit/"
+        "| PR #228 基线提交 | [`c25b0bca`](https://github.com/flashserve/flash-linear-attention-npu/commit/"
         "c25b0bca159d50c8b03ee0be443e6a6e54fcb07f) |",
+        "| A5 修复提交 | [`8503735a`](https://github.com/weinachuan/flash-linear-attention-npu/"
+        "commit/8503735a0768574f73321bf8af3c398ae59be0d9) |",
         "| FLA 语义基线 | [`0f0f0c97`](https://github.com/fla-org/flash-linear-attention/commit/"
         "0f0f0c97af39343855b43bbbaddcedfda5cb9d77) |",
         "| 模型适配参考 | [`triton-ascend-kernels@4cd4b506`](https://gitcode.com/Ascend/"
@@ -154,32 +162,67 @@ def main() -> None:
             "",
             "机器可读结果："
             "[A2 accuracy_metrics.json](assets/kda_forward_h96/results/a2/accuracy_metrics.json)、"
-            "[A5 accuracy_metrics.json](assets/kda_forward_h96/results/a5/accuracy_metrics.json)。",
+            "[A5 修复前 accuracy_metrics.json]"
+            "(assets/kda_forward_h96/results/a5/accuracy_metrics.json)、"
+            "[A5 修复后 accuracy_metrics_fixed.json]"
+            "(assets/kda_forward_h96/results/a5/accuracy_metrics_fixed.json)。",
             "",
-            "### 3.2 A5 `attn_out` 结构性错误",
+            "### 3.2 A5 `attn_out` 问题定位与修复",
             "",
-            f"- 20 万均匀样本最小二乘倍率：`{scale['least_squares_scale']:.8f}`；",
-            f"- `actual / expected` 中位数："
-            f"`{scale['actual_over_expected_quantiles']['p50']:.8f}`；",
-            f"- 全张量相对 L2："
-            f"`{accuracy['a5']['metrics']['attn_out']['relative_l2']:.8f}`；",
-            f"- 全张量余弦相似度："
-            f"`{accuracy['a5']['metrics']['attn_out']['cosine_similarity']:.8f}`。",
+            "| 指标 | 修复前 | 修复后 |",
+            "|---|---:|---:|",
+            f"| 20 万样本最小二乘倍率 | {scale_before['least_squares_scale']:.8f} | "
+            f"{scale_fixed['least_squares_scale']:.8f} |",
+            f"| `actual / expected` 中位数 | "
+            f"{scale_before['actual_over_expected_quantiles']['p50']:.8f} | "
+            f"{scale_fixed['actual_over_expected_quantiles']['p50']:.8f} |",
+            f"| 全张量相对 L2 | "
+            f"{a5_before_accuracy['metrics']['attn_out']['relative_l2']:.8f} | "
+            f"{accuracy['a5']['metrics']['attn_out']['relative_l2']:.8f} |",
+            f"| 全张量余弦相似度 | "
+            f"{a5_before_accuracy['metrics']['attn_out']['cosine_similarity']:.8f} | "
+            f"{accuracy['a5']['metrics']['attn_out']['cosine_similarity']:.8f} |",
             "",
-            "A5 CT 点云沿约 `y=2x` 分布。`final_state` 及 Finalize 之前公开保存的全部中间输出"
-            "均通过，因此问题已收敛到 A5 `chunk_size=64` 满 chunk 的 "
-            "`ChunkKdaFwdFinalize` 融合输出计算/写回路径；现有数据不能进一步证明是哪一条"
-            "Cube 累加或写回指令造成倍率错误。",
+            "修复前第 0 个 chunk 没有历史 state 项，输出仍接近 `2 * local`；将第二个 MMAD "
+            "改为覆盖 L0C 后倍率恢复为 1，证明问题来自 A5 手写融合路径的 L0C 跨 MMAD "
+            "累加，而不是 gate、state、布局转换或最终 BF16 Cast。最终实现仍将四个输入提前"
+            "搬入 L1，但两个 MMAD 分别以 FP32 写入 state/local workspace，再由 AIV 做 FP32 "
+            "加法。这样避开错误累加，同时保留输入 staging。",
+            "",
+            "修复后完整 H96 张量 `attn_out` 的相对 L2 为 "
+            f"`{accuracy['a5']['metrics']['attn_out']['relative_l2']:.8f}`，余弦相似度为 "
+            f"`{accuracy['a5']['metrics']['attn_out']['cosine_similarity']:.8f}`，"
+            "11 个张量输出均 PASS。",
             "",
             "### 3.3 CT 可视化",
             "",
-            "图中 Test/Real/NPU 表示 PR #228 AscendC 输出，Golden/Expect/CPU 表示独立"
-            "FLA 语义标杆。每张图均匀抽样 200,000 点。",
+            "图中 Test/Real/NPU 表示 AscendC 输出，Golden/Expect/CPU 表示独立 FLA 语义"
+            "标杆。每张图均匀抽样 200,000 点。`attn_out` 保留 A5 修复前后对比；其余 A5 "
+            "列使用修复后的最终二进制结果。",
             "",
         ]
     )
 
     for display_name, file_name in OUTPUTS:
+        if display_name == "attn_out":
+            lines.extend(
+                [
+                    "<details><summary><strong>attn_out</strong></summary>",
+                    "",
+                    "| A2 | A5 修复前 | A5 修复后 |",
+                    "|---|---|---|",
+                    "| ![A2 attn_out](assets/kda_forward_h96/results/a2/ct_viz/"
+                    "attn_out/attn_out_Standard.png) | "
+                    "![A5 修复前 attn_out](assets/kda_forward_h96/results/a5/ct_viz/"
+                    "attn_out/attn_out_Standard.png) | "
+                    "![A5 修复后 attn_out](assets/kda_forward_h96/results/a5/ct_viz_fixed/"
+                    "attn_out/attn_out_Standard.png) |",
+                    "",
+                    "</details>",
+                    "",
+                ]
+            )
+            continue
         lines.extend(
             [
                 f"<details><summary><strong>{display_name}</strong></summary>",
@@ -188,7 +231,7 @@ def main() -> None:
                 "|---|---|",
                 f"| ![A2 {display_name}](assets/kda_forward_h96/results/a2/ct_viz/"
                 f"{file_name}/{file_name}_Standard.png) | "
-                f"![A5 {display_name}](assets/kda_forward_h96/results/a5/ct_viz/"
+                f"![A5 {display_name}](assets/kda_forward_h96/results/a5/ct_viz_fixed/"
                 f"{file_name}/{file_name}_Standard.png) |",
                 "",
                 "</details>",
@@ -204,8 +247,8 @@ def main() -> None:
             "全部排除。`KDA 核心合计` 是五个 AscendC 阶段之和；`完整公开语义合计` 还包含"
             "Q/K L2Norm、beta sigmoid 和 L2 边界所需布局转换。",
             "",
-            "| 阶段 | A2 (ms) | A5 (ms) | A5 相对 A2 |",
-            "|---|---:|---:|---:|",
+            "| 阶段 | A2 (ms) | A5 修复前 (ms) | A5 修复后 (ms) | 修复后 A5 相对 A2 |",
+            "|---|---:|---:|---:|---:|",
         ]
     )
 
@@ -224,23 +267,27 @@ def main() -> None:
     for display_name, key in perf_rows:
         a2 = performance["a2"]["summary"][key]
         a5 = performance["a5"]["summary"][key]
+        a5_before = a5_before_performance["summary"][key]
         lines.append(
-            f"| {display_name} | {ms(a2)} | {ms(a5)} | {a2 / a5:.3f}x |"
+            f"| {display_name} | {ms(a2)} | {ms(a5_before)} | {ms(a5)} | "
+            f"{a2 / a5:.3f}x |"
         )
 
     lines.extend(
         [
             "",
-            "阶段占比显示两平台的核心主耗时均为 `ChunkKdaFwdPrepare`，其次是"
-            "`KdaGateCumsum`。A2 的两者分别占 KDA 核心 42.73% 和 19.74%；A5 分别占"
-            "38.47% 和 25.47%。完整公开语义中，预处理和布局转换占 A2 37.12%、A5 38.91%，"
-            "说明性能优化不能只看五个 L0 kernel。",
+            "修复后 A5 `ChunkKdaFwdFinalize` 为 3.890 ms，较错误融合路径的 3.286 ms 增加 "
+            "0.605 ms（18.41%）；KDA 核心由 32.617 ms 增至 33.243 ms（1.92%），完整公开"
+            "语义由 53.390 ms 增至 53.840 ms（0.84%）。增加的主要工作是第二次 Fixpipe "
+            "写入以及 AIV 对两个 FP32 workspace 的读取和相加。主耗时仍为 "
+            "`ChunkKdaFwdPrepare`，其次为 `KdaGateCumsum`。",
             "",
-            "A5 profiler 在完成全部目标 task 采集和 BasicInfo 解析后，于工具重放的末尾同步阶段"
-            "报告设备错误；本报告只使用已经成功落盘并逐项解析的目标 task duration，不使用该次"
-            "运行的 NPU event 或 host wall time。机器可读汇总："
+            "修复后的 A5 `msopprof` 正常退出并完成 BasicInfo 解析。机器可读汇总："
             "[A2 performance_summary.json](assets/kda_forward_h96/results/a2/performance_summary.json)、"
-            "[A5 performance_summary.json](assets/kda_forward_h96/results/a5/performance_summary.json)。",
+            "[A5 修复前 performance_summary.json]"
+            "(assets/kda_forward_h96/results/a5/performance_summary.json)、"
+            "[A5 修复后 performance_summary_fixed.json]"
+            "(assets/kda_forward_h96/results/a5/performance_summary_fixed.json)。",
             "",
             "## 5. 复现方法",
             "",
@@ -307,33 +354,31 @@ def main() -> None:
             "| 平台 | 精度 | 性能数据 | 本用例准入 |",
             "|---|---|---|---|",
             "| A2 | 11/11 张量输出通过 | 完整公开语义 80.286 ms；KDA 核心 50.484 ms | **通过** |",
-            "| A5 | 10/11 张量输出通过；`attn_out` 近 2 倍 | 完整公开语义 53.390 ms；KDA 核心 32.617 ms | **不通过** |",
+            "| A5 | 11/11 张量输出通过 | 完整公开语义 53.840 ms；KDA 核心 33.243 ms | **通过** |",
             "",
-            "A5 必须先修复 `ChunkKdaFwdFinalize` 的满 chunk 融合输出路径，再以同一输入、"
-            "同一阈值重跑全量精度、CT viz 和 `msopprof`。在此之前，PR #228 的 A5 H96"
-            "本用例不能给出精度通过结论。",
+            "A5 已使用同一输入、同一阈值完成全量精度、CT viz 和 `msopprof` 闭环；"
+            "`attn_out` 近 2 倍问题消失，本 H96 正向用例满足 A2/A5 准入。",
             "",
             "## 7. 归档文件",
             "",
             "- [主测试脚本](assets/kda_forward_h96/kda_forward_h96.py)",
             "- [msopprof 汇总脚本](assets/kda_forward_h96/summarize_msopprof.py)",
             "- [倍率诊断脚本](assets/kda_forward_h96/diagnose_scale.py)",
-            "- [A5 attn_out 倍率诊断]"
+            "- [A5 修复前 attn_out 倍率诊断]"
             "(assets/kda_forward_h96/results/a5/attn_out_scale_diagnostic.json)",
+            "- [A5 修复后 attn_out 倍率诊断]"
+            "(assets/kda_forward_h96/results/a5/attn_out_scale_diagnostic_fixed.json)",
+            "- [A5 修复后精度结果]"
+            "(assets/kda_forward_h96/results/a5/accuracy_metrics_fixed.json)",
+            "- [A5 修复后性能结果]"
+            "(assets/kda_forward_h96/results/a5/performance_summary_fixed.json)",
         ]
     )
 
     REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
     for _, file_name in OUTPUTS:
-        for platform in ("a2", "a5"):
-            image = (
-                ROOT
-                / "results"
-                / platform
-                / "ct_viz"
-                / file_name
-                / f"{file_name}_Standard.png"
-            )
+        for platform, directory in (("a2", "ct_viz"), ("a5", "ct_viz_fixed")):
+            image = ROOT / "results" / platform / directory / file_name / f"{file_name}_Standard.png"
             if not image.is_file():
                 raise FileNotFoundError(image)
     print(REPORT)

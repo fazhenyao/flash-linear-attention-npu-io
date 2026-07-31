@@ -30,6 +30,9 @@ def main() -> None:
             "p99": float(np.quantile(ratio, 0.99)),
         },
         "least_squares_scale": float(np.dot(real, expect) / np.dot(expect, expect)),
+        "relative_l2": float(
+            np.linalg.norm(real - expect) / np.linalg.norm(expect)
+        ),
         "relative_l2_after_dividing_actual_by_2": float(
             np.linalg.norm(real / 2 - expect) / np.linalg.norm(expect)
         ),
