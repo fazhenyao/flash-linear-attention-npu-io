@@ -1,33 +1,9 @@
 {
-  "generatedAt": "2026-07-31T16:47:51+08:00",
+  "generatedAt": "2026-08-01T10:41:12+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 178,
+  "total": 179,
   "items": [
-    {
-      "number": 257,
-      "title": "fix: 避免内置 opapi 遮蔽 CANN 并自动激活 Conda 环境",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/257",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-07-31T07:49:31Z",
-      "createdAt": "2026-07-31T07:48:56Z",
-      "headRef": "codex/main-opapi-conda-env",
-      "labels": []
-    },
-    {
-      "number": 256,
-      "title": "fix: 避免内置 opapi 遮蔽 CANN 并自动激活 Conda 环境",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/256",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-07-31T03:45:33Z",
-      "createdAt": "2026-07-31T03:44:15Z",
-      "headRef": "codex/v26.6.0-opapi-conda-env",
-      "labels": []
-    },
     {
       "number": 253,
       "title": "Solve-tri支持BNSD和NTD输出格式",
@@ -71,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-31T06:05:37Z",
+      "updatedAt": "2026-07-31T09:18:04Z",
       "createdAt": "2026-07-25T09:01:52Z",
       "headRef": "kda_intra",
       "labels": []
@@ -458,6 +434,42 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 259,
+      "title": "fix(runtime): 释放异步 aclnn 调用的 workspace",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/259",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-07-31T10:27:44Z",
+      "updatedAt": "2026-07-31T10:27:44Z",
+      "createdAt": "2026-07-31T09:56:09Z",
+      "headRef": "codex/fix-ascendc-workspace-retention",
+      "labels": []
+    },
+    {
+      "number": 257,
+      "title": "fix: 避免自定义 libopapi.so 遮蔽 CANN",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/257",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-07-31T13:40:15Z",
+      "updatedAt": "2026-07-31T13:40:15Z",
+      "createdAt": "2026-07-31T07:48:56Z",
+      "headRef": "codex/main-opapi-conda-env",
+      "labels": []
+    },
+    {
+      "number": 256,
+      "title": "fix: 避免自定义 libopapi.so 遮蔽 CANN",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/256",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-07-31T13:40:02Z",
+      "updatedAt": "2026-07-31T13:40:03Z",
+      "createdAt": "2026-07-31T03:44:15Z",
+      "headRef": "codex/v26.6.0-opapi-conda-env",
       "labels": []
     },
     {
