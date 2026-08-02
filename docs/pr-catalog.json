@@ -1,21 +1,9 @@
 {
-  "generatedAt": "2026-08-01T16:18:21+08:00",
+  "generatedAt": "2026-08-02T10:40:02+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 181,
   "items": [
-    {
-      "number": 262,
-      "title": "docs: 增加算子原型和公开接口兼容性红线",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/262",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-01T07:53:08Z",
-      "createdAt": "2026-08-01T07:53:08Z",
-      "headRef": "codex/docs-protect-op-prototypes",
-      "labels": []
-    },
     {
       "number": 253,
       "title": "Solve-tri支持BNSD和NTD输出格式",
@@ -446,6 +434,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 262,
+      "title": "docs: 增加算子原型和公开接口兼容性红线",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/262",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-01T09:53:27Z",
+      "updatedAt": "2026-08-01T09:53:27Z",
+      "createdAt": "2026-08-01T07:53:08Z",
+      "headRef": "codex/docs-protect-op-prototypes",
       "labels": []
     },
     {
