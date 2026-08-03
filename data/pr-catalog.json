@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-03T10:41:10+08:00",
+  "generatedAt": "2026-08-03T17:41:25+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 182,
+  "total": 183,
   "items": [
+    {
+      "number": 265,
+      "title": "add recurrent KDA",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/265",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-03T09:27:39Z",
+      "createdAt": "2026-08-03T09:09:32Z",
+      "headRef": "recurrent_kda_aclnn",
+      "labels": []
+    },
     {
       "number": 264,
       "title": "perf: 优化 A5 KDA chunk64 K128/V128 前向流水",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-03T01:21:08Z",
+      "updatedAt": "2026-08-03T03:51:46Z",
       "createdAt": "2026-08-03T01:21:08Z",
       "headRef": "codex/kda-a5-bounded-pipeline",
       "labels": []
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-31T04:11:49Z",
+      "updatedAt": "2026-08-03T06:05:41Z",
       "createdAt": "2026-07-30T09:33:48Z",
       "headRef": "solve-tri-trans",
       "labels": []
@@ -50,18 +62,6 @@
       "updatedAt": "2026-07-28T06:05:47Z",
       "createdAt": "2026-07-25T10:03:58Z",
       "headRef": "7_22_dhu",
-      "labels": []
-    },
-    {
-      "number": 246,
-      "title": "feat(kda): add chunk_kda_bwd_intra for A2/A3/A5",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/246",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-03T02:23:55Z",
-      "createdAt": "2026-07-25T09:01:52Z",
-      "headRef": "kda_intra",
       "labels": []
     },
     {
@@ -530,6 +530,18 @@
       "updatedAt": "2026-07-31T04:22:15Z",
       "createdAt": "2026-07-27T12:17:40Z",
       "headRef": "codex/rename-recompute-w-u-fwd",
+      "labels": []
+    },
+    {
+      "number": 246,
+      "title": "feat(kda): add chunk_kda_bwd_intra for A2/A3/A5",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/246",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-03T02:57:30Z",
+      "updatedAt": "2026-08-03T02:57:30Z",
+      "createdAt": "2026-07-25T09:01:52Z",
+      "headRef": "kda_intra",
       "labels": []
     },
     {
