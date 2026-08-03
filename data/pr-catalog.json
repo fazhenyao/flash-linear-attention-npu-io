@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-02T16:22:15+08:00",
+  "generatedAt": "2026-08-03T10:41:10+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 181,
+  "total": 182,
   "items": [
+    {
+      "number": 264,
+      "title": "perf: 优化 A5 KDA chunk64 K128/V128 前向流水",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/264",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-03T01:21:08Z",
+      "createdAt": "2026-08-03T01:21:08Z",
+      "headRef": "codex/kda-a5-bounded-pipeline",
+      "labels": []
+    },
     {
       "number": 253,
       "title": "Solve-tri支持BNSD和NTD输出格式",
@@ -47,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-31T09:18:04Z",
+      "updatedAt": "2026-08-03T02:23:55Z",
       "createdAt": "2026-07-25T09:01:52Z",
       "headRef": "kda_intra",
       "labels": []
