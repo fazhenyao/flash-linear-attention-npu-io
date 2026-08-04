@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-04T10:25:21+08:00",
+  "generatedAt": "2026-08-04T16:34:00+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 184,
+  "total": 185,
   "items": [
+    {
+      "number": 268,
+      "title": "adapt recurrent_gated_delta_rule to fla_npu.xxx calling",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/268",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-04T08:10:53Z",
+      "createdAt": "2026-08-04T06:38:29Z",
+      "headRef": "adapt",
+      "labels": []
+    },
     {
       "number": 266,
       "title": "Update recurrent kda",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-03T13:13:48Z",
+      "updatedAt": "2026-08-04T06:05:38Z",
       "createdAt": "2026-08-03T13:13:36Z",
       "headRef": "update_recurrent_kda",
       "labels": []
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-03T13:24:00Z",
+      "updatedAt": "2026-08-04T06:06:14Z",
       "createdAt": "2026-08-03T09:09:32Z",
       "headRef": "recurrent_kda_aclnn",
       "labels": []
@@ -38,18 +50,6 @@
       "updatedAt": "2026-08-03T03:51:46Z",
       "createdAt": "2026-08-03T01:21:08Z",
       "headRef": "codex/kda-a5-bounded-pipeline",
-      "labels": []
-    },
-    {
-      "number": 253,
-      "title": "Solve-tri支持BNSD和NTD输出格式",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/253",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-04T01:50:24Z",
-      "createdAt": "2026-07-30T09:33:48Z",
-      "headRef": "solve-tri-trans",
       "labels": []
     },
     {
@@ -530,6 +530,18 @@
       "updatedAt": "2026-07-31T03:04:20Z",
       "createdAt": "2026-07-31T03:03:56Z",
       "headRef": "codex/fix-kda-a5-finalize-scale",
+      "labels": []
+    },
+    {
+      "number": 253,
+      "title": "Solve-tri支持BNSD和NTD输出格式",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/253",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-04T03:09:48Z",
+      "updatedAt": "2026-08-04T03:09:48Z",
+      "createdAt": "2026-07-30T09:33:48Z",
+      "headRef": "solve-tri-trans",
       "labels": []
     },
     {
