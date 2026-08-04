@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-03T17:41:25+08:00",
+  "generatedAt": "2026-08-04T10:25:21+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 183,
+  "total": 184,
   "items": [
+    {
+      "number": 266,
+      "title": "Update recurrent kda",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/266",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-03T13:13:48Z",
+      "createdAt": "2026-08-03T13:13:36Z",
+      "headRef": "update_recurrent_kda",
+      "labels": []
+    },
     {
       "number": 265,
       "title": "add recurrent KDA",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-03T09:27:39Z",
+      "updatedAt": "2026-08-03T13:24:00Z",
       "createdAt": "2026-08-03T09:09:32Z",
       "headRef": "recurrent_kda_aclnn",
       "labels": []
@@ -35,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-03T06:05:41Z",
+      "updatedAt": "2026-08-04T01:50:24Z",
       "createdAt": "2026-07-30T09:33:48Z",
       "headRef": "solve-tri-trans",
       "labels": []
