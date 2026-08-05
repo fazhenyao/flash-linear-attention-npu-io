@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-04T16:34:00+08:00",
+  "generatedAt": "2026-08-05T10:25:01+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 185,
+  "total": 188,
   "items": [
     {
       "number": 268,
@@ -11,7 +11,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-04T08:10:53Z",
+      "updatedAt": "2026-08-04T11:50:24Z",
       "createdAt": "2026-08-04T06:38:29Z",
       "headRef": "adapt",
       "labels": []
@@ -23,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-04T06:05:38Z",
+      "updatedAt": "2026-08-04T14:20:29Z",
       "createdAt": "2026-08-03T13:13:36Z",
       "headRef": "update_recurrent_kda",
       "labels": []
@@ -47,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-03T03:51:46Z",
+      "updatedAt": "2026-08-04T20:34:41Z",
       "createdAt": "2026-08-03T01:21:08Z",
       "headRef": "codex/kda-a5-bounded-pipeline",
       "labels": []
@@ -458,6 +458,42 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 271,
+      "title": "fix: 兼容 CANN 8.5 至 9.2 的 opbase（v26.1.0）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/271",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-05T02:14:29Z",
+      "updatedAt": "2026-08-05T02:14:29Z",
+      "createdAt": "2026-08-05T02:12:15Z",
+      "headRef": "codex/backport-opbase-cann-compat-v26.1.0",
+      "labels": []
+    },
+    {
+      "number": 270,
+      "title": "fix: 兼容 CANN 8.5 至 9.2 的 opbase（v26.6.0）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/270",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-05T02:14:26Z",
+      "updatedAt": "2026-08-05T02:14:26Z",
+      "createdAt": "2026-08-05T02:12:12Z",
+      "headRef": "codex/backport-opbase-cann-compat-v26.6.0",
+      "labels": []
+    },
+    {
+      "number": 269,
+      "title": "fix: 兼容 CANN 8.5 至 9.2 的 opbase 接口",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/269",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-04T14:11:37Z",
+      "updatedAt": "2026-08-04T14:11:38Z",
+      "createdAt": "2026-08-04T13:55:44Z",
+      "headRef": "codex/fix-opbase-cann-compat",
       "labels": []
     },
     {
