@@ -308,7 +308,7 @@
 
   <input id="profImportFolderInput" type="file" webkitdirectory directory multiple class="hidden" aria-hidden="true">
 
-  <script src="./config.js?v=20260707-perf-dashboard"></script>
+  <script src="./config.js?v=20260720-local-api-proxy"></script>
   <script>
     const WORKER_API_BASE = String(window.FLASH_IO_API_BASE || localStorage.getItem("flashWorkerApiBase") || "").replace(/\/+$/, "");
     const LOCAL_API_BASE = String(window.FLASH_IO_LOCAL_API || localStorage.getItem("flashLocalApiBase") || "").replace(/\/+$/, "");
@@ -959,7 +959,7 @@
       } else {
         state.dataSource = "worker";
       }
-      state.compareOps = (currentSnapshot()?.operators || []).slice(0, 2).map((item) => item.operator_id);
+      state.compareOps = (currentSnapshot()?.operators || []).slice(0, 2).map(operatorScopeKey);
     }
 
     async function loadRunnerStatus() {
@@ -1966,15 +1966,53 @@
       if ([...select.options].some((option) => option.value === current)) select.value = current;
     }
 
-    function operatorBackend(operatorId) {
+    const TRITON_KERNEL_PATTERNS = [
+      /(?:^|_)chunk_local_cumsum_scalar_kernel(?:_|$)/,
+      /(?:^|_)chunk_scaled_dot_kkt_fwd_kernel(?:_|$)/,
+      /(?:^|_)l2norm_(?:fwd|bwd)_kernel\d*(?:_|$)/,
+      /(?:^|_)solve_tril_\w*_kernel(?:_|$)/,
+      /(?:^|_)merge_\w*_inverse_kernel(?:_|$)/,
+      /(?:^|_)causal_conv1d_(?:fwd|bwd|states_fwd)_kernel(?:_|$)/,
+    ];
+
+    function backendFromProfilerRecord(operator) {
+      const opType = String(operator?.op_type || "").trim();
+      const kernelName = String(operator?.kernel_name || "").trim();
+      if ([opType, kernelName].some((part) => TRITON_KERNEL_PATTERNS.some((pattern) => pattern.test(part.toLowerCase())))) {
+        return "triton";
+      }
+      if (/^aclnn/i.test(kernelName) || /^[A-Z][A-Za-z0-9]+$/.test(opType)) return "ascendc";
+      return null;
+    }
+
+    function operatorBackend(operator) {
+      if (operator?.backend === "ascendc" || operator?.backend === "triton") return operator.backend;
+      const profilerBackend = backendFromProfilerRecord(operator);
+      if (profilerBackend) return profilerBackend;
+      const operatorId = typeof operator === "string" ? operator : operator?.operator_id;
       if (ASCENDC_OPERATORS.has(operatorId)) return "ascendc";
       if (TRITON_OPERATORS.has(operatorId)) return "triton";
       return null;
     }
 
-    function passesOperatorScope(operatorId) {
+    // A logical operator may have both Triton and AscendC implementations.
+    // Keep the concrete backend in the UI identity for filtering/comparison.
+    function operatorScopeKey(operator) {
+      const item = typeof operator === "string" ? { operator_id: operator } : operator;
+      return `${String(item?.operator_id || "")}::${operatorBackend(item) || "unknown"}`;
+    }
+
+    function operatorDisplayLabel(operator) {
+      const item = typeof operator === "string" ? { operator_id: operator } : operator;
+      const backend = operatorBackend(item);
+      const label = operatorLabel(item?.operator_id);
+      return backend ? `${label} (${backend})` : label;
+    }
+
+    function passesOperatorScope(operator) {
+      const operatorId = typeof operator === "string" ? operator : operator?.operator_id;
       if (operatorId === OTHER_RUNTIME_ID) return false;
-      const backend = operatorBackend(operatorId);
+      const backend = operatorBackend(operator);
       if (!backend) return false;
       const showAscendc = document.querySelector("#netShowAscendc")?.checked;
       const showTriton = document.querySelector("#netShowTriton")?.checked;
@@ -1991,7 +2029,7 @@
 
     function normalizeSnapshotOperators(snap) {
       if (!snap) return null;
-      let operators = [...(snap.operators || [])].filter((item) => passesOperatorScope(item.operator_id));
+      let operators = [...(snap.operators || [])].filter((item) => passesOperatorScope(item));
       const total = operators.reduce((sum, item) => sum + Number(item.time_ms || 0), 0);
       operators = operators.map((item) => ({
         ...item,
@@ -2083,12 +2121,13 @@
 
     function renderComparePick(operators) {
       const host = document.querySelector("#networkComparePick");
-      const visible = new Set(operators.map((item) => item.operator_id));
+      const visible = new Set(operators.map(operatorScopeKey));
       state.compareOps = (state.compareOps || []).filter((id) => visible.has(id));
-      if (!state.compareOps.length) state.compareOps = operators.slice(0, 2).map((item) => item.operator_id);
+      if (!state.compareOps.length) state.compareOps = operators.slice(0, 2).map(operatorScopeKey);
       host.innerHTML = operators.map((item) => {
-        const checked = state.compareOps.includes(item.operator_id) ? "checked" : "";
-        return `<label class="perf-compare-chip"><input type="checkbox" value="${escapeHtml(item.operator_id)}" ${checked}> ${escapeHtml(operatorLabel(item.operator_id))}</label>`;
+        const key = operatorScopeKey(item);
+        const checked = state.compareOps.includes(key) ? "checked" : "";
+        return `<label class="perf-compare-chip"><input type="checkbox" value="${escapeHtml(key)}" ${checked}> ${escapeHtml(operatorDisplayLabel(item))}</label>`;
       }).join("");
       host.querySelectorAll("input").forEach((input) => {
         input.addEventListener("change", () => {
@@ -2104,7 +2143,7 @@
     }
 
     function renderCompareChart(operators, snap) {
-      const selected = operators.filter((item) => state.compareOps.includes(item.operator_id));
+      const selected = operators.filter((item) => state.compareOps.includes(operatorScopeKey(item)));
       destroyChart("networkCompare");
       state.charts.networkCompare = new Chart(document.querySelector("#networkCompare"), {
         type: "bar",

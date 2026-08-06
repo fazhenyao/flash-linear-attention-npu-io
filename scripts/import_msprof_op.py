@@ -567,6 +567,7 @@ def _parse_op_basic_row(row: dict[str, str]) -> dict[str, Any]:
         return {}
     return {
         "kernel_name": str(kernel).strip(),
+        "op_type": str(row.get("OP Type") or row.get("Op Type") or row.get("Operator Type") or "").strip(),
         "block_dim": int(block_dim) if block_dim is not None else None,
         "time_ms": time_ms,
         "duration_us": duration_us,
@@ -614,10 +615,12 @@ def build_operator_record(
     operator_id: str,
     *,
     kernel_name: str,
+    op_type: str = "",
     time_ms: float,
     block_dim: int | None,
     pipe_metrics: dict[str, Any],
 ) -> dict[str, Any]:
+    gdr = load_prof_gdr_module()
     return {
         "operator_id": operator_id,
         "time_ms": time_ms,
@@ -648,6 +651,8 @@ def build_operator_record(
         "vector_time_max_us": pipe_metrics.get("vector_time_max_us"),
         "mem_util": pipe_metrics.get("mbu"),
         "kernel_name": kernel_name,
+        "op_type": op_type,
+        "backend": gdr.infer_operator_backend(op_type=op_type, kernel_name=kernel_name),
         "block_dim": block_dim,
         "rated_freq_mhz": pipe_metrics.get("rated_freq_mhz"),
         "pipe_utilization": pipe_metrics["pipe_rows"],
@@ -681,6 +686,7 @@ def build_operators_from_basic_rows(
                 build_operator_record(
                     resolved_operator,
                     kernel_name=fallback_kernel,
+                    op_type="",
                     time_ms=0.0,
                     block_dim=None,
                     pipe_metrics=pipe_metrics,
@@ -702,6 +708,7 @@ def build_operators_from_basic_rows(
             build_operator_record(
                 resolved_operator,
                 kernel_name=resolved_kernel,
+                op_type=str(row.get("op_type") or ""),
                 time_ms=0.0,
                 block_dim=row.get("block_dim"),
                 pipe_metrics=pipe_metrics,
@@ -714,6 +721,12 @@ def build_operators_from_basic_rows(
             bucket["block_dim"] = row["block_dim"]
         if resolved_kernel:
             bucket["kernel_name"] = resolved_kernel
+        if row.get("op_type"):
+            bucket["op_type"] = row["op_type"]
+            bucket["backend"] = load_prof_gdr_module().infer_operator_backend(
+                op_type=str(row["op_type"]),
+                kernel_name=resolved_kernel,
+            )
 
     operators = sorted(buckets.values(), key=lambda item: item["time_ms"], reverse=True)
     total_ms = sum(float(item["time_ms"] or 0) for item in operators)
@@ -737,7 +750,7 @@ def load_operator_from_run_dir(run_dir: Path, kernel_name: str) -> dict[str, Any
     else:
         pipe_metrics["rated_freq_mhz"] = None
     if not basic_rows:
-        basic_rows = [{"kernel_name": kernel_name, "block_dim": None, "time_ms": 0.0}]
+        basic_rows = [{"kernel_name": kernel_name, "op_type": "", "block_dim": None, "time_ms": 0.0}]
     operators, _ = build_operators_from_basic_rows(
         basic_rows,
         pipe_metrics,
@@ -782,6 +795,7 @@ def import_bundled_msprof_op(
         basic_rows.append(
             {
                 "kernel_name": bundle_kernel,
+                "op_type": operator.get("op_type", ""),
                 "block_dim": operator.get("block_dim"),
                 "time_ms": operator.get("time_ms") or 0.0,
             }

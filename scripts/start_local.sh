@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CANN_SET_ENV="${CANN_SET_ENV:-/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh}"
 CONDA_ENV="${CONDA_ENV:-fla_dump}"
 HOST="${HOST:-127.0.0.1}"
+BACKEND_HOST="${BACKEND_HOST:-127.0.0.1}"
 BACKEND_PORT="${BACKEND_PORT:-8787}"
 DOCS_PORT="${DOCS_PORT:-8080}"
 
@@ -40,13 +41,12 @@ stop_port() {
 stop_port "${BACKEND_PORT}"
 stop_port "${DOCS_PORT}"
 
-cd "${ROOT}/docs"
-nohup python3 -m http.server "${DOCS_PORT}" --bind "${HOST}" >"${ROOT}/data/docs-server.log" 2>&1 &
+cd "${ROOT}"
+nohup python3 scripts/serve_dashboard.py --host "${HOST}" --port "${DOCS_PORT}" --backend-host "${BACKEND_HOST}" --backend-port "${BACKEND_PORT}" >"${ROOT}/data/docs-server.log" 2>&1 &
 echo "docs server: http://${HOST}:${DOCS_PORT}/"
 
-cd "${ROOT}"
-nohup python3 backend/app.py --host "${HOST}" --port "${BACKEND_PORT}" >"${ROOT}/data/backend-server.log" 2>&1 &
-echo "backend api: http://${HOST}:${BACKEND_PORT}/io"
+nohup python3 backend/app.py --host "${BACKEND_HOST}" --port "${BACKEND_PORT}" >"${ROOT}/data/backend-server.log" 2>&1 &
+echo "backend api: http://${BACKEND_HOST}:${BACKEND_PORT}/io"
 echo "perf runner mode: ${PERF_RUN_MODE}"
 echo "python: $(command -v python3)"
 echo "msopprof: $(command -v msopprof || echo 'not found')"

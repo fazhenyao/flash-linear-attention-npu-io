@@ -63,7 +63,66 @@ OP_TYPE_MAP = {
     "l2norm_fwd_kernel": "l2norm_fwd",
     "l2norm_bwd_kernel": "l2norm_bwd",
     "chunk_local_cumsum_scalar_kernel": "chunk_local_cumsum",
+    "SolveTri": "solve_tril",
+    "ChunkLocalCumsum": "chunk_local_cumsum",
+    "ChunkScaledDotKkt": "chunk_scaled_dot_kkt_fwd",
+    "CausalConv1d": "causal_conv1d_fwd",
+    "CausalConv1dBwd": "causal_conv1d_bwd",
 }
+
+TRITON_KERNEL_PATTERNS = (
+    r"(?:^|_)chunk_local_cumsum_scalar_kernel(?:_|$)",
+    r"(?:^|_)chunk_scaled_dot_kkt_fwd_kernel(?:_|$)",
+    r"(?:^|_)l2norm_(?:fwd|bwd)_kernel\d*(?:_|$)",
+    r"(?:^|_)solve_tril_\w*_kernel(?:_|$)",
+    r"(?:^|_)merge_\w*_inverse_kernel(?:_|$)",
+    r"(?:^|_)causal_conv1d_(?:fwd|bwd|states_fwd)_kernel(?:_|$)",
+)
+
+ASCENDC_OP_TYPES = {
+    "ChunkGatedDeltaRuleFwdH",
+    "ChunkFwdO",
+    "RecomputeWUFwd",
+    "ChunkBwdDvLocal",
+    "ChunkBwdDqkwg",
+    "ChunkGatedDeltaRuleBwdDhu",
+    "PrepareWyReprBwdFull",
+    "PrepareWyReprBwdDa",
+    "SolveTri",
+    "ChunkLocalCumsum",
+    "ChunkScaledDotKkt",
+    "CausalConv1d",
+    "CausalConv1dBwd",
+}
+
+
+def infer_operator_backend(*, op_type: str = "", kernel_name: str = "") -> str | None:
+    """Identify the implementation that produced one profiler record.
+
+    Kernel-level evidence wins over the logical operator id because several
+    operators have both AscendC and Triton implementations.
+    """
+
+    op_type = str(op_type or "").strip()
+    kernel_name = str(kernel_name or "").strip()
+    evidence = " ".join(part for part in (op_type, kernel_name) if part)
+    lowered = evidence.lower()
+    lowered_parts = [part.lower() for part in (op_type, kernel_name) if part]
+
+    if any(re.search(pattern, part) for pattern in TRITON_KERNEL_PATTERNS for part in lowered_parts):
+        return "triton"
+    if op_type in ASCENDC_OP_TYPES:
+        return "ascendc"
+    if lowered.startswith("aclnn") or " aclnn" in lowered:
+        return "ascendc"
+    if re.search(
+        r"(?:chunkgateddeltarule|chunkfwdo|recomputewu|chunkbwddvlocal|"
+        r"chunkbwddqkwg|preparewyrepr|causalconv1d|chunklocalcumsum|"
+        r"chunkscaleddotkkt|solvetri|chunkkda|kdagatecumsum)",
+        lowered,
+    ):
+        return "ascendc"
+    return None
 
 CORE_GDN_OPS = {
     "chunk_gated_delta_rule_fwd_h",
@@ -441,6 +500,12 @@ def metric_from_summary_row(row: dict[str, str]) -> dict[str, Any]:
         "block_dim": int(block_dim) if block_dim is not None else None,
         "core_type": row.get("Task Type") or row.get("Core Type") or "",
         "count": 1,
+        "op_type": row.get("OP Type", ""),
+        "kernel_name": row.get("Op Name", ""),
+        "backend": infer_operator_backend(
+            op_type=row.get("OP Type", ""),
+            kernel_name=row.get("Op Name", ""),
+        ),
     }
     for pipe in ("mte1", "mte2", "mte3", "cube", "vector"):
         time_us = row_pipe_time_us(row, pipe)
@@ -449,18 +514,19 @@ def metric_from_summary_row(row: dict[str, str]) -> dict[str, Any]:
     return payload
 
 
-def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[str, dict[str, Any]]:
-    grouped: dict[str, list[dict[str, Any]]] = {}
+def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[tuple[str, str | None], dict[str, Any]]:
+    grouped: dict[tuple[str, str | None], list[dict[str, Any]]] = {}
     for row in rows:
         op_type = row.get("OP Type", "")
         op_name = row.get("Op Name", "")
         key = OP_TYPE_MAP.get(op_type) or OP_TYPE_MAP.get(op_name)
         if not key:
             continue
-        grouped.setdefault(key, []).append(metric_from_summary_row(row))
+        metric = metric_from_summary_row(row)
+        grouped.setdefault((key, metric.get("backend")), []).append(metric)
 
-    result: dict[str, dict[str, Any]] = {}
-    for operator_id, metrics in grouped.items():
+    result: dict[tuple[str, str | None], dict[str, Any]] = {}
+    for operator_key, metrics in grouped.items():
         total_ms = sum(item["time_ms"] for item in metrics)
         weight = [item["time_ms"] for item in metrics]
         denom = sum(weight) or 1
@@ -475,7 +541,8 @@ def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[str, dict[str,
         bottlenecks = {}
         for item in metrics:
             bottlenecks[item["bottleneck"]] = bottlenecks.get(item["bottleneck"], 0) + item["time_ms"]
-        result[operator_id] = {
+        heaviest = max(metrics, key=lambda item: item["time_ms"])
+        result[operator_key] = {
             "time_ms": round(total_ms, 3),
             "duration_us": sum(float(item.get("duration_us") or 0) for item in metrics) or None,
             "mbu": wavg("mbu"),
@@ -489,9 +556,12 @@ def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[str, dict[str,
             "mem_util": wavg("mem_util"),
             "count": len(metrics),
             "block_dim": max((item.get("block_dim") or 0) for item in metrics) or None,
+            "backend": operator_key[1],
+            "op_type": heaviest.get("op_type", ""),
+            "kernel_name": heaviest.get("kernel_name", ""),
         }
         for pipe in ("mte1", "mte2", "mte3", "cube", "vector"):
-            result[operator_id].update(pipe_time_stats(metrics, pipe))
+            result[operator_key].update(pipe_time_stats(metrics, pipe))
     return result
 
 
@@ -502,14 +572,23 @@ def aggregate_statistic_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str,
         op_type = row.get("OP Type", "")
         op_name = row.get("Op Name", "")
         operator_id = OP_TYPE_MAP.get(op_type) or OP_TYPE_MAP.get(op_name)
+        backend = infer_operator_backend(op_type=op_type, kernel_name=op_name)
         total_us = to_float(row.get("Total Time(us)")) or 0
         ratio = to_float(row.get("Ratio(%)")) or 0
         if not operator_id:
             other_time += total_us
             continue
+        bucket_key = f"{operator_id}:{backend or 'unknown'}"
         bucket = operators.setdefault(
-            operator_id,
-            {"operator_id": operator_id, "time_ms": 0.0, "share_pct": 0.0, "op_type": op_type},
+            bucket_key,
+            {
+                "operator_id": operator_id,
+                "time_ms": 0.0,
+                "share_pct": 0.0,
+                "op_type": op_type,
+                "kernel_name": op_name,
+                "backend": backend,
+            },
         )
         bucket["time_ms"] += total_us / 1000
         bucket["share_pct"] += ratio
@@ -519,6 +598,7 @@ def aggregate_statistic_rows(rows: list[dict[str, str]]) -> tuple[list[dict[str,
             "time_ms": round(other_time / 1000, 3),
             "share_pct": 0.0,
             "op_type": "Other",
+            "backend": None,
         }
     ordered = sorted(operators.values(), key=lambda item: item["time_ms"], reverse=True)
     total_ms = sum(item["time_ms"] for item in ordered)
@@ -557,7 +637,7 @@ def build_snapshot(
     chip: str,
     case: dict[str, Any],
     statistic_ops: list[dict[str, Any]],
-    summary_metrics: dict[str, dict[str, Any]],
+    summary_metrics: dict[tuple[str, str | None], dict[str, Any]],
     total_ms: float,
     *,
     device_id: int = 2,
@@ -566,7 +646,8 @@ def build_snapshot(
     operators = []
     for item in statistic_ops:
         operator_id = item["operator_id"]
-        detail = summary_metrics.get(operator_id, {})
+        backend = item.get("backend")
+        detail = summary_metrics.get((operator_id, backend), {})
         operators.append(
             {
                 "operator_id": operator_id,
@@ -599,6 +680,8 @@ def build_snapshot(
                 "mem_util": detail.get("mem_util"),
                 "block_dim": detail.get("block_dim"),
                 "op_type": item.get("op_type", ""),
+                "kernel_name": item.get("kernel_name", "") or detail.get("kernel_name", ""),
+                "backend": backend or detail.get("backend"),
                 "call_count": detail.get("count", 0),
             }
         )
