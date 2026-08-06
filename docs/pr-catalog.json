@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-05T16:33:25+08:00",
+  "generatedAt": "2026-08-06T10:27:34+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 189,
+  "total": 191,
   "items": [
+    {
+      "number": 275,
+      "title": "refactor(dqkwg): remove dead code",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/275",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-06T01:31:07Z",
+      "createdAt": "2026-08-05T15:58:20Z",
+      "headRef": "dqkwg-dead-code-cleanup",
+      "labels": []
+    },
+    {
+      "number": 274,
+      "title": "fix: 修复 wheel 与 run 包重复安装残留",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/274",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-06T02:00:05Z",
+      "createdAt": "2026-08-05T11:31:20Z",
+      "headRef": "codex/fix-idempotent-wheel-run-install",
+      "labels": []
+    },
     {
       "number": 268,
       "title": "adapt recurrent_gated_delta_rule to fla_npu.xxx calling",
@@ -14,18 +38,6 @@
       "updatedAt": "2026-08-05T06:05:22Z",
       "createdAt": "2026-08-04T06:38:29Z",
       "headRef": "adapt",
-      "labels": []
-    },
-    {
-      "number": 266,
-      "title": "Update recurrent kda",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/266",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-05T08:11:22Z",
-      "createdAt": "2026-08-03T13:13:36Z",
-      "headRef": "update_recurrent_kda",
       "labels": []
     },
     {
@@ -506,6 +518,18 @@
       "updatedAt": "2026-08-04T14:11:38Z",
       "createdAt": "2026-08-04T13:55:44Z",
       "headRef": "codex/fix-opbase-cann-compat",
+      "labels": []
+    },
+    {
+      "number": 266,
+      "title": "Update recurrent kda",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/266",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-05T17:10:04Z",
+      "updatedAt": "2026-08-05T17:10:04Z",
+      "createdAt": "2026-08-03T13:13:36Z",
+      "headRef": "update_recurrent_kda",
       "labels": []
     },
     {
