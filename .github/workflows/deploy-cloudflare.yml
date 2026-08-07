@@ -100,7 +100,7 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.import_snapshots }}
         env:
           FLASH_IO_ADMIN_TOKEN: ${{ secrets.FLASH_IO_ADMIN_TOKEN }}
-          FLASH_IO_API_BASE: https://flash-linear-attention-npu-io-fazhenyao.polludvtur.workers.dev
+          FLASH_IO_API_BASE: https://flash-linear-attention-npu-io-fazhenyao.fazhenyao.workers.dev
         shell: bash
         run: |
           set -euo pipefail
