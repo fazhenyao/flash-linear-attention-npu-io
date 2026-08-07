@@ -40,7 +40,7 @@ http://127.0.0.1:8787/io
 预期访问地址：
 
 ```text
-https://weinachuan.github.io/flash-linear-attention-npu-io/
+https://fazhenyao.github.io/flash-linear-attention-npu-io/
 ```
 
 ## Cloudflare Workers + D1 公网部署
@@ -67,7 +67,7 @@ npx wrangler login
 创建 D1 数据库：
 
 ```powershell
-npx wrangler d1 create flash-linear-attention-npu-io
+npx wrangler d1 create flash-linear-attention-npu-io-fazhenyao
 ```
 
 把命令输出里的 `database_id` 填入 `wrangler.toml` 的 `database_id`。
@@ -133,6 +133,9 @@ GitHub 仓库需要配置以下 Actions Secrets：
 - `CLOUDFLARE_ACCOUNT_ID`：Cloudflare 账号 ID。
 - `CLOUDFLARE_API_TOKEN`：Cloudflare API Token，不要写入仓库。
 - `FLASH_IO_ADMIN_TOKEN`：Worker 的 `ADMIN_TOKEN` 值，仅用于定时 PR 候选池同步和 D1 快照备份，不要写入仓库。
+- `CLOUDFLARE_AUTH_SECRET`：Worker 登录令牌签名密钥，仅在首次部署或主动轮换时写入 Worker。
+
+首次手动运行 `Deploy Cloudflare Worker` 时启用 `configure_secrets` 和 `import_snapshots`。初始化导入只覆盖任务、人员、算子、审计、PR 目录和性能快照，不复制旧用户、密码哈希或登录会话。
 
 ### 人员账号初始化与改密
 
@@ -181,25 +184,26 @@ python .\scripts\bootstrap_cloudflare_users.py --api https://你的-worker-url -
 - `data/project-state.json` 和 `docs/project-state.json`：D1 当前项目状态快照。
 - `data/audit-log.jsonl` 和 `docs/audit-log.jsonl`：完整审计日志快照。
 - `data/pr-catalog.json` 和 `docs/pr-catalog.json`：PR 候选池快照。
+- `data/performance-data.json` 和 `docs/performance-data.json`：结构化性能指标和运行快照。
 - Actions artifact `d1-latest-sql`：完整 D1 SQL 导出，保留 30 天；该文件可能包含账号密码哈希和盐，只作为私有恢复材料，不提交到仓库。
 
 优先恢复方式是 D1 Time Travel：
 
 ```powershell
-npx wrangler d1 time-travel info flash-linear-attention-npu-io --timestamp="2026-06-19T10:00:00+08:00"
-npx wrangler d1 time-travel restore flash-linear-attention-npu-io --timestamp="2026-06-19T10:00:00+08:00"
+npx wrangler d1 time-travel info flash-linear-attention-npu-io-fazhenyao --timestamp="2026-06-19T10:00:00+08:00"
+npx wrangler d1 time-travel restore flash-linear-attention-npu-io-fazhenyao --timestamp="2026-06-19T10:00:00+08:00"
 ```
 
 恢复前建议先导出事故现场：
 
 ```powershell
-npx wrangler d1 export flash-linear-attention-npu-io --remote --output=./backup-before-restore.sql
+npx wrangler d1 export flash-linear-attention-npu-io-fazhenyao --remote --output=./backup-before-restore.sql
 ```
 
 如果 D1 被误删或不可用，可新建 D1、应用 migrations，再从仓库 JSON 快照恢复业务数据：
 
 ```powershell
-npx wrangler d1 create flash-linear-attention-npu-io
+npx wrangler d1 create flash-linear-attention-npu-io-fazhenyao
 npm run cf:migrate:remote
 python .\scripts\import_cloudflare.py --api https://你的-worker-url --token 你的-ADMIN_TOKEN
 ```
@@ -207,7 +211,7 @@ python .\scripts\import_cloudflare.py --api https://你的-worker-url --token �
 如果需要完整恢复账号表等整库内容，可下载最近一次 `d1-latest-sql` artifact 后导入：
 
 ```powershell
-npx wrangler d1 execute flash-linear-attention-npu-io --remote --file=.\d1-latest.sql
+npx wrangler d1 execute flash-linear-attention-npu-io-fazhenyao --remote --file=.\d1-latest.sql
 ```
 
 本地快速验证：
@@ -241,7 +245,7 @@ Cloudflare 权限模型：
 
 建议 token 设置：
 
-- Repository access：只选择 `weinachuan/flash-linear-attention-npu-io`
+- Repository access：只选择 `fazhenyao/flash-linear-attention-npu-io`
 - Permissions：`Contents: Read and write`
 - Expiration：尽量短，例如 7 天
 

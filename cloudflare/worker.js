@@ -148,6 +148,7 @@ export default {
         await replaceState(env, payload.state || payload);
         await replaceAudit(env, payload.audit || []);
         if (payload.prCatalog) await setJsonMeta(env, "prCatalog", payload.prCatalog);
+        if (payload.perfData) await savePerfData(env, payload.perfData);
         const version = await bumpStateVersion(env);
         return jsonResponse(request, env, { ok: true, version, state: await exportState(env) });
       }

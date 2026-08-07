@@ -1,13 +1,13 @@
-name = "flash-linear-attention-npu-io"
+name = "flash-linear-attention-npu-io-fazhenyao"
 main = "cloudflare/worker.js"
 compatibility_date = "2026-06-18"
 workers_dev = true
 preview_urls = false
 
 [vars]
-ALLOWED_ORIGINS = "https://weinachuan.github.io,http://127.0.0.1:8787,http://localhost:8787"
+ALLOWED_ORIGINS = "https://fazhenyao.github.io,http://127.0.0.1:8787,http://localhost:8787"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "flash-linear-attention-npu-io"
-database_id = "be0c2c39-b440-40fc-86ce-cb6d90c12e6a"
+database_name = "flash-linear-attention-npu-io-fazhenyao"
+database_id = "a07053d7-4a3c-40a1-8ecd-a50d7af6ab4d"

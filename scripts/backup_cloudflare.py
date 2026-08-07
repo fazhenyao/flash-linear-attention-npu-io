@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 STATE_PATHS = [ROOT / "data" / "project-state.json", ROOT / "docs" / "project-state.json"]
 AUDIT_PATHS = [ROOT / "data" / "audit-log.jsonl", ROOT / "docs" / "audit-log.jsonl"]
 CATALOG_PATHS = [ROOT / "data" / "pr-catalog.json", ROOT / "docs" / "pr-catalog.json"]
+PERF_PATHS = [ROOT / "data" / "performance-data.json", ROOT / "docs" / "performance-data.json"]
 
 
 def default_worker_api() -> str:
@@ -79,6 +80,7 @@ def main() -> int:
   state = get_json(args.api, "/api/export")
   audit = get_json(args.api, "/api/audit/export", args.token)
   catalog = get_json(args.api, "/api/pr-catalog")
+  perf = get_json(args.api, "/api/perf")
 
   if not isinstance(state, dict) or not isinstance(state.get("tasks"), list):
     raise RuntimeError("Invalid state payload from /api/export.")
@@ -86,15 +88,19 @@ def main() -> int:
     raise RuntimeError("Invalid audit payload from /api/audit/export.")
   if not isinstance(catalog, dict) or not isinstance(catalog.get("items"), list):
     raise RuntimeError("Invalid catalog payload from /api/pr-catalog.")
+  if not isinstance(perf, dict) or not isinstance(perf.get("snapshots"), list):
+    raise RuntimeError("Invalid performance payload from /api/perf.")
 
   write_json(STATE_PATHS, state)
   write_jsonl(AUDIT_PATHS, audit)
   write_json(CATALOG_PATHS, catalog)
+  write_json(PERF_PATHS, perf)
 
   print(json.dumps({
     "tasks": len(state.get("tasks", [])),
     "auditEntries": len(audit),
     "prCatalogItems": len(catalog.get("items", [])),
+    "performanceSnapshots": len(perf.get("snapshots", [])),
   }, ensure_ascii=False))
   return 0
 

@@ -23,6 +23,16 @@ on:
         required: true
         type: boolean
         default: true
+      configure_secrets:
+        description: "Configure Worker ADMIN_TOKEN and AUTH_SECRET"
+        required: true
+        type: boolean
+        default: false
+      import_snapshots:
+        description: "Import repository business and performance snapshots"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -62,7 +72,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler d1 migrations apply flash-linear-attention-npu-io --remote
+        run: npx wrangler d1 migrations apply flash-linear-attention-npu-io-fazhenyao --remote
 
       - name: Deploy Worker
         if: ${{ github.event_name == 'push' || inputs.deploy_worker }}
@@ -70,3 +80,29 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler deploy
+
+      - name: Configure Worker secrets
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.configure_secrets }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          FLASH_IO_ADMIN_TOKEN: ${{ secrets.FLASH_IO_ADMIN_TOKEN }}
+          CLOUDFLARE_AUTH_SECRET: ${{ secrets.CLOUDFLARE_AUTH_SECRET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$FLASH_IO_ADMIN_TOKEN"
+          test -n "$CLOUDFLARE_AUTH_SECRET"
+          printf '%s' "$FLASH_IO_ADMIN_TOKEN" | npx wrangler secret put ADMIN_TOKEN
+          printf '%s' "$CLOUDFLARE_AUTH_SECRET" | npx wrangler secret put AUTH_SECRET
+
+      - name: Import repository snapshots
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.import_snapshots }}
+        env:
+          FLASH_IO_ADMIN_TOKEN: ${{ secrets.FLASH_IO_ADMIN_TOKEN }}
+          FLASH_IO_API_BASE: https://flash-linear-attention-npu-io-fazhenyao.polludvtur.workers.dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --retry 5 --retry-delay 2 "$FLASH_IO_API_BASE/api/health"
+          python scripts/import_cloudflare.py --api "$FLASH_IO_API_BASE" --token "$FLASH_IO_ADMIN_TOKEN"

@@ -47,7 +47,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           mkdir -p .backup
-          npx wrangler d1 export flash-linear-attention-npu-io --remote --output=.backup/d1-latest.sql
+          npx wrangler d1 export flash-linear-attention-npu-io-fazhenyao --remote --output=.backup/d1-latest.sql
 
       - name: Upload SQL backup artifact
         uses: actions/upload-artifact@v4
@@ -58,12 +58,12 @@ jobs:
 
       - name: Commit JSON snapshot changes
         run: |
-          if git diff --quiet -- data/project-state.json docs/project-state.json data/audit-log.jsonl docs/audit-log.jsonl data/pr-catalog.json docs/pr-catalog.json; then
+          if git diff --quiet -- data/project-state.json docs/project-state.json data/audit-log.jsonl docs/audit-log.jsonl data/pr-catalog.json docs/pr-catalog.json data/performance-data.json docs/performance-data.json; then
             echo "No D1 snapshot changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/project-state.json docs/project-state.json data/audit-log.jsonl docs/audit-log.jsonl data/pr-catalog.json docs/pr-catalog.json
+          git add data/project-state.json docs/project-state.json data/audit-log.jsonl docs/audit-log.jsonl data/pr-catalog.json docs/pr-catalog.json data/performance-data.json docs/performance-data.json
           git commit -m "Backup Cloudflare D1 snapshots"
           git push

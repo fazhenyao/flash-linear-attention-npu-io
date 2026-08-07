@@ -1,4 +1,4 @@
-const REPO = { owner: "weinachuan", name: "flash-linear-attention-npu-io", branch: "main" };
+const REPO = { owner: "fazhenyao", name: "flash-linear-attention-npu-io", branch: "main" };
 const API_ROOT = `https://api.github.com/repos/${REPO.owner}/${REPO.name}`;
 const WORKER_API_BASE = String(window.FLASH_IO_API_BASE || localStorage.getItem("flashWorkerApiBase") || "").replace(/\/+$/, "");
 const DATA_PATHS = {
@@ -2851,7 +2851,7 @@ async function addPerson() {
         "",
         "你的 flash-linear-attention-npu 项目看板账号已准备好。",
         "",
-        "登录地址：https://weinachuan.github.io/flash-linear-attention-npu-io/",
+        "登录地址：https://fazhenyao.github.io/flash-linear-attention-npu-io/",
         `账号：${result.account.username || name}`,
         `初始密码：${result.account.password}`,
         `绑定邮箱：${result.account.email || email}`,

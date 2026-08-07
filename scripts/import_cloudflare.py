@@ -64,6 +64,7 @@ def main() -> int:
     parser.add_argument("--state", default=str(ROOT / "data" / "project-state.json"))
     parser.add_argument("--audit", default=str(ROOT / "data" / "audit-log.jsonl"))
     parser.add_argument("--pr-catalog", default=str(ROOT / "data" / "pr-catalog.json"))
+    parser.add_argument("--perf", default=str(ROOT / "data" / "performance-data.json"))
     args = parser.parse_args()
 
     state = read_json(Path(args.state))
@@ -74,6 +75,7 @@ def main() -> int:
         "state": state,
         "audit": read_jsonl(Path(args.audit)),
         "prCatalog": read_json(Path(args.pr_catalog), {"generatedAt": "", "sourceRepo": "", "total": 0, "items": []}),
+        "perfData": read_json(Path(args.perf), {"version": "", "models": [], "cases": [], "snapshots": [], "runs": []}),
     }
     result = post_json(args.api, args.token, payload)
     task_count = len(result.get("state", {}).get("tasks", []))

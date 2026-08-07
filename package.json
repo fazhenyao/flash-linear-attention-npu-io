@@ -5,8 +5,8 @@
   "scripts": {
     "cf:dev": "wrangler dev",
     "cf:deploy": "wrangler deploy",
-    "cf:migrate:local": "wrangler d1 migrations apply flash-linear-attention-npu-io --local",
-    "cf:migrate:remote": "wrangler d1 migrations apply flash-linear-attention-npu-io --remote"
+    "cf:migrate:local": "wrangler d1 migrations apply flash-linear-attention-npu-io-fazhenyao --local",
+    "cf:migrate:remote": "wrangler d1 migrations apply flash-linear-attention-npu-io-fazhenyao --remote"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
