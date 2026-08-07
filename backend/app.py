@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import argparse
+import cgi
 import json
 import mimetypes
+import queue
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -11,41 +14,82 @@ try:
     from .db import (
         DB_PATH,
         ROOT,
+        add_perf_model,
+        apply_imported_perf_data,
+        complete_perf_run,
         connect,
         export_all,
+        find_perf_run,
+        import_perf_cases,
+        import_prof_dir,
         init_db,
         list_audit_entries,
+        load_perf_data,
         load_repo_state_or_seed,
         make_id,
-        now_iso,
+        recover_stale_perf_runs,
         seed_audit_if_empty,
         seed_if_empty,
         task_to_dict,
+        trigger_perf_run,
+        update_perf_run,
         update_task,
+        upload_and_import_prof_dir,
         upsert_task,
+    )
+    from .perf_runner import (
+        build_perf_cases_csv_download,
+        build_perf_run_download,
+        execute as execute_perf_test,
+        list_prof_directories,
+        match_prof_dir_from_paths,
+        prof_tool_label,
+        runner_status,
     )
     from .repo_store import persist_change
 except ImportError:
     from db import (  # type: ignore
         DB_PATH,
         ROOT,
+        add_perf_model,
+        apply_imported_perf_data,
+        complete_perf_run,
         connect,
         export_all,
+        find_perf_run,
+        import_perf_cases,
+        import_prof_dir,
         init_db,
         list_audit_entries,
+        load_perf_data,
         load_repo_state_or_seed,
         make_id,
-        now_iso,
+        recover_stale_perf_runs,
         seed_audit_if_empty,
         seed_if_empty,
         task_to_dict,
+        trigger_perf_run,
+        update_perf_run,
         update_task,
+        upload_and_import_prof_dir,
         upsert_task,
+    )
+    from perf_runner import (  # type: ignore
+        build_perf_cases_csv_download,
+        build_perf_run_download,
+        execute as execute_perf_test,
+        list_prof_directories,
+        match_prof_dir_from_paths,
+        prof_tool_label,
+        runner_status,
     )
     from repo_store import persist_change  # type: ignore
 
 
 FRONTEND = ROOT / "frontend"
+_PERF_JOB_QUEUE: queue.Queue[tuple[str, dict]] = queue.Queue()
+_PERF_WORKER_STARTED = False
+_PERF_WORKER_LOCK = threading.Lock()
 ALLOWED_TASK_FIELDS = {
     "title",
     "scope",
@@ -84,6 +128,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self) -> None:
         self.handle_write("DELETE")
 
+    def do_OPTIONS(self) -> None:
+        self.send_response(204)
+        self._send_cors_headers()
+        self.end_headers()
+
     def log_message(self, fmt: str, *args: object) -> None:
         print("%s - %s" % (self.address_string(), fmt % args))
 
@@ -106,6 +155,18 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/specials":
                 rows = conn.execute("SELECT * FROM specials ORDER BY position, title").fetchall()
                 self.send_json([dict(row) for row in rows])
+            elif path == "/api/perf":
+                self.send_json(load_perf_data(conn))
+            elif path == "/api/perf/runner":
+                self.send_json(runner_status())
+            elif path == "/api/perf/cases/download":
+                ids = [item for item in (query.get("ids") or [""])[0].split(",") if item.strip()]
+                self.download_perf_cases(conn, ids)
+            elif path == "/api/perf/prof-dirs":
+                self.send_json({"dirs": list_prof_directories()})
+            elif path.startswith("/api/perf/runs/") and path.endswith("/download"):
+                run_id = path.removeprefix("/api/perf/runs/").removesuffix("/download")
+                self.download_perf_run(conn, run_id)
             elif path == "/api/tasks":
                 self.send_json(list_tasks(conn, query))
             elif path.startswith("/api/tasks/"):
@@ -121,12 +182,15 @@ class Handler(BaseHTTPRequestHandler):
     def handle_write(self, method: str) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
-        payload = self.read_json()
         with connect() as conn:
             init_db(conn)
             seed_if_empty(conn)
             seed_audit_if_empty(conn)
             try:
+                if path == "/api/perf/cases/upload-prof" and method == "POST":
+                    self.upload_prof_case(conn)
+                    return
+                payload = self.read_json()
                 if path == "/api/tasks" and method == "POST":
                     self.create_task(conn, payload)
                 elif path.startswith("/api/tasks/") and method == "PATCH":
@@ -141,6 +205,28 @@ class Handler(BaseHTTPRequestHandler):
                     conn.commit()
                     self.finalize_change(conn, "task.delete", "task", task_id, "删除任务：" + (row["title"] if row else task_id))
                     self.send_json({"ok": True})
+                elif path == "/api/perf/models" and method == "POST":
+                    result = add_perf_model(conn, payload.get("model") or payload)
+                    conn.commit()
+                    self.send_json({"ok": True, "data": result}, status=201)
+                elif path == "/api/perf/runs" and method == "POST":
+                    result = trigger_perf_run(conn, payload, created_by="local")
+                    conn.commit()
+                    run = result.get("run") or {}
+                    if run.get("status") == "queued":
+                        enqueue_perf_run_job(run["id"], payload)
+                    self.send_json({"ok": True, **result}, status=201)
+                elif path == "/api/perf/cases/import" and method == "POST":
+                    result = import_perf_cases(conn, payload)
+                    conn.commit()
+                    self.send_json({"ok": True, **result}, status=201)
+                elif path == "/api/perf/cases/import-prof" and method == "POST":
+                    result = import_prof_dir(conn, payload)
+                    conn.commit()
+                    self.send_json({"ok": True, **result}, status=201)
+                elif path == "/api/perf/prof-dirs/match" and method == "POST":
+                    prof_dir = match_prof_dir_from_paths(payload.get("paths") or [])
+                    self.send_json({"ok": True, "prof_dir": prof_dir})
                 elif path == "/api/groups" and method == "POST":
                     self.create_group(conn, payload)
                 elif path.startswith("/api/groups/") and method == "PATCH":
@@ -156,6 +242,10 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     self.send_error_json(404, "api not found")
             except ValueError as exc:
+                self.send_error_json(400, str(exc))
+            except FileNotFoundError as exc:
+                self.send_error_json(400, str(exc))
+            except OSError as exc:
                 self.send_error_json(400, str(exc))
             except RuntimeError as exc:
                 self.send_error_json(500, "仓库同步失败：" + str(exc))
@@ -340,16 +430,103 @@ class Handler(BaseHTTPRequestHandler):
             return {}
         return json.loads(self.rfile.read(length).decode("utf-8"))
 
+    def upload_prof_case(self, conn) -> None:
+        content_type = self.headers.get("Content-Type", "")
+        if "multipart/form-data" not in content_type:
+            raise ValueError("multipart/form-data required")
+        form = cgi.FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ={
+                "REQUEST_METHOD": "POST",
+                "CONTENT_TYPE": content_type,
+                "CONTENT_LENGTH": self.headers.get("Content-Length", "0"),
+            },
+        )
+        prof_source = str(form.getfirst("prof_source", "") or "").strip()
+        kernel_name = str(form.getfirst("kernel_name", "") or "").strip()
+        archive_field = form["archive"] if "archive" in form else None
+        if archive_field is not None and getattr(archive_field, "file", None) is not None and archive_field.filename:
+            archive_bytes = archive_field.file.read()
+            result = upload_and_import_prof_dir(
+                conn,
+                archive=archive_bytes,
+                prof_source=prof_source,
+                kernel_name=kernel_name,
+            )
+        else:
+            file_fields = form["files"] if "files" in form else None
+            if file_fields is None:
+                raise ValueError("archive or files required")
+            if not isinstance(file_fields, list):
+                file_fields = [file_fields]
+            entries: list[tuple[str, bytes]] = []
+            for item in file_fields:
+                if not getattr(item, "file", None) or not item.filename:
+                    continue
+                entries.append((item.filename, item.file.read()))
+            result = upload_and_import_prof_dir(
+                conn,
+                files=entries,
+                prof_source=prof_source,
+                kernel_name=kernel_name,
+            )
+        conn.commit()
+        self.send_json({"ok": True, **result}, status=201)
+
+    def _send_cors_headers(self) -> None:
+        origin = self.headers.get("Origin")
+        if origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
+        else:
+            self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
     def send_json(self, data, status: int = 200) -> None:
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        self._send_cors_headers()
         self.end_headers()
         self.wfile.write(body)
 
     def send_error_json(self, status: int, message: str) -> None:
         self.send_json({"ok": False, "error": message}, status)
+
+    def send_download(self, filename: str, data: bytes, content_type: str = "application/zip") -> None:
+        from urllib.parse import quote
+
+        safe_name = quote(filename)
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"; filename*=UTF-8\'\'{safe_name}')
+        self._send_cors_headers()
+        self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def download_perf_cases(self, conn, case_ids: list[str]) -> None:
+        try:
+            filename, payload = build_perf_cases_csv_download(load_perf_data(conn), case_ids)
+            self.send_download(filename, payload)
+        except ValueError as exc:
+            self.send_error_json(400, str(exc))
+
+    def download_perf_run(self, conn, run_id: str) -> None:
+        try:
+            data = load_perf_data(conn)
+            run = find_perf_run(conn, run_id)
+            if not run:
+                self.send_error_json(404, "run not found")
+                return
+            filename, payload = build_perf_run_download(run, data)
+            self.send_download(filename, payload)
+        except ValueError as exc:
+            self.send_error_json(400, str(exc))
 
 
 def list_tasks(conn, query: dict[str, list[str]]) -> list[dict]:
@@ -394,6 +571,75 @@ def next_day(value: str) -> str:
     return (date.fromisoformat(value) + timedelta(days=1)).isoformat()
 
 
+def enqueue_perf_run_job(run_id: str, payload: dict) -> None:
+    global _PERF_WORKER_STARTED
+    with _PERF_WORKER_LOCK:
+        if not _PERF_WORKER_STARTED:
+            threading.Thread(target=_perf_run_worker, daemon=True, name="perf-run-worker").start()
+            _PERF_WORKER_STARTED = True
+    _PERF_JOB_QUEUE.put((run_id, payload))
+
+
+def _perf_run_worker() -> None:
+    while True:
+        run_id, payload = _PERF_JOB_QUEUE.get()
+        try:
+            execute_perf_run_job(run_id, payload)
+        finally:
+            _PERF_JOB_QUEUE.task_done()
+
+
+def execute_perf_run_job(run_id: str, payload: dict) -> None:
+    try:
+        from .db import now_iso
+    except ImportError:
+        from db import now_iso  # type: ignore
+
+    conn = connect()
+    try:
+        init_db(conn)
+        prof_tool = str(payload.get("prof_tool") or "msprof")
+        update_perf_run(conn, run_id, status="running", message=f"正在执行 {prof_tool_label(prof_tool)}…")
+        conn.commit()
+        result = execute_perf_test(payload)
+        if result.get("dry_run"):
+            update_perf_run(
+                conn,
+                run_id,
+                status="done",
+                finished_at=now_iso(),
+                message=result.get("message", "dry-run"),
+                command=result.get("command", ""),
+            )
+            conn.commit()
+            return
+        apply_imported_perf_data(conn, result["data"])
+        complete_perf_run(
+            conn,
+            run_id,
+            snapshot=result["snapshot"],
+            command=result.get("command", ""),
+            message=result.get("message", "测试执行完成"),
+            prof_dir=str(result.get("prof_dir") or ""),
+            prof_source=str(result.get("prof_source") or result["snapshot"].get("prof_source") or ""),
+        )
+        conn.commit()
+    except Exception as exc:
+        try:
+            update_perf_run(
+                conn,
+                run_id,
+                status="failed",
+                finished_at=now_iso(),
+                message=str(exc),
+            )
+            conn.commit()
+        except Exception as mark_exc:
+            print(f"[perf] failed to mark run {run_id} as failed: {mark_exc} (original: {exc})")
+    finally:
+        conn.close()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
@@ -404,6 +650,10 @@ def main() -> None:
     with connect() as conn:
         init_db(conn)
         load_repo_state_or_seed(conn)
+        recovered = recover_stale_perf_runs(conn)
+        conn.commit()
+        if recovered:
+            print(f"[perf] recovered {recovered} stale run(s)")
 
     if args.init_only:
         print(f"database ready: {DB_PATH}")

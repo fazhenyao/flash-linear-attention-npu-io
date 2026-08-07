@@ -86,6 +86,19 @@ export default {
         const payload = await readJson(request);
         return jsonResponse(request, env, await syncPrCatalog(env, payload.catalog || payload));
       }
+      if (url.pathname === "/api/perf" && request.method === "GET") {
+        return jsonResponse(request, env, await getPerfData(env));
+      }
+      if (url.pathname === "/api/perf/models" && request.method === "POST") {
+        await requireAdminLike(request, env);
+        const payload = await readJson(request);
+        return jsonResponse(request, env, await addPerfModel(env, payload.model || payload), 201);
+      }
+      if (url.pathname === "/api/perf/runs" && request.method === "POST") {
+        const user = await requireUser(request, env);
+        const payload = await readJson(request);
+        return jsonResponse(request, env, await triggerPerfRun(env, payload, user), 201);
+      }
       if (url.pathname === "/api/login" && request.method === "POST") {
         return jsonResponse(request, env, await login(request, env));
       }
@@ -1942,6 +1955,69 @@ function timingSafeEqual(a, b) {
 
 function emptyPrCatalog() {
   return { generatedAt: "", sourceRepo: "flashserve/flash-linear-attention-npu", total: 0, items: [] };
+}
+
+function emptyPerfData() {
+  return {
+    version: nowIso(),
+    models: [{ id: "gdn", label: "GDN", position: 0, active: true }],
+    cases: [],
+    snapshots: [],
+    runs: [],
+  };
+}
+
+async function getPerfData(env) {
+  let data = await getJsonMeta(env, "perfData", null);
+  if (!data || !Array.isArray(data.models)) {
+    data = emptyPerfData();
+    await setJsonMeta(env, "perfData", data);
+  }
+  return data;
+}
+
+async function savePerfData(env, data) {
+  const normalized = {
+    version: data.version || nowIso(),
+    models: Array.isArray(data.models) ? data.models : [],
+    cases: Array.isArray(data.cases) ? data.cases : [],
+    snapshots: Array.isArray(data.snapshots) ? data.snapshots : [],
+    runs: Array.isArray(data.runs) ? data.runs : [],
+  };
+  await setJsonMeta(env, "perfData", normalized);
+  return normalized;
+}
+
+async function addPerfModel(env, model) {
+  const data = await getPerfData(env);
+  const id = String(model?.id || "").trim() || `model-${Date.now()}`;
+  if (data.models.some((item) => item.id === id)) throw withStatus(400, "model already exists");
+  data.models.push({
+    id,
+    label: String(model?.label || id).trim() || id,
+    position: data.models.length,
+    active: true,
+  });
+  data.version = nowIso();
+  const saved = await savePerfData(env, data);
+  await insertAudit(env, {
+    ts: nowIso(),
+    action: "perf.model.create",
+    entity: "perf_model",
+    id,
+    summary: `新增性能模型：${model?.label || id}`,
+    detail: { id, label: model?.label || id },
+    source: "cloudflare-d1",
+  });
+  return { ok: true, data: saved };
+}
+
+async function triggerPerfRun(env, payload, user) {
+  throw withStatus(
+    501,
+    "Cloudflare Worker 不支持直接执行 msprof。请配置 docs/config.js 中的 FLASH_IO_LOCAL_API，"
+      + "启动 python backend/app.py，并设置 PERF_RUN_MODE=ssh 或 local。",
+  );
 }
 
 function parseJson(value, fallback) {

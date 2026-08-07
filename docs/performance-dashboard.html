@@ -1,0 +1,2469 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>性能看板 - flash-linear-attention-npu</title>
+  <link rel="stylesheet" href="./styles.css?v=20260714-case-io">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Performance Dashboard</p>
+        <h1>性能看板</h1>
+        <p class="meta" id="meta">读取性能数据中</p>
+        <nav class="hero-links" aria-label="项目导航">
+          <a href="./index.html">项目看板</a>
+          <a href="./performance-dashboard.html" class="active">性能看板</a>
+          <a href="./user-guide.html">使用说明</a>
+          <a href="./design-diagrams.html">设计图</a>
+          <a href="./delivery-stats.html">提前完成统计</a>
+        </nav>
+      </div>
+      <div class="summary" id="summary"></div>
+    </header>
+
+    <section class="toolbar perf-toolbar">
+      <span id="authStatus" class="edit-status">只读模式</span>
+      <span id="workerLogin" class="worker-login hidden">
+        <label>账号 <input id="loginUser" autocomplete="username" placeholder="账号"></label>
+        <label>密码 <input id="loginPassword" type="password" autocomplete="current-password" placeholder="密码"></label>
+        <button id="loginBtn" type="button">登录</button>
+      </span>
+      <button id="logoutBtn" type="button" class="hidden">退出</button>
+      <button id="addModelBtn" type="button" class="hidden admin-only">新增模型</button>
+      <button type="button" class="perf-case-import-btn" id="perfCaseImportBtn" title="选择本机 OPPROF_* 或 PROF_* 目录导入">加载用例数据</button>
+    </section>
+
+    <nav class="perf-tabs view-switch" aria-label="性能看板视图">
+      <button type="button" class="active" data-tab="network">整网性能饼图</button>
+      <button type="button" data-tab="case">单个用例性能图</button>
+      <button type="button" data-tab="trigger">用例执行触发</button>
+    </nav>
+
+    <section id="tab-network" class="perf-tab active panel">
+      <div class="perf-filters">
+        <section class="perf-filter-group">
+          <h3 class="perf-filter-group-title">用例配置</h3>
+          <label class="perf-attr-filter">用例属性
+            <div class="perf-attr-filter-box">
+              <div id="netCaseAttrChips" class="perf-attr-chips"></div>
+              <div class="perf-attr-menu">
+                <select id="netCaseAttrKey" aria-label="用例属性类型"></select>
+                <select id="netCaseAttrOp" aria-label="筛选方式">
+                  <option value="eq">精确</option>
+                  <option value="range">范围</option>
+                </select>
+                <span id="netCaseAttrEqWrap" class="perf-attr-value-wrap hidden">
+                  <input id="netCaseAttrEq" list="netCaseAttrEqList" placeholder="输入或选择值" aria-label="精确值">
+                  <datalist id="netCaseAttrEqList"></datalist>
+                  <select id="netCaseAttrEqSelect" class="perf-attr-eq-select hidden" aria-label="精确值"></select>
+                </span>
+                <span id="netCaseAttrRangeWrap" class="perf-attr-value-wrap hidden">
+                  <input id="netCaseAttrMin" type="number" placeholder="最小" aria-label="最小值">
+                  <span class="perf-attr-range-sep">~</span>
+                  <input id="netCaseAttrMax" type="number" placeholder="最大" aria-label="最大值">
+                </span>
+                <div class="perf-attr-actions">
+                  <button type="button" class="perf-attr-add" id="netCaseAttrAdd">添加</button>
+                  <button type="button" class="perf-attr-clear" id="netCaseAttrClear">清空</button>
+                </div>
+              </div>
+            </div>
+          </label>
+          <div class="perf-filters-row">
+            <label>用例
+              <select id="netCase"></select>
+            </label>
+          </div>
+          <div class="perf-case-io-toolbar">
+            <button type="button" class="perf-case-download-btn" id="netCaseDownloadBtn">下载 Prof CSV</button>
+          </div>
+          <div id="netRunContext" class="perf-run-context hidden">
+            <p class="perf-filter-subtitle">运行环境</p>
+            <p class="perf-run-context-text">—</p>
+          </div>
+        </section>
+        <section class="perf-filter-group">
+          <h3 class="perf-filter-group-title">图表选项</h3>
+          <div class="perf-filters-row">
+            <label>算子范围
+              <div class="perf-operator-scope">
+                <label class="perf-check-field">
+                  <input id="netShowAscendc" type="checkbox" checked>
+                  <span>ascendc 算子</span>
+                </label>
+                <label class="perf-check-field">
+                  <input id="netShowTriton" type="checkbox" checked>
+                  <span>triton 算子</span>
+                </label>
+              </div>
+            </label>
+          </div>
+        </section>
+      </div>
+      <div class="perf-chart-grid">
+        <div class="perf-chart-card">
+          <div class="panel-title-row">
+            <h2>算子整网占比</h2>
+            <strong id="netTotalTime" class="perf-total-time">—</strong>
+          </div>
+          <div class="perf-pie-wrap">
+            <canvas id="networkPie"></canvas>
+            <div id="networkPieCenter" class="perf-pie-center"></div>
+          </div>
+          <div id="networkLegend" class="perf-legend"></div>
+        </div>
+        <div class="perf-chart-card">
+          <div class="panel-title-row">
+            <h2>算子耗时对比</h2>
+            <small>最多选 4 个算子</small>
+          </div>
+          <div id="networkComparePick" class="perf-compare-pick"></div>
+          <canvas id="networkCompare"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-case" class="perf-tab panel">
+      <div class="perf-filters">
+        <section class="perf-filter-group">
+          <h3 class="perf-filter-group-title">用例配置</h3>
+          <label class="perf-attr-filter">用例属性
+            <div class="perf-attr-filter-box">
+              <div id="caseAttrChips" class="perf-attr-chips"></div>
+              <div class="perf-attr-menu">
+                <select id="caseAttrKey" aria-label="用例属性类型"></select>
+                <select id="caseAttrOp" aria-label="筛选方式">
+                  <option value="eq">精确</option>
+                  <option value="range">范围</option>
+                </select>
+                <span id="caseAttrEqWrap" class="perf-attr-value-wrap hidden">
+                  <input id="caseAttrEq" list="caseAttrEqList" placeholder="输入或选择值" aria-label="精确值">
+                  <datalist id="caseAttrEqList"></datalist>
+                  <select id="caseAttrEqSelect" class="perf-attr-eq-select hidden" aria-label="精确值"></select>
+                </span>
+                <span id="caseAttrRangeWrap" class="perf-attr-value-wrap hidden">
+                  <input id="caseAttrMin" type="number" placeholder="最小" aria-label="最小值">
+                  <span class="perf-attr-range-sep">~</span>
+                  <input id="caseAttrMax" type="number" placeholder="最大" aria-label="最大值">
+                </span>
+                <div class="perf-attr-actions">
+                  <button type="button" class="perf-attr-add" id="caseAttrAdd">添加</button>
+                  <button type="button" class="perf-attr-clear" id="caseAttrClear">清空</button>
+                </div>
+              </div>
+            </div>
+          </label>
+          <div class="perf-compare-case-toolbar">
+            <label>选择用例
+              <select id="caseCompareAdd"></select>
+            </label>
+            <button type="button" class="perf-compare-add-btn" id="caseCompareAddBtn">添加</button>
+          </div>
+          <div class="perf-compare-case-toolbar">
+            <label>对比用例
+              <select id="caseCompareList" size="4" aria-label="已添加对比用例"></select>
+            </label>
+            <button type="button" class="perf-compare-remove-btn" id="caseCompareRemoveBtn">移除</button>
+            <button type="button" class="perf-compare-clear-btn" id="caseCompareClearBtn">清空</button>
+          </div>
+          <small id="caseCompareHint" class="perf-compare-hint">仅展示 msopprof 单算子用例；每次 Prof 导入为独立用例，选中后点「移除」可删除</small>
+          <div class="perf-case-io-toolbar">
+            <button type="button" class="perf-case-download-btn" id="caseCompareDownloadBtn">下载 Prof CSV</button>
+          </div>
+          <div id="caseRunContext" class="perf-run-context hidden">
+            <p class="perf-filter-subtitle">运行环境</p>
+            <p class="perf-run-context-text">—</p>
+          </div>
+        </section>
+        <section class="perf-filter-group">
+          <h3 class="perf-filter-group-title">图表选项</h3>
+          <div class="perf-filters-row">
+            <div class="perf-metric-filter">对比指标
+              <div id="caseMetricPicker" class="perf-metric-picker" aria-label="对比指标"></div>
+            </div>
+            <label>算子
+              <select id="caseOperator"></select>
+            </label>
+          </div>
+        </section>
+      </div>
+      <div class="perf-chart-grid">
+        <div class="perf-chart-card perf-chart-wide">
+          <div class="panel-title-row"><h2 id="caseMetricChartTitle">指标对比</h2><small id="caseMetricChartHint">未选择对比指标，请点击上方指标标签</small></div>
+          <canvas id="caseMbuMfu"></canvas>
+        </div>
+        <div class="perf-chart-card perf-chart-wide">
+          <div class="panel-title-row"><h2>资源利用率与瓶颈</h2><small id="caseDetailHint">相同用例属性合并为一张表，列头为各次 Prof 时间</small></div>
+          <div id="caseDetailTables" class="perf-case-detail-tables"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-trigger" class="perf-tab panel">
+      <div class="perf-trigger-grid">
+        <div class="perf-chart-card">
+          <div class="panel-title-row"><h2>触发用例测试</h2></div>
+          <form id="triggerForm" class="perf-form">
+            <p id="triggerEnvHint" class="perf-trigger-env-hint">执行环境：连接后端后显示 PERF_CHIP 与默认 NPU 卡号。</p>
+            <label>采集模式
+              <select id="triggerProfTool">
+                <option value="msprof">msprof（整网性能）</option>
+                <option value="msprof_op">msopprof（算子调优）</option>
+              </select>
+            </label>
+            <label id="triggerKernelWrap" class="hidden perf-form-fieldwide">目标算子 / kernel
+              <input id="triggerKernel" type="text" placeholder="例如 ChunkGatedDeltaRuleFwdH|ChunkFwdO">
+              <span class="perf-field-hint">msopprof 多 kernel 用竖线分隔，写入单个 --kernel-name；留空则采集脚本执行过程中遇到的全部 kernel（可形成整网饼图）。</span>
+            </label>
+            <fieldset id="triggerOpOptions" class="perf-attr-fieldset hidden">
+              <legend>msopprof 采集</legend>
+              <label>warm-up <input id="triggerWarmUp" type="number" min="0" step="1" value="10"></label>
+              <label>launch-count <input id="triggerLaunchCount" type="number" min="1" step="1" value="10"></label>
+              <span class="perf-field-hint perf-form-fieldwide">对应 msopprof 的 --warm-up 与 --launch-count；默认 10 / 10，可由环境变量 PERF_OP_WARM_UP / PERF_OP_LAUNCH_COUNT 覆盖初始值。</span>
+            </fieldset>
+            <label class="perf-form-fieldwide">NPU 卡号
+              <input id="triggerDevice" type="number" min="0" step="1" placeholder="2">
+              <span class="perf-field-hint">单次执行可覆盖默认卡号，下发为脚本 --device。</span>
+            </label>
+            <fieldset class="perf-attr-fieldset">
+              <legend>形状/规模</legend>
+              <label>batch <input id="attrBatch" type="number" min="1" value="1"></label>
+              <label>query-heads <input id="attrQueryHeads" type="number" min="1" value="32"></label>
+              <label>value-heads <input id="attrValueHeads" type="number" min="1" value="32"></label>
+              <label>tokens <input id="attrTokens" type="number" min="1" value="4087"></label>
+              <label>key-dim <input id="attrKeyDim" type="number" min="1" value="128"></label>
+              <label>value-dim <input id="attrValueDim" type="number" min="1" value="128"></label>
+              <label>chunk-size <input id="attrChunkSize" type="number" min="1" value="64"></label>
+              <label>scale <input id="attrScale" type="number" min="0" step="0.000001" placeholder="自动 key-dim^-0.5"></label>
+              <label>dtype
+                <select id="attrDtype">
+                  <option value="bf16">bf16</option>
+                  <option value="fp16">fp16</option>
+                </select>
+              </label>
+            </fieldset>
+            <fieldset class="perf-attr-fieldset">
+              <legend>变长序列</legend>
+              <label class="perf-form-fieldwide">varlen
+                <span class="perf-check-field perf-check-field-compact">
+                  <input id="attrVarlen" type="checkbox" checked>
+                </span>
+              </label>
+              <div id="varlenFields" class="perf-varlen-fields">
+                <label>mean-len <input id="attrMeanLen" type="number" min="1" value="1024"></label>
+                <label class="perf-form-fieldwide">cu-seqlens
+                  <input id="attrCuSeqlens" placeholder="留空则自动生成">
+                  <span class="perf-field-hint">留空时：按 tokens ÷ mean-len 估算子序列条数，在均值附近生成高低交替长度，并微调使总和等于 tokens。手动填写：逗号分隔的严格递增整数，从 0 开始、以 tokens 结束，如 0,1024,2048,4087。</span>
+                </label>
+              </div>
+            </fieldset>
+            <label>备注 <input id="triggerNotes" placeholder="可选说明"></label>
+            <button type="submit" class="primary">执行测试</button>
+          </form>
+        </div>
+        <div class="perf-chart-card">
+          <div class="panel-title-row"><h2>执行记录</h2></div>
+          <div class="table-wrap stats-table-wrap">
+            <table class="stats-table perf-table">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>用例</th>
+                  <th>脚本</th>
+                  <th>芯片</th>
+                  <th>采集</th>
+                  <th>状态</th>
+                  <th>总耗时</th>
+                  <th>结果</th>
+                  <th>命令</th>
+                  <th>操作人</th>
+                </tr>
+              </thead>
+              <tbody id="runRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="commandDialog" class="perf-command-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="commandDialogTitle">
+    <div class="perf-command-dialog-backdrop" data-command-close></div>
+    <div class="perf-command-dialog-panel">
+      <div class="perf-command-dialog-header">
+        <h3 id="commandDialogTitle">完整命令</h3>
+        <button type="button" class="perf-command-dialog-close" aria-label="关闭" data-command-close>&times;</button>
+      </div>
+      <pre id="commandDialogBody" class="perf-command-dialog-body"></pre>
+      <div class="perf-command-dialog-actions">
+        <button type="button" id="commandCopyBtn" class="primary">复制命令</button>
+        <button type="button" data-command-close>关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <input id="profImportFolderInput" type="file" webkitdirectory directory multiple class="hidden" aria-hidden="true">
+
+  <script src="./config.js?v=20260720-local-api-proxy"></script>
+  <script>
+    const WORKER_API_BASE = String(window.FLASH_IO_API_BASE || localStorage.getItem("flashWorkerApiBase") || "").replace(/\/+$/, "");
+    const LOCAL_API_BASE = String(window.FLASH_IO_LOCAL_API || localStorage.getItem("flashLocalApiBase") || "").replace(/\/+$/, "");
+    const TOKEN_KEY = "flashWorkerToken";
+    const OPERATOR_PALETTE = [
+      "#277560", "#2f73c8", "#b87508", "#cf3d32", "#6b5b95", "#5c7cfa", "#9e5a8f",
+      "#3d8b7a", "#c97b2d", "#4a90a4", "#a63d3d", "#7d6b9e", "#6b9e3d", "#d4a574",
+      "#5b8a72", "#8b6914", "#8a8a8a",
+    ];
+    const OPERATOR_LABELS = {
+      chunk_gated_delta_rule_fwd_h: "fwd_h",
+      chunk_fwd_o: "fwd_o",
+      recompute_wu_fwd: "recompute_wu",
+      chunk_bwd_dv_local: "dv_local",
+      chunk_bwd_dqkwg: "dqkwg",
+      chunk_gated_delta_rule_bwd_dhu: "dhu",
+      prepare_wy_repr_bwd_da: "prepare_wy_da",
+      prepare_wy_repr_bwd_full: "prepare_wy_full",
+      solve_tril: "solve_tril",
+      chunk_scaled_dot_kkt_fwd: "chunk_scaled_dot_kkt",
+      l2norm_fwd: "l2norm_fwd",
+      l2norm_bwd: "l2norm_bwd",
+      chunk_local_cumsum: "chunk_local_cumsum",
+      other_runtime: "其他运行时",
+      kimi_delta_attention_triton: "KDA triton",
+      causal_conv1d_fwd: "causal_conv1d_fwd",
+      causal_conv1d_bwd: "causal_conv1d_bwd",
+    };
+    const OTHER_RUNTIME_ID = "other_runtime";
+    const ASCENDC_OPERATORS = new Set([
+      "chunk_gated_delta_rule_fwd_h",
+      "chunk_fwd_o",
+      "recompute_wu_fwd",
+      "chunk_bwd_dv_local",
+      "chunk_bwd_dqkwg",
+      "chunk_gated_delta_rule_bwd_dhu",
+      "prepare_wy_repr_bwd_full",
+      "prepare_wy_repr_bwd_da",
+      "causal_conv1d_fwd",
+      "causal_conv1d_bwd",
+    ]);
+    const TRITON_OPERATORS = new Set([
+      "chunk_local_cumsum",
+      "chunk_scaled_dot_kkt_fwd",
+      "l2norm_fwd",
+      "l2norm_bwd",
+      "solve_tril",
+      "kimi_delta_attention_triton",
+    ]);
+    const OPERATOR_COLOR_ORDER = [
+      "chunk_gated_delta_rule_fwd_h",
+      "recompute_wu_fwd",
+      "chunk_fwd_o",
+      "chunk_bwd_dv_local",
+      "chunk_bwd_dqkwg",
+      "chunk_gated_delta_rule_bwd_dhu",
+      "prepare_wy_repr_bwd_da",
+      "prepare_wy_repr_bwd_full",
+      "causal_conv1d_fwd",
+      "causal_conv1d_bwd",
+      "solve_tril",
+      "chunk_scaled_dot_kkt_fwd",
+      "l2norm_fwd",
+      "l2norm_bwd",
+      "chunk_local_cumsum",
+      "kimi_delta_attention_triton",
+      "other_runtime",
+    ];
+    const OPERATOR_COLOR_MAP = Object.fromEntries(
+      OPERATOR_COLOR_ORDER.map((id, index) => [id, OPERATOR_PALETTE[index]]),
+    );
+
+    const state = {
+      data: null,
+      operators: [],
+      token: localStorage.getItem(TOKEN_KEY) || "",
+      user: null,
+      charts: {},
+      compareOps: [],
+      compareCases: [],
+      caseMetrics: [],
+      caseAttrFilters: { net: [], case: [] },
+      runner: null,
+      perfPollTimer: null,
+    };
+
+    init().catch((error) => {
+      document.querySelector("#meta").textContent = `读取失败：${error.message || error}`;
+    });
+
+    async function init() {
+      bindEvents();
+      await loadData();
+      await loadRunnerStatus();
+      if (WORKER_API_BASE && state.token) await refreshUser();
+      renderAll();
+      maybeStartPerfPolling();
+    }
+
+    function bindEvents() {
+      document.querySelectorAll(".perf-tabs button").forEach((button) => {
+        button.addEventListener("click", () => switchTab(button.dataset.tab));
+      });
+      ["netCase", "netShowTriton", "netShowAscendc"].forEach((id) => {
+        document.querySelector(`#${id}`).addEventListener("change", () => {
+          updateRunContextDisplay("net");
+          renderNetworkTab();
+        });
+      });
+      document.querySelector("#netCaseAttrKey").addEventListener("change", () => onCaseAttrKeyChange("net"));
+      document.querySelector("#netCaseAttrOp").addEventListener("change", () => updateAttrPickerUI("net"));
+      document.querySelector("#netCaseAttrAdd").addEventListener("click", () => addCaseAttrFilter("net"));
+      document.querySelector("#netCaseAttrClear").addEventListener("click", () => clearCaseAttrFilters("net"));
+      document.querySelector("#netCaseAttrChips").addEventListener("click", (event) => onCaseAttrChipClick(event, "net"));
+      document.querySelector("#caseOperator").addEventListener("change", renderCaseTab);
+      document.querySelector("#caseCompareList").addEventListener("change", () => updateRunContextDisplay("case"));
+      document.querySelector("#caseAttrKey").addEventListener("change", () => onCaseAttrKeyChange("case"));
+      document.querySelector("#caseAttrOp").addEventListener("change", () => updateAttrPickerUI("case"));
+      document.querySelector("#caseAttrAdd").addEventListener("click", () => addCaseAttrFilter("case"));
+      document.querySelector("#caseAttrClear").addEventListener("click", () => clearCaseAttrFilters("case"));
+      document.querySelector("#caseAttrChips").addEventListener("click", (event) => onCaseAttrChipClick(event, "case"));
+      document.querySelector("#caseCompareAddBtn").addEventListener("click", addSelectedCaseToCompare);
+      document.querySelector("#caseCompareRemoveBtn").addEventListener("click", removeSelectedCaseFromCompare);
+      document.querySelector("#caseCompareClearBtn").addEventListener("click", clearCompareCases);
+      document.querySelector("#triggerForm").addEventListener("submit", onTriggerSubmit);
+      document.querySelector("#loginBtn").addEventListener("click", onLogin);
+      document.querySelector("#logoutBtn").addEventListener("click", onLogout);
+      document.querySelector("#addModelBtn").addEventListener("click", onAddModel);
+      document.querySelector("#triggerProfTool").addEventListener("change", updateTriggerProfToolUI);
+      document.querySelector("#attrVarlen").addEventListener("change", updateVarlenFieldsUI);
+      bindCommandDialogEvents();
+      document.querySelector("#netCaseDownloadBtn").addEventListener("click", () => downloadPerfCases(resolveNetCaseIds()));
+      document.querySelector("#perfCaseImportBtn").addEventListener("click", promptPerfCaseImport);
+      document.querySelector("#caseCompareDownloadBtn").addEventListener("click", () => downloadPerfCases(resolveCaseCompareIds()));
+      document.querySelector("#profImportFolderInput").addEventListener("change", onPerfCaseFolderSelected);
+    }
+
+    function resolveNetCaseIds() {
+      const caseId = document.querySelector("#netCase").value;
+      return caseId ? [caseId] : [];
+    }
+
+    function resolveCaseCompareIds() {
+      const selected = getActiveCompareCases();
+      if (selected.length) return selected;
+      const picked = document.querySelector("#caseCompareList").value;
+      return picked ? [picked] : [];
+    }
+
+    function perfCaseZipFilename(caseIds) {
+      const slug = caseIds.length === 1 ? caseIds[0] : `bundle-${caseIds.length}`;
+      return `perf-csv-${slug}.zip`;
+    }
+
+    function downloadBlobFile(filename, blob) {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function downloadPerfCases(caseIds) {
+      try {
+        if (!LOCAL_API_BASE) {
+          throw new Error("下载原始 Prof CSV 需要本地后端，请在 docs/config.js 配置 FLASH_IO_LOCAL_API");
+        }
+        const response = await fetch(`${LOCAL_API_BASE}/api/perf/cases/download?ids=${encodeURIComponent(caseIds.join(","))}`);
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || `下载失败（HTTP ${response.status}）`);
+        }
+        const blob = await response.blob();
+        const disposition = response.headers.get("Content-Disposition") || "";
+        const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i);
+        const filename = decodeURIComponent(match?.[1] || match?.[2] || perfCaseZipFilename(caseIds));
+        downloadBlobFile(filename, blob);
+      } catch (error) {
+        alert(error.message || String(error));
+      }
+    }
+
+    async function uploadAndImportProf(formData) {
+      const response = await fetch(`${LOCAL_API_BASE}/api/perf/cases/upload-prof`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `上传失败（HTTP ${response.status}）`);
+      }
+      const result = await response.json();
+      return finishProfImport(result, result.prof_dir || "");
+    }
+
+    async function finishProfImport(result, profDir) {
+      await loadData();
+      const caseId = result.case_id;
+      if (caseId) {
+        const snap = state.data?.snapshots?.find((item) => item.case_id === caseId);
+        if (isOpProfSnapshot(snap)) {
+          state.compareCases = [...new Set([...(state.compareCases || []), caseId])];
+        }
+        if (caseEligibleForNetworkTab(caseId)) state.preselectNetCaseId = caseId;
+      }
+      renderAll();
+      const source = result.prof_source || profDir;
+      alert(`已从 ${source} 加载 ${result.imported_cases || 0} 个用例、${result.imported_snapshots || 0} 条快照。整网饼图与单用例图均已更新。`);
+      return result;
+    }
+
+    function detectProfSourceFromPaths(paths) {
+      for (const path of paths || []) {
+        const parts = String(path || "").replace(/\\/g, "/").split("/").filter(Boolean);
+        for (const top of parts) {
+          if (/^OPPROF_/i.test(top) || /^PROF_/i.test(top)) return top;
+        }
+      }
+      return "";
+    }
+
+    async function collectDirectoryFiles(dirHandle, prefix = "") {
+      const files = [];
+      for await (const entry of dirHandle.values()) {
+        const relPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.kind === "file") {
+          files.push({ file: await entry.getFile(), relPath });
+        } else if (entry.kind === "directory") {
+          files.push(...await collectDirectoryFiles(entry, relPath));
+        }
+      }
+      return files;
+    }
+
+    async function importProfFolder(files, profSource = "") {
+      let source = String(profSource || "").trim() || detectProfSourceFromPaths(files.map((item) => item.relPath));
+      if (!source || !/^(OPPROF_|PROF_)/i.test(source)) {
+        source = prompt("请填写目录名（OPPROF_* 或 PROF_*）：", source || "")?.trim() || "";
+        if (!source) return;
+      }
+      const formData = new FormData();
+      formData.append("prof_source", source);
+      files.forEach(({ file, relPath }) => formData.append("files", file, relPath));
+      await uploadAndImportProf(formData);
+    }
+
+    async function promptPerfCaseImport() {
+      if (!LOCAL_API_BASE) {
+        alert("加载 Prof 目录需要本地后端，请通过 scripts/start_local.sh 启动服务");
+        return;
+      }
+      state.pendingPerfCaseImport = true;
+      try {
+        if (window.showDirectoryPicker) {
+          const handle = await window.showDirectoryPicker({ mode: "read" });
+          const files = await collectDirectoryFiles(handle);
+          if (!files.length) throw new Error("所选文件夹为空");
+          await importProfFolder(files, detectProfSourceFromPaths([handle.name]) || handle.name);
+          state.pendingPerfCaseImport = false;
+          return;
+        }
+        const input = document.querySelector("#profImportFolderInput");
+        input.value = "";
+        input.click();
+      } catch (error) {
+        state.pendingPerfCaseImport = false;
+        if (error?.name !== "AbortError") alert(error.message || String(error));
+      }
+    }
+
+    async function onPerfCaseFolderSelected(event) {
+      if (!state.pendingPerfCaseImport) return;
+      state.pendingPerfCaseImport = false;
+      const files = Array.from(event.target.files || []);
+      event.target.value = "";
+      if (!files.length) return;
+      try {
+        const relPaths = files.map((item) => item.webkitRelativePath || item.name);
+        const payload = files.map((file) => ({
+          file,
+          relPath: file.webkitRelativePath || file.name,
+        }));
+        await importProfFolder(payload, detectProfSourceFromPaths(relPaths));
+      } catch (error) {
+        alert(error.message || String(error));
+      }
+    }
+
+    function bindCommandDialogEvents() {
+      const dialog = document.querySelector("#commandDialog");
+      const copyBtn = document.querySelector("#commandCopyBtn");
+      document.querySelector("#runRows").addEventListener("click", (event) => {
+        const downloadBtn = event.target.closest("[data-run-download]");
+        if (downloadBtn) {
+          downloadRunResult(downloadBtn.dataset.runDownload);
+          return;
+        }
+        const button = event.target.closest("[data-run-command]");
+        if (!button) return;
+        const run = (state.data?.runs || []).find((item) => item.id === button.dataset.runCommand);
+        if (!run) return;
+        showCommandDialog(run.command || run.message || "");
+      });
+      dialog.addEventListener("click", (event) => {
+        if (event.target.closest("[data-command-close]")) hideCommandDialog();
+      });
+      copyBtn.addEventListener("click", copyActiveCommand);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !dialog.classList.contains("hidden")) hideCommandDialog();
+      });
+    }
+
+    function showCommandDialog(command) {
+      const dialog = document.querySelector("#commandDialog");
+      const body = document.querySelector("#commandDialogBody");
+      state.activeCommand = String(command || "");
+      body.textContent = state.activeCommand || "—";
+      dialog.classList.remove("hidden");
+    }
+
+    function hideCommandDialog() {
+      document.querySelector("#commandDialog").classList.add("hidden");
+      state.activeCommand = "";
+    }
+
+    async function copyActiveCommand() {
+      const command = state.activeCommand || "";
+      if (!command) return;
+      const copyBtn = document.querySelector("#commandCopyBtn");
+      const original = copyBtn.textContent;
+      try {
+        await navigator.clipboard.writeText(command);
+        copyBtn.textContent = "已复制";
+      } catch (_error) {
+        copyBtn.textContent = "复制失败";
+      }
+      window.setTimeout(() => {
+        copyBtn.textContent = original;
+      }, 1200);
+    }
+
+    async function downloadRunResult(runId) {
+      if (!LOCAL_API_BASE) {
+        alert("未配置本地 API，无法下载执行结果");
+        return;
+      }
+      try {
+        const response = await fetch(`${LOCAL_API_BASE}/api/perf/runs/${encodeURIComponent(runId)}/download`);
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || `下载失败（HTTP ${response.status}）`);
+        }
+        const blob = await response.blob();
+        const disposition = response.headers.get("Content-Disposition") || "";
+        const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i);
+        const rawName = decodeURIComponent(match?.[1] || match?.[2] || `${runId}.zip`);
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = rawName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        alert(error.message || String(error));
+      }
+    }
+
+    function canDownloadRunResult(run, snap) {
+      return run.status === "done" && Boolean(run.snapshot_id || snap);
+    }
+
+    function profToolLabel(profTool) {
+      return ({
+        msprof: "msprof 整网",
+        msprof_op: "msopprof",
+        msprof_op_sim: "msopprof 仿真",
+      })[profTool] || profTool || "msprof 整网";
+    }
+
+    function snapshotProfTool(snap) {
+      return snap?.prof_tool || "msprof";
+    }
+
+    function isOpProfSnapshot(snap) {
+      const tool = snapshotProfTool(snap);
+      return tool === "msprof_op" || tool === "msprof_op_sim";
+    }
+
+    function isMsprofSnapshot(snap) {
+      return Boolean(snap) && snapshotProfTool(snap) === "msprof";
+    }
+
+    function snapshotsForCaseTab(caseId) {
+      return snapshotsForCase(caseId).filter(isOpProfSnapshot);
+    }
+
+    function primarySnapshotForCaseTab(caseId) {
+      return snapshotsForCaseTab(caseId)[0] || null;
+    }
+
+    function caseEligibleForCaseTab(caseId) {
+      return Boolean(primarySnapshotForCaseTab(caseId));
+    }
+
+    function snapshotEligibleForNetworkTab(snap) {
+      return isMsprofSnapshot(snap) || isOpProfSnapshot(snap);
+    }
+
+    function caseEligibleForNetworkTab(caseId) {
+      return snapshotEligibleForNetworkTab(primarySnapshotForCase(caseId));
+    }
+
+    function networkCases(filters, caseId) {
+      return filteredCases(filters, caseId).filter((item) => caseEligibleForNetworkTab(item.id));
+    }
+
+    function compareSnapshots(selectedCases) {
+      return (selectedCases || [])
+        .map((caseId) => primarySnapshotForCaseTab(caseId))
+        .filter(Boolean);
+    }
+
+    function operatorIdsForCompareCases(selectedCases) {
+      const counts = new Map();
+      compareSnapshots(selectedCases).forEach((snap) => {
+        (snap.operators || []).forEach((item) => {
+          counts.set(item.operator_id, (counts.get(item.operator_id) || 0) + 1);
+        });
+      });
+      return counts;
+    }
+
+    function isSingleOpProfSnapshot(snap) {
+      return isOpProfSnapshot(snap) && (snap.operators || []).length === 1;
+    }
+
+    function isMultiKernelOpProfSnapshot(snap) {
+      return isOpProfSnapshot(snap) && (snap.operators || []).length > 1;
+    }
+
+    function syncCaseOperatorSelect(selectedCases) {
+      const snaps = compareSnapshots(selectedCases);
+      const select = document.querySelector("#caseOperator");
+      if (!snaps.length) {
+        select.disabled = false;
+        return;
+      }
+
+      const operatorCounts = operatorIdsForCompareCases(selectedCases);
+      const operatorEntries = [...operatorCounts.entries()]
+        .filter(([id]) => id !== OTHER_RUNTIME_ID)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([id]) => [id, operatorLabel(id)]);
+
+      const singleOpSnaps = snaps.filter(isSingleOpProfSnapshot);
+      const allSingleOpOnly = singleOpSnaps.length === snaps.length && snaps.length > 0;
+      const opOperatorIds = singleOpSnaps
+        .map((snap) => snap.operators?.[0]?.operator_id)
+        .filter(Boolean);
+      const sameOpKernel = opOperatorIds.length > 0 && new Set(opOperatorIds).size === 1;
+
+      let preferred = "";
+      if (allSingleOpOnly && sameOpKernel) {
+        preferred = opOperatorIds[0];
+      } else if (singleOpSnaps.length === 1 && singleOpSnaps[0].operators?.length === 1) {
+        preferred = singleOpSnaps[0].operators[0].operator_id;
+      } else {
+        const shared = [...operatorCounts.entries()].filter(([, count]) => count === snaps.length).map(([id]) => id);
+        if (shared.length === 1) preferred = shared[0];
+      }
+
+      fillSelect("#caseOperator", operatorEntries.length ? operatorEntries : operatorOptions());
+      if (preferred && [...select.options].some((option) => option.value === preferred)) {
+        select.value = preferred;
+      } else if (![...select.options].some((option) => option.value === select.value)) {
+        select.value = select.options[0]?.value || "";
+      }
+      select.disabled = allSingleOpOnly && sameOpKernel;
+    }
+
+    function updateCaseCompareHint(selectedCases) {
+      const snaps = compareSnapshots(selectedCases);
+      const hint = document.querySelector("#caseCompareHint");
+      let text = "仅展示 msopprof 单算子用例；每次 Prof 导入为独立用例，选中后点「移除」可删除";
+      const filters = getCaseAttrFilters("case");
+      if (filters.length) {
+        text += " · 属性筛选已生效，仅显示匹配用例";
+      }
+      if (!snaps.length) {
+        hint.textContent = text;
+        return;
+      }
+      const tools = new Set(snaps.map(snapshotProfTool));
+      if (tools.has("msprof_op") || tools.has("msprof_op_sim")) {
+        if (snaps.some(isMultiKernelOpProfSnapshot)) {
+          text += " · msopprof 多 kernel 采集，可在算子下拉里切换查看各算子指标";
+        } else {
+          text += " · 当前对比为 msopprof 单算子调优数据，算子选择已锁定";
+        }
+      }
+      hint.textContent = text;
+    }
+
+    function caseMetricChartHintText(rows, selectedCases) {
+      const snaps = compareSnapshots(selectedCases);
+      if (snaps.some(isMultiKernelOpProfSnapshot)) {
+        return "msopprof 多 kernel 采集，可在算子下拉里切换查看各算子指标";
+      }
+      return "msopprof 单算子采集，横轴为用例、纵轴为所选指标";
+    }
+
+    function syncTriggerDeviceFromRunner() {
+      const input = document.querySelector("#triggerDevice");
+      const runnerDevice = state.runner?.npu_device;
+      if (runnerDevice == null) return;
+      const current = input.value.trim();
+      const synced = state.triggerDeviceSynced == null ? "" : String(state.triggerDeviceSynced);
+      if (!current || current === "722" || current === synced) {
+        input.value = String(runnerDevice);
+        state.triggerDeviceSynced = runnerDevice;
+      }
+    }
+
+    function updateTriggerEnvFromRunner() {
+      const node = document.querySelector("#triggerEnvHint");
+      if (!node) return;
+      if (!LOCAL_API_BASE) {
+        node.textContent = "执行环境：未配置 FLASH_IO_LOCAL_API。";
+        return;
+      }
+      if (!state.runner?.enabled) {
+        node.textContent = state.runner?.error
+          ? `执行环境：${state.runner.error}`
+          : "执行环境：后端未就绪，芯片与 NPU 卡号沿用 PERF_CHIP / PERF_NPU_DEVICE。";
+        return;
+      }
+      const chip = state.runner.chip || "A2";
+      const device = state.runner.npu_device ?? "—";
+      node.textContent = `执行环境：${chip} 芯片（PERF_CHIP）· 默认 NPU ${device}（PERF_NPU_DEVICE）`;
+    }
+
+    function readTriggerDevice() {
+      const raw = document.querySelector("#triggerDevice").value.trim();
+      const fallback = state.runner?.npu_device ?? 2;
+      if (!raw) return fallback;
+      const device = Number(raw);
+      if (!Number.isInteger(device) || device < 0) {
+        throw new Error("NPU 卡号必须为非负整数。");
+      }
+      return device;
+    }
+
+    function readTriggerWarmUp() {
+      const raw = document.querySelector("#triggerWarmUp").value.trim();
+      const fallback = Number(state.runner?.op_warm_up ?? 10);
+      if (!raw) return fallback;
+      const warmUp = Number(raw);
+      if (!Number.isInteger(warmUp) || warmUp < 0) {
+        throw new Error("warm-up 必须为非负整数。");
+      }
+      return warmUp;
+    }
+
+    function readTriggerLaunchCount() {
+      const raw = document.querySelector("#triggerLaunchCount").value.trim();
+      const fallback = Number(state.runner?.op_launch_count ?? 10);
+      if (!raw) return fallback;
+      const launchCount = Number(raw);
+      if (!Number.isInteger(launchCount) || launchCount < 1) {
+        throw new Error("launch-count 必须为正整数。");
+      }
+      return launchCount;
+    }
+
+    function updateTriggerProfToolUI() {
+      const profTool = document.querySelector("#triggerProfTool").value;
+      const showOpOptions = profTool === "msprof_op";
+      document.querySelector("#triggerKernelWrap").classList.toggle("hidden", !showOpOptions);
+      document.querySelector("#triggerOpOptions").classList.toggle("hidden", !showOpOptions);
+    }
+
+    function syncTriggerOpDefaultsFromRunner() {
+      const warmUp = state.runner?.op_warm_up;
+      const launchCount = state.runner?.op_launch_count;
+      const warmUpInput = document.querySelector("#triggerWarmUp");
+      const launchCountInput = document.querySelector("#triggerLaunchCount");
+      if (warmUpInput && warmUp != null) warmUpInput.placeholder = String(warmUp);
+      if (launchCountInput && launchCount != null) launchCountInput.placeholder = String(launchCount);
+      if (warmUpInput && warmUp != null && !warmUpInput.value.trim()) warmUpInput.value = String(warmUp);
+      if (launchCountInput && launchCount != null && !launchCountInput.value.trim()) {
+        launchCountInput.value = String(launchCount);
+      }
+    }
+
+    function updateVarlenFieldsUI() {
+      const enabled = document.querySelector("#attrVarlen").checked;
+      const panel = document.querySelector("#varlenFields");
+      panel.classList.toggle("is-disabled", !enabled);
+      document.querySelector("#attrMeanLen").disabled = !enabled;
+      document.querySelector("#attrCuSeqlens").disabled = !enabled;
+    }
+
+    async function loadData() {
+      const stamp = Date.now();
+      let source = "local";
+      if (LOCAL_API_BASE) {
+        try {
+          const perfRes = await fetch(`${LOCAL_API_BASE}/api/perf`);
+          if (perfRes.ok) {
+            state.data = await perfRes.json();
+            source = "local-api";
+          }
+        } catch {
+          // 本地后端不可达时回退到静态快照。
+        }
+      }
+      if (source === "local" && WORKER_API_BASE) {
+        try {
+          const perfRes = await fetch(`${WORKER_API_BASE}/api/perf`, { headers: authHeaders() });
+          if (perfRes.ok) {
+            state.data = await perfRes.json();
+            source = "worker";
+            const exportRes = await fetch(`${WORKER_API_BASE}/api/export`);
+            if (exportRes.ok) {
+              const exported = await exportRes.json();
+              state.operators = exported.operators || [];
+            }
+          }
+        } catch {
+          // Worker 未部署 /api/perf 或网络不可达时，回退本地快照。
+        }
+      }
+      if (source === "local") {
+        const [perfRes, stateRes] = await Promise.all([
+          fetch(`./performance-data.json?v=${stamp}`),
+          fetch(`./project-state.json?v=${stamp}`),
+        ]);
+        if (!perfRes.ok) throw new Error("未读取到 performance-data.json");
+        state.data = await perfRes.json();
+        if (stateRes.ok) {
+          const exported = await stateRes.json();
+          state.operators = exported.operators || [];
+        }
+        state.dataSource = WORKER_API_BASE ? "local-fallback" : "local";
+      } else if (source === "local-api") {
+        state.dataSource = "local-api";
+      } else {
+        state.dataSource = "worker";
+      }
+      state.compareOps = (currentSnapshot()?.operators || []).slice(0, 2).map(operatorScopeKey);
+    }
+
+    async function loadRunnerStatus() {
+      if (!LOCAL_API_BASE) {
+        state.runner = null;
+        return;
+      }
+      try {
+        const response = await fetch(`${LOCAL_API_BASE}/api/perf/runner`);
+        state.runner = response.ok ? await response.json() : null;
+        syncTriggerOpDefaultsFromRunner();
+      } catch {
+        state.runner = null;
+      }
+    }
+
+    function hasPendingPerfRuns() {
+      return (state.data?.runs || []).some((run) => run.status === "queued" || run.status === "running");
+    }
+
+    function maybeStartPerfPolling() {
+      if (!LOCAL_API_BASE || !hasPendingPerfRuns()) {
+        if (state.perfPollTimer) {
+          clearInterval(state.perfPollTimer);
+          state.perfPollTimer = null;
+        }
+        return;
+      }
+      if (state.perfPollTimer) return;
+      state.perfPollTimer = setInterval(async () => {
+        await loadData();
+        renderRuns();
+        renderMeta();
+        if (!hasPendingPerfRuns()) {
+          clearInterval(state.perfPollTimer);
+          state.perfPollTimer = null;
+          renderAll();
+        }
+      }, 3000);
+    }
+
+    async function localPost(path, body) {
+      const response = await fetch(`${LOCAL_API_BASE}${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `API ${response.status}`);
+      return payload;
+    }
+
+    function authHeaders() {
+      const headers = { "Content-Type": "application/json" };
+      if (state.token) headers.Authorization = `Bearer ${state.token}`;
+      return headers;
+    }
+
+    async function workerPost(path, body) {
+      const response = await fetch(`${WORKER_API_BASE}${path}`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `API ${response.status}`);
+      return payload;
+    }
+
+    async function refreshUser() {
+      const response = await fetch(`${WORKER_API_BASE}/api/me`, { headers: authHeaders() });
+      if (!response.ok) {
+        state.user = null;
+        state.token = "";
+        localStorage.removeItem(TOKEN_KEY);
+        return;
+      }
+      const payload = await response.json();
+      state.user = payload.user || null;
+    }
+
+    async function onLogin() {
+      const username = document.querySelector("#loginUser").value.trim();
+      const password = document.querySelector("#loginPassword").value;
+      if (!username || !password) return alert("请输入账号和密码。");
+      const result = await workerPost("/api/login", { username, password });
+      state.token = result.token || "";
+      state.user = result.user || null;
+      localStorage.setItem(TOKEN_KEY, state.token);
+      renderAuth();
+    }
+
+    function onLogout() {
+      state.token = "";
+      state.user = null;
+      localStorage.removeItem(TOKEN_KEY);
+      renderAuth();
+    }
+
+    async function onAddModel() {
+      const label = prompt("请输入新模型名称（如 GDNv2）：");
+      if (!label) return;
+      const id = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `model-${Date.now()}`;
+      if (useWorkerWrite()) {
+        const result = await workerPost("/api/perf/models", { model: { id, label } });
+        state.data = result.data || state.data;
+      } else {
+        state.data.models.push({ id, label, position: state.data.models.length, active: true });
+      }
+      renderAll();
+    }
+
+    async function onTriggerSubmit(event) {
+      event.preventDefault();
+      if (!LOCAL_API_BASE) {
+        alert("未配置 FLASH_IO_LOCAL_API。请在 docs/config.js 中设置本地后端地址（如 http://127.0.0.1:8787），并运行 python backend/app.py。");
+        return;
+      }
+      if (!state.runner?.enabled) {
+        alert(state.runner?.error || "真实执行环境未配置。请设置 PERF_RUN_MODE=ssh 与 PERF_SSH_HOST，或 PERF_RUN_MODE=local。");
+        return;
+      }
+      const chip = state.runner?.chip || "A2";
+      let device = 2;
+      try {
+        device = readTriggerDevice();
+      } catch (error) {
+        alert(error.message || String(error));
+        return;
+      }
+      const attributes = buildTriggerAttributes();
+      const requiredPositive = [
+        ["query_heads", "query-heads"],
+        ["value_heads", "value-heads"],
+        ["tokens", "tokens"],
+        ["key_dim", "key-dim"],
+        ["value_dim", "value-dim"],
+        ["chunk_size", "chunk-size"],
+      ];
+      for (const [key, label] of requiredPositive) {
+        if (!Number(attributes[key]) || Number(attributes[key]) <= 0) {
+          alert(`${label} 必须为正整数。`);
+          return;
+        }
+      }
+      if (attributes.varlen && (!Number(attributes.mean_len) || Number(attributes.mean_len) <= 0)) {
+        alert("mean-len 必须为正整数。");
+        return;
+      }
+      if (document.querySelector("#triggerNotes").value.trim()) {
+        attributes.notes = document.querySelector("#triggerNotes").value.trim();
+      }
+      const profTool = document.querySelector("#triggerProfTool").value;
+      const kernelName = document.querySelector("#triggerKernel").value.trim();
+      const payload = {
+        model_id: "gdn",
+        chip,
+        device,
+        prof_tool: profTool,
+        attributes,
+      };
+      if (profTool === "msprof_op") {
+        try {
+          payload.warm_up = readTriggerWarmUp();
+          payload.launch_count = readTriggerLaunchCount();
+        } catch (error) {
+          alert(error.message || String(error));
+          return;
+        }
+        if (kernelName) payload.kernel_name = kernelName;
+      }
+      try {
+        const result = await localPost("/api/perf/runs", payload);
+        state.data = result.data || state.data;
+        await loadRunnerStatus();
+        renderAll();
+        maybeStartPerfPolling();
+        const run = result.run || {};
+        const message = run.status === "queued"
+          ? `已下发真实命令，后台执行中。\n\n${run.command || ""}`
+          : (run.message || "测试已提交");
+        alert(message);
+      } catch (error) {
+        alert(error.message || String(error));
+      }
+    }
+
+    function renderAll() {
+      renderAuth();
+      renderMeta();
+      fillFilters();
+      updateTriggerEnvFromRunner();
+      renderNetworkTab();
+      renderCaseTab();
+      renderRuns();
+    }
+
+    function useWorkerWrite() {
+      return Boolean(WORKER_API_BASE && state.dataSource === "worker");
+    }
+
+    function renderAuth() {
+      const isAdmin = state.user?.role === "admin";
+      const loggedIn = Boolean(state.user);
+      document.body.classList.toggle("admin-editing", isAdmin);
+      let status = loggedIn ? `${state.user.username}（${state.user.role}）` : "只读模式";
+      if (LOCAL_API_BASE && state.runner?.enabled) {
+        const device = state.runner.npu_device ?? "—";
+        const chip = state.runner.chip ?? "—";
+        status = `真实执行 · ${state.runner.mode} · ${chip} · NPU ${device}`;
+      }
+      else if (LOCAL_API_BASE) status = `执行未就绪 · ${state.runner?.error || "未配置 PERF_RUN_MODE"}`;
+      else if (useWorkerWrite()) status = loggedIn ? status : "只读模式 · 触发测试需配置 FLASH_IO_LOCAL_API";
+      else if (WORKER_API_BASE && state.dataSource === "local-fallback") status = "本地快照模式 · Worker /api/perf 未就绪";
+      document.querySelector("#authStatus").textContent = status;
+      document.querySelector("#workerLogin").classList.toggle("hidden", loggedIn || !useWorkerWrite());
+      document.querySelector("#logoutBtn").classList.toggle("hidden", !loggedIn);
+      document.querySelector("#addModelBtn").classList.toggle("hidden", !isAdmin || !useWorkerWrite());
+    }
+
+    function renderMeta() {
+      const sourceLabel = state.dataSource === "worker"
+        ? "Cloudflare D1"
+        : state.dataSource === "local-api"
+          ? "本地 IO 后端"
+          : state.dataSource === "local-fallback"
+            ? "本地快照（Worker 回退）"
+            : "本地快照";
+      document.querySelector("#meta").textContent = `数据来源：${sourceLabel} · ${state.data.cases.length} 个用例`;
+      document.querySelector("#summary").innerHTML = "";
+    }
+
+    const CASE_ATTR_ORDER = [
+      "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size", "scale", "dtype",
+      "mean_len", "cu_seqlens", "layout",
+    ];
+    const CASE_ATTR_LABELS = {
+      batch: "batch",
+      query_heads: "query-heads",
+      value_heads: "value-heads",
+      tokens: "tokens",
+      key_dim: "key-dim",
+      value_dim: "value-dim",
+      chunk_size: "chunk-size",
+      scale: "scale",
+      dtype: "dtype",
+      mean_len: "mean-len",
+      cu_seqlens: "cu-seqlens",
+      layout: "layout",
+    };
+    const CASE_ATTR_ENUM = {
+      layout: ["TND", "BSND"],
+      dtype: ["bf16", "fp16"],
+    };
+    const CASE_DETAIL_METRICS = [
+      { key: "mbu", label: "MBU", format: "pct", chartOption: "MBU（理论访存耗时 / Task Duration）" },
+      { key: "mfu", label: "MFU", format: "pct", chartOption: "MFU（计算量 / Task Duration / 标称 FLOPS）" },
+      { key: "bottleneck", label: "瓶颈", format: "bound" },
+      { key: "mte1_ratio", label: "MTE1 占比", format: "pct", chartOption: "MTE1 流水线时间占比" },
+      { key: "mte2_ratio", label: "MTE2 占比", format: "pct", chartOption: "MTE2 流水线时间占比" },
+      { key: "mte3_ratio", label: "MTE3 占比", format: "pct", chartOption: "MTE3 流水线时间占比" },
+      { key: "cube_util", label: "Cube 占比", format: "pct", chartOption: "Cube 流水线时间占比" },
+      { key: "vector_util", label: "Vector 占比", format: "pct", chartOption: "Vector 流水线时间占比" },
+    ];
+    const CASE_METRIC_CHART_COLORS = {
+      mbu: { line: "#2f73c8", fill: "rgba(47,115,200,.12)" },
+      mfu: { line: "#b87508", fill: "rgba(184,117,8,.12)" },
+      mte1_ratio: { line: "#277560", fill: "rgba(39,117,96,.12)" },
+      mte2_ratio: { line: "#8b5a2b", fill: "rgba(139,90,43,.12)" },
+      mte3_ratio: { line: "#6b4c9a", fill: "rgba(107,76,154,.12)" },
+      cube_util: { line: "#c43d3d", fill: "rgba(196,61,61,.12)" },
+      vector_util: { line: "#2a6f8f", fill: "rgba(42,111,143,.12)" },
+    };
+
+    function findCaseMetricSpec(metricKey) {
+      return CASE_DETAIL_METRICS.find((item) => item.key === metricKey)
+        || CASE_DETAIL_METRICS.find((item) => item.key === "mbu");
+    }
+
+    function caseMetricChartColors(metricKey) {
+      return CASE_METRIC_CHART_COLORS[metricKey] || CASE_METRIC_CHART_COLORS.mbu;
+    }
+
+    const CASE_CHART_RATIO_ONLY = new Set(["mbu", "mfu"]);
+
+    const PIPE_METRIC_PIPE_KEYS = {
+      mte1_ratio: { pipe: "mte1", label: "MTE1" },
+      mte2_ratio: { pipe: "mte2", label: "MTE2" },
+      mte3_ratio: { pipe: "mte3", label: "MTE3" },
+      cube_util: { pipe: "cube", label: "Cube" },
+      vector_util: { pipe: "vector", label: "Vector" },
+    };
+
+    function pipeTimeStats(metric, pipe) {
+      let avg = metric?.[`${pipe}_time_avg_us`];
+      const min = metric?.[`${pipe}_time_min_us`];
+      const max = metric?.[`${pipe}_time_max_us`];
+      const ratioKey = Object.entries(PIPE_METRIC_PIPE_KEYS).find(([, item]) => item.pipe === pipe)?.[0];
+      if (avg == null && ratioKey) avg = estimatePipeTimeUs(metric, ratioKey);
+      return { avg, min, max };
+    }
+
+    function pipeTimeDetailHtml(metric, metricKey) {
+      const mapping = PIPE_METRIC_PIPE_KEYS[metricKey];
+      if (!mapping) return "";
+      const { avg, min, max } = pipeTimeStats(metric, mapping.pipe);
+      if (avg == null && min == null && max == null) return "";
+      const parts = [];
+      if (avg != null) parts.push(`<small>平均 ${formatUs(avg)} us</small>`);
+      if (min != null) parts.push(`<small>最短 ${formatUs(min)} us</small>`);
+      if (max != null) parts.push(`<small>最长 ${formatUs(max)} us</small>`);
+      return parts.join("<br>");
+    }
+
+    function formatUs(value) {
+      if (value == null || value === "" || Number.isNaN(Number(value))) return "—";
+      const num = Number(value);
+      if (num >= 100) return String(Math.round(num));
+      if (num >= 10) return num.toFixed(1).replace(/\.0$/, "");
+      return num.toFixed(2).replace(/\.?0+$/, "");
+    }
+
+    function estimatePipeTimeUs(metric, ratioKey) {
+      const ratio = Number(metric?.[ratioKey]);
+      const timeMs = Number(metric?.time_ms);
+      if (Number.isNaN(ratio) || Number.isNaN(timeMs)) return null;
+      return timeMs * 1000 * ratio;
+    }
+
+    function caseMetricTooltipLines(metricKey, metric) {
+      const spec = findCaseMetricSpec(metricKey);
+      const label = spec.chartOption || spec.label;
+      const lines = [`${label}: ${pct(metric?.[metricKey])}`];
+      if (CASE_CHART_RATIO_ONLY.has(metricKey)) return lines;
+      const mapping = PIPE_METRIC_PIPE_KEYS[metricKey];
+      if (!mapping) return lines;
+      const { avg, min, max } = pipeTimeStats(metric, mapping.pipe);
+      lines.push(`${mapping.label} 平均耗时: ${formatUs(avg)} us`);
+      if (min != null) lines.push(`${mapping.label} 最短耗时: ${formatUs(min)} us`);
+      if (max != null) lines.push(`${mapping.label} 最长耗时: ${formatUs(max)} us`);
+      return lines;
+    }
+
+    function defaultScale(keyDim) {
+      const dim = Number(keyDim) || 128;
+      return Math.round((dim ** -0.5) * 1e6) / 1e6;
+    }
+
+    const TRIGGER_ATTR_DEFAULTS = {
+      batch: 1,
+      query_heads: 32,
+      value_heads: 32,
+      tokens: 4087,
+      key_dim: 128,
+      value_dim: 128,
+      chunk_size: 64,
+      dtype: "bf16",
+      mean_len: 1024,
+      cu_seqlens: "",
+      varlen: true,
+    };
+
+    function buildTriggerAttributes() {
+      const defaults = TRIGGER_ATTR_DEFAULTS;
+      const keyDim = numberOr(document.querySelector("#attrKeyDim").value, defaults.key_dim);
+      const scaleRaw = document.querySelector("#attrScale").value.trim();
+      const scale = scaleRaw ? Number(scaleRaw) : defaultScale(keyDim);
+      return {
+        batch: numberOr(document.querySelector("#attrBatch").value, defaults.batch),
+        query_heads: numberOr(document.querySelector("#attrQueryHeads").value, defaults.query_heads),
+        value_heads: numberOr(document.querySelector("#attrValueHeads").value, defaults.value_heads),
+        tokens: numberOr(document.querySelector("#attrTokens").value, defaults.tokens),
+        key_dim: keyDim,
+        value_dim: numberOr(document.querySelector("#attrValueDim").value, defaults.value_dim),
+        chunk_size: numberOr(document.querySelector("#attrChunkSize").value, defaults.chunk_size),
+        scale,
+        dtype: document.querySelector("#attrDtype").value || defaults.dtype,
+        mean_len: numberOr(document.querySelector("#attrMeanLen").value, defaults.mean_len),
+        cu_seqlens: document.querySelector("#attrCuSeqlens").value.trim() || defaults.cu_seqlens,
+        varlen: document.querySelector("#attrVarlen").checked,
+        layout: document.querySelector("#attrVarlen").checked ? "TND" : "BSND",
+      };
+    }
+
+    function caseLayoutValue(attrs) {
+      if (attrs?.layout) return String(attrs.layout).toUpperCase();
+      if (attrs?.varlen === false) return "BSND";
+      return "TND";
+    }
+
+    function caseAttributeValue(attrs, key) {
+      if (key === "layout") return caseLayoutValue(attrs);
+      const value = attrs?.[key];
+      if (value == null || value === "") return null;
+      return value;
+    }
+
+    function formatTriggerAttrLabel(attrs) {
+      if (!attrs) return "—";
+      const layout = caseLayoutValue(attrs);
+      return `B=${attrs.batch ?? "?"} QH=${attrs.query_heads ?? "?"} VH=${attrs.value_heads ?? "?"} T=${attrs.tokens ?? "?"} K=${attrs.key_dim ?? "?"} V=${attrs.value_dim ?? "?"} chunk=${attrs.chunk_size ?? "?"} ${layout}`;
+    }
+
+    function normalizeAttrStoreValue(key, value) {
+      if (key === "layout") return String(value).toUpperCase();
+      return String(value);
+    }
+
+    function formatAttrValueLabel(key, value) {
+      if (key === "layout") return String(value).toUpperCase();
+      if (key === "scale") return Number(value).toFixed(6).replace(/\.?0+$/, "");
+      if (key === "cu_seqlens" && !value) return "(自动)";
+      return value;
+    }
+
+    function collectCaseAttrValues() {
+      const index = new Map();
+      (state.data.cases || []).filter((item) => item.active !== false).forEach((item) => {
+        const attrs = item.attributes || {};
+        CASE_ATTR_ORDER.forEach((key) => {
+          const value = caseAttributeValue(attrs, key);
+          if (value == null) return;
+          if (!index.has(key)) index.set(key, new Set());
+          index.get(key).add(normalizeAttrStoreValue(key, value));
+        });
+      });
+      return index;
+    }
+
+    const CASE_ATTR_NUMERIC = new Set([
+      "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size", "scale", "mean_len",
+    ]);
+
+    function attrPickerIds(prefix) {
+      const stem = prefix === "net" ? "netCaseAttr" : "caseAttr";
+      return {
+        key: `#${stem}Key`,
+        op: `#${stem}Op`,
+        eq: `#${stem}Eq`,
+        eqSelect: `#${stem}EqSelect`,
+        eqList: `#${stem}EqList`,
+        eqWrap: `#${stem}EqWrap`,
+        rangeWrap: `#${stem}RangeWrap`,
+        min: `#${stem}Min`,
+        max: `#${stem}Max`,
+      };
+    }
+
+    function attrEqEnumValues(key) {
+      return CASE_ATTR_ENUM[key] || null;
+    }
+
+    function sortEqSelectValues(key, values) {
+      return [...values].sort((a, b) => {
+        if (CASE_ATTR_NUMERIC.has(key)) {
+          const na = Number(a);
+          const nb = Number(b);
+          if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+        }
+        return String(a).localeCompare(String(b));
+      });
+    }
+
+    function attrEqSelectValues(key) {
+      const values = new Set();
+      const enumValues = attrEqEnumValues(key);
+      if (enumValues) {
+        enumValues.forEach((value) => values.add(key === "layout" ? String(value).toUpperCase() : String(value)));
+      }
+      const collected = collectCaseAttrValues().get(key);
+      if (collected) collected.forEach((value) => values.add(String(value)));
+      return sortEqSelectValues(key, values);
+    }
+
+    function attrEqUsesSelect(key) {
+      return attrEqSelectValues(key).length > 0;
+    }
+
+    function populateEqSelect(prefix, key) {
+      const ids = attrPickerIds(prefix);
+      const values = attrEqSelectValues(key);
+      const entries = values.map((value) => [value, formatAttrValueLabel(key, value)]);
+      const select = document.querySelector(ids.eqSelect);
+      const current = select.value;
+      fillSelect(ids.eqSelect, entries);
+      if (entries.some(([value]) => value === current)) select.value = current;
+      else select.value = entries[0]?.[0] || "";
+    }
+
+    function attrOpOptions(key) {
+      const options = [["eq", "精确"]];
+      if (CASE_ATTR_NUMERIC.has(key)) options.push(["range", "范围"]);
+      return options;
+    }
+
+    function updateAttrPickerUI(prefix) {
+      const ids = attrPickerIds(prefix);
+      let key = document.querySelector(ids.key).value;
+      if (!key) {
+        key = defaultCaseAttrKey();
+        document.querySelector(ids.key).value = key;
+      }
+      const opSelect = document.querySelector(ids.op);
+      const currentOp = opSelect.value;
+      fillSelect(ids.op, attrOpOptions(key));
+      opSelect.value = [...opSelect.options].some((option) => option.value === currentOp) ? currentOp : "eq";
+      const op = opSelect.value;
+      const eqInput = document.querySelector(ids.eq);
+      const eqSelect = document.querySelector(ids.eqSelect);
+      document.querySelector(ids.eqWrap).classList.toggle("hidden", op !== "eq");
+      document.querySelector(ids.rangeWrap).classList.toggle("hidden", op !== "range");
+      if (op === "eq" && attrEqUsesSelect(key)) {
+        eqInput.classList.add("hidden");
+        eqSelect.classList.remove("hidden");
+        populateEqSelect(prefix, key);
+      } else if (op === "eq") {
+        eqInput.classList.remove("hidden");
+        eqSelect.classList.add("hidden");
+        eqInput.removeAttribute("list");
+        eqInput.type = CASE_ATTR_NUMERIC.has(key) ? "number" : "text";
+        eqInput.placeholder = CASE_ATTR_NUMERIC.has(key) ? "输入数值" : "输入值";
+      } else {
+        eqInput.classList.remove("hidden");
+        eqSelect.classList.add("hidden");
+      }
+    }
+
+    function normalizeEqInput(key, raw) {
+      const text = String(raw || "").trim();
+      if (!text) return "";
+      if (key === "layout") {
+        const upper = text.toUpperCase();
+        if (upper === "TND" || upper === "BSND") return upper;
+        return alert("layout 仅支持 TND 或 BSND。"), "";
+      }
+      return text;
+    }
+
+    function normalizeFilterEntry(filter) {
+      if (filter.op) return filter.op === "any" ? { key: filter.key, op: "eq" } : filter;
+      if (!filter.value) return { key: filter.key, op: "eq", value: "" };
+      return { key: filter.key, op: "eq", value: filter.value };
+    }
+
+    function readAttrPickerEntry(prefix) {
+      const ids = attrPickerIds(prefix);
+      const key = document.querySelector(ids.key).value;
+      if (!key) return null;
+      const op = document.querySelector(ids.op).value;
+      if (op === "eq") {
+        const usesSelect = attrEqUsesSelect(key);
+        const raw = usesSelect
+          ? document.querySelector(ids.eqSelect).value
+          : document.querySelector(ids.eq).value;
+        const value = normalizeEqInput(key, raw);
+        if (!value) return alert(usesSelect ? "精确筛选请选择属性值。" : "精确筛选请输入属性值。"), null;
+        return { key, op: "eq", value };
+      }
+      const minRaw = document.querySelector(ids.min).value.trim();
+      const maxRaw = document.querySelector(ids.max).value.trim();
+      if (!minRaw && !maxRaw) return alert("范围筛选请至少填写最小值或最大值。"), null;
+      const min = minRaw === "" ? null : Number(minRaw);
+      const max = maxRaw === "" ? null : Number(maxRaw);
+      if ((minRaw && Number.isNaN(min)) || (maxRaw && Number.isNaN(max))) return alert("范围筛选请输入有效数字。"), null;
+      if (min != null && max != null && min > max) return alert("最小值不能大于最大值。"), null;
+      return { key, op: "range", min, max };
+    }
+
+    function caseAttrKeysWithData() {
+      const index = collectCaseAttrValues();
+      return CASE_ATTR_ORDER.filter((key) => index.has(key));
+    }
+
+    function defaultCaseAttrKey() {
+      const keys = caseAttrKeysWithData();
+      const preferred = ["layout", "dtype"].find((key) => keys.includes(key));
+      return preferred || keys[0] || CASE_ATTR_ORDER[0];
+    }
+
+    function caseAttrKeyOptions() {
+      return caseAttrKeysWithData().map((key) => [key, CASE_ATTR_LABELS[key] || key]);
+    }
+
+    function fillCaseAttrFilter(prefix) {
+      const ids = attrPickerIds(prefix);
+      const keySelect = document.querySelector(ids.key);
+      const currentKey = keySelect.value;
+      const options = caseAttrKeyOptions();
+      fillSelect(ids.key, options);
+      const validKeys = new Set(options.map(([key]) => key));
+      keySelect.value = validKeys.has(currentKey) ? currentKey : defaultCaseAttrKey();
+      updateAttrPickerUI(prefix);
+    }
+
+    function getCaseAttrFilters(prefix) {
+      return state.caseAttrFilters[prefix] || [];
+    }
+
+    function formatFilterChipLabel(filter) {
+      const entry = normalizeFilterEntry(filter);
+      const label = CASE_ATTR_LABELS[entry.key] || entry.key;
+      if (entry.op === "eq") return `${label}=${formatAttrValueLabel(entry.key, entry.value)}`;
+      if (entry.op === "range") {
+        const { min, max } = entry;
+        if (min != null && max != null) return `${label}=${min}~${max}`;
+        if (min != null) return `${label}≥${min}`;
+        return `${label}≤${max}`;
+      }
+      return label;
+    }
+
+    function renderCaseAttrChips(prefix) {
+      const chipsId = prefix === "net" ? "#netCaseAttrChips" : "#caseAttrChips";
+      const filters = getCaseAttrFilters(prefix);
+      const container = document.querySelector(chipsId);
+      if (!filters.length) {
+        container.innerHTML = prefix === "net"
+          ? '<span class="perf-attr-empty">未添加条件，显示全部 msprof 用例</span>'
+          : '<span class="perf-attr-empty">未添加条件，显示全部用例</span>';
+        return;
+      }
+      container.innerHTML = filters.map((filter, index) => `
+        <button type="button" class="perf-attr-chip" data-index="${index}" title="移除条件">
+          <span>${escapeHtml(formatFilterChipLabel(filter))}</span>
+          <em aria-hidden="true">×</em>
+        </button>
+      `).join("");
+    }
+
+    function applyCaseAttrFilters(prefix) {
+      renderCaseAttrChips(prefix);
+      if (prefix === "net") {
+        refreshFilteredCaseSelect("net");
+        updateRunContextDisplay("net");
+        renderNetworkTab();
+      } else {
+        pruneCompareCasesByAttrFilters();
+        refreshCaseCompareAddSelect();
+        renderCaseCompareList();
+        updateRunContextDisplay("case");
+        renderCaseTab();
+      }
+    }
+
+    function addCaseAttrFilter(prefix) {
+      const entry = readAttrPickerEntry(prefix);
+      if (!entry) return;
+      const filters = getCaseAttrFilters(prefix);
+      const existing = filters.findIndex((item) => item.key === entry.key);
+      if (existing >= 0) filters[existing] = entry;
+      else filters.push(entry);
+      applyCaseAttrFilters(prefix);
+    }
+
+    function removeCaseAttrFilter(prefix, index) {
+      const filters = getCaseAttrFilters(prefix);
+      filters.splice(index, 1);
+      applyCaseAttrFilters(prefix);
+    }
+
+    function clearCaseAttrFilters(prefix) {
+      state.caseAttrFilters[prefix] = [];
+      applyCaseAttrFilters(prefix);
+    }
+
+    function onCaseAttrChipClick(event, prefix) {
+      const chip = event.target.closest(".perf-attr-chip");
+      if (!chip) return;
+      removeCaseAttrFilter(prefix, Number(chip.dataset.index));
+    }
+
+    function onCaseAttrKeyChange(prefix) {
+      const ids = attrPickerIds(prefix);
+      document.querySelector(ids.eq).value = "";
+      document.querySelector(ids.eqSelect).value = "";
+      document.querySelector(ids.min).value = "";
+      document.querySelector(ids.max).value = "";
+      updateAttrPickerUI(prefix);
+    }
+
+    function attrValuesEqual(key, caseValue, filterValue) {
+      if (key === "layout") {
+        return String(caseValue).toUpperCase() === String(filterValue).toUpperCase();
+      }
+      if (key === "scale") return Number(caseValue) === Number(filterValue);
+      return String(caseValue) === String(filterValue);
+    }
+
+    function caseAttrValueForMatch(testCase, key) {
+      const attrs = testCase.attributes || {};
+      if (key === "layout") return caseLayoutValue(attrs);
+      if (!(key in attrs)) return undefined;
+      return attrs[key];
+    }
+
+    function matchesCaseAttr(testCase, filter) {
+      const entry = normalizeFilterEntry(filter);
+      const { key, op } = entry;
+      if (!key) return true;
+      const caseValue = caseAttrValueForMatch(testCase, key);
+      if (caseValue === undefined) return false;
+      if (op === "eq") return attrValuesEqual(key, caseValue, entry.value);
+      if (op === "range") {
+        const num = Number(caseValue);
+        if (Number.isNaN(num)) return false;
+        if (entry.min != null && num < entry.min) return false;
+        if (entry.max != null && num > entry.max) return false;
+        return true;
+      }
+      return true;
+    }
+
+    function matchesAllCaseAttrs(testCase, filters) {
+      return filters.every((filter) => matchesCaseAttr(testCase, filter));
+    }
+
+    function snapshotsForCase(caseId) {
+      return state.data.snapshots
+        .filter((snap) => snap.case_id === caseId)
+        .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    }
+
+    function primarySnapshotForCase(caseId) {
+      return snapshotsForCase(caseId)[0] || null;
+    }
+
+    function formatRunContextText(snap) {
+      const model = state.data.models.find((item) => item.id === snap.model_id);
+      const parts = [
+        `日期：${snap.label}`,
+        `模型：${model?.label || snap.model_id}`,
+        `芯片：${snap.chip}`,
+        `采集：${profToolLabel(snapshotProfTool(snap))}`,
+      ];
+      if (snap.kernel_name) parts.push(`Kernel：${snap.kernel_name}`);
+      if (snap.prof_source) parts.push(`Prof：${snap.prof_source}`);
+      return parts.join("\n");
+    }
+
+    function updateRunContextDisplay(prefix) {
+      const isNet = prefix === "net";
+      const panel = document.querySelector(isNet ? "#netRunContext" : "#caseRunContext");
+      const textNode = panel.querySelector(".perf-run-context-text");
+      let caseId = "";
+      if (isNet) {
+        caseId = document.querySelector("#netCase").value;
+      } else {
+        const selected = state.compareCases || [];
+        const picked = document.querySelector("#caseCompareList")?.value;
+        if (picked && selected.includes(picked)) {
+          caseId = picked;
+        } else if (selected.length === 1) {
+          caseId = selected[0];
+        } else {
+          panel.classList.add("hidden");
+          textNode.textContent = "—";
+          return;
+        }
+      }
+      if (!caseId) {
+        panel.classList.add("hidden");
+        textNode.textContent = "—";
+        return;
+      }
+      const snap = primarySnapshotForCaseTab(caseId);
+      if (!snap) {
+        panel.classList.add("hidden");
+        textNode.textContent = "—";
+        return;
+      }
+      panel.classList.remove("hidden");
+      textNode.textContent = snap ? formatRunContextText(snap) : "该用例暂无性能快照";
+    }
+
+    function allCompareableCases() {
+      return (state.data?.cases || []).filter((item) => item.active !== false);
+    }
+
+    function caseCompareAddCandidates() {
+      return filteredCases(getCaseAttrFilters("case"), "").filter((item) => caseEligibleForCaseTab(item.id));
+    }
+
+    function pruneCompareCasesByAttrFilters() {
+      const allowed = new Set(caseCompareAddCandidates().map((item) => item.id));
+      state.compareCases = (state.compareCases || []).filter((id) => allowed.has(id));
+    }
+
+    function getActiveCompareCases() {
+      const allowed = new Set(caseCompareAddCandidates().map((item) => item.id));
+      return (state.compareCases || []).filter((id) => allowed.has(id));
+    }
+
+    function pruneCompareCases() {
+      const valid = new Set(allCompareableCases().map((item) => item.id));
+      state.compareCases = (state.compareCases || []).filter((id) => valid.has(id) && caseEligibleForCaseTab(id));
+    }
+
+    function refreshCaseCompareAddSelect() {
+      const candidates = caseCompareAddCandidates();
+      const select = document.querySelector("#caseCompareAdd");
+      const addBtn = document.querySelector("#caseCompareAddBtn");
+      const inList = new Set(state.compareCases || []);
+      const available = candidates.filter((item) => !inList.has(item.id));
+      if (!available.length) {
+        const emptyLabel = candidates.length
+          ? "已全部添加"
+          : getCaseAttrFilters("case").length
+            ? "无匹配 msopprof 用例"
+            : "无可用 msopprof 用例";
+        fillSelect("#caseCompareAdd", [["", emptyLabel]]);
+        select.disabled = true;
+        addBtn.disabled = true;
+        return;
+      }
+      select.disabled = false;
+      addBtn.disabled = false;
+      fillSelect("#caseCompareAdd", available.map((item) => [item.id, item.label]));
+    }
+
+    function renderCaseCompareList() {
+      const select = document.querySelector("#caseCompareList");
+      const removeBtn = document.querySelector("#caseCompareRemoveBtn");
+      const cases = state.compareCases || [];
+      const current = select.value;
+      if (!cases.length) {
+        fillSelect("#caseCompareList", [["", "对比列表为空"]]);
+        select.disabled = true;
+        removeBtn.disabled = true;
+        return;
+      }
+      select.disabled = false;
+      removeBtn.disabled = false;
+      fillSelect(
+        "#caseCompareList",
+        cases.map((caseId) => {
+          const testCase = state.data.cases.find((item) => item.id === caseId);
+          return [caseId, testCase?.label || caseId];
+        }),
+      );
+      if ([...select.options].some((option) => option.value === current)) {
+        select.value = current;
+      } else {
+        select.value = cases[0];
+      }
+    }
+
+    function setupCaseCompareUI() {
+      pruneCompareCases();
+      pruneCompareCasesByAttrFilters();
+      refreshCaseCompareAddSelect();
+      renderCaseCompareList();
+      updateRunContextDisplay("case");
+    }
+
+    function addSelectedCaseToCompare() {
+      const caseId = document.querySelector("#caseCompareAdd").value;
+      if (!caseId) return;
+      if (!state.compareCases) state.compareCases = [];
+      if (state.compareCases.includes(caseId)) return;
+      state.compareCases.push(caseId);
+      refreshCaseCompareAddSelect();
+      renderCaseCompareList();
+      document.querySelector("#caseCompareList").value = caseId;
+      updateRunContextDisplay("case");
+      renderCaseTab();
+    }
+
+    function removeSelectedCaseFromCompare() {
+      const caseId = document.querySelector("#caseCompareList").value;
+      if (!caseId) return;
+      removeCaseFromCompare(caseId);
+    }
+
+    function removeCaseFromCompare(caseId) {
+      state.compareCases = (state.compareCases || []).filter((id) => id !== caseId);
+      refreshCaseCompareAddSelect();
+      renderCaseCompareList();
+      updateRunContextDisplay("case");
+      renderCaseTab();
+    }
+
+    function clearCompareCases() {
+      state.compareCases = [];
+      refreshCaseCompareAddSelect();
+      renderCaseCompareList();
+      updateRunContextDisplay("case");
+      renderCaseTab();
+    }
+
+    function refreshFilteredCaseSelect(prefix) {
+      const caseSelector = "#netCase";
+      const candidates = networkCases(getCaseAttrFilters(prefix), "");
+      const select = document.querySelector(caseSelector);
+      const current = select.value;
+      const entries = candidates.map((item) => [item.id, item.label]);
+      if (!candidates.length) {
+        fillSelect(caseSelector, [["", "无整网用例"]]);
+        select.disabled = true;
+        select.value = "";
+        updateRunContextDisplay("net");
+        return;
+      }
+      select.disabled = false;
+      fillSelect(caseSelector, entries);
+      if (state.preselectNetCaseId && entries.some(([id]) => id === state.preselectNetCaseId)) {
+        select.value = state.preselectNetCaseId;
+        state.preselectNetCaseId = "";
+      } else if (entries.some(([id]) => id === current)) select.value = current;
+      else {
+        const profCase = candidates.find((item) => item.id.startsWith("case-gdn-"));
+        select.value = profCase?.id || entries[0][0];
+      }
+      updateRunContextDisplay("net");
+    }
+
+    function fillFilters() {
+      fillCaseAttrFilter("net");
+      fillCaseAttrFilter("case");
+      renderCaseAttrChips("net");
+      renderCaseAttrChips("case");
+      refreshFilteredCaseSelect("net");
+      setupCaseCompareUI();
+      updateRunContextDisplay("net");
+      updateTriggerProfToolUI();
+      syncTriggerOpDefaultsFromRunner();
+      updateVarlenFieldsUI();
+      syncTriggerDeviceFromRunner();
+      updateTriggerEnvFromRunner();
+      fillSelect("#caseOperator", operatorOptions());
+      if (!document.querySelector("#caseOperator").value) document.querySelector("#caseOperator").value = operatorOptions()[0]?.[0] || "";
+      syncCaseOperatorSelect(state.compareCases || []);
+      updateCaseCompareHint(state.compareCases || []);
+      renderCaseMetricPicker();
+    }
+
+    function chartableCaseMetrics() {
+      return CASE_DETAIL_METRICS.filter((item) => item.format === "pct");
+    }
+
+    function getSelectedCaseMetrics() {
+      const selected = new Set(state.caseMetrics || []);
+      return chartableCaseMetrics()
+        .map((item) => item.key)
+        .filter((key) => selected.has(key));
+    }
+
+    function renderCaseMetricPicker() {
+      const host = document.querySelector("#caseMetricPicker");
+      const selected = new Set(getSelectedCaseMetrics());
+      host.innerHTML = chartableCaseMetrics().map((item) => `
+        <button
+          type="button"
+          class="perf-metric-chip${selected.has(item.key) ? " is-active" : ""}"
+          data-metric="${item.key}"
+          aria-pressed="${selected.has(item.key)}"
+        >${escapeHtml(item.chartOption || item.label)}</button>
+      `).join("");
+      host.querySelectorAll(".perf-metric-chip").forEach((chip) => {
+        chip.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleCaseMetric(chip.dataset.metric);
+        });
+      });
+    }
+
+    function toggleCaseMetric(key) {
+      if (!key) return;
+      const selected = new Set(getSelectedCaseMetrics());
+      if (selected.has(key)) selected.delete(key);
+      else selected.add(key);
+      state.caseMetrics = chartableCaseMetrics()
+        .map((item) => item.key)
+        .filter((itemKey) => selected.has(itemKey));
+      renderCaseMetricPicker();
+      renderCaseTab();
+    }
+
+    function caseMetricChartTitle(metricKeys) {
+      if (!metricKeys.length) return "指标对比";
+      if (metricKeys.length === 1) {
+        const spec = findCaseMetricSpec(metricKeys[0]);
+        return `${spec.chartOption || spec.label} 对比`;
+      }
+      const labels = metricKeys.map((key) => {
+        const spec = findCaseMetricSpec(key);
+        return spec.label;
+      });
+      return `指标对比（${labels.join(" / ")}）`;
+    }
+
+    function operatorOptions() {
+      const ids = new Set();
+      state.data.snapshots.forEach((snap) => (snap.operators || []).forEach((item) => ids.add(item.operator_id)));
+      return [...ids]
+        .filter((id) => id !== OTHER_RUNTIME_ID)
+        .map((id) => [id, operatorLabel(id)]);
+    }
+
+    function fillSelect(selector, entries) {
+      const select = document.querySelector(selector);
+      const current = select.value;
+      select.innerHTML = entries.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("");
+      if ([...select.options].some((option) => option.value === current)) select.value = current;
+    }
+
+    const TRITON_KERNEL_PATTERNS = [
+      /(?:^|_)chunk_local_cumsum_scalar_kernel(?:_|$)/,
+      /(?:^|_)chunk_scaled_dot_kkt_fwd_kernel(?:_|$)/,
+      /(?:^|_)l2norm_(?:fwd|bwd)_kernel\d*(?:_|$)/,
+      /(?:^|_)solve_tril_\w*_kernel(?:_|$)/,
+      /(?:^|_)merge_\w*_inverse_kernel(?:_|$)/,
+      /(?:^|_)causal_conv1d_(?:fwd|bwd|states_fwd)_kernel(?:_|$)/,
+    ];
+
+    function backendFromProfilerRecord(operator) {
+      const opType = String(operator?.op_type || "").trim();
+      const kernelName = String(operator?.kernel_name || "").trim();
+      if ([opType, kernelName].some((part) => TRITON_KERNEL_PATTERNS.some((pattern) => pattern.test(part.toLowerCase())))) {
+        return "triton";
+      }
+      if (/^aclnn/i.test(kernelName) || /^[A-Z][A-Za-z0-9]+$/.test(opType)) return "ascendc";
+      return null;
+    }
+
+    function operatorBackend(operator) {
+      if (operator?.backend === "ascendc" || operator?.backend === "triton") return operator.backend;
+      const profilerBackend = backendFromProfilerRecord(operator);
+      if (profilerBackend) return profilerBackend;
+      const operatorId = typeof operator === "string" ? operator : operator?.operator_id;
+      if (ASCENDC_OPERATORS.has(operatorId)) return "ascendc";
+      if (TRITON_OPERATORS.has(operatorId)) return "triton";
+      return null;
+    }
+
+    // A logical operator may have both Triton and AscendC implementations.
+    // Keep the concrete backend in the UI identity for filtering/comparison.
+    function operatorScopeKey(operator) {
+      const item = typeof operator === "string" ? { operator_id: operator } : operator;
+      return `${String(item?.operator_id || "")}::${operatorBackend(item) || "unknown"}`;
+    }
+
+    function operatorDisplayLabel(operator) {
+      const item = typeof operator === "string" ? { operator_id: operator } : operator;
+      const backend = operatorBackend(item);
+      const label = operatorLabel(item?.operator_id);
+      return backend ? `${label} (${backend})` : label;
+    }
+
+    function passesOperatorScope(operator) {
+      const operatorId = typeof operator === "string" ? operator : operator?.operator_id;
+      if (operatorId === OTHER_RUNTIME_ID) return false;
+      const backend = operatorBackend(operator);
+      if (!backend) return false;
+      const showAscendc = document.querySelector("#netShowAscendc")?.checked;
+      const showTriton = document.querySelector("#netShowTriton")?.checked;
+      if (!showAscendc && !showTriton) return false;
+      return (backend === "ascendc" && showAscendc) || (backend === "triton" && showTriton);
+    }
+
+    function operatorColor(operatorId) {
+      if (OPERATOR_COLOR_MAP[operatorId]) return OPERATOR_COLOR_MAP[operatorId];
+      let hash = 0;
+      for (const ch of String(operatorId)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+      return `hsl(${hash % 360} 42% 42%)`;
+    }
+
+    function normalizeSnapshotOperators(snap) {
+      if (!snap) return null;
+      let operators = [...(snap.operators || [])].filter((item) => passesOperatorScope(item));
+      const total = operators.reduce((sum, item) => sum + Number(item.time_ms || 0), 0);
+      operators = operators.map((item) => ({
+        ...item,
+        share_pct: total ? Math.round((Number(item.time_ms || 0) / total) * 1000) / 10 : 0,
+      }));
+      return {
+        ...snap,
+        operators,
+        total_time_ms: Math.round(total * 1000) / 1000,
+      };
+    }
+
+    function currentSnapshot() {
+      const caseId = document.querySelector("#netCase").value;
+      if (!caseId) return null;
+      const filters = getCaseAttrFilters("net");
+      if (!networkCases(filters, caseId).some((item) => item.id === caseId)) return null;
+      return normalizeSnapshotOperators(primarySnapshotForCase(caseId));
+    }
+
+    function filteredCases(filters, caseId) {
+      return state.data.cases.filter((item) => {
+        if (caseId && item.id !== caseId) return false;
+        if (!matchesAllCaseAttrs(item, filters)) return false;
+        return item.active !== false;
+      });
+    }
+
+    function renderNetworkTab() {
+      const snap = currentSnapshot();
+      const center = document.querySelector("#networkPieCenter");
+      const legend = document.querySelector("#networkLegend");
+      const totalNode = document.querySelector("#netTotalTime");
+      if (!snap) {
+        totalNode.textContent = "无匹配数据";
+        center.innerHTML = "";
+        const scopeEmpty = !document.querySelector("#netShowAscendc")?.checked
+          && !document.querySelector("#netShowTriton")?.checked;
+        legend.innerHTML = scopeEmpty
+          ? '<p class="empty">请至少勾选 ascendc 或 triton 算子。</p>'
+          : '<p class="empty">当前筛选条件下没有 msprof 整网或 msopprof 快照。</p>';
+        destroyChart("networkPie");
+        destroyChart("networkCompare");
+        document.querySelector("#networkComparePick").innerHTML = "";
+        return;
+      }
+      const operators = [...(snap.operators || [])].sort((a, b) => b.time_ms - a.time_ms);
+      if (!operators.length) {
+        totalNode.textContent = "无匹配算子";
+        center.innerHTML = "";
+        legend.innerHTML = '<p class="empty">当前算子范围下没有可展示的算子。</p>';
+        destroyChart("networkPie");
+        destroyChart("networkCompare");
+        document.querySelector("#networkComparePick").innerHTML = "";
+        return;
+      }
+      totalNode.textContent = `总耗时 ${snap.total_time_ms.toFixed(3)} ms`;
+      center.innerHTML = `<strong>${snap.total_time_ms.toFixed(2)}</strong><span>ms</span><em>${escapeHtml(snap.label)}</em>${snap.prof_source ? `<small>${escapeHtml(snap.prof_source)}</small>` : ""}`;
+      legend.innerHTML = operators.map((item) => `
+        <div class="perf-legend-item">
+          <i style="background:${operatorColor(item.operator_id)}"></i>
+          <span>${escapeHtml(operatorLabel(item.operator_id))}</span>
+          <b>${item.share_pct.toFixed(1)}%</b>
+          <em>${item.time_ms.toFixed(3)} ms${item.call_count ? ` · ${item.call_count}次` : ""}</em>
+        </div>
+      `).join("");
+      destroyChart("networkPie");
+      state.charts.networkPie = new Chart(document.querySelector("#networkPie"), {
+        type: "doughnut",
+        data: {
+          labels: operators.map((item) => operatorLabel(item.operator_id)),
+          datasets: [{
+            data: operators.map((item) => item.time_ms),
+            backgroundColor: operators.map((item) => operatorColor(item.operator_id)),
+            borderWidth: 2,
+            borderColor: "#fffaf1",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "62%",
+          plugins: { legend: { display: false } },
+        },
+      });
+      renderComparePick(operators);
+      renderCompareChart(operators, snap);
+    }
+
+    function renderComparePick(operators) {
+      const host = document.querySelector("#networkComparePick");
+      const visible = new Set(operators.map(operatorScopeKey));
+      state.compareOps = (state.compareOps || []).filter((id) => visible.has(id));
+      if (!state.compareOps.length) state.compareOps = operators.slice(0, 2).map(operatorScopeKey);
+      host.innerHTML = operators.map((item) => {
+        const key = operatorScopeKey(item);
+        const checked = state.compareOps.includes(key) ? "checked" : "";
+        return `<label class="perf-compare-chip"><input type="checkbox" value="${escapeHtml(key)}" ${checked}> ${escapeHtml(operatorDisplayLabel(item))}</label>`;
+      }).join("");
+      host.querySelectorAll("input").forEach((input) => {
+        input.addEventListener("change", () => {
+          const selected = [...host.querySelectorAll("input:checked")].map((node) => node.value);
+          if (selected.length > 4) {
+            input.checked = false;
+            return alert("最多选择 4 个算子进行对比。");
+          }
+          state.compareOps = selected;
+          renderCompareChart(operators, currentSnapshot());
+        });
+      });
+    }
+
+    function renderCompareChart(operators, snap) {
+      const selected = operators.filter((item) => state.compareOps.includes(operatorScopeKey(item)));
+      destroyChart("networkCompare");
+      state.charts.networkCompare = new Chart(document.querySelector("#networkCompare"), {
+        type: "bar",
+        data: {
+          labels: selected.map((item) => operatorLabel(item.operator_id)),
+          datasets: [{
+            label: `${snap?.label || ""} 耗时(ms)`,
+            data: selected.map((item) => item.time_ms),
+            backgroundColor: selected.map((item) => operatorColor(item.operator_id)),
+            borderRadius: 8,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, title: { display: true, text: "ms" } },
+          },
+          plugins: { legend: { display: false } },
+        },
+      });
+    }
+
+    function caseAttributesKey(attrs) {
+      const normalized = {};
+      CASE_ATTR_ORDER.forEach((key) => {
+        const value = caseAttributeValue(attrs, key);
+        if (value == null) return;
+        normalized[key] = key === "layout" ? String(value).toUpperCase() : value;
+      });
+      return JSON.stringify(normalized);
+    }
+
+    function caseAttributesTitle(testCase) {
+      const label = testCase?.label || testCase?.id || "";
+      const splitAt = label.lastIndexOf(" @ ");
+      return splitAt >= 0 ? label.slice(0, splitAt) : label;
+    }
+
+    function groupSelectedCasesByAttributes(selectedCases) {
+      const groups = new Map();
+      const order = [];
+      selectedCases.forEach((caseId) => {
+        const testCase = state.data.cases.find((item) => item.id === caseId);
+        if (!testCase) return;
+        const key = caseAttributesKey(testCase.attributes || {});
+        if (!groups.has(key)) {
+          groups.set(key, { testCase, caseIds: [] });
+          order.push(key);
+        }
+        groups.get(key).caseIds.push(caseId);
+      });
+      return order.map((key) => groups.get(key));
+    }
+
+    function formatSnapshotTime(snap) {
+      const raw = snap.created_at || snap.snapshot_date || snap.label || "";
+      return String(raw).replace("T", " ").slice(0, 16);
+    }
+
+    function formatCaseDetailValue(metric, spec) {
+      const value = metric?.[spec.key];
+      if (spec.format === "bound") {
+        const bound = value || "—";
+        if (bound === "—") return "—";
+        return `<span class="bottleneck-pill bottleneck-${escapeHtml(bound)}">${escapeHtml(bound)}</span>`;
+      }
+      if (value == null || Number.isNaN(Number(value))) return "—";
+      const main = pct(value);
+      const detail = pipeTimeDetailHtml(metric, spec.key);
+      return detail ? `${main}<br>${detail}` : main;
+    }
+
+    function renderCaseDetailTables(operatorId, selectedCases) {
+      const host = document.querySelector("#caseDetailTables");
+      const operatorName = operatorLabel(operatorId);
+      const snaps = compareSnapshots(selectedCases);
+      let detailHint = `算子：${operatorName} · 相同用例属性合并为一张表，列头为各次 msopprof Prof 时间`;
+      document.querySelector("#caseDetailHint").textContent = detailHint;
+      if (!selectedCases.length) {
+        host.innerHTML = getCaseAttrFilters("case").length
+          ? '<p class="empty">当前筛选条件下无匹配用例，请调整属性条件或添加用例。</p>'
+          : '<p class="empty">请至少添加 1 个用例至对比列表。</p>';
+        return false;
+      }
+
+      const sections = [];
+      groupSelectedCasesByAttributes(selectedCases).forEach(({ testCase, caseIds }) => {
+        const columns = caseIds
+          .map((caseId) => {
+            const snap = primarySnapshotForCaseTab(caseId);
+            const metric = snap?.operators?.find((item) => item.operator_id === operatorId);
+            if (!snap || !metric) return null;
+            return { snap, metric, time: formatSnapshotTime(snap) };
+          })
+          .filter(Boolean)
+          .sort((a, b) => String(a.snap.created_at || "").localeCompare(String(b.snap.created_at || "")));
+        if (!columns.length) return;
+
+        const header = columns.map(({ snap, time }) => {
+          const tag = isOpProfSnapshot(snap) ? ` · ${profToolLabel(snapshotProfTool(snap))}` : "";
+          return `<th>${escapeHtml(time + tag)}</th>`;
+        }).join("");
+        const body = CASE_DETAIL_METRICS.map((spec) => {
+          const cells = columns.map(({ metric }) => `<td>${formatCaseDetailValue(metric, spec)}</td>`).join("");
+          return `<tr><th scope="row">${escapeHtml(spec.label)}</th>${cells}</tr>`;
+        }).join("");
+
+        sections.push(`
+          <section class="perf-case-detail-block">
+            <div class="perf-case-detail-heading">
+              <h3 class="perf-case-detail-title">${escapeHtml(caseAttributesTitle(testCase))}</h3>
+              <p class="perf-case-detail-operator">算子：${escapeHtml(operatorName)}</p>
+            </div>
+            <div class="table-wrap stats-table-wrap">
+              <table class="stats-table perf-table perf-case-detail-table">
+                <thead>
+                  <tr>
+                    <th scope="col">指标</th>
+                    ${header}
+                  </tr>
+                </thead>
+                <tbody>${body}</tbody>
+              </table>
+            </div>
+          </section>
+        `);
+      });
+
+      if (!sections.length) {
+        const hasOp = snaps.some(isOpProfSnapshot);
+        const suffix = hasOp
+          ? "msopprof 用例仅包含其 profiled 算子，请切换算子或调整对比列表。"
+          : "请切换算子或调整对比列表。";
+        host.innerHTML = `<p class="empty">所选用例在当前算子下没有性能数据。${suffix}</p>`;
+        return false;
+      }
+      host.innerHTML = sections.join("");
+      return true;
+    }
+
+    function renderCaseTab() {
+      const selectedCases = getActiveCompareCases();
+      const metricKeys = getSelectedCaseMetrics();
+      document.querySelector("#caseMetricChartTitle").textContent = caseMetricChartTitle(metricKeys);
+      syncCaseOperatorSelect(selectedCases);
+      updateCaseCompareHint(selectedCases);
+      const operatorId = document.querySelector("#caseOperator").value;
+      renderCaseDetailTables(operatorId, selectedCases);
+      const rows = [];
+      const skipped = [];
+      selectedCases.forEach((caseId) => {
+        const testCase = state.data.cases.find((item) => item.id === caseId);
+        if (!testCase) return;
+        const snap = primarySnapshotForCaseTab(caseId);
+        if (!snap) return;
+        const metric = (snap.operators || []).find((item) => item.operator_id === operatorId);
+        if (!metric) {
+          skipped.push(testCase.label);
+          return;
+        }
+        rows.push({ snap, testCase, metric });
+      });
+      if (!rows.length) {
+        destroyChart("caseMbuMfu");
+        if (!metricKeys.length) {
+          document.querySelector("#caseMetricChartHint").textContent = "未选择对比指标，请点击上方指标标签";
+        } else if (!selectedCases.length) {
+          const labels = metricKeys.map((key) => findCaseMetricSpec(key).chartOption || findCaseMetricSpec(key).label);
+          document.querySelector("#caseMetricChartHint").textContent = `已选择 ${labels.join(" / ")}，请添加用例至对比列表`;
+        } else {
+          document.querySelector("#caseMetricChartHint").textContent = skipped.length
+            ? `对比列表中无算子「${operatorLabel(operatorId)}」的数据`
+            : getCaseAttrFilters("case").length
+              ? "当前筛选条件下无匹配用例，请调整属性条件或添加用例"
+              : "请添加用例至对比列表";
+        }
+        return;
+      }
+      destroyChart("caseMbuMfu");
+      if (!metricKeys.length) {
+        document.querySelector("#caseMetricChartHint").textContent = "未选择对比指标，请点击上方指标标签";
+        return;
+      }
+      const multiMetric = metricKeys.length > 1;
+      let chartHint = caseMetricChartHintText(rows, selectedCases);
+      if (multiMetric) chartHint += " · 同色折线表示同一指标在不同用例间的变化";
+      if (skipped.length) chartHint += ` · ${skipped.length} 个用例无该算子数据已跳过`;
+      document.querySelector("#caseMetricChartHint").textContent = chartHint;
+      state.charts.caseMbuMfu = new Chart(document.querySelector("#caseMbuMfu"), {
+        type: "line",
+        data: {
+          labels: rows.map(({ testCase }) => testCase.label),
+          datasets: metricKeys.map((metricKey) => {
+            const metricSpec = findCaseMetricSpec(metricKey);
+            const colors = caseMetricChartColors(metricKey);
+            return {
+              metricKey,
+              label: metricSpec.chartOption || metricSpec.label,
+              data: rows.map(({ metric }) => metric[metricKey]),
+              borderColor: colors.line,
+              backgroundColor: colors.fill,
+              borderWidth: 2.5,
+              pointRadius: multiMetric ? 4 : 5,
+              pointHoverRadius: multiMetric ? 6 : 7,
+              pointBackgroundColor: colors.line,
+              pointBorderColor: "#fffaf1",
+              pointBorderWidth: 2,
+              fill: !multiMetric,
+              tension: 0.25,
+            };
+          }),
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "nearest", intersect: true },
+          scales: {
+            x: { ticks: { maxRotation: 45, minRotation: 0 } },
+            y: {
+              beginAtZero: true,
+              max: 1,
+              title: { display: true, text: multiMetric ? "指标值" : findCaseMetricSpec(metricKeys[0]).chartOption || findCaseMetricSpec(metricKeys[0]).label },
+              ticks: { callback: (v) => pctAxis(v) },
+            },
+          },
+          plugins: {
+            legend: { display: multiMetric, position: "top" },
+            tooltip: {
+              displayColors: false,
+              callbacks: {
+                title: () => "",
+                label: (ctx) => {
+                  const row = rows[ctx.dataIndex];
+                  if (!row) return "";
+                  return caseMetricTooltipLines(ctx.dataset.metricKey, row.metric);
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    function renderRuns() {
+      const tbody = document.querySelector("#runRows");
+      const runs = [...(state.data.runs || [])].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+      if (!runs.length) {
+        tbody.innerHTML = '<tr><td colspan="10" class="empty">暂无执行记录，可在左侧提交用例测试。</td></tr>';
+        return;
+      }
+      tbody.innerHTML = runs.map((run) => {
+        const testCase = state.data.cases.find((item) => item.id === run.case_id);
+        const snap = run.snapshot || state.data.snapshots.find((item) => item.id === run.snapshot_id);
+        const command = run.command || run.message || "—";
+        const shortCommand = command.length > 48 ? `${command.slice(0, 48)}…` : command;
+        const scriptPath = run.script_path || "—";
+        const commandCell = command !== "—"
+          ? `<button type="button" class="perf-command-cell-btn" data-run-command="${escapeHtml(run.id)}" title="点击查看完整命令">${escapeHtml(shortCommand)}</button>`
+          : escapeHtml(shortCommand);
+        const resultCell = canDownloadRunResult(run, snap)
+          ? `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载 profiling 原始结果">下载</button>`
+          : "—";
+        return `<tr>
+          <td>${escapeHtml((run.created_at || "").replace("T", " ").slice(0, 19))}</td>
+          <td>${escapeHtml(testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—")}</td>
+          <td>${escapeHtml(scriptPath)}</td>
+          <td>${escapeHtml(run.chip || "")}</td>
+          <td>${escapeHtml(profToolLabel(run.prof_tool || snap?.prof_tool || "msprof"))}</td>
+          <td><span class="stat-pill ${run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral"}">${escapeHtml(run.status || "queued")}</span></td>
+          <td>${snap ? `${snap.total_time_ms.toFixed(1)} ms` : "—"}</td>
+          <td>${resultCell}</td>
+          <td>${commandCell}</td>
+          <td>${escapeHtml(run.created_by || "—")}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll(".perf-tabs button").forEach((button) => button.classList.toggle("active", button.dataset.tab === tab));
+      document.querySelectorAll(".perf-tab").forEach((section) => section.classList.toggle("active", section.id === `tab-${tab}`));
+    }
+
+    function destroyChart(name) {
+      if (state.charts[name]) {
+        state.charts[name].destroy();
+        delete state.charts[name];
+      }
+    }
+
+    function operatorLabel(id) {
+      const fromCatalog = state.operators.find((item) => item.id === id);
+      return fromCatalog?.label || OPERATOR_LABELS[id] || id;
+    }
+
+    function pct(value, digits = 2) {
+      if (value == null || Number.isNaN(Number(value))) return "—";
+      return `${(Number(value) * 100).toFixed(digits)}%`;
+    }
+
+    function pctAxis(value) {
+      return pct(value, 1);
+    }
+
+    function numberOr(value, fallback) {
+      const raw = String(value ?? "").trim();
+      if (!raw) return fallback ?? null;
+      const num = Number(raw);
+      return Number.isFinite(num) ? num : fallback ?? null;
+    }
+
+    function todayYmd() {
+      const now = new Date();
+      const offset = now.getTimezoneOffset();
+      return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>

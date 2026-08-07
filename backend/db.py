@@ -12,6 +12,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT / "data" / "project.sqlite3"
 STATE_PATH = ROOT / "data" / "project-state.json"
+PERF_DATA_PATH = ROOT / "data" / "performance-data.json"
+DOCS_PERF_DATA_PATH = ROOT / "docs" / "performance-data.json"
 AUDIT_LOG_PATH = ROOT / "data" / "audit-log.jsonl"
 PROJECT_DATA_CANDIDATES = [
     ROOT / "data" / "seed-project-data.json",
@@ -236,7 +238,7 @@ def import_state_snapshot(conn: sqlite3.Connection, path: Path) -> None:
             "risk": task.get("risk") or "中",
             "priority": task.get("priority") or RISK_TO_PRIORITY.get(task.get("risk"), "P1"),
             "group_id": task.get("group_id"),
-            "special_id": task.get("special_id"),
+            "special_id": task.get("special_id") or None,
             "start_date": task.get("start_date"),
             "end_date": task.get("end_date"),
             "evidence": task.get("evidence", []),
@@ -448,7 +450,7 @@ def upsert_task(conn: sqlite3.Connection, payload: dict[str, Any]) -> None:
             payload.get("risk", "中"),
             payload.get("priority", "P1"),
             payload.get("group_id"),
-            payload.get("special_id"),
+            payload.get("special_id") or None,
             payload.get("start_date"),
             payload.get("end_date"),
             as_json(payload.get("evidence", [])),
@@ -608,3 +610,360 @@ def write_audit_snapshot(conn: sqlite3.Connection) -> None:
     with AUDIT_LOG_PATH.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(audit_row_to_dict(row), ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def load_perf_data(conn: sqlite3.Connection) -> dict[str, Any]:
+    row = conn.execute("SELECT value FROM project_meta WHERE key = 'perfData'").fetchone()
+    if row:
+        return parse_json(row["value"], default_perf_data())
+    if PERF_DATA_PATH.exists():
+        data = json.loads(PERF_DATA_PATH.read_text(encoding="utf-8-sig"))
+        save_perf_data(conn, data)
+        return data
+    data = default_perf_data()
+    save_perf_data(conn, data)
+    return data
+
+
+def save_perf_data(conn: sqlite3.Connection, data: dict[str, Any]) -> dict[str, Any]:
+    data = normalize_perf_data(data)
+    conn.execute(
+        "INSERT OR REPLACE INTO project_meta(key, value) VALUES (?, ?)",
+        ("perfData", as_json(data)),
+    )
+    PERF_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    PERF_DATA_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    DOCS_PERF_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    DOCS_PERF_DATA_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return data
+
+
+def default_perf_data() -> dict[str, Any]:
+    if PERF_DATA_PATH.exists():
+        return json.loads(PERF_DATA_PATH.read_text(encoding="utf-8-sig"))
+    return {
+        "version": now_iso(),
+        "models": [{"id": "gdn", "label": "GDN", "position": 0, "active": True}],
+        "cases": [],
+        "snapshots": [],
+        "runs": [],
+    }
+
+
+def normalize_perf_data(data: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "version": data.get("version") or now_iso(),
+        "models": list(data.get("models") or []),
+        "cases": list(data.get("cases") or []),
+        "snapshots": list(data.get("snapshots") or []),
+        "runs": list(data.get("runs") or []),
+    }
+
+
+def export_perf_cases(data: dict[str, Any], case_ids: list[str]) -> dict[str, Any]:
+    wanted = {str(case_id).strip() for case_id in case_ids if str(case_id).strip()}
+    if not wanted:
+        raise ValueError("case ids required")
+    cases = [item for item in data.get("cases", []) if item.get("id") in wanted]
+    if not cases:
+        raise ValueError("case not found")
+    snapshots = [item for item in data.get("snapshots", []) if item.get("case_id") in wanted]
+    model_ids = {item.get("model_id") for item in cases if item.get("model_id")}
+    model_ids.update(item.get("model_id") for item in snapshots if item.get("model_id"))
+    models = [item for item in data.get("models", []) if item.get("id") in model_ids]
+    return {
+        "kind": "perf-case-bundle",
+        "version": now_iso(),
+        "cases": cases,
+        "snapshots": snapshots,
+        "models": models,
+    }
+
+
+def import_perf_cases(conn: sqlite3.Connection, bundle: dict[str, Any]) -> dict[str, Any]:
+    incoming_cases = list(bundle.get("cases") or [])
+    if not incoming_cases:
+        raise ValueError("cases required")
+    data = load_perf_data(conn)
+    imported_case_ids: set[str] = set()
+    for case in incoming_cases:
+        case_id = str(case.get("id") or "").strip()
+        if not case_id:
+            raise ValueError("case id required")
+        imported_case_ids.add(case_id)
+        for index, existing in enumerate(data.get("cases", [])):
+            if existing.get("id") == case_id:
+                data["cases"][index] = case
+                break
+        else:
+            data["cases"].append(case)
+
+    for snapshot in bundle.get("snapshots") or []:
+        snapshot_id = str(snapshot.get("id") or "").strip()
+        if not snapshot_id:
+            continue
+        if snapshot.get("case_id") not in imported_case_ids:
+            continue
+        for index, existing in enumerate(data.get("snapshots", [])):
+            if existing.get("id") == snapshot_id:
+                data["snapshots"][index] = snapshot
+                break
+        else:
+            data["snapshots"].insert(0, snapshot)
+
+    for model in bundle.get("models") or []:
+        model_id = str(model.get("id") or "").strip()
+        if not model_id:
+            continue
+        if any(item.get("id") == model_id for item in data.get("models", [])):
+            continue
+        data["models"].append(model)
+
+    data["version"] = now_iso()
+    save_perf_data(conn, data)
+    return {
+        "data": data,
+        "imported_cases": len(imported_case_ids),
+        "imported_snapshots": len([item for item in bundle.get("snapshots", []) if item.get("case_id") in imported_case_ids]),
+    }
+
+
+def import_prof_dir(conn: sqlite3.Connection, payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        from .perf_runner import import_prof_directory
+    except ImportError:
+        from perf_runner import import_prof_directory  # type: ignore
+
+    result = import_prof_directory(payload)
+    snapshot = result["snapshot"]
+    case_id = str(result.get("case_id") or snapshot.get("case_id") or "").strip()
+    data = apply_imported_perf_data(conn, result["data"])
+    return {
+        "data": data,
+        "imported_cases": 1 if case_id else 0,
+        "imported_snapshots": 1,
+        "case_id": case_id,
+        "snapshot_id": snapshot.get("id"),
+        "prof_source": result.get("prof_source"),
+        "prof_dir": result.get("prof_dir"),
+        "prof_tool": result.get("prof_tool"),
+        "message": result.get("message"),
+    }
+
+
+def upload_and_import_prof_dir(
+    conn: sqlite3.Connection,
+    *,
+    archive: bytes | None = None,
+    files: list[tuple[str, bytes]] | None = None,
+    prof_source: str = "",
+    kernel_name: str = "",
+) -> dict[str, Any]:
+    try:
+        from .perf_runner import ingest_uploaded_prof
+    except ImportError:
+        from perf_runner import ingest_uploaded_prof  # type: ignore
+
+    uploaded = ingest_uploaded_prof(archive=archive, files=files, prof_source=prof_source)
+    payload: dict[str, Any] = {"prof_dir": uploaded["prof_dir"]}
+    if kernel_name.strip():
+        payload["kernel_name"] = kernel_name.strip()
+    result = import_prof_dir(conn, payload)
+    result["uploaded"] = True
+    result["message"] = f"已上传并导入：{uploaded['prof_source']}"
+    return result
+
+
+def add_perf_model(conn: sqlite3.Connection, model: dict[str, Any]) -> dict[str, Any]:
+    data = load_perf_data(conn)
+    model_id = model.get("id") or make_id("model")
+    if any(item.get("id") == model_id for item in data["models"]):
+        raise ValueError("model already exists")
+    data["models"].append({
+        "id": model_id,
+        "label": model.get("label") or model_id,
+        "position": len(data["models"]),
+        "active": True,
+    })
+    data["version"] = now_iso()
+    return save_perf_data(conn, data)
+
+
+def trigger_perf_run(conn: sqlite3.Connection, payload: dict[str, Any], created_by: str = "backend") -> dict[str, Any]:
+    try:
+        from .perf_runner import TRIGGER_SCRIPTS, build_command, ensure_runner_configured, load_config, resolve_npu_device
+    except ImportError:
+        from perf_runner import TRIGGER_SCRIPTS, build_command, ensure_runner_configured, load_config, resolve_npu_device  # type: ignore
+
+    ensure_runner_configured()
+    try:
+        from .perf_runner import normalize_attributes
+    except ImportError:
+        from perf_runner import normalize_attributes  # type: ignore
+    payload = {**payload, "attributes": normalize_attributes(payload.get("attributes"))}
+    return create_queued_perf_run(
+        conn,
+        payload,
+        created_by,
+        build_command(payload),
+        default_script_path=TRIGGER_SCRIPTS[0]["id"],
+    )
+
+
+def resolve_run_device(payload: dict[str, Any]) -> str:
+    try:
+        try:
+            from .perf_runner import load_config, resolve_npu_device
+        except ImportError:
+            from perf_runner import load_config, resolve_npu_device  # type: ignore
+        return str(resolve_npu_device(payload, load_config()))
+    except (ImportError, ValueError, TypeError):
+        raw = payload.get("device")
+        if raw is not None and str(raw).strip() != "":
+            return str(int(raw))
+        return "2"
+
+
+def resolve_run_chip(payload: dict[str, Any]) -> str:
+    try:
+        try:
+            from .perf_runner import load_config, resolve_chip
+        except ImportError:
+            from perf_runner import load_config, resolve_chip  # type: ignore
+        return resolve_chip(payload, load_config())
+    except (ImportError, ValueError, TypeError):
+        raw = str(payload.get("chip") or "").strip().upper()
+        return raw if raw in {"A2", "A3"} else "A2"
+
+
+def create_queued_perf_run(
+    conn: sqlite3.Connection,
+    payload: dict[str, Any],
+    created_by: str,
+    command: str,
+    *,
+    default_script_path: str = "scripts/flash_gated_delta_rule.py",
+) -> dict[str, Any]:
+    data = load_perf_data(conn)
+    case_id = str(payload.get("case_id") or "").strip()
+    model_id = payload.get("model_id")
+    chip = resolve_run_chip(payload)
+    if chip not in {"A2", "A3"}:
+        raise ValueError("chip must be A2 or A3")
+    if case_id and not any(item.get("id") == case_id for item in data["cases"]):
+        raise ValueError("case not found")
+    if not any(item.get("id") == model_id for item in data["models"]):
+        raise ValueError("model not found")
+    timestamp = now_iso()
+    prof_tool = str(payload.get("prof_tool") or "msprof").strip()
+    run = {
+        "id": make_id("run"),
+        "case_id": case_id,
+        "model_id": model_id,
+        "chip": chip,
+        "device": resolve_run_device(payload),
+        "attributes": payload.get("attributes") or {},
+        "prof_tool": prof_tool,
+        "script_path": str(payload.get("script_path") or default_script_path),
+        "kernel_name": payload.get("kernel_name") or "",
+        "status": "queued",
+        "snapshot_id": "",
+        "created_by": created_by,
+        "created_at": timestamp,
+        "finished_at": "",
+        "message": f"已排队，等待执行 {prof_tool}",
+        "command": command,
+    }
+    data["runs"].insert(0, run)
+    data["version"] = timestamp
+    save_perf_data(conn, data)
+    return {"data": data, "run": run, "execution_mode": "real"}
+
+
+def update_perf_run(conn: sqlite3.Connection, run_id: str, **fields: Any) -> dict[str, Any]:
+    data = load_perf_data(conn)
+    updated = None
+    for index, run in enumerate(data.get("runs", [])):
+        if run.get("id") == run_id:
+            data["runs"][index] = {**run, **fields}
+            updated = data["runs"][index]
+            break
+    if updated is None:
+        raise ValueError(f"run not found: {run_id}")
+    data["version"] = now_iso()
+    save_perf_data(conn, data)
+    return updated
+
+
+def complete_perf_run(
+    conn: sqlite3.Connection,
+    run_id: str,
+    *,
+    snapshot: dict[str, Any],
+    command: str,
+    message: str,
+    prof_dir: str = "",
+    prof_source: str = "",
+) -> dict[str, Any]:
+    data = load_perf_data(conn)
+    for index, run in enumerate(data.get("runs", [])):
+        if run.get("id") != run_id:
+            continue
+        data["runs"][index] = {
+            **run,
+            "case_id": snapshot.get("case_id", run.get("case_id")),
+            "status": "done",
+            "snapshot_id": snapshot["id"],
+            "finished_at": now_iso(),
+            "message": message,
+            "command": command,
+            "prof_tool": snapshot.get("prof_tool", run.get("prof_tool", "msprof")),
+            "kernel_name": snapshot.get("kernel_name", run.get("kernel_name", "")),
+            "prof_dir": prof_dir or snapshot.get("prof_dir") or run.get("prof_dir") or "",
+            "prof_source": prof_source or snapshot.get("prof_source") or run.get("prof_source") or "",
+            "snapshot": snapshot,
+        }
+        break
+    else:
+        raise ValueError(f"run not found: {run_id}")
+    data["version"] = now_iso()
+    save_perf_data(conn, data)
+    return {"data": data, "run": next(item for item in data["runs"] if item.get("id") == run_id)}
+
+
+def apply_imported_perf_data(conn: sqlite3.Connection, imported_data: dict[str, Any]) -> dict[str, Any]:
+    data = load_perf_data(conn)
+    data["cases"] = imported_data.get("cases", data.get("cases", []))
+    data["snapshots"] = imported_data.get("snapshots", data.get("snapshots", []))
+    # 仅合并 cases/snapshots；runs 由 trigger/update/complete 维护。
+    # import 脚本会原样带回 JSON 里已有的 trigger runs，若按 imported_run_ids 过滤会误删 running 记录。
+    data["version"] = now_iso()
+    return save_perf_data(conn, data)
+
+
+def find_perf_run(conn: sqlite3.Connection, run_id: str) -> dict[str, Any] | None:
+    data = load_perf_data(conn)
+    return next((item for item in data.get("runs", []) if item.get("id") == run_id), None)
+
+
+def recover_stale_perf_runs(
+    conn: sqlite3.Connection,
+    *,
+    reason: str = "服务重启或任务异常中断，已标记失败",
+) -> int:
+    data = load_perf_data(conn)
+    recovered = 0
+    for index, run in enumerate(data.get("runs", [])):
+        if run.get("status") not in {"running", "queued"}:
+            continue
+        data["runs"][index] = {
+            **run,
+            "status": "failed",
+            "finished_at": now_iso(),
+            "message": reason,
+        }
+        recovered += 1
+    if recovered:
+        data["version"] = now_iso()
+        save_perf_data(conn, data)
+    return recovered
