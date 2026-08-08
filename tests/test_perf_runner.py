@@ -1,10 +1,11 @@
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from backend.perf_runner import (
     _remote_execution_command,
     _remote_output_path,
+    _list_remote_prof_dirs,
     _scp_command,
     _ssh_command,
     build_command,
@@ -68,6 +69,19 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             self.assertIn("ConnectTimeout=10", command)
             self.assertIn("ServerAliveInterval=15", command)
             self.assertIn("ServerAliveCountMax=4", command)
+
+    @patch("backend.perf_runner._run_command")
+    def test_remote_scan_preserves_case_sensitive_prof_prefix(self, run_command):
+        run_command.return_value = Mock(
+            stdout="/workspace/project/data/prof_gdr/PROF_000001\n"
+        )
+        with patch.dict(os.environ, self.environment, clear=False):
+            config = load_config()
+
+        self.assertEqual(_list_remote_prof_dirs(config, "msprof"), {"PROF_000001"})
+        remote_command = run_command.call_args.args[0][-1]
+        self.assertIn("ls -1d", remote_command)
+        self.assertIn("/PROF_*", remote_command)
 
 
 if __name__ == "__main__":

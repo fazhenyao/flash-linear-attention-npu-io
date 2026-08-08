@@ -510,9 +510,9 @@ def _remote_output_path(config: PerfRunnerConfig, output: str) -> str:
 
 def _list_remote_prof_dirs(config: PerfRunnerConfig, prof_tool: str) -> set[str]:
     output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
-    prefix = prof_dir_prefix(prof_tool).lower()
+    prefix = prof_dir_prefix(prof_tool)
     remote_output = _remote_output_path(config, output).rstrip("/")
-    remote = f"ls -1 {shlex.quote(remote_output)}/{prefix}* 2>/dev/null || true"
+    remote = f"ls -1d {shlex.quote(remote_output)}/{prefix}* 2>/dev/null || true"
     result = _run_command(_ssh_command(config, remote))
     names = set()
     for line in result.stdout.splitlines():
