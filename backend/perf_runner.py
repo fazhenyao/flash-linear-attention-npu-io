@@ -11,7 +11,7 @@ import subprocess
 import sys
 import zipfile
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +20,7 @@ PROF_OP_ROOT = ROOT / "data" / "prof_op"
 PROF_SOURCE_PATTERN = re.compile(r"^(OPPROF_|PROF_)", re.IGNORECASE)
 MAX_PROF_UPLOAD_BYTES = 512 * 1024 * 1024
 VALID_PROF_TOOLS = {"msprof", "msprof_op", "msprof_op_sim"}
+VALID_CHIPS = {"A2", "A3", "A5"}
 ATTR_DEFAULTS = {
     "batch": 1,
     "query_heads": 32,
@@ -62,11 +63,17 @@ class PerfRunnerConfig:
     ssh_identity: str
     remote_workdir: str
     remote_script: str
+    remote_env_script: str
+    remote_path_prepend: str
+    remote_conda_sh: str
+    remote_conda_env: str
     local_script: Path
     npu_device: int
     chip: str
     prof_output_app: str
     prof_output_op: str
+    local_prof_output_app: str
+    local_prof_output_op: str
     soc_version: str
     dry_run: bool
 
@@ -97,11 +104,17 @@ def load_config() -> PerfRunnerConfig:
         ssh_identity=os.environ.get("PERF_SSH_IDENTITY_FILE", "").strip(),
         remote_workdir=os.environ.get("PERF_REMOTE_WORKDIR", "").strip() or ".",
         remote_script=os.environ.get("PERF_REMOTE_SCRIPT", "").strip() or DEFAULT_TRIGGER_SCRIPT,
+        remote_env_script=os.environ.get("PERF_REMOTE_ENV_SCRIPT", "").strip(),
+        remote_path_prepend=os.environ.get("PERF_REMOTE_PATH_PREPEND", "").strip(),
+        remote_conda_sh=os.environ.get("PERF_REMOTE_CONDA_SH", "").strip(),
+        remote_conda_env=os.environ.get("PERF_REMOTE_CONDA_ENV", "").strip(),
         local_script=Path(os.environ.get("PERF_LOCAL_SCRIPT", DEFAULT_TRIGGER_SCRIPT)),
         npu_device=int(os.environ.get("PERF_NPU_DEVICE", "2")),
         chip=os.environ.get("PERF_CHIP", "").strip().upper() or "A2",
         prof_output_app=os.environ.get("PERF_PROF_OUTPUT", LOCAL_PROF_OUTPUT_APP).strip() or LOCAL_PROF_OUTPUT_APP,
         prof_output_op=os.environ.get("PERF_OP_OUTPUT", LOCAL_PROF_OUTPUT_OP).strip() or LOCAL_PROF_OUTPUT_OP,
+        local_prof_output_app=os.environ.get("PERF_LOCAL_PROF_OUTPUT", LOCAL_PROF_OUTPUT_APP).strip() or LOCAL_PROF_OUTPUT_APP,
+        local_prof_output_op=os.environ.get("PERF_LOCAL_OP_OUTPUT", LOCAL_PROF_OUTPUT_OP).strip() or LOCAL_PROF_OUTPUT_OP,
         soc_version=os.environ.get("PERF_SOC_VERSION", "").strip() or "Ascend910B",
         dry_run=_env_bool("PERF_RUN_DRY_RUN"),
     )
@@ -117,10 +130,11 @@ def to_repo_relative_path(path: Path | str) -> str:
     return candidate.as_posix()
 
 
-def local_prof_output_path(prof_tool: str) -> str:
+def local_prof_output_path(prof_tool: str, config: PerfRunnerConfig | None = None) -> str:
+    config = config or load_config()
     if prof_tool in {"msprof_op", "msprof_op_sim"}:
-        return to_repo_relative_path(LOCAL_PROF_OUTPUT_OP)
-    return to_repo_relative_path(LOCAL_PROF_OUTPUT_APP)
+        return to_repo_relative_path(config.local_prof_output_op)
+    return to_repo_relative_path(config.local_prof_output_app)
 
 
 def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> tuple[str, str]:
@@ -152,9 +166,13 @@ def normalize_prof_tool(payload: dict[str, Any]) -> str:
 
 
 def prof_output_root(prof_tool: str, *, local: bool) -> Path:
+    config = load_config()
     if prof_tool in {"msprof_op", "msprof_op_sim"}:
-        return PROF_OP_ROOT if local else Path(load_config().prof_output_op)
-    return PROF_APP_ROOT if local else Path(load_config().prof_output_app)
+        raw = config.local_prof_output_op if local else config.prof_output_op
+    else:
+        raw = config.local_prof_output_app if local else config.prof_output_app
+    path = Path(raw)
+    return path if path.is_absolute() else ROOT / path
 
 
 def prof_dir_prefix(prof_tool: str) -> str:
@@ -183,13 +201,13 @@ def resolve_npu_device(payload: dict[str, Any], config: PerfRunnerConfig | None 
 def resolve_chip(payload: dict[str, Any], config: PerfRunnerConfig | None = None) -> str:
     raw = str(payload.get("chip") or "").strip().upper()
     if raw:
-        if raw not in {"A2", "A3"}:
-            raise ValueError("chip must be A2 or A3")
+        if raw not in VALID_CHIPS:
+            raise ValueError(f"chip must be one of {sorted(VALID_CHIPS)}")
         return raw
     config = config or load_config()
     chip = str(config.chip or "A2").strip().upper()
-    if chip not in {"A2", "A3"}:
-        raise ValueError("PERF_CHIP must be A2 or A3")
+    if chip not in VALID_CHIPS:
+        raise ValueError(f"PERF_CHIP must be one of {sorted(VALID_CHIPS)}")
     return chip
 
 
@@ -254,6 +272,9 @@ def runner_status() -> dict[str, Any]:
         "prof_tools": sorted(VALID_PROF_TOOLS),
         "ssh_host": config.ssh_host or None,
         "remote_workdir": config.remote_workdir if config.mode == "ssh" else None,
+        "remote_env_script": config.remote_env_script if config.mode == "ssh" else None,
+        "remote_path_prepend": config.remote_path_prepend if config.mode == "ssh" else None,
+        "remote_conda_env": config.remote_conda_env if config.mode == "ssh" else None,
         "local_script": to_repo_relative_path(config.local_script) if config.mode == "local" else None,
         "npu_device": config.npu_device,
         "chip": config.chip,
@@ -402,7 +423,10 @@ def build_command(payload: dict[str, Any]) -> str:
     warm_up = resolve_op_warm_up(payload)
     launch_count = resolve_op_launch_count(payload)
     py_args = attributes_to_cli_args(attrs, resolve_npu_device(payload, config))
-    output = str(prof_output_root(prof_tool, local=False))
+    if config.mode == "ssh":
+        output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
+    else:
+        output = str(prof_output_root(prof_tool, local=True))
     remote_script, local_script = resolve_script_paths(payload, config)
     invocation = build_prof_invocation(
         config,
@@ -415,9 +439,9 @@ def build_command(payload: dict[str, Any]) -> str:
         launch_count=launch_count,
     )
     if config.mode == "ssh":
-        remote = f"cd {shlex.quote(config.remote_workdir)} && {invocation}"
+        remote = _remote_execution_command(config, invocation)
         return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
-    local_output = local_prof_output_path(prof_tool)
+    local_output = local_prof_output_path(prof_tool, config)
     invocation = build_prof_invocation(
         config,
         prof_tool=prof_tool,
@@ -437,7 +461,7 @@ def _ssh_command(config: PerfRunnerConfig, remote_command: str) -> list[str]:
         cmd.extend(["-p", config.ssh_port])
     if config.ssh_identity:
         cmd.extend(["-i", config.ssh_identity])
-    cmd.extend(["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new"])
+    cmd.extend(_ssh_connection_options())
     cmd.append(f"{config.ssh_user}@{config.ssh_host}")
     cmd.append(remote_command)
     return cmd
@@ -449,9 +473,20 @@ def _scp_command(config: PerfRunnerConfig, remote_path: str, local_path: Path) -
         cmd.extend(["-P", config.ssh_port])
     if config.ssh_identity:
         cmd.extend(["-i", config.ssh_identity])
+    cmd.extend(_ssh_connection_options())
     cmd.append(f"{config.ssh_user}@{config.ssh_host}:{remote_path}")
     cmd.append(str(local_path))
     return cmd
+
+
+def _ssh_connection_options() -> list[str]:
+    return [
+        "-o", "BatchMode=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "ConnectTimeout=10",
+        "-o", "ServerAliveInterval=15",
+        "-o", "ServerAliveCountMax=4",
+    ]
 
 
 def _run_command(command: list[str] | str, *, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
@@ -460,10 +495,34 @@ def _run_command(command: list[str] | str, *, cwd: Path | None = None) -> subpro
     return subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
 
 
+def _remote_execution_command(config: PerfRunnerConfig, invocation: str) -> str:
+    if config.remote_conda_env and not config.remote_conda_sh:
+        raise ValueError("PERF_REMOTE_CONDA_ENV requires PERF_REMOTE_CONDA_SH")
+    commands = []
+    if config.remote_env_script:
+        commands.append(f". {shlex.quote(config.remote_env_script)}")
+    if config.remote_path_prepend:
+        commands.append(f"export PATH={shlex.quote(config.remote_path_prepend)}:\"$PATH\"")
+    if config.remote_conda_env:
+        commands.append(f". {shlex.quote(config.remote_conda_sh)}")
+        commands.append(f"conda activate {shlex.quote(config.remote_conda_env)}")
+    commands.append(f"cd {shlex.quote(config.remote_workdir)}")
+    commands.append(invocation)
+    return " && ".join(commands)
+
+
+def _remote_output_path(config: PerfRunnerConfig, output: str) -> str:
+    path = PurePosixPath(output)
+    if path.is_absolute():
+        return path.as_posix()
+    return (PurePosixPath(config.remote_workdir) / path).as_posix()
+
+
 def _list_remote_prof_dirs(config: PerfRunnerConfig, prof_tool: str) -> set[str]:
     output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
-    prefix = prof_dir_prefix(prof_tool).lower()
-    remote = f"ls -1 {shlex.quote(output)}/{prefix}* 2>/dev/null || true"
+    prefix = prof_dir_prefix(prof_tool)
+    remote_output = _remote_output_path(config, output).rstrip("/")
+    remote = f"ls -1d {shlex.quote(remote_output)}/{prefix}* 2>/dev/null || true"
     result = _run_command(_ssh_command(config, remote))
     names = set()
     for line in result.stdout.splitlines():
@@ -500,7 +559,7 @@ def _import_module(script_name: str):
     return module
 
 
-def execute(payload: dict[str, Any]) -> dict[str, Any]:
+def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict[str, Any]:
     config = ensure_runner_configured()
     prof_tool = normalize_prof_tool(payload)
     command = build_command(payload)
@@ -540,13 +599,13 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             warm_up=warm_up,
             launch_count=launch_count,
         )
-        remote = f"cd {shlex.quote(config.remote_workdir)} && {invocation}"
+        remote = _remote_execution_command(config, invocation)
         _run_command(_ssh_command(config, remote))
         after = _list_remote_prof_dirs(config, prof_tool)
         prof_name = _resolve_new_prof_dir(before, after, prof_tool)
         local_dir = local_root / prof_name
         local_dir.parent.mkdir(parents=True, exist_ok=True)
-        remote_prof = f"{remote_output.rstrip('/')}/{prof_name}"
+        remote_prof = f"{_remote_output_path(config, remote_output).rstrip('/')}/{prof_name}"
         if local_dir.exists():
             import shutil
 
@@ -561,7 +620,7 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             build_prof_invocation(
                 config,
                 prof_tool=prof_tool,
-                output=local_prof_output_path(prof_tool),
+                output=local_prof_output_path(prof_tool, config),
                 script=script,
                 py_args=py_args,
                 kernel_name=kernel_name,
@@ -582,7 +641,14 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
 
     if prof_tool == "msprof":
         import_module = _import_module("import_prof_gdr.py")
-        data = import_module.import_prof(prof_dir, model_id, chip, replace_mock=False, device_id=npu_device)
+        data = import_module.import_prof(
+            prof_dir,
+            model_id,
+            chip,
+            replace_mock=False,
+            device_id=npu_device,
+            persist=persist_local_data,
+        )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
         snapshot["prof_tool"] = prof_tool
     else:
@@ -596,6 +662,7 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             operator_id=single_kernel_name_override(operator_id or kernel_name),
             prof_tool=prof_tool,
             device_id=npu_device,
+            persist=persist_local_data,
         )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
 
@@ -604,11 +671,12 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
         for item in data.get("runs", [])
         if not (item.get("created_by") in {"import_prof_gdr", "import_msprof_op"} and item.get("snapshot_id") == snapshot["id"])
     ]
-    for path in import_module.PERF_PATHS:
-        path.write_text(
-            __import__("json").dumps(data, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
+    if persist_local_data:
+        for path in import_module.PERF_PATHS:
+            path.write_text(
+                __import__("json").dumps(data, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
     return {
         "status": "done",
         "message": f"{prof_tool_label(prof_tool)} 执行并导入：{prof_dir.name}",

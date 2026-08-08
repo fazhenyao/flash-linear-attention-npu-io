@@ -10,6 +10,8 @@
 
 当前部署不启用 R2。文中涉及 R2 或签名下载的内容属于阶段三可选扩展，不是当前闭环的组成部分。
 
+本文同时记录目标架构和当前实现。标注为“阶段二”或“建议”的 systemd 持久执行、远端 Device 锁和断线恢复尚未落地；当前闭环采用 Windows Relay 同步 SSH 执行和本地制品保留。
+
 该方案不要求 NPU 服务器暴露公网端口，也不要求 Cloudflare Worker 直接连接 SSH。
 
 最终安全决策为：即使 Relay 具备公网可达条件，也不把 Relay 建设为公网服务。Relay 不提供 Webhook、不运行公网 HTTP API、不开放公网监听端口；任务领取、状态回传和制品上传全部由 Relay 主动发起出站连接。
@@ -23,6 +25,9 @@
 - NPU 服务器只能在本机或指定网关开启 VPN 后通过 SSH 访问。
 - VPN 可能断开、续期、需要 MFA，不能假设连接永久稳定。
 - Profiling 原始目录可能很大，不适合直接存入 D1。
+- 当前 Relay 是用户开启 VPN 的 Windows 电脑，通过登录触发的计划任务运行。
+- 当前 NPU SSH 目标为 `root@192.168.9.221:22`，项目目录为 `/workspace/fazhenyao/flash-linear-attention-npu-io`。
+- 当前 CANN 环境脚本为 `/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh`，Conda 环境为 `fla_dump`。
 
 ## 3. 设计目标
 
@@ -56,7 +61,7 @@ flowchart LR
     R -->|检查并建立| V[VPN]
     V -->|SSH / SCP| N[NPU 服务器]
     N -->|msprof / msopprof| P[Prof 结果目录]
-    P -->|压缩与回收| R
+    P -->|SCP 回收新增目录| R
     R -->|结构化结果与制品清单| W
     R -->|本地保留 30 天| L[(Relay / NPU 本地磁盘)]
 ```
@@ -89,25 +94,24 @@ flowchart LR
 
 - 部署在同时能访问互联网和 VPN 的机器上。
 - 主动通过 HTTPS 从 Worker 领取任务，不开放公网监听端口。
-- 检查 VPN 路由、SSH、NPU Device 和远端工具链状态。
+- 领取前检查 NPU SSH 端口可达性；执行时由 SSH 命令加载并验证远端环境。
 - 复用 `backend/perf_runner.py` 的命令构建和结果导入逻辑。
-- 通过 SSH 启动远端持久任务，通过 SCP 回收结果。
+- 通过同步 SSH 命令执行采集，通过 SCP 回收本次新增的结果目录。
 - 发送 heartbeat、进度和日志摘要。
 - 在本地保留制品并回传结构化结果、路径、大小和 SHA-256。
 
-#### NPU 服务器远端执行器
+#### 当前 NPU 服务器执行方式
 
-- 根据 `job_id` 创建隔离工作目录。
-- 仅执行 Relay 生成的白名单任务规格。
-- 使用 `systemd-run` 等机制脱离 SSH 会话运行。
-- 写入机器可读的状态、退出码和结果文件。
-- 按 NPU Device 加锁，防止资源冲突。
+- Relay 进入固定项目目录并执行服务端白名单生成的命令，不接收用户提供的任意 Shell。
+- 每次命令先加载 CANN `set_env.sh`，再加载 Conda 初始化脚本并激活 `fla_dump`。
+- `msprof` 输出到 `data/prof_gdr`，`msopprof` 输出到 `data/prof_op`。
+- 当前 SSH 会话同步等待采集完成；`systemd-run`、远端状态文件和 Device 锁属于阶段二。
 
 #### 本地制品存储
 
 - NPU 服务器或 Relay 保存 Prof 压缩包、CSV、JSON、图片和完整日志。
 - 制品目录不得通过公网服务暴露，只允许管理员经 VPN/SSH 访问。
-- 默认保留 30 天，由受控的定时任务清理；清理结果写入任务事件或审计日志。
+- Relay 回收副本默认保留 30 天，由 Agent 清理；当前不会自动删除 NPU 服务器上的源目录。
 - D1 只记录制品路径、类型、大小、SHA-256 和过期时间。
 
 #### 可选 Cloudflare R2
@@ -147,7 +151,7 @@ Relay 只允许以下必要出站流量：
 互联网访问：允许访问 Worker 的 HTTPS 443
 VPN 访问：允许连接内部网络
 NPU 访问：VPN 建立后允许 SSH 22
-运行方式：Linux systemd 或 Windows Service
+运行方式：Linux systemd、Windows Service 或 Windows 计划任务
 ```
 
 优点是任务不依赖个人电脑是否在线，VPN 凭据和 SSH 密钥也可以集中治理。
@@ -184,27 +188,21 @@ sequenceDiagram
     W-->>UI: job_id
 
     loop 任务领取
-        R->>R: 检查 VPN/SSH/Device
+        R->>R: 检查 NPU SSH 端口可达并发送 Runner heartbeat
         R->>W: POST /api/runner/jobs/claim
         W->>D: 条件更新 queued -> claimed
         W-->>R: job + lease_token
     end
 
-    R->>N: SCP request.json
-    R->>N: SSH systemd-run fla-job-{job_id}
-    R->>W: running + heartbeat
-
-    alt VPN 正常
-        R->>N: 查询 status.json
-    else VPN 断开
-        R->>W: disconnected
-        R->>R: 等待 VPN 恢复
-        R->>N: 重新查询远端 job_id
-    end
-
-    N-->>R: result.json + artifacts
-    R->>R: 本地登记制品并设置过期时间
-    R->>W: POST /complete
+    R->>W: POST /started
+    R->>N: SSH 列出执行前 PROF_* / OPPROF_*
+    R->>N: SSH 加载 CANN/Conda 并同步执行 profiler
+    Note over R,W: SSH 执行期间独立线程每 15 秒发送 job heartbeat
+    N-->>R: SSH 命令退出
+    R->>N: SSH 识别本次新增结果目录
+    R->>N: SCP 回收完整结果目录
+    R->>R: 解析指标，计算目录大小和 SHA-256
+    R->>W: POST /complete，回传结构化结果和制品元数据
     W->>D: 保存结果和制品元数据
     UI->>W: GET /api/perf/jobs/{job_id}
     W-->>UI: succeeded + metrics + artifact manifest
@@ -212,18 +210,18 @@ sequenceDiagram
 
 ### 7.1 自适应任务领取
 
-Relay 主动领取不需要固定高频空轮询。建议根据状态动态调整间隔：
+当前 Relay 使用线性自适应轮询，配置为 `RUNNER_POLL_MIN_SECONDS=2`、`RUNNER_POLL_MAX_SECONDS=30`：
 
 ```text
-Relay 刚启动或刚完成任务：2 秒
-连续返回空队列：逐步退避到 15-30 秒
-VPN 或 SSH 不可用：30-60 秒
-任务执行中：停止领取或按并发余量领取，仅每 15-30 秒发送 heartbeat
-Worker 请求失败：指数退避，最大 1-2 分钟
-恢复成功：重置到较短间隔
+Relay 启动：注册后立即执行一次 heartbeat、健康检查和领取，不先等待
+连续未领取到任务：等待时间按 4、6、8……30 秒递增
+VPN 或 SSH 不可用：本轮不领取，沿用相同线性退避，最大 30 秒
+成功领取并完成任务：下一轮等待重置为 2 秒
+任务执行中：单并发，不领取新任务；独立线程每 15 秒发送 job heartbeat
+Worker 请求异常：至少等待 5 秒并指数退避，最大 120 秒
 ```
 
-请求加入随机抖动，避免多个 Relay 同时集中访问 Worker。Worker 每次最多返回 Relay 当前并发余量允许的任务数。
+当前实现没有随机抖动，也没有采用 Worker 返回的 `retry_after_seconds`。部署多个 Relay 时，应增加抖动并尊重服务端建议间隔，避免同时集中请求。
 
 领取接口只返回 Relay 能力范围内的任务，并限制响应数量和响应体大小。没有可执行任务时返回正常空结果，不把空队列作为错误。
 
@@ -237,32 +235,35 @@ stateDiagram-v2
     queued --> waiting_vpn
     waiting_vpn --> queued: VPN/SSH 恢复
     queued --> claimed
+    waiting_runner --> claimed
+    waiting_vpn --> claimed
     claimed --> running
-    running --> archiving_local
-    archiving_local --> succeeded
+    running --> succeeded
     claimed --> failed
     running --> failed
-    archiving_local --> failed
     running --> disconnected: VPN/网络中断
     disconnected --> running: 恢复并确认仍在执行
-    disconnected --> archiving_local: 恢复并确认已完成
+    disconnected --> succeeded: 恢复并确认已完成
     disconnected --> orphaned: 无法确认远端状态
     queued --> canceled
     claimed --> cancel_requested
     running --> cancel_requested
     cancel_requested --> canceled
+    failed --> queued: 重试
+    canceled --> queued: 重试
+    orphaned --> queued: 人工确认后重试
 ```
 
 ### 8.1 断线语义
 
 - 领取前 VPN 不可用：不领取任务，记录 `waiting_vpn`。
 - 领取后尚未远端启动：安全释放任务并重新排队。
-- 远端启动后 VPN 断开：标记 `disconnected`，远端进程继续运行。
-- VPN 恢复后：按照 `job_id` 查询远端状态并继续跟踪。
+- 远端启动后 VPN 断开：Worker 可标记 `disconnected`，但当前同步 SSH 实现通常会因 SSH 失败而结束本次尝试。
+- VPN 恢复后按 `job_id` 查询远端状态并继续跟踪属于阶段二；当前 Agent 尚未实现自动 reconcile。
 - 无法确认远端状态：进入 `orphaned`，禁止自动重跑。
 - 只有确认旧进程不存在或已结束，才允许人工或自动重新执行。
 
-不能简单地在 heartbeat 超时后重新排队，因为原任务可能仍在 NPU 上运行，重新执行会产生重复任务和 Device 冲突。
+不能简单地在 heartbeat 超时后重新排队，因为原任务可能仍在 NPU 上运行，重新执行会产生重复任务和 Device 冲突。当前版本在执行期断线后应由管理员确认远端进程和 Prof 目录，再决定是否重试。
 
 ## 9. API 设计
 
@@ -476,16 +477,14 @@ WHERE id = ?
 
 ## 12. VPN 和 SSH 健康检查
 
-Relay 领取任务前按以下顺序检查：
+当前 Relay 领取任务前执行以下检查：
 
-1. Worker HTTPS 可达。
-2. VPN 目标网段路由存在。
-3. NPU 主机地址可达。
-4. `ssh -o BatchMode=yes -o ConnectTimeout=5` 成功。
-5. 远端 Runner 版本兼容。
-6. `npu-smi`、`msprof` / `msopprof` 可用。
-7. 指定 Device 空闲且没有任务锁。
-8. 远端磁盘空间满足最低要求。
+1. 向 Worker 发送 Runner heartbeat，确认控制面 HTTPS 可用。
+2. 加载本地 Relay 配置并确认执行模式为 SSH。
+3. 使用 5 秒 TCP 超时探测 `192.168.9.221:22`；不可达时不领取任务。
+4. 领取后执行真正的 SSH 命令；SSH/SCP 使用 `BatchMode=yes`、`ConnectTimeout=10`、`ServerAliveInterval=15` 和 `ServerAliveCountMax=4`。
+
+当前端口探测不能证明 SSH 密钥、CANN、Conda、profiler、Device 空闲状态或磁盘空间正常。后续应把 SSH 认证、`npu-smi`、profiler 可用性、Device 锁和磁盘空间加入领取前的缓存式预检。
 
 Relay heartbeat 应上报：
 
@@ -495,7 +494,9 @@ Relay heartbeat 应上报：
 - 当前运行任务数。
 - Agent 版本和最近错误。
 
-## 13. 远端持久执行
+## 13. 阶段二：远端持久执行
+
+本节是后续可靠性设计，当前版本尚未实现。当前 Relay 通过同步 SSH 会话执行 profiler，SSH 会话结束后再识别并回收新增结果目录。
 
 每个任务创建固定目录：
 
@@ -537,6 +538,8 @@ Relay 重启或 VPN 恢复后，应先读取该文件和 systemd unit 状态，�
 
 ## 14. Device 并发控制
 
+当前 Worker 和 Agent 均配置 `max_concurrency=1`，可避免同一个 Relay 自身并发领取多个任务，但 NPU 服务器端尚无 Device 锁；多个 Relay 或人工任务仍可能使用同一 Device。以下为阶段二要求：
+
 - 一个 Device 默认只运行一个采集任务。
 - 锁应在 NPU 服务器端实现，不能只依赖 Relay 内存。
 - 锁文件包含 `job_id`、PID、创建时间和 Agent。
@@ -561,9 +564,11 @@ Relay 重启或 VPN 恢复后，应先读取该文件和 systemd unit 状态，�
 - SSH 使用密钥、`BatchMode=yes` 和固定 `known_hosts`。
 - Runner Token、SSH 私钥和 VPN 凭据不得进入日志或浏览器。
 
+当前部署使用 SSH 密钥、`BatchMode=yes` 和 `StrictHostKeyChecking=accept-new`，但远端账号仍为 `root`。生产化前应创建低权限专用账号、预置并固定 `known_hosts`，同时限制该账号可访问的项目目录和可执行命令。
+
 ## 16. 日志和进度
 
-Relay 每 10 至 30 秒发送 heartbeat，并可按阶段上报：
+当前空闲时，Runner heartbeat 随每次轮询发送；执行任务时，独立线程每 15 秒发送 job heartbeat。当前只上报执行开始、完成、失败及连接健康状态，尚未实现以下细粒度阶段事件：
 
 ```text
 checking_vpn
@@ -587,18 +592,26 @@ D1 中每个任务只保留有限数量、有限长度的事件。完整 stdout/
 - 执行状态和时间。
 - 退出码和失败类型。
 - MFU、MBU、耗时等结构化指标。
-- 代码 commit、工具版本、驱动版本、芯片和 Device。
+- Agent 版本、执行模式、芯片、SoC 和 Device。
+- 当前尚未采集代码 commit、CANN、profiler 和驱动版本，这些属于后续可追溯性增强。
 - 本地制品标识、受控路径、大小、SHA-256 和过期时间。
 
 ### NPU 服务器或 Relay 本地保存
 
-- `PROF_*` / `OPPROF_*` 压缩包。
-- 原始 CSV 和 JSON。
-- 完整 stdout/stderr。
-- 可视化图片。
-- 可复现结果包。
+- 完整的 `PROF_*` / `OPPROF_*` 目录，当前不压缩。
+- Prof 目录内由 CANN 生成的原始 CSV、JSON 和分析文件。
+- Relay 任务状态与制品清单保存在 `data/runner-state`，Agent 运行日志保存在 `.local-secrets/runner.log`。
+- 当前没有为每个任务单独持久化完整 SSH stdout/stderr，也没有自动生成可视化图片或可复现压缩包。
 
-### 带宽优化
+### 当前制品处理
+
+- profiler 在 NPU 服务器生成目录后，Relay 通过 SCP 回收完整目录。
+- Relay 使用导入器在内存中生成结构化结果，并回传 Worker/D1；Relay 模式不会改写仓库中的 `data/performance-data.json` 和 `docs/performance-data.json`。
+- Relay 计算整个目录的总大小和 SHA-256，并登记 `relay://{runner_id}/{job_id}/{directory}` 制品标识。
+- 制品默认保留 30 天，由 Agent 在后续轮询中清理过期目录。
+- 本地目录 `data/prof_gdr` 和 `data/prof_op` 已加入 Git 忽略列表。
+
+### 后续带宽优化
 
 - 在 NPU 服务器上先解析和压缩。
 - 优先回传结构化摘要，不通过公网传输大文件。
@@ -611,12 +624,11 @@ D1 中每个任务只保留有限数量、有限长度的事件。完整 stdout/
 ### 取消
 
 1. 用户请求取消，Worker 设置 `cancel_requested=1`。
-2. Relay heartbeat 收到取消状态。
-3. Relay 通过远端执行器终止对应 systemd unit。
-4. 远端完成清理并写入最终状态。
-5. Relay 回传 `canceled`。
+2. Relay heartbeat 收到取消状态并在本地设置取消标记。
+3. 当前同步 SSH 执行不能据此终止远端 profiler；命令返回后 Relay 才回传取消结果。
+4. 阶段二需通过远端持久执行器终止进程组或 systemd unit，并在确认结束后回传 `canceled`。
 
-VPN 断开时取消请求保持待处理，不能声称已经取消。
+VPN 断开时取消请求保持待处理，不能声称已经取消。当前版本的取消不具备进程级实时性，这是已知限制。
 
 ### 重试
 
@@ -683,31 +695,32 @@ VPN 断开时取消请求保持待处理，不能声称已经取消。
 - `docs/performance-dashboard.html` 中现有任务列表和指标展示。
 - Cloudflare Worker 中现有登录、用户角色和审计逻辑。
 
-### 需要新增
+### 已落地
 
-- `backend/runner_agent.py`：Agent 主循环、领取、heartbeat、恢复和回传。
-- `backend/remote_job.py`：远端任务目录、systemd unit 和状态协议。
-- D1 migration：任务、事件、Agent、结果和制品表。
-- Worker Runner API 和用户任务 API。
-- 本地制品清单、过期清理和 VPN/SSH 管理员取件流程。
-- 看板队列状态、VPN 状态、取消、重试和本地制品清单界面。
+- `backend/runner_agent.py`：Agent 注册、健康检查、自适应领取、租约 heartbeat、执行、回传和本地制品清理。
+- `backend/perf_runner.py`：同步 SSH/SCP、CANN/Conda 环境准备、连接超时、新增 Prof 目录识别和结果导入。
+- `scripts/import_prof_gdr.py` / `scripts/import_msprof_op.py`：支持只返回内存结果，不要求写入仓库 JSON 快照。
+- `migrations/0009_add_perf_job_queue.sql`：任务、事件、结果、制品和 Agent 数据表。
+- `cloudflare/worker.js`：用户任务 API、Runner API、原子领取、租约、取消、重试和结果回传。
+- `docs/performance-dashboard.html`：异步提交、Runner 状态、任务状态、重试、取消和结果展示。
+- `scripts/run_runner_windows.ps1`、`scripts/protect_runner_token_windows.ps1` 和 `scripts/install_runner_task_windows.ps1`：Windows Relay 启动、DPAPI Token 和计划任务安装。
 
-阶段三若启用对象存储，再新增 R2 binding、上传、签名下载和生命周期策略。
+### 待落地
 
-### 需要调整
-
-- Worker 当前 `/api/perf/runs` 的 `501` 行为改为创建异步任务。
-- 看板不再直接依赖公开可访问的本地 `/api/perf/runs`。
-- `backend/perf_runner.py` 的字符串命令执行逐步改为参数数组。
-- 本地执行记录和 Worker/D1 记录统一使用 `job_id` / `attempt_id`。
+- 远端任务目录、systemd unit、状态协议、进程组取消和断线 reconcile。
+- NPU 服务器端 Device 锁与多 Relay 调度。
+- SSH 登录、profiler、Device 和磁盘空间的领取前预检。
+- 多 Relay 场景的轮询抖动和 Worker `retry_after_seconds` 支持。
+- 阶段三如启用对象存储，再新增 R2 binding、上传、签名下载和生命周期策略。
 
 ## 22. 配置建议
 
-Relay 示例环境变量：
+当前 Relay 的关键环境变量：
 
 ```text
-RUNNER_ID=vpn-runner-01
-RUNNER_API_BASE=https://flash-linear-attention-npu-io.example.workers.dev
+RUNNER_ID=vpn-runner-windows-01
+RUNNER_NAME=Windows VPN Relay 01
+RUNNER_API_BASE=https://flash-linear-attention-npu-io-fazhenyao.fazhenyao.workers.dev
 RUNNER_TOKEN=secret-from-secure-store
 RUNNER_POLL_MIN_SECONDS=2
 RUNNER_POLL_MAX_SECONDS=30
@@ -716,24 +729,27 @@ RUNNER_HEARTBEAT_SECONDS=15
 RUNNER_MAX_CONCURRENCY=1
 
 PERF_RUN_MODE=ssh
-PERF_SSH_HOST=your-npu-host
-PERF_SSH_USER=fla-runner
+PERF_SSH_HOST=192.168.9.221
+PERF_SSH_USER=root
 PERF_SSH_PORT=22
-PERF_SSH_IDENTITY_FILE=/secure/path/fla-runner.key
-PERF_REMOTE_WORKDIR=/opt/flash-linear-attention-npu
+PERF_SSH_IDENTITY_FILE=C:/Users/Administrator/.ssh/id_ed25519
+PERF_REMOTE_WORKDIR=/workspace/fazhenyao/flash-linear-attention-npu-io
 PERF_REMOTE_SCRIPT=scripts/flash_gated_delta_rule.py
-PERF_PROF_OUTPUT=/var/lib/fla-runner/prof_gdr
-PERF_OP_OUTPUT=/var/lib/fla-runner/prof_op
+PERF_REMOTE_ENV_SCRIPT=/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh
+PERF_REMOTE_CONDA_SH=/data/miniconda3/etc/profile.d/conda.sh
+PERF_REMOTE_CONDA_ENV=fla_dump
+PERF_PROF_OUTPUT=data/prof_gdr
+PERF_OP_OUTPUT=data/prof_op
 PERF_NPU_DEVICE=2
 PERF_CHIP=A2
 PERF_SOC_VERSION=Ascend910B
 ```
 
-凭据应放入系统凭据存储、受限环境文件或 Secret Manager，不提交到 Git。
+当前 Windows Relay 将非口令配置保存在 Git 忽略的 `.local-secrets/runner-config.json`，将 `RUNNER_TOKEN` 通过 DPAPI 加密保存在 `.local-secrets/runner-token.clixml`。Token 和 SSH 私钥不得提交到 Git。当前 `root` 账号仅是过渡配置，生产化前应改为低权限专用账号。
 
 ## 23. 分阶段实施
 
-### 阶段一：最小闭环
+### 阶段一：最小闭环（已完成）
 
 - 新增 `perf_jobs`、`perf_job_events` 和 `runner_agents`。
 - Worker 支持提交、查询、领取、heartbeat、完成和失败。
@@ -744,6 +760,8 @@ PERF_SOC_VERSION=Ascend910B
 - 本地制品默认保留 30 天，由定时清理任务删除过期目录。
 
 验收条件：VPN 上线后任务可自动执行；VPN 离线时任务可靠等待；看板能展示最终指标。
+
+2026-08-08 已在 NPU 2 上完成两条真实 `msprof` 端到端任务：`T=128` 总耗时 `1.0 ms`，`T=4087` 总耗时 `15.2 ms`。两条任务均由看板提交、Worker/D1 排队、Windows Relay 领取、SSH 到 NPU 执行、SCP 回收，并最终在看板显示“已完成”。
 
 ### 阶段二：可靠性
 
@@ -789,10 +807,10 @@ PERF_SOC_VERSION=Ascend910B
 
 ## 25. 当前部署决策
 
-当前采用“Worker/D1 队列 + VPN Runner Relay 主动拉取 + SSH 远端持久执行 + 本地制品保留”，不启用 R2。
+当前采用“Worker/D1 队列 + VPN Runner Relay 主动拉取 + 同步 SSH 远端执行 + Relay 本地制品保留”，不启用 R2。
 
 - Worker/D1 保存任务状态、结构化性能指标、审计信息和制品清单。
-- NPU 服务器或 Relay 保存原始 Prof、完整日志、CSV、JSON 和图片，默认保留 30 天。
+- Relay 保存回收后的原始 Prof 和分析文件，默认保留 30 天；NPU 服务器源目录当前需要单独清理。
 - 看板当前不提供原始制品的公网下载；管理员通过 VPN/SSH 获取文件。
 - Relay 仍只发起出站 HTTPS 请求，不开放公网入站端口。
 - R2 是后续可选能力，不是任务提交、执行、状态回传和指标展示的前置条件。
@@ -808,7 +826,7 @@ Relay 即使具备公网入站和出站能力，也不作为公网服务使用�
 - 主机防火墙拒绝公网入站。
 - 通过自适应出站 HTTPS 请求领取任务并回传结果。
 
-该决策优先保证 Relay 和 VPN 内网不暴露给公网，接受空队列请求和数秒级任务启动延迟作为交换。
+该决策优先保证 Relay 和 VPN 内网不暴露给公网，接受空队列请求和任务启动延迟作为交换。Relay 长时间空闲时轮询间隔达到 30 秒，因此当前典型领取延迟为 `0～30 秒`。
 
 ### 25.1 未选择：公网 Webhook
 
@@ -836,19 +854,46 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 
 ## 26. 实施状态
 
-截至 2026-08-08，阶段一的软件部分已实现：
+截至 2026-08-08，阶段一闭环已经部署并通过真实 NPU 任务验证：
 
 - D1 migration 已加入 `perf_jobs`、`perf_job_events`、`perf_results`、`perf_artifacts` 和 `runner_agents`。
 - Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传。
-- `backend/runner_agent.py` 已实现主动出站注册、健康检查、自适应领取、执行、heartbeat、结果回传和本地制品过期清理。
+- `backend/runner_agent.py` 已实现主动出站注册、SSH 端口健康检查、自适应领取、执行期 heartbeat、结果回传和本地制品过期清理。
+- `backend/perf_runner.py` 已支持远端 CANN/Conda 环境准备、同步 SSH 执行、SSH/SCP 超时、新增结果目录识别和回收。
 - 性能看板已改为向 Worker 异步提交任务；Runner 或 VPN 离线时任务继续排队。
 - 已增加不执行 NPU 命令的队列冒烟测试 `scripts/smoke_test_perf_queue.py`。
+- Worker 和 Relay 已配置独立 `RUNNER_TOKEN`，本机 Token 使用 DPAPI 加密保存。
+- Windows 计划任务 `FLA VPN Runner` 已安装并运行；当前计划任务在用户登录后启动 Agent，以复用本机 VPN 会话。
+- 已验证看板显示 `Runner 在线 · A2 · NPU 2`，并完成两条真实 `msprof` 任务的领取、执行、回收、解析和结果展示。
+- Relay 导入结果时只构建内存数据并回传 D1，不再改写仓库性能快照；本地 Prof 目录已加入 Git 忽略列表。
 
-仍需在实际环境完成：
+### 26.1 当前 Windows Relay 的本机凭据与启动方式
 
-- 配置 Worker `RUNNER_TOKEN` 和 Relay `RUNNER_TOKEN`。
-- 提供 Relay 操作系统、VPN 连接方式，以及 NPU SSH 地址、端口和服务账号。
-- 在 Relay 安装运行环境并配置为 systemd 或 Windows Service。
-- 验证 NPU 上的脚本路径、`msprof` / `msopprof`、Device、输出目录和磁盘空间。
-- 完成 VPN 离线排队、恢复领取、真实采集和结果回传验收。
-- 阶段二的远端 systemd 持久执行、进程级取消和重启恢复仍未实现。
+当前过渡阶段 Relay 运行在用户开启 VPN 的 Windows 电脑上，采用以下本机约束：
+
+- `RUNNER_TOKEN` 使用 Windows DPAPI 加密到 `.local-secrets/runner-token.clixml`，只允许创建它的 Windows 用户解密。
+- NPU 地址、SSH 用户、SSH 私钥路径等非口令配置保存在 `.local-secrets/runner-config.json`，该目录已被 Git 忽略。
+- Agent 通过 Windows 计划任务在当前用户登录后启动，以便复用交互式 VPN 会话；VPN 未连接时 Agent 不领取任务，VPN 恢复后自动继续。
+- 计划任务只运行 `scripts/run_runner_windows.ps1`，不注册 Windows 入站服务、不配置公网域名、不开放本机端口。
+- Relay 日志写入 `.local-secrets/runner.log`，原始性能制品继续按本方案保存在本机并执行保留期清理。
+- 当前 Agent 配置为单并发，默认 NPU Device 为 2，芯片为 A2，SoC 为 Ascend910B。
+
+### 26.2 当前已知限制
+
+- 同步 SSH 执行依赖连接持续存在；执行期 VPN/SSH 中断后尚不能通过远端状态文件自动恢复。
+- 取消请求只能设置本地标记，尚不能实时终止远端 profiler 进程。
+- 服务器端尚未实现 Device 锁，多 Relay 或人工任务需要运维协调。
+- 领取前只检查 SSH TCP 端口，SSH 认证、CANN/Conda、profiler、Device 和磁盘空间在执行阶段才暴露错误。
+- 当前使用 `root` SSH 账号和 `StrictHostKeyChecking=accept-new`，应迁移到低权限账号和预置固定主机密钥。
+- 当前没有轮询随机抖动，也不读取 Worker 返回的建议重试间隔；单 Relay 部署不受影响，多 Relay 前需要补齐。
+- 30 天过期清理只覆盖 Relay 本地副本，不会删除 NPU 服务器 `data/prof_gdr` / `data/prof_op` 下的源目录。
+- R2 未启用，看板不能直接下载原始 Prof；管理员需从 Relay 本地或经 VPN/SSH 获取。
+- Windows 电脑、登录会话或 VPN 离线时，任务会继续保存在 D1 中，但不会执行。
+
+### 26.3 下一阶段优先级
+
+1. 建立低权限 NPU 服务账号和固定 `known_hosts`。
+2. 实现远端任务目录、进程组/systemd 持久执行、Device 锁和状态文件。
+3. 实现执行期取消、Agent 重启恢复和 Worker reconcile。
+4. 增加领取前 profiler/Device/磁盘预检、轮询抖动和服务端退避提示支持。
+5. 根据是否需要浏览器下载原始 Prof，再决定是否接入 R2。

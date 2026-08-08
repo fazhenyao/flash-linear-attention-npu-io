@@ -28,9 +28,9 @@ def round_ratio(value: float | None) -> float | None:
     return round(value, RATIO_PRECISION)
 
 
-def hbm_bytes_per_us(chip: str | None) -> float:
-    tbps = CHIP_HBM_BANDWIDTH_TBPS.get((chip or "A2").upper(), CHIP_HBM_BANDWIDTH_TBPS["A2"])
-    return tbps * 1_000_000.0
+def hbm_bytes_per_us(chip: str | None) -> float | None:
+    tbps = CHIP_HBM_BANDWIDTH_TBPS.get((chip or "A2").upper())
+    return tbps * 1_000_000.0 if tbps is not None else None
 
 
 def element_bytes(attributes: dict[str, Any]) -> int:
@@ -109,5 +109,7 @@ def compute_mbu(
     if bytes_total is None or bytes_total <= 0:
         return None
     bandwidth = hbm_bytes_per_us(chip)
+    if bandwidth is None:
+        return None
     theoretical_memory_time_us = bytes_total / bandwidth
     return round_ratio(theoretical_memory_time_us / task_duration_us)
