@@ -12,6 +12,7 @@ data/*.sqlite3-*
 .local-backups/
 generated/
 data/runner-state/
+data/runner-artifacts/
 data/prof_gdr/
 data/prof_op/
 initial-accounts*.csv

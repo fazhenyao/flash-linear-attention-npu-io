@@ -833,7 +833,7 @@ def resolve_run_chip(payload: dict[str, Any]) -> str:
         return resolve_chip(payload, load_config())
     except (ImportError, ValueError, TypeError):
         raw = str(payload.get("chip") or "").strip().upper()
-        return raw if raw in {"A2", "A3"} else "A2"
+        return raw if raw in {"A2", "A3", "A5"} else "A2"
 
 
 def create_queued_perf_run(
@@ -848,8 +848,8 @@ def create_queued_perf_run(
     case_id = str(payload.get("case_id") or "").strip()
     model_id = payload.get("model_id")
     chip = resolve_run_chip(payload)
-    if chip not in {"A2", "A3"}:
-        raise ValueError("chip must be A2 or A3")
+    if chip not in {"A2", "A3", "A5"}:
+        raise ValueError("chip must be A2, A3 or A5")
     if case_id and not any(item.get("id") == case_id for item in data["cases"]):
         raise ValueError("case not found")
     if not any(item.get("id") == model_id for item in data["models"]):

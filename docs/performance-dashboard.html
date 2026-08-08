@@ -209,6 +209,9 @@
           <div class="panel-title-row"><h2>触发用例测试</h2></div>
           <form id="triggerForm" class="perf-form">
             <p id="triggerEnvHint" class="perf-trigger-env-hint">执行环境：连接后端后显示 PERF_CHIP 与默认 NPU 卡号。</p>
+            <label class="perf-form-fieldwide">执行服务器
+              <select id="triggerRunner" aria-label="执行服务器"></select>
+            </label>
             <label>采集模式
               <select id="triggerProfTool">
                 <option value="msprof">msprof（整网性能）</option>
@@ -392,6 +395,7 @@
       caseMetrics: [],
       caseAttrFilters: { net: [], case: [] },
       runner: null,
+      selectedRunnerId: localStorage.getItem("fla-perf-runner-id") || "",
       jobs: [],
       perfPollTimer: null,
     };
@@ -435,6 +439,7 @@
       document.querySelector("#caseCompareRemoveBtn").addEventListener("click", removeSelectedCaseFromCompare);
       document.querySelector("#caseCompareClearBtn").addEventListener("click", clearCompareCases);
       document.querySelector("#triggerForm").addEventListener("submit", onTriggerSubmit);
+      document.querySelector("#triggerRunner").addEventListener("change", onTriggerRunnerChange);
       document.querySelector("#loginBtn").addEventListener("click", onLogin);
       document.querySelector("#logoutBtn").addEventListener("click", onLogout);
       document.querySelector("#addModelBtn").addEventListener("click", onAddModel);
@@ -827,13 +832,76 @@
       return "msopprof 单算子采集，横轴为用例、纵轴为所选指标";
     }
 
-    function syncTriggerDeviceFromRunner() {
+    function triggerRunnerAgents() {
+      return Array.isArray(state.runner?.agents) ? state.runner.agents : [];
+    }
+
+    function triggerRunnerChip(agent) {
+      return agent?.chip || agent?.capabilities?.chip || agent?.capabilities?.chips?.[0] || state.runner?.chip || "A2";
+    }
+
+    function triggerRunnerDevice(agent) {
+      return agent?.npu_device ?? agent?.capabilities?.device ?? agent?.capabilities?.devices?.[0] ?? state.runner?.npu_device ?? 2;
+    }
+
+    function triggerRunnerReady(agent) {
+      return Boolean(agent?.ready ?? (agent?.online && agent?.vpn_connected && agent?.npu_reachable));
+    }
+
+    function selectedTriggerRunner() {
+      const agents = triggerRunnerAgents();
+      const selectedId = document.querySelector("#triggerRunner")?.value || state.selectedRunnerId;
+      return agents.find((agent) => agent.id === selectedId)
+        || agents.find((agent) => triggerRunnerReady(agent) && triggerRunnerChip(agent) === "A2")
+        || agents.find(triggerRunnerReady)
+        || agents[0]
+        || null;
+    }
+
+    function syncTriggerRunnerOptions() {
+      const select = document.querySelector("#triggerRunner");
+      if (!select) return;
+      const agents = triggerRunnerAgents();
+      const previous = select.value || state.selectedRunnerId;
+      select.innerHTML = "";
+      if (!agents.length) {
+        select.add(new Option("暂无 Runner 注册", ""));
+        select.disabled = true;
+        state.selectedRunnerId = "";
+        return;
+      }
+      select.disabled = false;
+      agents.forEach((agent) => {
+        const chip = triggerRunnerChip(agent);
+        const device = triggerRunnerDevice(agent);
+        const status = triggerRunnerReady(agent) ? "在线" : "离线，任务将排队";
+        select.add(new Option(`${agent.name || agent.id} · ${chip} · NPU ${device} · ${status}`, agent.id));
+      });
+      const selected = agents.find((agent) => agent.id === previous)
+        || agents.find((agent) => triggerRunnerReady(agent) && triggerRunnerChip(agent) === "A2")
+        || agents.find(triggerRunnerReady)
+        || agents[0];
+      select.value = selected.id;
+      state.selectedRunnerId = selected.id;
+      localStorage.setItem("fla-perf-runner-id", selected.id);
+    }
+
+    function onTriggerRunnerChange() {
+      state.selectedRunnerId = document.querySelector("#triggerRunner").value;
+      localStorage.setItem("fla-perf-runner-id", state.selectedRunnerId);
+      state.triggerDeviceSynced = null;
+      syncTriggerDeviceFromRunner(true);
+      syncTriggerOpDefaultsFromRunner();
+      updateTriggerEnvFromRunner();
+    }
+
+    function syncTriggerDeviceFromRunner(force = false) {
       const input = document.querySelector("#triggerDevice");
-      const runnerDevice = state.runner?.npu_device;
+      const runnerDevice = triggerRunnerDevice(selectedTriggerRunner());
       if (runnerDevice == null) return;
       const current = input.value.trim();
       const synced = state.triggerDeviceSynced == null ? "" : String(state.triggerDeviceSynced);
-      if (!current || current === "722" || current === synced) {
+      if (force || !current || current === "722" || current === synced) {
         input.value = String(runnerDevice);
         state.triggerDeviceSynced = runnerDevice;
       }
@@ -846,20 +914,22 @@
         node.textContent = "执行环境：登录后可向 Cloudflare 队列提交采集任务。";
         return;
       }
-      if (!state.runner?.enabled) {
+      const runner = selectedTriggerRunner();
+      if (!runner) {
         node.textContent = state.runner?.error
           ? `执行环境：${state.runner.error}；提交后的任务会可靠排队。`
           : "执行环境：Runner 尚未上线；提交后的任务会可靠排队。";
         return;
       }
-      const chip = state.runner.chip || "A2";
-      const device = state.runner.npu_device ?? "—";
-      node.textContent = `执行环境：VPN Runner 在线 · ${chip} 芯片 · 默认 NPU ${device}`;
+      const chip = triggerRunnerChip(runner);
+      const device = triggerRunnerDevice(runner);
+      const status = triggerRunnerReady(runner) ? "在线" : "离线，任务将定向排队";
+      node.textContent = `执行环境：${runner.name || runner.id} · ${status} · ${chip} 芯片 · 默认 NPU ${device}`;
     }
 
     function readTriggerDevice() {
       const raw = document.querySelector("#triggerDevice").value.trim();
-      const fallback = state.runner?.npu_device ?? 2;
+      const fallback = triggerRunnerDevice(selectedTriggerRunner());
       if (!raw) return fallback;
       const device = Number(raw);
       if (!Number.isInteger(device) || device < 0) {
@@ -898,8 +968,9 @@
     }
 
     function syncTriggerOpDefaultsFromRunner() {
-      const warmUp = state.runner?.op_warm_up;
-      const launchCount = state.runner?.op_launch_count;
+      const capabilities = selectedTriggerRunner()?.capabilities || state.runner || {};
+      const warmUp = capabilities.op_warm_up ?? state.runner?.op_warm_up;
+      const launchCount = capabilities.op_launch_count ?? state.runner?.op_launch_count;
       const warmUpInput = document.querySelector("#triggerWarmUp");
       const launchCountInput = document.querySelector("#triggerLaunchCount");
       if (warmUpInput && warmUp != null) warmUpInput.placeholder = String(warmUp);
@@ -973,6 +1044,8 @@
         try {
           const response = await fetch(`${WORKER_API_BASE}/api/perf/runner`, { headers: authHeaders() });
           state.runner = response.ok ? await response.json() : null;
+          syncTriggerRunnerOptions();
+          syncTriggerDeviceFromRunner();
           syncTriggerOpDefaultsFromRunner();
           return;
         } catch {
@@ -986,6 +1059,8 @@
       try {
         const response = await fetch(`${LOCAL_API_BASE}/api/perf/runner`);
         state.runner = response.ok ? await response.json() : null;
+        syncTriggerRunnerOptions();
+        syncTriggerDeviceFromRunner();
         syncTriggerOpDefaultsFromRunner();
       } catch {
         state.runner = null;
@@ -1119,7 +1194,8 @@
         alert("请先登录后再提交采集任务。");
         return;
       }
-      const chip = state.runner?.chip || "A2";
+      const runner = selectedTriggerRunner();
+      const chip = triggerRunnerChip(runner);
       let device = 2;
       try {
         device = readTriggerDevice();
@@ -1160,6 +1236,7 @@
         idempotency_key: crypto.randomUUID(),
         attributes,
       };
+      if (runner?.id) payload.target_runner_id = runner.id;
       if (profTool === "msprof_op") {
         try {
           payload.warm_up = readTriggerWarmUp();
@@ -1202,9 +1279,9 @@
       document.body.classList.toggle("admin-editing", isAdmin);
       let status = loggedIn ? `${state.user.username}（${state.user.role}）` : "只读模式";
       if (loggedIn && state.runner?.enabled) {
-        const device = state.runner.npu_device ?? "—";
-        const chip = state.runner.chip ?? "—";
-        status = `${state.user.username} · Runner 在线 · ${chip} · NPU ${device}`;
+        const readyAgents = triggerRunnerAgents().filter(triggerRunnerReady);
+        const chips = [...new Set(readyAgents.map(triggerRunnerChip))].join(" / ") || state.runner.chip || "—";
+        status = `${state.user.username} · ${readyAgents.length || 1} 个 Runner 在线 · ${chips}`;
       }
       else if (loggedIn && WORKER_API_BASE) status = `${state.user.username} · ${state.runner?.error || "Runner 离线，任务将排队"}`;
       else if (useWorkerWrite()) status = loggedIn ? status : "只读模式 · 登录后可提交采集任务";
@@ -1919,6 +1996,7 @@
       setupCaseCompareUI();
       updateRunContextDisplay("net");
       updateTriggerProfToolUI();
+      syncTriggerRunnerOptions();
       syncTriggerOpDefaultsFromRunner();
       updateVarlenFieldsUI();
       syncTriggerDeviceFromRunner();

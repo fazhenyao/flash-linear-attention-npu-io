@@ -20,6 +20,7 @@ PROF_OP_ROOT = ROOT / "data" / "prof_op"
 PROF_SOURCE_PATTERN = re.compile(r"^(OPPROF_|PROF_)", re.IGNORECASE)
 MAX_PROF_UPLOAD_BYTES = 512 * 1024 * 1024
 VALID_PROF_TOOLS = {"msprof", "msprof_op", "msprof_op_sim"}
+VALID_CHIPS = {"A2", "A3", "A5"}
 ATTR_DEFAULTS = {
     "batch": 1,
     "query_heads": 32,
@@ -71,6 +72,8 @@ class PerfRunnerConfig:
     chip: str
     prof_output_app: str
     prof_output_op: str
+    local_prof_output_app: str
+    local_prof_output_op: str
     soc_version: str
     dry_run: bool
 
@@ -110,6 +113,8 @@ def load_config() -> PerfRunnerConfig:
         chip=os.environ.get("PERF_CHIP", "").strip().upper() or "A2",
         prof_output_app=os.environ.get("PERF_PROF_OUTPUT", LOCAL_PROF_OUTPUT_APP).strip() or LOCAL_PROF_OUTPUT_APP,
         prof_output_op=os.environ.get("PERF_OP_OUTPUT", LOCAL_PROF_OUTPUT_OP).strip() or LOCAL_PROF_OUTPUT_OP,
+        local_prof_output_app=os.environ.get("PERF_LOCAL_PROF_OUTPUT", LOCAL_PROF_OUTPUT_APP).strip() or LOCAL_PROF_OUTPUT_APP,
+        local_prof_output_op=os.environ.get("PERF_LOCAL_OP_OUTPUT", LOCAL_PROF_OUTPUT_OP).strip() or LOCAL_PROF_OUTPUT_OP,
         soc_version=os.environ.get("PERF_SOC_VERSION", "").strip() or "Ascend910B",
         dry_run=_env_bool("PERF_RUN_DRY_RUN"),
     )
@@ -125,10 +130,11 @@ def to_repo_relative_path(path: Path | str) -> str:
     return candidate.as_posix()
 
 
-def local_prof_output_path(prof_tool: str) -> str:
+def local_prof_output_path(prof_tool: str, config: PerfRunnerConfig | None = None) -> str:
+    config = config or load_config()
     if prof_tool in {"msprof_op", "msprof_op_sim"}:
-        return to_repo_relative_path(LOCAL_PROF_OUTPUT_OP)
-    return to_repo_relative_path(LOCAL_PROF_OUTPUT_APP)
+        return to_repo_relative_path(config.local_prof_output_op)
+    return to_repo_relative_path(config.local_prof_output_app)
 
 
 def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> tuple[str, str]:
@@ -160,9 +166,13 @@ def normalize_prof_tool(payload: dict[str, Any]) -> str:
 
 
 def prof_output_root(prof_tool: str, *, local: bool) -> Path:
+    config = load_config()
     if prof_tool in {"msprof_op", "msprof_op_sim"}:
-        return PROF_OP_ROOT if local else Path(load_config().prof_output_op)
-    return PROF_APP_ROOT if local else Path(load_config().prof_output_app)
+        raw = config.local_prof_output_op if local else config.prof_output_op
+    else:
+        raw = config.local_prof_output_app if local else config.prof_output_app
+    path = Path(raw)
+    return path if path.is_absolute() else ROOT / path
 
 
 def prof_dir_prefix(prof_tool: str) -> str:
@@ -191,13 +201,13 @@ def resolve_npu_device(payload: dict[str, Any], config: PerfRunnerConfig | None 
 def resolve_chip(payload: dict[str, Any], config: PerfRunnerConfig | None = None) -> str:
     raw = str(payload.get("chip") or "").strip().upper()
     if raw:
-        if raw not in {"A2", "A3"}:
-            raise ValueError("chip must be A2 or A3")
+        if raw not in VALID_CHIPS:
+            raise ValueError(f"chip must be one of {sorted(VALID_CHIPS)}")
         return raw
     config = config or load_config()
     chip = str(config.chip or "A2").strip().upper()
-    if chip not in {"A2", "A3"}:
-        raise ValueError("PERF_CHIP must be A2 or A3")
+    if chip not in VALID_CHIPS:
+        raise ValueError(f"PERF_CHIP must be one of {sorted(VALID_CHIPS)}")
     return chip
 
 
@@ -431,7 +441,7 @@ def build_command(payload: dict[str, Any]) -> str:
     if config.mode == "ssh":
         remote = _remote_execution_command(config, invocation)
         return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
-    local_output = local_prof_output_path(prof_tool)
+    local_output = local_prof_output_path(prof_tool, config)
     invocation = build_prof_invocation(
         config,
         prof_tool=prof_tool,
@@ -610,7 +620,7 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
             build_prof_invocation(
                 config,
                 prof_tool=prof_tool,
-                output=local_prof_output_path(prof_tool),
+                output=local_prof_output_path(prof_tool, config),
                 script=script,
                 py_args=py_args,
                 kernel_name=kernel_name,

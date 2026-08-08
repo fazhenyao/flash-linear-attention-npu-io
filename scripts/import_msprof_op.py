@@ -970,7 +970,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("prof_dir", type=Path, nargs="?", help="OPPROF directory or prof_op root with --all")
     parser.add_argument("--all", action="store_true", help="Import every OPPROF_* under prof_dir (default: data/prof_op)")
     parser.add_argument("--model", default="gdn")
-    parser.add_argument("--chip", default="A2", choices=["A2", "A3"])
+    parser.add_argument("--chip", default="A2", choices=["A2", "A3", "A5"])
     parser.add_argument("--kernel-name", default="")
     parser.add_argument("--operator-id", default="")
     parser.add_argument("--prof-tool", default="msprof_op", choices=["msprof_op", "msprof_op_sim"])

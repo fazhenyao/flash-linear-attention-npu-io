@@ -17,7 +17,7 @@ from perf_runner import build_command, execute, runner_status  # noqa: E402
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Execute a real GDN msprof performance test")
     parser.add_argument("--payload", type=Path, help="JSON payload file from performance dashboard trigger")
-    parser.add_argument("--chip", default="A2", choices=["A2", "A3"])
+    parser.add_argument("--chip", default="A2", choices=["A2", "A3", "A5"])
     parser.add_argument("--model", default="gdn")
     parser.add_argument("--prof-tool", default="msprof", choices=["msprof", "msprof_op", "msprof_op_sim"])
     parser.add_argument("--kernel-name", default="")

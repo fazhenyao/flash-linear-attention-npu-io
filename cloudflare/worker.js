@@ -53,6 +53,7 @@ const OPERATOR_OWNER_RULES = {
 };
 const PASSWORD_HASH_ITERATIONS = 100000;
 const PERF_TOOLS = new Set(["msprof", "msprof_op", "msprof_op_sim"]);
+const PERF_CHIPS = new Set(["A2", "A3", "A5"]);
 const PERF_SCRIPT_IDS = new Set(["scripts/flash_gated_delta_rule.py"]);
 const PERF_JOB_FINAL_STATES = new Set(["succeeded", "failed", "canceled", "orphaned"]);
 const PERF_JOB_ACTIVE_STATES = new Set(["claimed", "running", "disconnected", "cancel_requested"]);
@@ -2129,7 +2130,13 @@ async function createPerfJob(env, payload, user) {
     entity: "perf_job",
     id: job.id,
     summary: `提交性能采集任务：${request.prof_tool}`,
-    detail: { job_id: job.id, tool: request.prof_tool, script_id: request.script_id, device: request.device },
+    detail: {
+      job_id: job.id,
+      tool: request.prof_tool,
+      script_id: request.script_id,
+      device: request.device,
+      target_runner_id: request.target_runner_id || null,
+    },
     source: user.username || "cloudflare-d1",
   });
   return { ok: true, duplicate: false, job: await getPerfJob(env, job.id) };
@@ -2145,7 +2152,7 @@ function normalizePerfJobRequest(payload) {
   const scriptId = String(payload.script_id || payload.script_path || "scripts/flash_gated_delta_rule.py").trim();
   if (!PERF_SCRIPT_IDS.has(scriptId)) throw withStatus(400, "unsupported script_id");
   const chip = String(payload.chip || "A2").trim().toUpperCase();
-  if (!new Set(["A2", "A3"]).has(chip)) throw withStatus(400, "chip must be A2 or A3");
+  if (!PERF_CHIPS.has(chip)) throw withStatus(400, "chip must be A2, A3 or A5");
   const device = boundedInteger(payload.device ?? 2, "device", 0, 63);
   const modelId = safeIdentifier(payload.model_id || "gdn", "model_id", 64);
   const kernelName = String(payload.kernel_name || "").trim();
@@ -2162,6 +2169,9 @@ function normalizePerfJobRequest(payload) {
     script_path: scriptId,
     attributes,
   };
+  if (payload.target_runner_id) {
+    request.target_runner_id = safeIdentifier(payload.target_runner_id, "target_runner_id", 96);
+  }
   if (kernelName) request.kernel_name = kernelName;
   if (payload.operator_id) request.operator_id = safeIdentifier(payload.operator_id, "operator_id", 128);
   if (profTool !== "msprof") {
@@ -2439,18 +2449,28 @@ async function getRunnerAgent(env, runnerId) {
 
 async function getPerfRunnerStatus(env) {
   const rows = await selectAll(env, "SELECT * FROM runner_agents WHERE active = 1 ORDER BY last_heartbeat_at DESC LIMIT 20");
-  const agents = rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    capabilities: parseJson(row.capabilities_json, {}),
-    vpn_connected: Boolean(row.vpn_connected),
-    npu_reachable: Boolean(row.npu_reachable),
-    current_jobs: numberOr(row.current_jobs, 0),
-    last_error: row.last_error || "",
-    last_heartbeat_at: row.last_heartbeat_at,
-    online: Date.now() - Date.parse(row.last_heartbeat_at || 0) < PERF_LEASE_SECONDS * 2000,
-  }));
-  const ready = agents.find((agent) => agent.online && agent.vpn_connected && agent.npu_reachable);
+  const agents = rows.map((row) => {
+    const capabilities = parseJson(row.capabilities_json, {});
+    const online = Date.now() - Date.parse(row.last_heartbeat_at || 0) < PERF_LEASE_SECONDS * 2000;
+    const vpnConnected = Boolean(row.vpn_connected);
+    const npuReachable = Boolean(row.npu_reachable);
+    return {
+      id: row.id,
+      name: row.name,
+      capabilities,
+      chip: capabilities.chip || capabilities.chips?.[0] || null,
+      npu_device: capabilities.device ?? capabilities.devices?.[0] ?? null,
+      prof_tools: capabilities.prof_tools || [...PERF_TOOLS],
+      vpn_connected: vpnConnected,
+      npu_reachable: npuReachable,
+      current_jobs: numberOr(row.current_jobs, 0),
+      last_error: row.last_error || "",
+      last_heartbeat_at: row.last_heartbeat_at,
+      online,
+      ready: online && vpnConnected && npuReachable,
+    };
+  });
+  const ready = agents.find((agent) => agent.ready);
   const capabilities = ready?.capabilities || agents[0]?.capabilities || {};
   return {
     ok: true,
@@ -2480,7 +2500,7 @@ async function claimPerfJob(env, payload) {
   );
   for (const candidate of candidates) {
     const request = parseJson(candidate.request_json, {});
-    if (!runnerCanExecute(runner.capabilities, request)) continue;
+    if (!runnerCanExecute(runner.id, runner.capabilities, request)) continue;
     const attemptId = `attempt-${crypto.randomUUID()}`;
     const leaseToken = randomToken(32);
     const leaseHash = await sha256Text(leaseToken);
@@ -2523,7 +2543,8 @@ async function sweepExpiredPerfLeases(env) {
   }
 }
 
-function runnerCanExecute(capabilities, request) {
+function runnerCanExecute(runnerId, capabilities, request) {
+  if (request.target_runner_id && request.target_runner_id !== runnerId) return false;
   const tools = Array.isArray(capabilities.prof_tools) ? capabilities.prof_tools : [];
   if (tools.length && !tools.includes(request.prof_tool)) return false;
   const chips = Array.isArray(capabilities.chips) ? capabilities.chips : (capabilities.chip ? [capabilities.chip] : []);

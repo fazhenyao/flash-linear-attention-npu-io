@@ -1,17 +1,26 @@
 [CmdletBinding()]
 param(
     [string]$TaskName = "FLA VPN Runner",
+    [string]$ConfigPath,
+    [string]$TokenPath,
+    [string]$LogFile,
     [switch]$StartNow
 )
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $runnerScript = Join-Path $PSScriptRoot "run_runner_windows.ps1"
-$configPath = Join-Path $repoRoot ".local-secrets\runner-config.json"
-$tokenPath = Join-Path $repoRoot ".local-secrets\runner-token.clixml"
-$logPath = Join-Path $repoRoot ".local-secrets\runner.log"
+if (-not $ConfigPath) {
+    $ConfigPath = Join-Path $repoRoot ".local-secrets\runner-config.json"
+}
+if (-not $TokenPath) {
+    $TokenPath = Join-Path $repoRoot ".local-secrets\runner-token.clixml"
+}
+if (-not $LogFile) {
+    $LogFile = Join-Path $repoRoot ".local-secrets\runner.log"
+}
 
-foreach ($requiredPath in @($runnerScript, $configPath, $tokenPath)) {
+foreach ($requiredPath in @($runnerScript, $ConfigPath, $TokenPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
         throw "Required Relay file does not exist: $requiredPath"
     }
@@ -24,9 +33,9 @@ $arguments = @(
     "-ExecutionPolicy Bypass"
     "-WindowStyle Hidden"
     "-File `"$runnerScript`""
-    "-ConfigPath `"$configPath`""
-    "-TokenPath `"$tokenPath`""
-    "-LogFile `"$logPath`""
+    "-ConfigPath `"$ConfigPath`""
+    "-TokenPath `"$TokenPath`""
+    "-LogFile `"$LogFile`""
 ) -join " "
 
 $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
@@ -56,4 +65,5 @@ if ($StartNow) {
 }
 
 Write-Host "Scheduled task installed: $TaskName"
-Write-Host "Relay log: $logPath"
+Write-Host "Relay config: $ConfigPath"
+Write-Host "Relay log: $LogFile"

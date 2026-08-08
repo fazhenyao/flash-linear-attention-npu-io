@@ -11,8 +11,12 @@ from backend.perf_runner import (
     _ssh_command,
     build_command,
     load_config,
+    prof_output_root,
+    resolve_chip,
 )
 from backend.runner_agent import RunnerAgent
+from scripts.cube_theoretical_flops import compute_mfu
+from scripts.hbm_theoretical_bytes import compute_mbu
 
 
 class PerfRunnerRemoteCommandTests(unittest.TestCase):
@@ -59,6 +63,51 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertIn("data/prof_gdr", command)
         self.assertIn("--device 2", command)
         self.assertNotIn("data\\\\prof_gdr", command)
+
+    def test_a5_chip_and_instance_local_artifact_roots(self):
+        environment = {
+            **self.environment,
+            "PERF_CHIP": "A5",
+            "PERF_LOCAL_PROF_OUTPUT": "data/runner-artifacts/a5/prof_gdr",
+            "PERF_LOCAL_OP_OUTPUT": "data/runner-artifacts/a5/prof_op",
+        }
+        with patch.dict(os.environ, environment, clear=False):
+            config = load_config()
+            self.assertEqual(resolve_chip({}, config), "A5")
+            self.assertEqual(
+                prof_output_root("msprof", local=True),
+                config.local_script.resolve().parents[1] / "data/runner-artifacts/a5/prof_gdr",
+            )
+
+    def test_a5_does_not_reuse_a2_theoretical_limits(self):
+        attributes = {
+            "batch": 1,
+            "query_heads": 1,
+            "value_heads": 1,
+            "tokens": 64,
+            "key_dim": 128,
+            "value_dim": 128,
+            "chunk_size": 64,
+            "dtype": "bf16",
+        }
+
+        self.assertIsNone(
+            compute_mfu(
+                "chunk_fwd_o",
+                attributes,
+                task_duration_us=10,
+                block_dim=1,
+                chip="A5",
+            )
+        )
+        self.assertIsNone(
+            compute_mbu(
+                "chunk_fwd_o",
+                attributes,
+                task_duration_us=10,
+                chip="A5",
+            )
+        )
 
     def test_ssh_and_scp_have_connection_timeouts(self):
         with patch.dict(os.environ, self.environment, clear=False):

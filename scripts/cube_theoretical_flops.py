@@ -192,10 +192,10 @@ def compute_mfu(
     if block_dim is None or block_dim <= 0:
         return None
     resolved_freq = freq_mhz
-    if resolved_freq is None and chip:
-        resolved_freq = CHIP_RATED_FREQ_MHZ.get(chip.upper())
+    if resolved_freq is None:
+        resolved_freq = CHIP_RATED_FREQ_MHZ.get((chip or "A2").upper())
     if resolved_freq is None or resolved_freq <= 0:
-        resolved_freq = CHIP_RATED_FREQ_MHZ["A2"]
+        return None
     theoretical_flops = theoretical_cube_flops(operator_id, attributes)
     if theoretical_flops is None or theoretical_flops <= 0:
         return None

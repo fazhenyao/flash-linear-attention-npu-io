@@ -142,7 +142,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("prof_dir", type=Path, nargs="?", help="Profiler result directory, or prof_gdr root with --all")
     parser.add_argument("--all", action="store_true", help="Import every PROF_* directory under prof_dir (default: data/prof_gdr)")
     parser.add_argument("--model", default="gdn", help="Model id, default gdn")
-    parser.add_argument("--chip", default="A2", choices=["A2", "A3"], help="Chip type")
+    parser.add_argument("--chip", default="A2", choices=["A2", "A3", "A5"], help="Chip type")
     parser.add_argument("--replace-mock", action="store_true", help="Remove previous prof snapshots before import")
     return parser.parse_args()
 
