@@ -451,7 +451,7 @@ def _ssh_command(config: PerfRunnerConfig, remote_command: str) -> list[str]:
         cmd.extend(["-p", config.ssh_port])
     if config.ssh_identity:
         cmd.extend(["-i", config.ssh_identity])
-    cmd.extend(["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new"])
+    cmd.extend(_ssh_connection_options())
     cmd.append(f"{config.ssh_user}@{config.ssh_host}")
     cmd.append(remote_command)
     return cmd
@@ -463,9 +463,20 @@ def _scp_command(config: PerfRunnerConfig, remote_path: str, local_path: Path) -
         cmd.extend(["-P", config.ssh_port])
     if config.ssh_identity:
         cmd.extend(["-i", config.ssh_identity])
+    cmd.extend(_ssh_connection_options())
     cmd.append(f"{config.ssh_user}@{config.ssh_host}:{remote_path}")
     cmd.append(str(local_path))
     return cmd
+
+
+def _ssh_connection_options() -> list[str]:
+    return [
+        "-o", "BatchMode=yes",
+        "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "ConnectTimeout=10",
+        "-o", "ServerAliveInterval=15",
+        "-o", "ServerAliveCountMax=4",
+    ]
 
 
 def _run_command(command: list[str] | str, *, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:

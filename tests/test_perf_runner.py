@@ -5,6 +5,8 @@ from unittest.mock import patch
 from backend.perf_runner import (
     _remote_execution_command,
     _remote_output_path,
+    _scp_command,
+    _ssh_command,
     build_command,
     load_config,
 )
@@ -54,6 +56,18 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertIn("data/prof_gdr", command)
         self.assertIn("--device 2", command)
         self.assertNotIn("data\\\\prof_gdr", command)
+
+    def test_ssh_and_scp_have_connection_timeouts(self):
+        with patch.dict(os.environ, self.environment, clear=False):
+            config = load_config()
+
+        for command in (
+            _ssh_command(config, "true"),
+            _scp_command(config, "/tmp/prof", os.path.abspath("data")),
+        ):
+            self.assertIn("ConnectTimeout=10", command)
+            self.assertIn("ServerAliveInterval=15", command)
+            self.assertIn("ServerAliveCountMax=4", command)
 
 
 if __name__ == "__main__":
