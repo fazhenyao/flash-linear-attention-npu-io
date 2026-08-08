@@ -1,0 +1,47 @@
+name: Create Admin User
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "Admin username"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  create-admin-user:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Create or reset admin account
+        env:
+          FLASH_IO_ADMIN_TOKEN: ${{ secrets.FLASH_IO_ADMIN_TOKEN }}
+          ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
+          ADMIN_USERNAME: ${{ inputs.username }}
+          FLASH_IO_API_BASE: https://flash-linear-attention-npu-io-fazhenyao.fazhenyao.workers.dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$FLASH_IO_ADMIN_TOKEN"
+          test -n "$ADMIN_PASSWORD"
+          test -n "$ADMIN_USERNAME"
+          python scripts/create_cloudflare_user.py \
+            --api "$FLASH_IO_API_BASE" \
+            --admin-token "$FLASH_IO_ADMIN_TOKEN" \
+            --username "$ADMIN_USERNAME" \
+            --password "$ADMIN_PASSWORD" \
+            --role admin \
+            --display-name "$ADMIN_USERNAME" \
+            --owner-name "$ADMIN_USERNAME" \
+            --reset-existing
