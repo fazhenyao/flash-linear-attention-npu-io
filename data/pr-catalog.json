@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-07T10:35:47+08:00",
+  "generatedAt": "2026-08-08T08:44:06+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 194,
+  "total": 197,
   "items": [
+    {
+      "number": 286,
+      "title": "fix: avoid OOB read when loading chunk_gdn_fwd solve_tri tail tiles",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/286",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-07T09:39:59Z",
+      "createdAt": "2026-08-07T06:51:16Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 284,
+      "title": "fix: avoid OOB read when loading solve_tri tail diagonal tiles",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/284",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-07T09:40:08Z",
+      "createdAt": "2026-08-07T03:47:46Z",
+      "headRef": "v26.6.0",
+      "labels": []
+    },
+    {
+      "number": 283,
+      "title": "Optimize ChunkLocalCumsum and ChunkScaledDotKKT",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/283",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-07T07:15:38Z",
+      "createdAt": "2026-08-07T02:37:41Z",
+      "headRef": "perf",
+      "labels": []
+    },
     {
       "number": 282,
       "title": "fix: 修复 A5 KDA BF16 sub-16 尾块精度与确定性",
@@ -23,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-06T13:06:01Z",
+      "updatedAt": "2026-08-07T06:36:33Z",
       "createdAt": "2026-08-06T13:02:19Z",
       "headRef": "20260806_204500_docs-README-usability",
       "labels": []
