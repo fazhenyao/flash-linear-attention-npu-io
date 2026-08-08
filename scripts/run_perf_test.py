@@ -31,7 +31,6 @@ def default_payload(chip: str, model: str, prof_tool: str = "msprof") -> dict:
         "case_id": "manual",
         "model_id": model,
         "chip": chip,
-        "device": "722",
         "prof_tool": prof_tool,
         "attributes": {
             "batch": 1,

@@ -11,7 +11,7 @@ import subprocess
 import sys
 import zipfile
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +62,10 @@ class PerfRunnerConfig:
     ssh_identity: str
     remote_workdir: str
     remote_script: str
+    remote_env_script: str
+    remote_path_prepend: str
+    remote_conda_sh: str
+    remote_conda_env: str
     local_script: Path
     npu_device: int
     chip: str
@@ -97,6 +101,10 @@ def load_config() -> PerfRunnerConfig:
         ssh_identity=os.environ.get("PERF_SSH_IDENTITY_FILE", "").strip(),
         remote_workdir=os.environ.get("PERF_REMOTE_WORKDIR", "").strip() or ".",
         remote_script=os.environ.get("PERF_REMOTE_SCRIPT", "").strip() or DEFAULT_TRIGGER_SCRIPT,
+        remote_env_script=os.environ.get("PERF_REMOTE_ENV_SCRIPT", "").strip(),
+        remote_path_prepend=os.environ.get("PERF_REMOTE_PATH_PREPEND", "").strip(),
+        remote_conda_sh=os.environ.get("PERF_REMOTE_CONDA_SH", "").strip(),
+        remote_conda_env=os.environ.get("PERF_REMOTE_CONDA_ENV", "").strip(),
         local_script=Path(os.environ.get("PERF_LOCAL_SCRIPT", DEFAULT_TRIGGER_SCRIPT)),
         npu_device=int(os.environ.get("PERF_NPU_DEVICE", "2")),
         chip=os.environ.get("PERF_CHIP", "").strip().upper() or "A2",
@@ -254,6 +262,9 @@ def runner_status() -> dict[str, Any]:
         "prof_tools": sorted(VALID_PROF_TOOLS),
         "ssh_host": config.ssh_host or None,
         "remote_workdir": config.remote_workdir if config.mode == "ssh" else None,
+        "remote_env_script": config.remote_env_script if config.mode == "ssh" else None,
+        "remote_path_prepend": config.remote_path_prepend if config.mode == "ssh" else None,
+        "remote_conda_env": config.remote_conda_env if config.mode == "ssh" else None,
         "local_script": to_repo_relative_path(config.local_script) if config.mode == "local" else None,
         "npu_device": config.npu_device,
         "chip": config.chip,
@@ -402,7 +413,10 @@ def build_command(payload: dict[str, Any]) -> str:
     warm_up = resolve_op_warm_up(payload)
     launch_count = resolve_op_launch_count(payload)
     py_args = attributes_to_cli_args(attrs, resolve_npu_device(payload, config))
-    output = str(prof_output_root(prof_tool, local=False))
+    if config.mode == "ssh":
+        output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
+    else:
+        output = str(prof_output_root(prof_tool, local=True))
     remote_script, local_script = resolve_script_paths(payload, config)
     invocation = build_prof_invocation(
         config,
@@ -415,7 +429,7 @@ def build_command(payload: dict[str, Any]) -> str:
         launch_count=launch_count,
     )
     if config.mode == "ssh":
-        remote = f"cd {shlex.quote(config.remote_workdir)} && {invocation}"
+        remote = _remote_execution_command(config, invocation)
         return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
     local_output = local_prof_output_path(prof_tool)
     invocation = build_prof_invocation(
@@ -460,10 +474,34 @@ def _run_command(command: list[str] | str, *, cwd: Path | None = None) -> subpro
     return subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
 
 
+def _remote_execution_command(config: PerfRunnerConfig, invocation: str) -> str:
+    if config.remote_conda_env and not config.remote_conda_sh:
+        raise ValueError("PERF_REMOTE_CONDA_ENV requires PERF_REMOTE_CONDA_SH")
+    commands = []
+    if config.remote_env_script:
+        commands.append(f". {shlex.quote(config.remote_env_script)}")
+    if config.remote_path_prepend:
+        commands.append(f"export PATH={shlex.quote(config.remote_path_prepend)}:\"$PATH\"")
+    if config.remote_conda_env:
+        commands.append(f". {shlex.quote(config.remote_conda_sh)}")
+        commands.append(f"conda activate {shlex.quote(config.remote_conda_env)}")
+    commands.append(f"cd {shlex.quote(config.remote_workdir)}")
+    commands.append(invocation)
+    return " && ".join(commands)
+
+
+def _remote_output_path(config: PerfRunnerConfig, output: str) -> str:
+    path = PurePosixPath(output)
+    if path.is_absolute():
+        return path.as_posix()
+    return (PurePosixPath(config.remote_workdir) / path).as_posix()
+
+
 def _list_remote_prof_dirs(config: PerfRunnerConfig, prof_tool: str) -> set[str]:
     output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
     prefix = prof_dir_prefix(prof_tool).lower()
-    remote = f"ls -1 {shlex.quote(output)}/{prefix}* 2>/dev/null || true"
+    remote_output = _remote_output_path(config, output).rstrip("/")
+    remote = f"ls -1 {shlex.quote(remote_output)}/{prefix}* 2>/dev/null || true"
     result = _run_command(_ssh_command(config, remote))
     names = set()
     for line in result.stdout.splitlines():
@@ -540,13 +578,13 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             warm_up=warm_up,
             launch_count=launch_count,
         )
-        remote = f"cd {shlex.quote(config.remote_workdir)} && {invocation}"
+        remote = _remote_execution_command(config, invocation)
         _run_command(_ssh_command(config, remote))
         after = _list_remote_prof_dirs(config, prof_tool)
         prof_name = _resolve_new_prof_dir(before, after, prof_tool)
         local_dir = local_root / prof_name
         local_dir.parent.mkdir(parents=True, exist_ok=True)
-        remote_prof = f"{remote_output.rstrip('/')}/{prof_name}"
+        remote_prof = f"{_remote_output_path(config, remote_output).rstrip('/')}/{prof_name}"
         if local_dir.exists():
             import shutil
 
