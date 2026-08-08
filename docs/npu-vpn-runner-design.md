@@ -25,9 +25,9 @@
 - NPU 服务器只能在本机或指定网关开启 VPN 后通过 SSH 访问。
 - VPN 可能断开、续期、需要 MFA，不能假设连接永久稳定。
 - Profiling 原始目录可能很大，不适合直接存入 D1。
-- 当前 Relay 是用户开启 VPN 的 Windows 电脑，通过登录触发的计划任务运行。
-- 当前 NPU SSH 目标为 `root@192.168.9.221:22`，项目目录为 `/workspace/fazhenyao/flash-linear-attention-npu-io`。
-- 当前 CANN 环境脚本为 `/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh`，Conda 环境为 `fla_dump`。
+- 当前 Relay 是用户开启 VPN 的 Windows 电脑，通过两个登录触发的计划任务分别运行 A2 和 A5 Agent。
+- A2 SSH 目标为 `root@192.168.9.221:22`，项目目录为 `/workspace/fazhenyao/flash-linear-attention-npu-io`；CANN 环境脚本为 `/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh`，Conda 环境为 `fla_dump`。
+- A5 SSH 目标为 `npu_user7@192.168.13.241:22`，项目目录为 `/home/npu_user7/fazhenyao/flash-linear-attention-npu-io`；CANN 环境脚本为 `/home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh`，Conda 环境为 `f30077529`。
 
 ## 3. 设计目标
 
@@ -224,6 +224,17 @@ Worker 请求异常：至少等待 5 秒并指数退避，最大 120 秒
 当前实现没有随机抖动，也没有采用 Worker 返回的 `retry_after_seconds`。部署多个 Relay 时，应增加抖动并尊重服务端建议间隔，避免同时集中请求。
 
 领取接口只返回 Relay 能力范围内的任务，并限制响应数量和响应体大小。没有可执行任务时返回正常空结果，不把空队列作为错误。
+
+### 7.2 多 Relay 精确路由
+
+看板从 Worker 的 Runner 状态接口读取在线 Agent，并在“执行服务器”下拉框中显示 Runner 名称、芯片、默认 NPU 卡号和在线状态。提交任务时同时发送：
+
+- `target_runner_id`：指定本次任务必须由哪个 Agent 领取。
+- `chip`、`device` 和 `prof_tool`：继续作为能力匹配和执行参数。
+
+Worker 领取任务时先校验 `target_runner_id`，再校验 Agent 上报的芯片、卡号和 profiler 能力。未被指定的 Agent 即使芯片相同也不能领取该任务；目标 Agent 离线时，任务保留在 D1 等待，不会自动漂移到其他服务器。
+
+当前两个 Agent 共享同一个 Runner Token，但使用不同的 `RUNNER_ID`、配置文件、状态目录、日志、计划任务和本地制品目录。后续应为每个 Agent 签发可单独吊销和轮换的凭据。
 
 ## 8. 任务状态机
 
@@ -715,11 +726,11 @@ VPN 断开时取消请求保持待处理，不能声称已经取消。当前版�
 
 ## 22. 配置建议
 
-当前 Relay 的关键环境变量：
+当前 A2 Relay 的关键环境变量：
 
 ```text
 RUNNER_ID=vpn-runner-windows-01
-RUNNER_NAME=Windows VPN Relay 01
+RUNNER_NAME=Windows VPN Relay A2 01
 RUNNER_API_BASE=https://flash-linear-attention-npu-io-fazhenyao.fazhenyao.workers.dev
 RUNNER_TOKEN=secret-from-secure-store
 RUNNER_POLL_MIN_SECONDS=2
@@ -745,7 +756,33 @@ PERF_CHIP=A2
 PERF_SOC_VERSION=Ascend910B
 ```
 
-当前 Windows Relay 将非口令配置保存在 Git 忽略的 `.local-secrets/runner-config.json`，将 `RUNNER_TOKEN` 通过 DPAPI 加密保存在 `.local-secrets/runner-token.clixml`。Token 和 SSH 私钥不得提交到 Git。当前 `root` 账号仅是过渡配置，生产化前应改为低权限专用账号。
+当前 A5 Relay 的关键差异配置：
+
+```text
+RUNNER_ID=vpn-runner-windows-a5-01
+RUNNER_NAME=Windows VPN Relay A5 01
+RUNNER_STATE_DIR=data/runner-state/a5
+RUNNER_ARTIFACT_ROOTS=data/runner-artifacts/a5/prof_gdr;data/runner-artifacts/a5/prof_op
+
+PERF_SSH_HOST=192.168.13.241
+PERF_SSH_USER=npu_user7
+PERF_SSH_PORT=22
+PERF_SSH_IDENTITY_FILE=C:/Users/Administrator/.ssh/id_rsa
+PERF_REMOTE_WORKDIR=/home/npu_user7/fazhenyao/flash-linear-attention-npu-io
+PERF_REMOTE_SCRIPT=scripts/flash_gated_delta_rule.py
+PERF_REMOTE_ENV_SCRIPT=/home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh
+PERF_REMOTE_CONDA_SH=/home/npu_user7/jianshuqiang/miniconda3/etc/profile.d/conda.sh
+PERF_REMOTE_CONDA_ENV=f30077529
+PERF_PROF_OUTPUT=data/prof_gdr
+PERF_OP_OUTPUT=data/prof_op
+PERF_LOCAL_PROF_OUTPUT=data/runner-artifacts/a5/prof_gdr
+PERF_LOCAL_OP_OUTPUT=data/runner-artifacts/a5/prof_op
+PERF_NPU_DEVICE=7
+PERF_CHIP=A5
+PERF_SOC_VERSION=Ascend950PR
+```
+
+Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-secrets/runner-config.json` 和 `.local-secrets/runner-config-a5.json`，共享的 `RUNNER_TOKEN` 通过 DPAPI 加密保存在 `.local-secrets/runner-token.clixml`。Token 和 SSH 私钥不得提交到 Git。A2 当前使用 `root` 账号仅是过渡配置，生产化前应改为低权限专用账号。
 
 ## 23. 分阶段实施
 
@@ -761,7 +798,7 @@ PERF_SOC_VERSION=Ascend910B
 
 验收条件：VPN 上线后任务可自动执行；VPN 离线时任务可靠等待；看板能展示最终指标。
 
-2026-08-08 已在 NPU 2 上完成两条真实 `msprof` 端到端任务：`T=128` 总耗时 `1.0 ms`，`T=4087` 总耗时 `15.2 ms`。两条任务均由看板提交、Worker/D1 排队、Windows Relay 领取、SSH 到 NPU 执行、SCP 回收，并最终在看板显示“已完成”。
+2026-08-08 已在 A2 NPU 2 上完成两条真实 `msprof` 端到端任务：`T=128` 总耗时 `1.0 ms`，`T=4087` 总耗时 `15.2 ms`。同日又在 A5 NPU 7 上完成 `T=128` 的定向 `msprof` 任务，总耗时 `0.7 ms`。这些任务均由看板提交、Worker/D1 排队、指定 Windows Relay 领取、SSH 到 NPU 执行、SCP 回收，并最终在看板显示“已完成”。
 
 ### 阶段二：可靠性
 
@@ -783,7 +820,7 @@ PERF_SOC_VERSION=Ascend910B
 ### 阶段四：生产化
 
 - 迁移到专用 VPN Relay 或站点到站点网络。
-- 支持多个 Agent、芯片和 Device 调度。
+- 当前已支持多个 Agent、A2/A5 芯片和指定 Device 的精确路由；后续增加容量感知和自动调度。
 - 增加权限细分、速率限制、审计和运行指标。
 - 建立自动化 API、状态机、断线恢复和权限测试。
 
@@ -810,6 +847,8 @@ PERF_SOC_VERSION=Ascend910B
 当前采用“Worker/D1 队列 + VPN Runner Relay 主动拉取 + 同步 SSH 远端执行 + Relay 本地制品保留”，不启用 R2。
 
 - Worker/D1 保存任务状态、结构化性能指标、审计信息和制品清单。
+- 看板允许显式选择 A2 或 A5 执行服务器，Worker 使用 `target_runner_id` 保证任务只被指定 Relay 领取。
+- 两个 Relay Agent 运行在同一台 Windows VPN 电脑上，各自连接一台 NPU 服务器，配置、状态、日志和本地制品目录互相隔离。
 - Relay 保存回收后的原始 Prof 和分析文件，默认保留 30 天；NPU 服务器源目录当前需要单独清理。
 - 看板当前不提供原始制品的公网下载；管理员通过 VPN/SSH 获取文件。
 - Relay 仍只发起出站 HTTPS 请求，不开放公网入站端口。
@@ -860,23 +899,25 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传。
 - `backend/runner_agent.py` 已实现主动出站注册、SSH 端口健康检查、自适应领取、执行期 heartbeat、结果回传和本地制品过期清理。
 - `backend/perf_runner.py` 已支持远端 CANN/Conda 环境准备、同步 SSH 执行、SSH/SCP 超时、新增结果目录识别和回收。
-- 性能看板已改为向 Worker 异步提交任务；Runner 或 VPN 离线时任务继续排队。
+- 性能看板已改为向 Worker 异步提交任务，并提供 A2/A5 执行服务器选择；Runner 或 VPN 离线时任务继续排队。
 - 已增加不执行 NPU 命令的队列冒烟测试 `scripts/smoke_test_perf_queue.py`。
 - Worker 和 Relay 已配置独立 `RUNNER_TOKEN`，本机 Token 使用 DPAPI 加密保存。
-- Windows 计划任务 `FLA VPN Runner` 已安装并运行；当前计划任务在用户登录后启动 Agent，以复用本机 VPN 会话。
-- 已验证看板显示 `Runner 在线 · A2 · NPU 2`，并完成两条真实 `msprof` 任务的领取、执行、回收、解析和结果展示。
+- Windows 计划任务 `FLA VPN Runner` 和 `FLA VPN Runner A5` 已安装并运行；两个计划任务都在用户登录后启动 Agent，以复用本机 VPN 会话。
+- 已验证看板同时显示两个在线 Runner，并完成 A2 NPU 2 与 A5 NPU 7 的真实 `msprof` 任务领取、执行、回收、解析和结果展示。
 - Relay 导入结果时只构建内存数据并回传 D1，不再改写仓库性能快照；本地 Prof 目录已加入 Git 忽略列表。
+- A5 的芯片频率和 HBM 带宽理论常量尚未录入，A5 结果中的 MFU/MBU 保持空值，不使用 A2 常量代算。
 
 ### 26.1 当前 Windows Relay 的本机凭据与启动方式
 
 当前过渡阶段 Relay 运行在用户开启 VPN 的 Windows 电脑上，采用以下本机约束：
 
 - `RUNNER_TOKEN` 使用 Windows DPAPI 加密到 `.local-secrets/runner-token.clixml`，只允许创建它的 Windows 用户解密。
-- NPU 地址、SSH 用户、SSH 私钥路径等非口令配置保存在 `.local-secrets/runner-config.json`，该目录已被 Git 忽略。
+- NPU 地址、SSH 用户、SSH 私钥路径等非口令配置分别保存在 `.local-secrets/runner-config.json` 和 `.local-secrets/runner-config-a5.json`，该目录已被 Git 忽略。
 - Agent 通过 Windows 计划任务在当前用户登录后启动，以便复用交互式 VPN 会话；VPN 未连接时 Agent 不领取任务，VPN 恢复后自动继续。
 - 计划任务只运行 `scripts/run_runner_windows.ps1`，不注册 Windows 入站服务、不配置公网域名、不开放本机端口。
-- Relay 日志写入 `.local-secrets/runner.log`，原始性能制品继续按本方案保存在本机并执行保留期清理。
-- 当前 Agent 配置为单并发，默认 NPU Device 为 2，芯片为 A2，SoC 为 Ascend910B。
+- A2/A5 Relay 日志分别写入 `.local-secrets/runner.log` 和 `.local-secrets/runner-a5.log`；状态分别写入 `data/runner-state` 和 `data/runner-state/a5`。
+- A2 原始性能制品保存在既有 `data/prof_gdr` / `data/prof_op`，A5 制品保存在 `data/runner-artifacts/a5/prof_gdr` / `data/runner-artifacts/a5/prof_op`，并执行 30 天保留期清理。
+- 两个 Agent 均为单并发。A2 默认 NPU 2、SoC `Ascend910B`；A5 默认 NPU 7、SoC `Ascend950PR`。
 
 ### 26.2 当前已知限制
 
@@ -884,8 +925,8 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - 取消请求只能设置本地标记，尚不能实时终止远端 profiler 进程。
 - 服务器端尚未实现 Device 锁，多 Relay 或人工任务需要运维协调。
 - 领取前只检查 SSH TCP 端口，SSH 认证、CANN/Conda、profiler、Device 和磁盘空间在执行阶段才暴露错误。
-- 当前使用 `root` SSH 账号和 `StrictHostKeyChecking=accept-new`，应迁移到低权限账号和预置固定主机密钥。
-- 当前没有轮询随机抖动，也不读取 Worker 返回的建议重试间隔；单 Relay 部署不受影响，多 Relay 前需要补齐。
+- A2 当前使用 `root` SSH 账号；A2/A5 均使用 `StrictHostKeyChecking=accept-new`。A2 应迁移到低权限账号，两台服务器都应预置固定主机密钥。
+- 当前没有轮询随机抖动，也不读取 Worker 返回的建议重试间隔；双 Relay 已投入运行，应尽快补齐抖动和服务端退避提示支持。
 - 30 天过期清理只覆盖 Relay 本地副本，不会删除 NPU 服务器 `data/prof_gdr` / `data/prof_op` 下的源目录。
 - R2 未启用，看板不能直接下载原始 Prof；管理员需从 Relay 本地或经 VPN/SSH 获取。
 - Windows 电脑、登录会话或 VPN 离线时，任务会继续保存在 D1 中，但不会执行。
