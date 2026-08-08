@@ -849,6 +849,16 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - 配置 Worker `RUNNER_TOKEN` 和 Relay `RUNNER_TOKEN`。
 - 提供 Relay 操作系统、VPN 连接方式，以及 NPU SSH 地址、端口和服务账号。
 - 在 Relay 安装运行环境并配置为 systemd 或 Windows Service。
+
+### 18.3 当前 Windows Relay 的本机凭据与启动方式
+
+当前过渡阶段 Relay 运行在用户开启 VPN 的 Windows 电脑上，采用以下本机约束：
+
+- `RUNNER_TOKEN` 使用 Windows DPAPI 加密到 `.local-secrets/runner-token.clixml`，只允许创建它的 Windows 用户解密。
+- NPU 地址、SSH 用户、SSH 私钥路径等非口令配置保存在 `.local-secrets/runner-config.json`，该目录已被 Git 忽略。
+- Agent 通过 Windows 计划任务在当前用户登录后启动，以便复用交互式 VPN 会话；VPN 未连接时 Agent 不领取任务，VPN 恢复后自动继续。
+- 计划任务只运行 `scripts/run_runner_windows.ps1`，不注册 Windows 入站服务、不配置公网域名、不开放本机端口。
+- Relay 日志写入 `.local-secrets/runner.log`，原始性能制品继续按本方案保存在本机并执行保留期清理。
 - 验证 NPU 上的脚本路径、`msprof` / `msopprof`、Device、输出目录和磁盘空间。
 - 完成 VPN 离线排队、恢复领取、真实采集和结果回传验收。
 - 阶段二的远端 systemd 持久执行、进程级取消和重启恢复仍未实现。
