@@ -244,7 +244,7 @@ class RunnerAgent:
         heartbeat.start()
         try:
             self.save_job_state(job, "running", request=request)
-            result = execute(request)
+            result = execute(request, persist_local_data=False)
             artifacts, local_artifacts = self.build_artifacts(job, result)
             self.save_job_state(
                 job,

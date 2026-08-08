@@ -1,5 +1,6 @@
 import os
 import unittest
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from backend.perf_runner import (
@@ -11,6 +12,7 @@ from backend.perf_runner import (
     build_command,
     load_config,
 )
+from backend.runner_agent import RunnerAgent
 
 
 class PerfRunnerRemoteCommandTests(unittest.TestCase):
@@ -82,6 +84,33 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         remote_command = run_command.call_args.args[0][-1]
         self.assertIn("ls -1d", remote_command)
         self.assertIn("/PROF_*", remote_command)
+
+    @patch("backend.runner_agent.JobHeartbeat")
+    @patch("backend.runner_agent.execute")
+    def test_runner_agent_does_not_persist_repository_data(self, execute, heartbeat_class):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.config = SimpleNamespace(runner_id="relay-test")
+        agent.api = Mock()
+        agent.save_job_state = Mock()
+        agent.build_artifacts = Mock(return_value=([], []))
+        agent.environment_summary = Mock(return_value={})
+        agent.send_runner_heartbeat = Mock()
+        agent.health = Mock(return_value={})
+        heartbeat_class.return_value.cancel_requested.is_set.return_value = False
+        execute.return_value = {"snapshot": {}, "data": {}}
+        job = {
+            "id": "job-test",
+            "attempt_id": "attempt-test",
+            "lease_token": "lease-test",
+            "request": {"prof_tool": "msprof"},
+        }
+
+        agent.run_job(job)
+
+        execute.assert_called_once_with(
+            {"prof_tool": "msprof"},
+            persist_local_data=False,
+        )
 
 
 if __name__ == "__main__":

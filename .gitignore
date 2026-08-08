@@ -12,5 +12,7 @@ data/*.sqlite3-*
 .local-backups/
 generated/
 data/runner-state/
+data/prof_gdr/
+data/prof_op/
 initial-accounts*.csv
 .DS_Store

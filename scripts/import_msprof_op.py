@@ -874,6 +874,7 @@ def import_msprof_op(
     operator_id: str | None = None,
     prof_tool: str = "msprof_op",
     device_id: int = 2,
+    persist: bool = True,
 ) -> dict[str, Any]:
     prof_dir = prof_dir.resolve()
     if not prof_dir.exists():
@@ -957,9 +958,10 @@ def import_msprof_op(
     if not any(item.get("id") == model_id for item in data["models"]):
         data["models"].append({"id": model_id, "label": model_id.upper(), "position": 0, "active": True})
     data["version"] = now_iso()
-    for path in PERF_PATHS:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if persist:
+        for path in PERF_PATHS:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return data
 
 

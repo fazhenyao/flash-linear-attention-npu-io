@@ -709,6 +709,7 @@ def import_prof(
     replace_mock: bool = False,
     *,
     device_id: int = 2,
+    persist: bool = True,
 ) -> dict[str, Any]:
     prof_dir = prof_dir.resolve()
     if not prof_dir.exists():
@@ -757,7 +758,7 @@ def import_prof(
     data["snapshots"] = snapshots
     if not any(item.get("id") == model_id for item in data["models"]):
         data["models"].append({"id": model_id, "label": model_id.upper(), "position": 0, "active": True})
-    runs = [item for item in data.get("runs", []) if item.get("created_by") == "import_prof_gdr"]
+    runs = list(data.get("runs", []))
     run = {
         "id": f"run-{prof_dir.name.lower()}",
         "case_id": case["id"],
@@ -780,9 +781,10 @@ def import_prof(
     data["cases"] = [item for item in data.get("cases", []) if item.get("id") in referenced_cases]
     data["version"] = now_iso()
 
-    for path in PERF_PATHS:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if persist:
+        for path in PERF_PATHS:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return data
 
 

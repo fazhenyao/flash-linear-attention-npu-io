@@ -549,7 +549,7 @@ def _import_module(script_name: str):
     return module
 
 
-def execute(payload: dict[str, Any]) -> dict[str, Any]:
+def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict[str, Any]:
     config = ensure_runner_configured()
     prof_tool = normalize_prof_tool(payload)
     command = build_command(payload)
@@ -631,7 +631,14 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
 
     if prof_tool == "msprof":
         import_module = _import_module("import_prof_gdr.py")
-        data = import_module.import_prof(prof_dir, model_id, chip, replace_mock=False, device_id=npu_device)
+        data = import_module.import_prof(
+            prof_dir,
+            model_id,
+            chip,
+            replace_mock=False,
+            device_id=npu_device,
+            persist=persist_local_data,
+        )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
         snapshot["prof_tool"] = prof_tool
     else:
@@ -645,6 +652,7 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
             operator_id=single_kernel_name_override(operator_id or kernel_name),
             prof_tool=prof_tool,
             device_id=npu_device,
+            persist=persist_local_data,
         )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
 
@@ -653,11 +661,12 @@ def execute(payload: dict[str, Any]) -> dict[str, Any]:
         for item in data.get("runs", [])
         if not (item.get("created_by") in {"import_prof_gdr", "import_msprof_op"} and item.get("snapshot_id") == snapshot["id"])
     ]
-    for path in import_module.PERF_PATHS:
-        path.write_text(
-            __import__("json").dumps(data, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
+    if persist_local_data:
+        for path in import_module.PERF_PATHS:
+            path.write_text(
+                __import__("json").dumps(data, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
     return {
         "status": "done",
         "message": f"{prof_tool_label(prof_tool)} 执行并导入：{prof_dir.name}",
