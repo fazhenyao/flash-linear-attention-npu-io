@@ -64,6 +64,19 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertIn("--device 2", command)
         self.assertNotIn("data\\\\prof_gdr", command)
 
+    def test_remote_script_can_be_mapped_by_trusted_runner_config(self):
+        remote_script = (
+            "/home/npu_user7/fazhenyao/flash-linear-attention-npu/"
+            "examples/flash_gated_delta_rule.py"
+        )
+        environment = {**self.environment, "PERF_REMOTE_SCRIPT": remote_script}
+
+        with patch.dict(os.environ, environment, clear=False):
+            command = build_command({"prof_tool": "msprof", "attributes": {}})
+
+        self.assertIn(remote_script, command)
+        self.assertNotIn("python3 scripts/flash_gated_delta_rule.py", command)
+
     def test_a5_chip_and_instance_local_artifact_roots(self):
         environment = {
             **self.environment,
