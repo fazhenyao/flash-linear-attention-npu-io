@@ -833,3 +833,22 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 第一阶段允许 Relay 运行在当前开启 VPN 的本机，以最小改造复用现有 `perf_runner.py`。生产阶段应迁移到长期在线的专用 VPN 网关或获得受控的站点到站点网络能力。
 
 该架构将公网控制面和 NPU 执行面分离：Cloudflare 负责可靠传递、认证和记录任务，VPN Relay 负责网络边界，NPU 服务器只负责受控执行。
+
+## 26. 实施状态
+
+截至 2026-08-08，阶段一的软件部分已实现：
+
+- D1 migration 已加入 `perf_jobs`、`perf_job_events`、`perf_results`、`perf_artifacts` 和 `runner_agents`。
+- Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传。
+- `backend/runner_agent.py` 已实现主动出站注册、健康检查、自适应领取、执行、heartbeat、结果回传和本地制品过期清理。
+- 性能看板已改为向 Worker 异步提交任务；Runner 或 VPN 离线时任务继续排队。
+- 已增加不执行 NPU 命令的队列冒烟测试 `scripts/smoke_test_perf_queue.py`。
+
+仍需在实际环境完成：
+
+- 配置 Worker `RUNNER_TOKEN` 和 Relay `RUNNER_TOKEN`。
+- 提供 Relay 操作系统、VPN 连接方式，以及 NPU SSH 地址、端口和服务账号。
+- 在 Relay 安装运行环境并配置为 systemd 或 Windows Service。
+- 验证 NPU 上的脚本路径、`msprof` / `msopprof`、Device、输出目录和磁盘空间。
+- 完成 VPN 离线排队、恢复领取、真实采集和结果回传验收。
+- 阶段二的远端 systemd 持久执行、进程级取消和重启恢复仍未实现。

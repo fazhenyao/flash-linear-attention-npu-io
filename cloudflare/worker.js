@@ -52,6 +52,13 @@ const OPERATOR_OWNER_RULES = {
   prepare_wy_repr_bwd_full: [{ until: "2026-06-30", owner: "张硕累" }, { owner: "周云飞" }],
 };
 const PASSWORD_HASH_ITERATIONS = 100000;
+const PERF_TOOLS = new Set(["msprof", "msprof_op", "msprof_op_sim"]);
+const PERF_SCRIPT_IDS = new Set(["scripts/flash_gated_delta_rule.py"]);
+const PERF_JOB_FINAL_STATES = new Set(["succeeded", "failed", "canceled", "orphaned"]);
+const PERF_JOB_ACTIVE_STATES = new Set(["claimed", "running", "disconnected", "cancel_requested"]);
+const PERF_LEASE_SECONDS = 90;
+const PERF_EVENT_MESSAGE_LIMIT = 4000;
+const PERF_RESULT_JSON_LIMIT = 900000;
 
 export default {
   async fetch(request, env) {
@@ -94,10 +101,65 @@ export default {
         const payload = await readJson(request);
         return jsonResponse(request, env, await addPerfModel(env, payload.model || payload), 201);
       }
+      if (url.pathname === "/api/perf/runner" && request.method === "GET") {
+        await requireUser(request, env);
+        return jsonResponse(request, env, await getPerfRunnerStatus(env));
+      }
+      if (url.pathname === "/api/perf/jobs" && request.method === "GET") {
+        const user = await requireUser(request, env);
+        return jsonResponse(request, env, await listPerfJobs(env, url, user));
+      }
+      if (url.pathname === "/api/perf/jobs" && request.method === "POST") {
+        const user = await requireUser(request, env);
+        const payload = await readJson(request);
+        return jsonResponse(request, env, await createPerfJob(env, payload, user), 201);
+      }
       if (url.pathname === "/api/perf/runs" && request.method === "POST") {
         const user = await requireUser(request, env);
         const payload = await readJson(request);
-        return jsonResponse(request, env, await triggerPerfRun(env, payload, user), 201);
+        return jsonResponse(request, env, await createPerfJob(env, payload, user), 201);
+      }
+      const perfJobMatch = url.pathname.match(/^\/api\/perf\/jobs\/([^/]+)(?:\/(events|artifacts|cancel|retry))?$/);
+      if (perfJobMatch) {
+        const user = await requireUser(request, env);
+        const jobId = decodeURIComponent(perfJobMatch[1]);
+        const action = perfJobMatch[2] || "";
+        if (!action && request.method === "GET") {
+          return jsonResponse(request, env, await getPerfJobForUser(env, jobId, user));
+        }
+        if (action === "events" && request.method === "GET") {
+          return jsonResponse(request, env, await listPerfJobEventsForUser(env, jobId, user));
+        }
+        if (action === "artifacts" && request.method === "GET") {
+          return jsonResponse(request, env, await listPerfJobArtifactsForUser(env, jobId, user));
+        }
+        if (action === "cancel" && request.method === "POST") {
+          return jsonResponse(request, env, await cancelPerfJob(env, jobId, user));
+        }
+        if (action === "retry" && request.method === "POST") {
+          return jsonResponse(request, env, await retryPerfJob(env, jobId, user));
+        }
+      }
+      if (url.pathname === "/api/runner/register" && request.method === "POST") {
+        await requireRunner(request, env);
+        return jsonResponse(request, env, await registerRunner(env, await readJson(request)));
+      }
+      if (url.pathname === "/api/runner/heartbeat" && request.method === "POST") {
+        await requireRunner(request, env);
+        return jsonResponse(request, env, await heartbeatRunner(env, await readJson(request)));
+      }
+      if (url.pathname === "/api/runner/jobs/claim" && request.method === "POST") {
+        await requireRunner(request, env);
+        return jsonResponse(request, env, await claimPerfJob(env, await readJson(request)));
+      }
+      const runnerJobMatch = url.pathname.match(/^\/api\/runner\/jobs\/([^/]+)\/(started|heartbeat|events|artifacts|complete|fail|reconcile)$/);
+      if (runnerJobMatch && request.method === "POST") {
+        await requireRunner(request, env);
+        return jsonResponse(
+          request,
+          env,
+          await handleRunnerJobAction(env, decodeURIComponent(runnerJobMatch[1]), runnerJobMatch[2], await readJson(request)),
+        );
       }
       if (url.pathname === "/api/login" && request.method === "POST") {
         return jsonResponse(request, env, await login(request, env));
@@ -1650,6 +1712,15 @@ async function requireAdminLike(request, env) {
   return user;
 }
 
+async function requireRunner(request, env) {
+  if (!env.RUNNER_TOKEN) throw withStatus(503, "RUNNER_TOKEN is not configured");
+  const token = bearerToken(request);
+  if (!token || !timingSafeEqual(token, env.RUNNER_TOKEN)) {
+    throw withStatus(401, "invalid runner credentials");
+  }
+  return { role: "runner" };
+}
+
 async function requireUser(request, env) {
   const adminToken = adminTokenFromRequest(request);
   if (adminToken && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN) {
@@ -2013,12 +2084,692 @@ async function addPerfModel(env, model) {
   return { ok: true, data: saved };
 }
 
-async function triggerPerfRun(env, payload, user) {
-  throw withStatus(
-    501,
-    "Cloudflare Worker 不支持直接执行 msprof。请配置 docs/config.js 中的 FLASH_IO_LOCAL_API，"
-      + "启动 python backend/app.py，并设置 PERF_RUN_MODE=ssh 或 local。",
+async function createPerfJob(env, payload, user) {
+  const request = normalizePerfJobRequest(payload);
+  const idempotencyKey = normalizeIdempotencyKey(payload.idempotency_key || payload.idempotencyKey);
+  const existing = await env.DB.prepare(
+    "SELECT * FROM perf_jobs WHERE created_by = ? AND idempotency_key = ?",
+  ).bind(user.id, idempotencyKey).first();
+  if (existing) return { ok: true, duplicate: true, job: await hydratePerfJob(env, existing) };
+
+  const job = {
+    id: `perf-job-${crypto.randomUUID()}`,
+    created_by: user.id,
+    created_by_username: user.username || user.id,
+    idempotency_key: idempotencyKey,
+    tool: request.prof_tool,
+    script_id: request.script_id,
+    request_json: toJson(request),
+    status: "queued",
+    status_message: "等待 VPN Runner 领取",
+    created_at: nowIso(),
+  };
+  try {
+    await env.DB.prepare(
+      `INSERT INTO perf_jobs(
+        id, created_by, created_by_username, idempotency_key, tool, script_id, request_json,
+        status, status_message, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      job.id, job.created_by, job.created_by_username, job.idempotency_key, job.tool,
+      job.script_id, job.request_json, job.status, job.status_message, job.created_at, job.created_at,
+    ).run();
+  } catch (error) {
+    const duplicate = await env.DB.prepare(
+      "SELECT * FROM perf_jobs WHERE created_by = ? AND idempotency_key = ?",
+    ).bind(user.id, idempotencyKey).first();
+    if (duplicate) return { ok: true, duplicate: true, job: await hydratePerfJob(env, duplicate) };
+    throw error;
+  }
+  await appendPerfJobEvent(env, job.id, null, "queued", "info", job.status_message, { request });
+  await projectPerfJobRun(env, { ...job, request_json: job.request_json });
+  await insertAudit(env, {
+    ts: job.created_at,
+    action: "perf.job.create",
+    entity: "perf_job",
+    id: job.id,
+    summary: `提交性能采集任务：${request.prof_tool}`,
+    detail: { job_id: job.id, tool: request.prof_tool, script_id: request.script_id, device: request.device },
+    source: user.username || "cloudflare-d1",
+  });
+  return { ok: true, duplicate: false, job: await getPerfJob(env, job.id) };
+}
+
+function normalizePerfJobRequest(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw withStatus(400, "invalid job payload");
+  for (const forbidden of ["command", "shell", "cwd", "env", "executable"]) {
+    if (payload[forbidden] !== undefined) throw withStatus(400, `${forbidden} is not allowed`);
+  }
+  const profTool = String(payload.prof_tool || payload.tool || "msprof").trim();
+  if (!PERF_TOOLS.has(profTool)) throw withStatus(400, "unsupported profiler tool");
+  const scriptId = String(payload.script_id || payload.script_path || "scripts/flash_gated_delta_rule.py").trim();
+  if (!PERF_SCRIPT_IDS.has(scriptId)) throw withStatus(400, "unsupported script_id");
+  const chip = String(payload.chip || "A2").trim().toUpperCase();
+  if (!new Set(["A2", "A3"]).has(chip)) throw withStatus(400, "chip must be A2 or A3");
+  const device = boundedInteger(payload.device ?? 2, "device", 0, 63);
+  const modelId = safeIdentifier(payload.model_id || "gdn", "model_id", 64);
+  const kernelName = String(payload.kernel_name || "").trim();
+  if (kernelName && !/^[A-Za-z0-9_.:|*-]{1,256}$/.test(kernelName)) {
+    throw withStatus(400, "kernel_name contains unsupported characters");
+  }
+  const attributes = normalizePerfAttributes(payload.attributes || payload.parameters || {});
+  const request = {
+    model_id: modelId,
+    chip,
+    device,
+    prof_tool: profTool,
+    script_id: scriptId,
+    script_path: scriptId,
+    attributes,
+  };
+  if (kernelName) request.kernel_name = kernelName;
+  if (payload.operator_id) request.operator_id = safeIdentifier(payload.operator_id, "operator_id", 128);
+  if (profTool !== "msprof") {
+    request.warm_up = boundedInteger(payload.warm_up ?? 10, "warm_up", 0, 100000);
+    request.launch_count = boundedInteger(payload.launch_count ?? 10, "launch_count", 1, 100000);
+  }
+  return request;
+}
+
+function normalizePerfAttributes(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw withStatus(400, "attributes must be an object");
+  const allowed = new Set([
+    "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size",
+    "mean_len", "dtype", "varlen", "scale", "cu_seqlens", "layout", "notes",
+  ]);
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) throw withStatus(400, `unsupported performance attribute: ${key}`);
+  }
+  const limits = {
+    batch: [1, 4096], query_heads: [1, 4096], value_heads: [1, 4096], tokens: [1, 10000000],
+    key_dim: [1, 65536], value_dim: [1, 65536], chunk_size: [1, 65536], mean_len: [1, 10000000],
+  };
+  const defaults = {
+    batch: 1, query_heads: 32, value_heads: 32, tokens: 4087, key_dim: 128,
+    value_dim: 128, chunk_size: 64, mean_len: 1024,
+  };
+  const result = {};
+  for (const [key, [min, max]] of Object.entries(limits)) {
+    result[key] = boundedInteger(value[key] ?? defaults[key], key, min, max);
+  }
+  const dtype = String(value.dtype || "bf16").trim().toLowerCase();
+  if (!["bf16", "fp16", "float16", "fp32", "float32"].includes(dtype)) throw withStatus(400, "unsupported dtype");
+  result.dtype = dtype;
+  result.varlen = value.varlen === undefined
+    ? true
+    : ![false, 0, "0", "false", "no", "off"].includes(
+      typeof value.varlen === "string" ? value.varlen.trim().toLowerCase() : value.varlen,
+    );
+  const scale = value.scale === undefined || value.scale === null || value.scale === ""
+    ? result.key_dim ** -0.5
+    : Number(value.scale);
+  if (!Number.isFinite(scale) || scale <= 0 || scale > 10) throw withStatus(400, "scale is out of range");
+  result.scale = scale;
+  const layout = String(value.layout || "TND").trim().toUpperCase();
+  if (!["TND", "THD", "BNSD", "BSND"].includes(layout)) throw withStatus(400, "unsupported layout");
+  result.layout = layout;
+  const cuSeqlens = String(value.cu_seqlens || "").trim();
+  if (cuSeqlens && !/^\d+(?:,\d+)*$/.test(cuSeqlens)) throw withStatus(400, "cu_seqlens must be comma-separated integers");
+  result.cu_seqlens = cuSeqlens;
+  if (value.notes) result.notes = String(value.notes).slice(0, 500);
+  return result;
+}
+
+function normalizeIdempotencyKey(value) {
+  const key = String(value || crypto.randomUUID()).trim();
+  if (!/^[A-Za-z0-9._:-]{8,128}$/.test(key)) throw withStatus(400, "invalid idempotency_key");
+  return key;
+}
+
+function safeIdentifier(value, field, maxLength) {
+  const text = String(value || "").trim();
+  if (!text || text.length > maxLength || !/^[A-Za-z0-9_.:-]+$/.test(text)) {
+    throw withStatus(400, `invalid ${field}`);
+  }
+  return text;
+}
+
+function boundedInteger(value, field, min, max) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < min || number > max) throw withStatus(400, `${field} is out of range`);
+  return number;
+}
+
+async function listPerfJobs(env, url, user) {
+  const limit = clamp(numberOr(url.searchParams.get("limit"), 50), 1, 200);
+  const status = String(url.searchParams.get("status") || "").trim();
+  const clauses = [];
+  const params = [];
+  if (user.role !== "admin") {
+    clauses.push("created_by = ?");
+    params.push(user.id);
+  }
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  const where = clauses.length ? ` WHERE ${clauses.join(" AND ")}` : "";
+  const rows = await selectAll(env, `SELECT * FROM perf_jobs${where} ORDER BY created_at DESC LIMIT ?`, ...params, limit);
+  return { ok: true, jobs: await Promise.all(rows.map((row) => hydratePerfJob(env, row, false))) };
+}
+
+async function getPerfJob(env, jobId) {
+  const row = await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first();
+  if (!row) throw withStatus(404, "performance job not found");
+  return hydratePerfJob(env, row);
+}
+
+async function getPerfJobForUser(env, jobId, user) {
+  const job = await getPerfJob(env, jobId);
+  assertPerfJobAccess(job, user);
+  return { ok: true, job };
+}
+
+function assertPerfJobAccess(job, user) {
+  if (user.role !== "admin" && job.created_by !== user.id) throw withStatus(403, "no permission for this performance job");
+}
+
+async function hydratePerfJob(env, row, includeResult = true) {
+  const job = {
+    id: row.id,
+    created_by: row.created_by,
+    created_by_username: row.created_by_username || row.created_by,
+    idempotency_key: row.idempotency_key,
+    tool: row.tool,
+    script_id: row.script_id,
+    request: parseJson(row.request_json, {}),
+    status: row.status,
+    status_message: row.status_message || "",
+    runner_id: row.runner_id || null,
+    attempt_id: row.attempt_id || null,
+    remote_execution_id: row.remote_execution_id || null,
+    cancel_requested: Boolean(row.cancel_requested),
+    retry_count: numberOr(row.retry_count, 0),
+    exit_code: row.exit_code,
+    created_at: row.created_at,
+    claimed_at: row.claimed_at || null,
+    started_at: row.started_at || null,
+    finished_at: row.finished_at || null,
+    updated_at: row.updated_at,
+  };
+  if (includeResult) {
+    const result = await env.DB.prepare("SELECT * FROM perf_results WHERE job_id = ?").bind(row.id).first();
+    job.result = result ? {
+      id: result.id,
+      case_id: result.case_id || null,
+      model_id: result.model_id || null,
+      snapshot_id: result.snapshot_id || null,
+      environment: parseJson(result.environment_json, {}),
+      metrics: parseJson(result.metrics_json, {}),
+      detail: parseJson(result.result_json, {}),
+      created_at: result.created_at,
+    } : null;
+  }
+  return job;
+}
+
+async function listPerfJobEventsForUser(env, jobId, user) {
+  const job = await getPerfJob(env, jobId);
+  assertPerfJobAccess(job, user);
+  const events = await selectAll(env,
+    "SELECT id, job_id, attempt_id, event_type, level, message, detail, created_at FROM perf_job_events WHERE job_id = ? ORDER BY id",
+    jobId,
   );
+  return { ok: true, events: events.map((event) => ({ ...event, detail: parseJson(event.detail, {}) })) };
+}
+
+async function listPerfJobArtifactsForUser(env, jobId, user) {
+  const job = await getPerfJob(env, jobId);
+  assertPerfJobAccess(job, user);
+  return { ok: true, artifacts: await listPerfJobArtifacts(env, jobId) };
+}
+
+async function listPerfJobArtifacts(env, jobId) {
+  return selectAll(env,
+    `SELECT id, job_id, artifact_type, object_key, filename, content_type, size_bytes,
+      sha256, expires_at, created_at FROM perf_artifacts WHERE job_id = ? ORDER BY created_at`,
+    jobId,
+  );
+}
+
+async function cancelPerfJob(env, jobId, user) {
+  const job = await getPerfJob(env, jobId);
+  assertPerfJobAccess(job, user);
+  if (PERF_JOB_FINAL_STATES.has(job.status)) return { ok: true, job };
+  const immediate = ["queued", "waiting_runner", "waiting_vpn"].includes(job.status);
+  const nextStatus = immediate ? "canceled" : "cancel_requested";
+  const message = immediate ? "任务已取消" : "已请求 Runner 取消任务";
+  await env.DB.prepare(
+    "UPDATE perf_jobs SET status = ?, status_message = ?, cancel_requested = 1, finished_at = ?, updated_at = ? WHERE id = ?",
+  ).bind(nextStatus, message, immediate ? nowIso() : null, nowIso(), jobId).run();
+  await appendPerfJobEvent(env, jobId, job.attempt_id, nextStatus, "info", message, { requested_by: user.username });
+  await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first());
+  return { ok: true, job: await getPerfJob(env, jobId) };
+}
+
+async function retryPerfJob(env, jobId, user) {
+  const job = await getPerfJob(env, jobId);
+  assertPerfJobAccess(job, user);
+  if (!PERF_JOB_FINAL_STATES.has(job.status)) throw withStatus(409, "only finished jobs can be retried");
+  const timestamp = nowIso();
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM perf_results WHERE job_id = ?").bind(jobId),
+    env.DB.prepare("DELETE FROM perf_artifacts WHERE job_id = ?").bind(jobId),
+  ]);
+  await env.DB.prepare(
+    `UPDATE perf_jobs SET status = 'queued', status_message = '等待 VPN Runner 领取', runner_id = NULL,
+      attempt_id = NULL, lease_token_hash = NULL, lease_expires_at = NULL, remote_execution_id = NULL,
+      cancel_requested = 0, retry_count = retry_count + 1, exit_code = NULL, claimed_at = NULL,
+      started_at = NULL, finished_at = NULL, updated_at = ? WHERE id = ?`,
+  ).bind(timestamp, jobId).run();
+  await appendPerfJobEvent(env, jobId, null, "retried", "info", "任务已重新排队", { requested_by: user.username });
+  await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first());
+  return { ok: true, job: await getPerfJob(env, jobId) };
+}
+
+async function appendPerfJobEvent(env, jobId, attemptId, eventType, level, message, detail = {}) {
+  const text = String(message || "").slice(0, PERF_EVENT_MESSAGE_LIMIT);
+  const safeDetail = JSON.stringify(detail || {}).slice(0, 16000);
+  await env.DB.prepare(
+    "INSERT INTO perf_job_events(job_id, attempt_id, event_type, level, message, detail, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+  ).bind(jobId, attemptId || null, String(eventType || "log").slice(0, 64), normalizeEventLevel(level), text, safeDetail, nowIso()).run();
+}
+
+function normalizeEventLevel(level) {
+  const value = String(level || "info").toLowerCase();
+  return ["debug", "info", "warning", "error"].includes(value) ? value : "info";
+}
+
+async function registerRunner(env, payload) {
+  const runner = normalizeRunnerPayload(payload);
+  const timestamp = nowIso();
+  await env.DB.prepare(
+    `INSERT INTO runner_agents(
+      id, name, active, capabilities_json, vpn_connected, npu_reachable, current_jobs,
+      last_error, last_heartbeat_at, created_at, updated_at
+    ) VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name, active = 1, capabilities_json = excluded.capabilities_json,
+      vpn_connected = excluded.vpn_connected, npu_reachable = excluded.npu_reachable,
+      current_jobs = excluded.current_jobs, last_error = excluded.last_error,
+      last_heartbeat_at = excluded.last_heartbeat_at, updated_at = excluded.updated_at`,
+  ).bind(
+    runner.id, runner.name, toJson(runner.capabilities), runner.vpn_connected ? 1 : 0,
+    runner.npu_reachable ? 1 : 0, runner.current_jobs, runner.last_error, timestamp, timestamp, timestamp,
+  ).run();
+  return { ok: true, runner: await getRunnerAgent(env, runner.id), lease_seconds: PERF_LEASE_SECONDS };
+}
+
+async function heartbeatRunner(env, payload) {
+  const result = await registerRunner(env, payload);
+  return { ...result, server_time: nowIso() };
+}
+
+function normalizeRunnerPayload(payload) {
+  const id = safeIdentifier(payload.runner_id || payload.id, "runner_id", 96);
+  const capabilities = payload.capabilities && typeof payload.capabilities === "object" ? payload.capabilities : {};
+  const serialized = JSON.stringify(capabilities);
+  if (serialized.length > 20000) throw withStatus(400, "runner capabilities are too large");
+  return {
+    id,
+    name: String(payload.name || id).trim().slice(0, 160) || id,
+    capabilities,
+    vpn_connected: Boolean(payload.vpn_connected),
+    npu_reachable: Boolean(payload.npu_reachable),
+    current_jobs: boundedInteger(payload.current_jobs ?? 0, "current_jobs", 0, 128),
+    last_error: String(payload.last_error || "").slice(0, 1000),
+  };
+}
+
+async function getRunnerAgent(env, runnerId) {
+  const row = await env.DB.prepare("SELECT * FROM runner_agents WHERE id = ?").bind(runnerId).first();
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    active: Boolean(row.active),
+    capabilities: parseJson(row.capabilities_json, {}),
+    vpn_connected: Boolean(row.vpn_connected),
+    npu_reachable: Boolean(row.npu_reachable),
+    current_jobs: numberOr(row.current_jobs, 0),
+    last_error: row.last_error || "",
+    last_heartbeat_at: row.last_heartbeat_at,
+  };
+}
+
+async function getPerfRunnerStatus(env) {
+  const rows = await selectAll(env, "SELECT * FROM runner_agents WHERE active = 1 ORDER BY last_heartbeat_at DESC LIMIT 20");
+  const agents = rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    capabilities: parseJson(row.capabilities_json, {}),
+    vpn_connected: Boolean(row.vpn_connected),
+    npu_reachable: Boolean(row.npu_reachable),
+    current_jobs: numberOr(row.current_jobs, 0),
+    last_error: row.last_error || "",
+    last_heartbeat_at: row.last_heartbeat_at,
+    online: Date.now() - Date.parse(row.last_heartbeat_at || 0) < PERF_LEASE_SECONDS * 2000,
+  }));
+  const ready = agents.find((agent) => agent.online && agent.vpn_connected && agent.npu_reachable);
+  const capabilities = ready?.capabilities || agents[0]?.capabilities || {};
+  return {
+    ok: true,
+    enabled: Boolean(ready),
+    mode: "relay",
+    error: ready ? null : (agents.length ? "VPN Runner 当前不可用，任务会继续排队" : "尚无 VPN Runner 注册"),
+    chip: capabilities.chip || capabilities.chips?.[0] || null,
+    npu_device: capabilities.device ?? capabilities.devices?.[0] ?? null,
+    prof_tools: capabilities.prof_tools || [...PERF_TOOLS],
+    op_warm_up: capabilities.op_warm_up ?? 10,
+    op_launch_count: capabilities.op_launch_count ?? 10,
+    agents,
+  };
+}
+
+async function claimPerfJob(env, payload) {
+  const runner = normalizeRunnerPayload(payload);
+  await registerRunner(env, payload);
+  await sweepExpiredPerfLeases(env);
+  if (!runner.vpn_connected || !runner.npu_reachable) {
+    return { ok: true, job: null, reason: "runner_not_ready", retry_after_seconds: 30 };
+  }
+  const capacity = Math.max(0, numberOr(runner.capabilities.max_concurrency, 1) - runner.current_jobs);
+  if (capacity < 1) return { ok: true, job: null, reason: "runner_at_capacity", retry_after_seconds: 15 };
+  const candidates = await selectAll(env,
+    "SELECT * FROM perf_jobs WHERE status IN ('queued', 'waiting_runner', 'waiting_vpn') AND cancel_requested = 0 ORDER BY created_at LIMIT 20",
+  );
+  for (const candidate of candidates) {
+    const request = parseJson(candidate.request_json, {});
+    if (!runnerCanExecute(runner.capabilities, request)) continue;
+    const attemptId = `attempt-${crypto.randomUUID()}`;
+    const leaseToken = randomToken(32);
+    const leaseHash = await sha256Text(leaseToken);
+    const timestamp = nowIso();
+    const leaseExpiresAt = new Date(Date.now() + PERF_LEASE_SECONDS * 1000).toISOString();
+    const update = await env.DB.prepare(
+      `UPDATE perf_jobs SET status = 'claimed', status_message = 'Runner 已领取任务', runner_id = ?,
+        attempt_id = ?, lease_token_hash = ?, lease_expires_at = ?, claimed_at = ?, updated_at = ?
+      WHERE id = ? AND status IN ('queued', 'waiting_runner', 'waiting_vpn') AND cancel_requested = 0`,
+    ).bind(runner.id, attemptId, leaseHash, leaseExpiresAt, timestamp, timestamp, candidate.id).run();
+    if (numberOr(update.meta?.changes, 0) !== 1) continue;
+    await appendPerfJobEvent(env, candidate.id, attemptId, "claimed", "info", `任务由 ${runner.id} 领取`, { runner_id: runner.id });
+    await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(candidate.id).first());
+    const job = await getPerfJob(env, candidate.id);
+    return { ok: true, job: { ...job, lease_token: leaseToken }, lease_seconds: PERF_LEASE_SECONDS };
+  }
+  return { ok: true, job: null, reason: "empty_queue", retry_after_seconds: 5 };
+}
+
+async function sweepExpiredPerfLeases(env) {
+  const timestamp = nowIso();
+  const expired = await selectAll(env,
+    "SELECT id, attempt_id, status, remote_execution_id FROM perf_jobs WHERE lease_expires_at IS NOT NULL AND lease_expires_at < ? AND status IN ('claimed', 'running')",
+    timestamp,
+  );
+  for (const job of expired) {
+    if (job.status === "claimed" && !job.remote_execution_id) {
+      await env.DB.prepare(
+        `UPDATE perf_jobs SET status = 'queued', status_message = '领取租约过期，已安全重新排队', runner_id = NULL,
+          attempt_id = NULL, lease_token_hash = NULL, lease_expires_at = NULL, claimed_at = NULL, updated_at = ?
+        WHERE id = ? AND status = 'claimed'`,
+      ).bind(timestamp, job.id).run();
+      await appendPerfJobEvent(env, job.id, job.attempt_id, "lease_expired", "warning", "任务尚未启动，领取租约过期后重新排队");
+      continue;
+    }
+    await env.DB.prepare(
+      "UPDATE perf_jobs SET status = 'disconnected', status_message = 'Runner heartbeat 超时，等待恢复核对', updated_at = ? WHERE id = ? AND status = 'running'",
+    ).bind(timestamp, job.id).run();
+    await appendPerfJobEvent(env, job.id, job.attempt_id, "disconnected", "warning", "运行中任务 heartbeat 超时，未自动重跑");
+  }
+}
+
+function runnerCanExecute(capabilities, request) {
+  const tools = Array.isArray(capabilities.prof_tools) ? capabilities.prof_tools : [];
+  if (tools.length && !tools.includes(request.prof_tool)) return false;
+  const chips = Array.isArray(capabilities.chips) ? capabilities.chips : (capabilities.chip ? [capabilities.chip] : []);
+  if (chips.length && !chips.includes(request.chip)) return false;
+  const devices = Array.isArray(capabilities.devices) ? capabilities.devices.map(Number) : [];
+  return !devices.length || devices.includes(Number(request.device));
+}
+
+async function handleRunnerJobAction(env, jobId, action, payload) {
+  const row = await authorizeRunnerJobAction(env, jobId, payload);
+  if (action === "started") return runnerJobStarted(env, row, payload);
+  if (action === "heartbeat") return runnerJobHeartbeat(env, row, payload);
+  if (action === "events") return runnerJobEvents(env, row, payload);
+  if (action === "artifacts") return runnerJobArtifacts(env, row, payload);
+  if (action === "complete") return runnerJobComplete(env, row, payload);
+  if (action === "fail") return runnerJobFail(env, row, payload);
+  if (action === "reconcile") return runnerJobReconcile(env, row, payload);
+  throw withStatus(404, "unsupported runner job action");
+}
+
+async function authorizeRunnerJobAction(env, jobId, payload) {
+  const row = await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first();
+  if (!row) throw withStatus(404, "performance job not found");
+  const runnerId = safeIdentifier(payload.runner_id, "runner_id", 96);
+  if (row.runner_id !== runnerId) throw withStatus(409, "job is owned by another runner");
+  if (!payload.attempt_id || row.attempt_id !== payload.attempt_id) throw withStatus(409, "attempt_id mismatch");
+  const leaseHash = await sha256Text(String(payload.lease_token || ""));
+  if (!row.lease_token_hash || !timingSafeEqual(row.lease_token_hash, leaseHash)) throw withStatus(401, "invalid job lease");
+  if (PERF_JOB_FINAL_STATES.has(row.status)) throw withStatus(409, "performance job is already finished");
+  return row;
+}
+
+async function runnerJobStarted(env, row, payload) {
+  const timestamp = nowIso();
+  const remoteExecutionId = String(payload.remote_execution_id || `${payload.runner_id}:${row.id}`).slice(0, 256);
+  await env.DB.prepare(
+    `UPDATE perf_jobs SET status = 'running', status_message = ?, remote_execution_id = ?,
+      started_at = COALESCE(started_at, ?), lease_expires_at = ?, updated_at = ? WHERE id = ?`,
+  ).bind(
+    String(payload.message || "NPU 采集任务正在执行").slice(0, 1000), remoteExecutionId, timestamp,
+    new Date(Date.now() + PERF_LEASE_SECONDS * 1000).toISOString(), timestamp, row.id,
+  ).run();
+  await appendPerfJobEvent(env, row.id, row.attempt_id, "started", "info", "NPU 采集任务开始执行", { remote_execution_id: remoteExecutionId });
+  await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(row.id).first());
+  return { ok: true, job: await getPerfJob(env, row.id) };
+}
+
+async function runnerJobHeartbeat(env, row, payload) {
+  const disconnected = payload.state === "disconnected";
+  const status = row.cancel_requested ? "cancel_requested" : (disconnected ? "disconnected" : (row.status === "disconnected" ? "running" : row.status));
+  const message = String(payload.message || row.status_message || "Runner heartbeat").slice(0, 1000);
+  await env.DB.prepare(
+    "UPDATE perf_jobs SET status = ?, status_message = ?, lease_expires_at = ?, updated_at = ? WHERE id = ?",
+  ).bind(status, message, new Date(Date.now() + PERF_LEASE_SECONDS * 1000).toISOString(), nowIso(), row.id).run();
+  return { ok: true, cancel_requested: Boolean(row.cancel_requested), lease_seconds: PERF_LEASE_SECONDS };
+}
+
+async function runnerJobEvents(env, row, payload) {
+  const events = Array.isArray(payload.events) ? payload.events.slice(0, 50) : [payload];
+  for (const event of events) {
+    await appendPerfJobEvent(
+      env, row.id, row.attempt_id, event.event_type || event.type || "log", event.level,
+      event.message || "", event.detail || {},
+    );
+  }
+  return { ok: true, accepted: events.length, cancel_requested: Boolean(row.cancel_requested) };
+}
+
+async function runnerJobArtifacts(env, row, payload) {
+  const artifacts = await storePerfArtifacts(env, row.id, payload.artifacts || []);
+  return { ok: true, artifacts, cancel_requested: Boolean(row.cancel_requested) };
+}
+
+async function storePerfArtifacts(env, jobId, artifacts) {
+  if (!Array.isArray(artifacts) || artifacts.length > 50) throw withStatus(400, "invalid artifact manifest");
+  const stored = [];
+  for (const artifact of artifacts) {
+    const objectKey = String(artifact.object_key || artifact.path || "").trim().slice(0, 512);
+    if (!objectKey) throw withStatus(400, "artifact object_key is required");
+    const item = {
+      id: String(artifact.id || `artifact-${crypto.randomUUID()}`).slice(0, 128),
+      artifact_type: String(artifact.type || artifact.artifact_type || "file").slice(0, 64),
+      object_key: objectKey,
+      filename: String(artifact.filename || objectKey.split(/[\\/]/).pop() || "artifact").slice(0, 255),
+      content_type: String(artifact.content_type || "application/octet-stream").slice(0, 128),
+      size_bytes: boundedInteger(artifact.size ?? artifact.size_bytes ?? 0, "artifact size", 0, 1099511627776),
+      sha256: String(artifact.sha256 || "").trim().toLowerCase(),
+      expires_at: artifact.expires_at ? String(artifact.expires_at).slice(0, 64) : null,
+      created_at: nowIso(),
+    };
+    if (item.sha256 && !/^[a-f0-9]{64}$/.test(item.sha256)) throw withStatus(400, "invalid artifact sha256");
+    await env.DB.prepare(
+      `INSERT INTO perf_artifacts(
+        id, job_id, artifact_type, object_key, filename, content_type, size_bytes, sha256, expires_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(job_id, object_key) DO UPDATE SET
+        artifact_type = excluded.artifact_type, filename = excluded.filename,
+        content_type = excluded.content_type, size_bytes = excluded.size_bytes,
+        sha256 = excluded.sha256, expires_at = excluded.expires_at`,
+    ).bind(
+      item.id, jobId, item.artifact_type, item.object_key, item.filename, item.content_type,
+      item.size_bytes, item.sha256, item.expires_at, item.created_at,
+    ).run();
+    stored.push({ ...item, job_id: jobId });
+  }
+  return stored;
+}
+
+async function runnerJobComplete(env, row, payload) {
+  const resultDetail = payload.result && typeof payload.result === "object" ? payload.result : {};
+  const serialized = JSON.stringify(resultDetail);
+  if (serialized.length > PERF_RESULT_JSON_LIMIT) throw withStatus(413, "result payload is too large");
+  const snapshot = payload.snapshot || resultDetail.snapshot || null;
+  const resultId = `perf-result-${crypto.randomUUID()}`;
+  const timestamp = nowIso();
+  await env.DB.prepare(
+    `INSERT INTO perf_results(
+      id, job_id, case_id, model_id, snapshot_id, environment_json, metrics_json, result_json, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(job_id) DO UPDATE SET
+      case_id = excluded.case_id, model_id = excluded.model_id, snapshot_id = excluded.snapshot_id,
+      environment_json = excluded.environment_json, metrics_json = excluded.metrics_json,
+      result_json = excluded.result_json, created_at = excluded.created_at`,
+  ).bind(
+    resultId, row.id, snapshot?.case_id || payload.case_id || null,
+    snapshot?.model_id || payload.model_id || null, snapshot?.id || payload.snapshot_id || null,
+    toJson(payload.environment || {}), toJson(payload.metrics || snapshot?.metrics || {}), serialized, timestamp,
+  ).run();
+  if (payload.artifacts) await storePerfArtifacts(env, row.id, payload.artifacts);
+  const exitCode = boundedInteger(payload.exit_code ?? 0, "exit_code", -2147483648, 2147483647);
+  const message = String(payload.message || resultDetail.message || "性能采集完成").slice(0, 1000);
+  await env.DB.prepare(
+    `UPDATE perf_jobs SET status = 'succeeded', status_message = ?, exit_code = ?, finished_at = ?,
+      lease_token_hash = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ?`,
+  ).bind(message, exitCode, timestamp, timestamp, row.id).run();
+  await appendPerfJobEvent(env, row.id, row.attempt_id, "completed", "info", message, { exit_code: exitCode });
+  await mergePerfJobCompletion(env, row.id, payload, resultDetail, snapshot);
+  return { ok: true, job: await getPerfJob(env, row.id), artifacts: await listPerfJobArtifacts(env, row.id) };
+}
+
+async function runnerJobFail(env, row, payload) {
+  const canceled = Boolean(payload.canceled || row.cancel_requested);
+  const status = canceled ? "canceled" : "failed";
+  const message = String(payload.message || (canceled ? "任务已取消" : "性能采集失败")).slice(0, 1000);
+  const exitCode = payload.exit_code === undefined || payload.exit_code === null
+    ? null
+    : boundedInteger(payload.exit_code, "exit_code", -2147483648, 2147483647);
+  const timestamp = nowIso();
+  await env.DB.prepare(
+    `UPDATE perf_jobs SET status = ?, status_message = ?, exit_code = ?, finished_at = ?,
+      lease_token_hash = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ?`,
+  ).bind(status, message, exitCode, timestamp, timestamp, row.id).run();
+  await appendPerfJobEvent(env, row.id, row.attempt_id, status, canceled ? "info" : "error", message, {
+    error_type: String(payload.error_type || "execution_error").slice(0, 128), exit_code: exitCode,
+  });
+  await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(row.id).first());
+  return { ok: true, job: await getPerfJob(env, row.id) };
+}
+
+async function runnerJobReconcile(env, row, payload) {
+  const remoteState = String(payload.remote_state || payload.state || "unknown").toLowerCase();
+  if (["running", "profiling", "parsing", "compressing"].includes(remoteState)) {
+    return runnerJobHeartbeat(env, row, { ...payload, state: "running", message: payload.message || `恢复跟踪：${remoteState}` });
+  }
+  if (remoteState === "missing") {
+    await env.DB.prepare(
+      "UPDATE perf_jobs SET status = 'orphaned', status_message = ?, finished_at = ?, updated_at = ? WHERE id = ?",
+    ).bind("无法确认远端任务状态，需要人工处理", nowIso(), nowIso(), row.id).run();
+    await appendPerfJobEvent(env, row.id, row.attempt_id, "orphaned", "error", "远端任务状态不可确认", payload.detail || {});
+    await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(row.id).first());
+  }
+  return { ok: true, job: await getPerfJob(env, row.id) };
+}
+
+async function sha256Text(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value || "")));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function projectPerfJobRun(env, row) {
+  if (!row) return;
+  const data = await getPerfData(env);
+  const request = parseJson(row.request_json, {});
+  const statusMap = { succeeded: "done", canceled: "canceled", orphaned: "failed" };
+  const run = {
+    id: row.id,
+    model_id: request.model_id || "gdn",
+    chip: request.chip || "",
+    device: request.device,
+    prof_tool: request.prof_tool || row.tool,
+    script_path: request.script_id || row.script_id,
+    attributes: request.attributes || {},
+    kernel_name: request.kernel_name || "",
+    status: statusMap[row.status] || row.status,
+    message: row.status_message || "",
+    created_by: row.created_by_username || row.created_by,
+    created_at: row.created_at,
+    started_at: row.started_at || null,
+    finished_at: row.finished_at || null,
+  };
+  const index = data.runs.findIndex((item) => item.id === row.id);
+  if (index >= 0) data.runs[index] = { ...data.runs[index], ...run };
+  else data.runs.push(run);
+  data.version = nowIso();
+  await savePerfData(env, data);
+}
+
+async function mergePerfJobCompletion(env, jobId, payload, resultDetail, snapshot) {
+  const row = await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first();
+  const data = await getPerfData(env);
+  const incoming = payload.perf_data || resultDetail.data || {};
+  for (const collection of ["models", "cases", "snapshots"]) {
+    if (!Array.isArray(incoming[collection])) continue;
+    const byId = new Map(data[collection].map((item) => [item.id, item]));
+    for (const item of incoming[collection]) {
+      if (item?.id) byId.set(item.id, item);
+    }
+    data[collection] = [...byId.values()];
+  }
+  if (snapshot?.id && !data.snapshots.some((item) => item.id === snapshot.id)) data.snapshots.push(snapshot);
+  const request = parseJson(row.request_json, {});
+  const run = {
+    id: jobId,
+    model_id: snapshot?.model_id || request.model_id || "gdn",
+    case_id: snapshot?.case_id || null,
+    snapshot_id: snapshot?.id || null,
+    snapshot: snapshot || undefined,
+    chip: request.chip,
+    device: request.device,
+    prof_tool: request.prof_tool,
+    script_path: request.script_id,
+    attributes: request.attributes || {},
+    kernel_name: request.kernel_name || "",
+    status: "done",
+    message: row.status_message,
+    command: String(payload.command || resultDetail.command || ""),
+    created_by: row.created_by_username || row.created_by,
+    created_at: row.created_at,
+    started_at: row.started_at,
+    finished_at: row.finished_at,
+  };
+  const index = data.runs.findIndex((item) => item.id === jobId);
+  if (index >= 0) data.runs[index] = { ...data.runs[index], ...run };
+  else data.runs.push(run);
+  data.version = nowIso();
+  await savePerfData(env, data);
 }
 
 function parseJson(value, fallback) {

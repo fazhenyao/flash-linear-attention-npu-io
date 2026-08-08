@@ -392,6 +392,7 @@
       caseMetrics: [],
       caseAttrFilters: { net: [], case: [] },
       runner: null,
+      jobs: [],
       perfPollTimer: null,
     };
 
@@ -401,9 +402,9 @@
 
     async function init() {
       bindEvents();
-      await loadData();
-      await loadRunnerStatus();
       if (WORKER_API_BASE && state.token) await refreshUser();
+      await loadData();
+      await Promise.all([loadRunnerStatus(), loadPerfJobs()]);
       renderAll();
       maybeStartPerfPolling();
     }
@@ -602,6 +603,11 @@
       const dialog = document.querySelector("#commandDialog");
       const copyBtn = document.querySelector("#commandCopyBtn");
       document.querySelector("#runRows").addEventListener("click", (event) => {
+        const jobAction = event.target.closest("[data-job-action]");
+        if (jobAction) {
+          handlePerfJobAction(jobAction.dataset.jobAction, jobAction.dataset.jobId);
+          return;
+        }
         const downloadBtn = event.target.closest("[data-run-download]");
         if (downloadBtn) {
           downloadRunResult(downloadBtn.dataset.runDownload);
@@ -609,7 +615,7 @@
         }
         const button = event.target.closest("[data-run-command]");
         if (!button) return;
-        const run = (state.data?.runs || []).find((item) => item.id === button.dataset.runCommand);
+        const run = displayRuns().find((item) => item.id === button.dataset.runCommand);
         if (!run) return;
         showCommandDialog(run.command || run.message || "");
       });
@@ -678,7 +684,7 @@
     }
 
     function canDownloadRunResult(run, snap) {
-      return run.status === "done" && Boolean(run.snapshot_id || snap);
+      return Boolean(LOCAL_API_BASE) && run.status === "done" && Boolean(run.snapshot_id || snap);
     }
 
     function profToolLabel(profTool) {
@@ -836,19 +842,19 @@
     function updateTriggerEnvFromRunner() {
       const node = document.querySelector("#triggerEnvHint");
       if (!node) return;
-      if (!LOCAL_API_BASE) {
-        node.textContent = "执行环境：未配置 FLASH_IO_LOCAL_API。";
+      if (!state.user) {
+        node.textContent = "执行环境：登录后可向 Cloudflare 队列提交采集任务。";
         return;
       }
       if (!state.runner?.enabled) {
         node.textContent = state.runner?.error
-          ? `执行环境：${state.runner.error}`
-          : "执行环境：后端未就绪，芯片与 NPU 卡号沿用 PERF_CHIP / PERF_NPU_DEVICE。";
+          ? `执行环境：${state.runner.error}；提交后的任务会可靠排队。`
+          : "执行环境：Runner 尚未上线；提交后的任务会可靠排队。";
         return;
       }
       const chip = state.runner.chip || "A2";
       const device = state.runner.npu_device ?? "—";
-      node.textContent = `执行环境：${chip} 芯片（PERF_CHIP）· 默认 NPU ${device}（PERF_NPU_DEVICE）`;
+      node.textContent = `执行环境：VPN Runner 在线 · ${chip} 芯片 · 默认 NPU ${device}`;
     }
 
     function readTriggerDevice() {
@@ -963,6 +969,16 @@
     }
 
     async function loadRunnerStatus() {
+      if (WORKER_API_BASE && state.token) {
+        try {
+          const response = await fetch(`${WORKER_API_BASE}/api/perf/runner`, { headers: authHeaders() });
+          state.runner = response.ok ? await response.json() : null;
+          syncTriggerOpDefaultsFromRunner();
+          return;
+        } catch {
+          state.runner = null;
+        }
+      }
       if (!LOCAL_API_BASE) {
         state.runner = null;
         return;
@@ -976,12 +992,28 @@
       }
     }
 
+    async function loadPerfJobs() {
+      if (!WORKER_API_BASE || !state.token) {
+        state.jobs = [];
+        return;
+      }
+      try {
+        const response = await fetch(`${WORKER_API_BASE}/api/perf/jobs?limit=100`, { headers: authHeaders() });
+        const payload = await response.json().catch(() => ({}));
+        state.jobs = response.ok && Array.isArray(payload.jobs) ? payload.jobs : [];
+      } catch {
+        state.jobs = [];
+      }
+    }
+
     function hasPendingPerfRuns() {
-      return (state.data?.runs || []).some((run) => run.status === "queued" || run.status === "running");
+      const pending = new Set(["queued", "waiting_runner", "waiting_vpn", "claimed", "running", "disconnected", "cancel_requested"]);
+      return state.jobs.some((job) => pending.has(job.status))
+        || (state.data?.runs || []).some((run) => pending.has(run.status));
     }
 
     function maybeStartPerfPolling() {
-      if (!LOCAL_API_BASE || !hasPendingPerfRuns()) {
+      if ((!LOCAL_API_BASE && !WORKER_API_BASE) || !hasPendingPerfRuns()) {
         if (state.perfPollTimer) {
           clearInterval(state.perfPollTimer);
           state.perfPollTimer = null;
@@ -991,6 +1023,7 @@
       if (state.perfPollTimer) return;
       state.perfPollTimer = setInterval(async () => {
         await loadData();
+        await Promise.all([loadPerfJobs(), loadRunnerStatus()]);
         renderRuns();
         renderMeta();
         if (!hasPendingPerfRuns()) {
@@ -998,7 +1031,7 @@
           state.perfPollTimer = null;
           renderAll();
         }
-      }, 3000);
+      }, 5000);
     }
 
     async function localPost(path, body) {
@@ -1049,14 +1082,18 @@
       state.token = result.token || "";
       state.user = result.user || null;
       localStorage.setItem(TOKEN_KEY, state.token);
-      renderAuth();
+      await Promise.all([loadPerfJobs(), loadRunnerStatus()]);
+      renderAll();
+      maybeStartPerfPolling();
     }
 
     function onLogout() {
       state.token = "";
       state.user = null;
+      state.jobs = [];
+      state.runner = null;
       localStorage.removeItem(TOKEN_KEY);
-      renderAuth();
+      renderAll();
     }
 
     async function onAddModel() {
@@ -1074,12 +1111,12 @@
 
     async function onTriggerSubmit(event) {
       event.preventDefault();
-      if (!LOCAL_API_BASE) {
-        alert("未配置 FLASH_IO_LOCAL_API。请在 docs/config.js 中设置本地后端地址（如 http://127.0.0.1:8787），并运行 python backend/app.py。");
+      if (!WORKER_API_BASE) {
+        alert("未配置 Cloudflare Worker API。");
         return;
       }
-      if (!state.runner?.enabled) {
-        alert(state.runner?.error || "真实执行环境未配置。请设置 PERF_RUN_MODE=ssh 与 PERF_SSH_HOST，或 PERF_RUN_MODE=local。");
+      if (!state.token || !state.user) {
+        alert("请先登录后再提交采集任务。");
         return;
       }
       const chip = state.runner?.chip || "A2";
@@ -1119,6 +1156,8 @@
         chip,
         device,
         prof_tool: profTool,
+        script_id: "scripts/flash_gated_delta_rule.py",
+        idempotency_key: crypto.randomUUID(),
         attributes,
       };
       if (profTool === "msprof_op") {
@@ -1132,16 +1171,12 @@
         if (kernelName) payload.kernel_name = kernelName;
       }
       try {
-        const result = await localPost("/api/perf/runs", payload);
-        state.data = result.data || state.data;
-        await loadRunnerStatus();
+        const result = await workerPost("/api/perf/jobs", payload);
+        await Promise.all([loadData(), loadPerfJobs(), loadRunnerStatus()]);
         renderAll();
         maybeStartPerfPolling();
-        const run = result.run || {};
-        const message = run.status === "queued"
-          ? `已下发真实命令，后台执行中。\n\n${run.command || ""}`
-          : (run.message || "测试已提交");
-        alert(message);
+        const job = result.job || {};
+        alert(job.status === "queued" ? "采集任务已提交，等待 VPN Runner 领取。" : (job.status_message || "任务已提交"));
       } catch (error) {
         alert(error.message || String(error));
       }
@@ -1166,13 +1201,13 @@
       const loggedIn = Boolean(state.user);
       document.body.classList.toggle("admin-editing", isAdmin);
       let status = loggedIn ? `${state.user.username}（${state.user.role}）` : "只读模式";
-      if (LOCAL_API_BASE && state.runner?.enabled) {
+      if (loggedIn && state.runner?.enabled) {
         const device = state.runner.npu_device ?? "—";
         const chip = state.runner.chip ?? "—";
-        status = `真实执行 · ${state.runner.mode} · ${chip} · NPU ${device}`;
+        status = `${state.user.username} · Runner 在线 · ${chip} · NPU ${device}`;
       }
-      else if (LOCAL_API_BASE) status = `执行未就绪 · ${state.runner?.error || "未配置 PERF_RUN_MODE"}`;
-      else if (useWorkerWrite()) status = loggedIn ? status : "只读模式 · 触发测试需配置 FLASH_IO_LOCAL_API";
+      else if (loggedIn && WORKER_API_BASE) status = `${state.user.username} · ${state.runner?.error || "Runner 离线，任务将排队"}`;
+      else if (useWorkerWrite()) status = loggedIn ? status : "只读模式 · 登录后可提交采集任务";
       else if (WORKER_API_BASE && state.dataSource === "local-fallback") status = "本地快照模式 · Worker /api/perf 未就绪";
       document.querySelector("#authStatus").textContent = status;
       document.querySelector("#workerLogin").classList.toggle("hidden", loggedIn || !useWorkerWrite());
@@ -2388,9 +2423,80 @@
       });
     }
 
+    function jobAsRun(job) {
+      const request = job.request || {};
+      const status = ({ succeeded: "done", orphaned: "failed" })[job.status] || job.status;
+      const snapshotId = job.result?.snapshot_id || null;
+      return {
+        id: job.id,
+        model_id: request.model_id || "gdn",
+        case_id: job.result?.case_id || null,
+        snapshot_id: snapshotId,
+        chip: request.chip || "",
+        device: request.device,
+        prof_tool: request.prof_tool || job.tool,
+        script_path: request.script_id || job.script_id,
+        attributes: request.attributes || {},
+        kernel_name: request.kernel_name || "",
+        status,
+        raw_job_status: job.status,
+        message: job.status_message || "",
+        created_by: job.created_by_username || job.created_by,
+        created_at: job.created_at,
+        started_at: job.started_at,
+        finished_at: job.finished_at,
+        cloud_job: true,
+      };
+    }
+
+    function displayRuns() {
+      const byId = new Map((state.data?.runs || []).map((run) => [run.id, run]));
+      for (const job of state.jobs || []) {
+        const projected = jobAsRun(job);
+        byId.set(job.id, { ...(byId.get(job.id) || {}), ...projected });
+      }
+      return [...byId.values()];
+    }
+
+    async function handlePerfJobAction(action, jobId) {
+      if (!jobId || !["cancel", "retry"].includes(action)) return;
+      const prompt = action === "cancel" ? "确认取消该采集任务？" : "确认重新提交该采集任务？";
+      if (!confirm(prompt)) return;
+      try {
+        await workerPost(`/api/perf/jobs/${encodeURIComponent(jobId)}/${action}`, {});
+        await Promise.all([loadData(), loadPerfJobs(), loadRunnerStatus()]);
+        renderAll();
+        maybeStartPerfPolling();
+      } catch (error) {
+        alert(error.message || String(error));
+      }
+    }
+
+    function runResultCell(run, snap) {
+      const rawStatus = run.raw_job_status || run.status;
+      if (run.cloud_job && ["queued", "waiting_runner", "waiting_vpn", "claimed", "running", "disconnected", "cancel_requested"].includes(rawStatus)) {
+        return `<button type="button" class="perf-download-btn" data-job-action="cancel" data-job-id="${escapeHtml(run.id)}">取消</button>`;
+      }
+      if (run.cloud_job && ["failed", "canceled", "orphaned"].includes(rawStatus)) {
+        return `<button type="button" class="perf-download-btn" data-job-action="retry" data-job-id="${escapeHtml(run.id)}">重试</button>`;
+      }
+      if (run.cloud_job && rawStatus === "succeeded") return "Relay 本地保留";
+      return canDownloadRunResult(run, snap)
+        ? `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载 profiling 原始结果">下载</button>`
+        : "—";
+    }
+
+    function runStatusLabel(status) {
+      return ({
+        queued: "排队中", waiting_runner: "等待 Runner", waiting_vpn: "等待 VPN", claimed: "已领取",
+        running: "执行中", disconnected: "连接中断", cancel_requested: "取消中", done: "已完成",
+        succeeded: "已完成", failed: "失败", canceled: "已取消", orphaned: "待人工确认",
+      })[status] || status || "queued";
+    }
+
     function renderRuns() {
       const tbody = document.querySelector("#runRows");
-      const runs = [...(state.data.runs || [])].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+      const runs = displayRuns().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
       if (!runs.length) {
         tbody.innerHTML = '<tr><td colspan="10" class="empty">暂无执行记录，可在左侧提交用例测试。</td></tr>';
         return;
@@ -2404,17 +2510,17 @@
         const commandCell = command !== "—"
           ? `<button type="button" class="perf-command-cell-btn" data-run-command="${escapeHtml(run.id)}" title="点击查看完整命令">${escapeHtml(shortCommand)}</button>`
           : escapeHtml(shortCommand);
-        const resultCell = canDownloadRunResult(run, snap)
-          ? `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载 profiling 原始结果">下载</button>`
-          : "—";
+        const resultCell = runResultCell(run, snap);
+        const totalTime = Number(snap?.total_time_ms);
+        const statusClass = run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral";
         return `<tr>
           <td>${escapeHtml((run.created_at || "").replace("T", " ").slice(0, 19))}</td>
           <td>${escapeHtml(testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—")}</td>
           <td>${escapeHtml(scriptPath)}</td>
           <td>${escapeHtml(run.chip || "")}</td>
           <td>${escapeHtml(profToolLabel(run.prof_tool || snap?.prof_tool || "msprof"))}</td>
-          <td><span class="stat-pill ${run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral"}">${escapeHtml(run.status || "queued")}</span></td>
-          <td>${snap ? `${snap.total_time_ms.toFixed(1)} ms` : "—"}</td>
+          <td><span class="stat-pill ${statusClass}" title="${escapeHtml(run.message || "")}">${escapeHtml(runStatusLabel(run.raw_job_status || run.status))}</span></td>
+          <td>${Number.isFinite(totalTime) ? `${totalTime.toFixed(1)} ms` : "—"}</td>
           <td>${resultCell}</td>
           <td>${commandCell}</td>
           <td>${escapeHtml(run.created_by || "—")}</td>

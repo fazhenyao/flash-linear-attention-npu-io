@@ -79,6 +79,12 @@ npx wrangler secret put ADMIN_TOKEN
 npx wrangler secret put AUTH_SECRET
 ```
 
+启用 VPN Relay 后还需要设置独立 Runner 密钥：
+
+```powershell
+npx wrangler secret put RUNNER_TOKEN
+```
+
 应用 D1 表结构：
 
 ```powershell
@@ -134,8 +140,37 @@ GitHub 仓库需要配置以下 Actions Secrets：
 - `CLOUDFLARE_API_TOKEN`：Cloudflare API Token，不要写入仓库。
 - `FLASH_IO_ADMIN_TOKEN`：Worker 的 `ADMIN_TOKEN` 值，仅用于定时 PR 候选池同步和 D1 快照备份，不要写入仓库。
 - `CLOUDFLARE_AUTH_SECRET`：Worker 登录令牌签名密钥，仅在首次部署或主动轮换时写入 Worker。
+- `FLASH_IO_RUNNER_TOKEN`：Worker 的 `RUNNER_TOKEN` 值，仅供 VPN Relay 调用 `/api/runner/*`，不能复用管理员或用户 Token。
 
 首次手动运行 `Deploy Cloudflare Worker` 时启用 `configure_secrets` 和 `import_snapshots`。初始化导入只覆盖任务、人员、算子、审计、PR 目录和性能快照，不复制旧用户、密码哈希或登录会话。
+
+### NPU 性能任务队列与 VPN Relay
+
+性能看板通过 Worker 创建异步任务。VPN Relay 只主动访问 Worker HTTPS 和 VPN 内的 NPU SSH，不监听公网端口。完整架构与安全边界见 `docs/npu-vpn-runner-design.md`。
+
+1. 应用 `migrations/0009_add_perf_job_queue.sql` 并部署 Worker。
+2. 生成高强度随机 `RUNNER_TOKEN`，分别配置为 Worker secret 和 Relay 环境变量。
+3. 根据 `data/perf-runner.example.env` 配置 Relay、VPN 后的 NPU SSH 地址和 profiling 工具参数。
+4. 启动 Relay：
+
+```powershell
+python -m backend.runner_agent --check
+python -m backend.runner_agent --once
+python -m backend.runner_agent
+```
+
+`--check` 只检查本地执行配置和 NPU SSH 端口；`--once` 执行一次 heartbeat/领取循环，适合上线前验证。生产环境应安装为 Linux systemd 或 Windows Service，并将 Token、SSH 私钥和 VPN 凭据放入系统凭据存储或受限环境文件。
+
+本地或测试环境可以运行队列冒烟测试，不会执行 NPU 命令：
+
+```powershell
+python scripts/smoke_test_perf_queue.py `
+  --api http://127.0.0.1:8787 `
+  --admin-token test-admin `
+  --runner-token test-runner
+```
+
+当前不使用 R2。D1 仅保存任务状态、结构化指标和制品清单；原始 Prof、CSV 和完整日志保留在 Relay/NPU 本地，默认 30 天。
 
 ### 人员账号初始化与改密
 
@@ -283,6 +318,24 @@ Cloudflare Worker API：
 - `POST /api/me/password`
 - `GET /api/users`
 - `POST /api/users`
+- `GET /api/perf/runner`
+- `GET /api/perf/jobs`
+- `POST /api/perf/jobs`
+- `GET /api/perf/jobs/{id}`
+- `GET /api/perf/jobs/{id}/events`
+- `GET /api/perf/jobs/{id}/artifacts`
+- `POST /api/perf/jobs/{id}/cancel`
+- `POST /api/perf/jobs/{id}/retry`
+- `POST /api/runner/register`
+- `POST /api/runner/heartbeat`
+- `POST /api/runner/jobs/claim`
+- `POST /api/runner/jobs/{id}/started`
+- `POST /api/runner/jobs/{id}/heartbeat`
+- `POST /api/runner/jobs/{id}/events`
+- `POST /api/runner/jobs/{id}/artifacts`
+- `POST /api/runner/jobs/{id}/complete`
+- `POST /api/runner/jobs/{id}/fail`
+- `POST /api/runner/jobs/{id}/reconcile`
 - `POST /api/save`
 - `POST /api/import`
 
