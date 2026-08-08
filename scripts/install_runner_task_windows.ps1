@@ -10,6 +10,7 @@ param(
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $runnerScript = Join-Path $PSScriptRoot "run_runner_windows.ps1"
+$hiddenLauncher = Join-Path $PSScriptRoot "run_runner_windows_hidden.vbs"
 if (-not $ConfigPath) {
     $ConfigPath = Join-Path $repoRoot ".local-secrets\runner-config.json"
 }
@@ -20,26 +21,23 @@ if (-not $LogFile) {
     $LogFile = Join-Path $repoRoot ".local-secrets\runner.log"
 }
 
-foreach ($requiredPath in @($runnerScript, $ConfigPath, $TokenPath)) {
+foreach ($requiredPath in @($runnerScript, $hiddenLauncher, $ConfigPath, $TokenPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
         throw "Required Relay file does not exist: $requiredPath"
     }
 }
 
-$powerShell = (Get-Command powershell.exe).Source
+$wscript = Join-Path $env:WINDIR "System32\wscript.exe"
 $arguments = @(
-    "-NoProfile"
-    "-NonInteractive"
-    "-ExecutionPolicy Bypass"
-    "-WindowStyle Hidden"
-    "-File `"$runnerScript`""
-    "-ConfigPath `"$ConfigPath`""
-    "-TokenPath `"$TokenPath`""
-    "-LogFile `"$LogFile`""
+    "`"$hiddenLauncher`""
+    "`"$runnerScript`""
+    "`"$ConfigPath`""
+    "`"$TokenPath`""
+    "`"$LogFile`""
 ) -join " "
 
 $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-$action = New-ScheduledTaskAction -Execute $powerShell -Argument $arguments -WorkingDirectory $repoRoot
+$action = New-ScheduledTaskAction -Execute $wscript -Argument $arguments -WorkingDirectory $repoRoot
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $identity
 $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet `
