@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-08T08:44:06+08:00",
+  "generatedAt": "2026-08-08T14:31:06+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 197,
+  "total": 198,
   "items": [
+    {
+      "number": 287,
+      "title": "fix(dqkwg): 修复 A5 编译选项绑定错误",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/287",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-08T06:26:56Z",
+      "createdAt": "2026-08-08T06:25:53Z",
+      "headRef": "codex/fix-issue-285-a5-dqkwg-option",
+      "labels": []
+    },
     {
       "number": 286,
       "title": "fix: avoid OOB read when loading chunk_gdn_fwd solve_tri tail tiles",
