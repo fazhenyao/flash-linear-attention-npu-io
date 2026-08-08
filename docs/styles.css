@@ -371,6 +371,10 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 }
 .perf-varlen-fields.is-disabled { opacity:.55; }
 .perf-table { min-width:760px; }
+.perf-trigger-grid .perf-table { min-width:1200px; }
+.perf-trigger-grid .perf-table th,
+.perf-trigger-grid .perf-table td { white-space:nowrap; }
+.perf-trigger-grid .stats-table-wrap { width:100%; overflow-x:auto; }
 .perf-command-cell-btn {
   display:block;
   width:100%;
