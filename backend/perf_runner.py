@@ -151,7 +151,10 @@ def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> t
     local_abs = configured if configured.is_absolute() else ROOT / configured
     if not local_abs.exists():
         raise FileNotFoundError(f"本地脚本不存在：{local_abs}")
-    return entry["remote"], to_repo_relative_path(local_abs)
+    # The task selects a whitelisted script ID; the trusted Relay config may map
+    # that ID to a different path on its NPU host.
+    remote_script = config.remote_script or entry["remote"]
+    return remote_script, to_repo_relative_path(local_abs)
 
 
 def script_options() -> list[dict[str, str]]:

@@ -27,7 +27,7 @@
 - Profiling 原始目录可能很大，不适合直接存入 D1。
 - 当前 Relay 是用户开启 VPN 的 Windows 电脑，通过两个登录触发的计划任务分别运行 A2 和 A5 Agent。
 - A2 SSH 目标为 `root@192.168.9.221:22`，项目目录为 `/workspace/fazhenyao/flash-linear-attention-npu-io`；CANN 环境脚本为 `/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh`，Conda 环境为 `fla_dump`。
-- A5 SSH 目标为 `npu_user7@192.168.13.241:22`，项目目录为 `/home/npu_user7/fazhenyao/flash-linear-attention-npu-io`；CANN 环境脚本为 `/home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh`，Conda 环境为 `f30077529`。
+- A5 SSH 目标为 `npu_user7@192.168.13.241:22`，采集输出工作目录为 `/home/npu_user7/fazhenyao/flash-linear-attention-npu-io`，执行脚本为 `/home/npu_user7/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py`；CANN 环境脚本为 `/home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh`，Conda 环境为 `f30077529`。
 
 ## 3. 设计目标
 
@@ -235,6 +235,8 @@ Worker 请求异常：至少等待 5 秒并指数退避，最大 120 秒
 Worker 领取任务时先校验 `target_runner_id`，再校验 Agent 上报的芯片、卡号和 profiler 能力。未被指定的 Agent 即使芯片相同也不能领取该任务；目标 Agent 离线时，任务保留在 D1 等待，不会自动漂移到其他服务器。
 
 当前两个 Agent 共享同一个 Runner Token，但使用不同的 `RUNNER_ID`、配置文件、状态目录、日志、计划任务和本地制品目录。后续应为每个 Agent 签发可单独吊销和轮换的凭据。
+
+任务提交仍只接受 Worker 白名单中的 `script_id`。`PERF_REMOTE_SCRIPT` 是受信任的 Relay 本机配置，用于把该白名单 ID 映射到特定 NPU 主机上的脚本路径；浏览器用户不能提交或覆盖远端路径。
 
 ## 8. 任务状态机
 
@@ -745,7 +747,7 @@ PERF_SSH_USER=root
 PERF_SSH_PORT=22
 PERF_SSH_IDENTITY_FILE=C:/Users/Administrator/.ssh/id_ed25519
 PERF_REMOTE_WORKDIR=/workspace/fazhenyao/flash-linear-attention-npu-io
-PERF_REMOTE_SCRIPT=scripts/flash_gated_delta_rule.py
+PERF_REMOTE_SCRIPT=/home/npu_user7/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py
 PERF_REMOTE_ENV_SCRIPT=/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh
 PERF_REMOTE_CONDA_SH=/data/miniconda3/etc/profile.d/conda.sh
 PERF_REMOTE_CONDA_ENV=fla_dump
@@ -798,7 +800,7 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 
 验收条件：VPN 上线后任务可自动执行；VPN 离线时任务可靠等待；看板能展示最终指标。
 
-2026-08-08 已在 A2 NPU 2 上完成两条真实 `msprof` 端到端任务：`T=128` 总耗时 `1.0 ms`，`T=4087` 总耗时 `15.2 ms`。同日又在 A5 NPU 7 上完成 `T=128` 的定向 `msprof` 任务，总耗时 `0.7 ms`。这些任务均由看板提交、Worker/D1 排队、指定 Windows Relay 领取、SSH 到 NPU 执行、SCP 回收，并最终在看板显示“已完成”。
+2026-08-08 已在 A2 NPU 2 上完成两条真实 `msprof` 端到端任务：`T=128` 总耗时 `1.0 ms`，`T=4087` 总耗时 `15.2 ms`。同日又在 A5 NPU 7 上完成 `T=128` 的定向 `msprof` 任务，总耗时 `0.7 ms`；切换至 `/home/npu_user7/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py` 后再次执行同一用例，结果仍为 `0.7 ms`，并成功回收约 `1.66 MB` 的 PROF 目录。这些任务均由看板提交、Worker/D1 排队、指定 Windows Relay 领取、SSH 到 NPU 执行、SCP 回收，并最终在看板显示“已完成”。
 
 ### 阶段二：可靠性
 
