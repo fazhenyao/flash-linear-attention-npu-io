@@ -161,13 +161,15 @@ python -m backend.runner_agent
 
 `--check` 只检查本地执行配置和 NPU SSH 端口；`--once` 执行一次 heartbeat/领取循环，适合上线前验证。生产环境应安装为 Linux systemd 或 Windows Service，并将 Token、SSH 私钥和 VPN 凭据放入系统凭据存储或受限环境文件。
 
-Windows Relay 可使用仓库内的 PowerShell 脚本。`protect_runner_token_windows.ps1` 通过当前 Windows 用户的 DPAPI 保存 Runner Token；`run_runner_windows.ps1` 从 `.local-secrets/runner-config.json` 加载非敏感配置；`install_runner_task_windows.ps1` 安装“用户登录时启动”的计划任务。计划任务不开放任何监听端口，VPN 暂时断开时 Agent 只上报离线并继续等待。
+Windows Relay 可使用仓库内的 PowerShell 脚本。`protect_runner_token_windows.ps1` 通过当前 Windows 用户的 DPAPI 保存 Runner Token；`run_runner_windows.ps1` 从 `.local-secrets/runner-config.json` 加载非敏感配置；`install_runner_task_windows.ps1` 安装“用户登录时启动”的计划任务。`start_runners_windows.ps1` 和 `stop_runners_windows.ps1` 默认同时启动或停止 A2/A5 Relay。计划任务不开放任何监听端口，VPN 暂时断开时 Agent 只上报离线并继续等待。
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/protect_runner_token_windows.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run_runner_windows.ps1 -Check
 powershell -ExecutionPolicy Bypass -File scripts/run_runner_windows.ps1 -Once
 powershell -ExecutionPolicy Bypass -File scripts/install_runner_task_windows.ps1 -StartNow
+powershell -ExecutionPolicy Bypass -File scripts/start_runners_windows.ps1
+powershell -ExecutionPolicy Bypass -File scripts/stop_runners_windows.ps1
 ```
 
 本地或测试环境可以运行队列冒烟测试，不会执行 NPU 命令：

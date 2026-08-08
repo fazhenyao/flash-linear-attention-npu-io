@@ -716,7 +716,7 @@ VPN 断开时取消请求保持待处理，不能声称已经取消。当前版�
 - `migrations/0009_add_perf_job_queue.sql`：任务、事件、结果、制品和 Agent 数据表。
 - `cloudflare/worker.js`：用户任务 API、Runner API、原子领取、租约、取消、重试和结果回传。
 - `docs/performance-dashboard.html`：异步提交、Runner 状态、任务状态、重试、取消和结果展示。
-- `scripts/run_runner_windows.ps1`、`scripts/protect_runner_token_windows.ps1` 和 `scripts/install_runner_task_windows.ps1`：Windows Relay 启动、DPAPI Token 和计划任务安装。
+- `scripts/run_runner_windows.ps1`、`scripts/protect_runner_token_windows.ps1`、`scripts/install_runner_task_windows.ps1`、`scripts/start_runners_windows.ps1` 和 `scripts/stop_runners_windows.ps1`：Windows Relay 启动、DPAPI Token、计划任务安装及 A2/A5 后台任务启停。
 
 ### 待落地
 
@@ -917,6 +917,7 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - NPU 地址、SSH 用户、SSH 私钥路径等非口令配置分别保存在 `.local-secrets/runner-config.json` 和 `.local-secrets/runner-config-a5.json`，该目录已被 Git 忽略。
 - Agent 通过 Windows 计划任务在当前用户登录后启动，以便复用交互式 VPN 会话；VPN 未连接时 Agent 不领取任务，VPN 恢复后自动继续。
 - 计划任务通过 GUI 子系统的 `wscript.exe` 运行 `scripts/run_runner_windows_hidden.vbs`，再以无控制台方式启动 `scripts/run_runner_windows.ps1` 和 Python Agent。Relay 与启动它的终端完全分离，不注册 Windows 入站服务、不配置公网域名、不开放本机端口。
+- 管理员使用 `scripts/start_runners_windows.ps1` 和 `scripts/stop_runners_windows.ps1` 同时启动或停止 A2/A5，也可通过 `-TaskName` 只控制指定计划任务。
 - A2/A5 Relay 日志分别写入 `.local-secrets/runner.log` 和 `.local-secrets/runner-a5.log`；状态分别写入 `data/runner-state` 和 `data/runner-state/a5`。
 - A2 原始性能制品保存在既有 `data/prof_gdr` / `data/prof_op`，A5 制品保存在 `data/runner-artifacts/a5/prof_gdr` / `data/runner-artifacts/a5/prof_op`，并执行 30 天保留期清理。
 - 两个 Agent 均为单并发。A2 默认 NPU 2、SoC `Ascend910B`；A5 默认 NPU 7、SoC `Ascend950PR`。
