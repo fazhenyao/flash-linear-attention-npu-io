@@ -1,19 +1,31 @@
 {
-  "generatedAt": "2026-08-08T14:31:06+08:00",
+  "generatedAt": "2026-08-09T08:47:27+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 198,
+  "total": 201,
   "items": [
     {
-      "number": 287,
-      "title": "fix(dqkwg): 修复 A5 编译选项绑定错误",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/287",
+      "number": 291,
+      "title": "feat(dhu): 完善反向状态递推并补充 A5 实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/291",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-08T06:26:56Z",
-      "createdAt": "2026-08-08T06:25:53Z",
-      "headRef": "codex/fix-issue-285-a5-dqkwg-option",
+      "updatedAt": "2026-08-08T10:26:23Z",
+      "createdAt": "2026-08-08T10:08:46Z",
+      "headRef": "dhu-final-main",
+      "labels": []
+    },
+    {
+      "number": 288,
+      "title": "improve recurrent_kda performance",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/288",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-08T09:29:32Z",
+      "createdAt": "2026-08-08T09:29:05Z",
+      "headRef": "recurrent_kda_perf",
       "labels": []
     },
     {
@@ -71,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-07T06:36:33Z",
+      "updatedAt": "2026-08-08T10:40:47Z",
       "createdAt": "2026-08-06T13:02:19Z",
       "headRef": "20260806_204500_docs-README-usability",
       "labels": []
@@ -530,6 +542,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 292,
+      "title": "fix: 修复 causal_conv1d_bwd ctypes ABI 参数错位",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/292",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-08T10:57:02Z",
+      "updatedAt": "2026-08-08T10:57:02Z",
+      "createdAt": "2026-08-08T10:16:49Z",
+      "headRef": "codex/fix-causal-conv1d-bwd-ctypes-abi",
+      "labels": []
+    },
+    {
+      "number": 287,
+      "title": "fix(dqkwg): 修复 A5 编译选项绑定错误",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/287",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-08T06:32:07Z",
+      "updatedAt": "2026-08-08T06:32:08Z",
+      "createdAt": "2026-08-08T06:25:53Z",
+      "headRef": "codex/fix-issue-285-a5-dqkwg-option",
       "labels": []
     },
     {
