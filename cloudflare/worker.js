@@ -2174,7 +2174,7 @@ async function addPerfModel(env, model) {
 }
 
 async function createPerfJob(env, payload, user) {
-  const request = normalizePerfJobRequest(payload);
+  const request = normalizePerfJobRequest(payload, user);
   const idempotencyKey = normalizeIdempotencyKey(payload.idempotency_key || payload.idempotencyKey);
   const existing = await env.DB.prepare(
     "SELECT * FROM perf_jobs WHERE created_by = ? AND idempotency_key = ?",
@@ -2224,13 +2224,15 @@ async function createPerfJob(env, payload, user) {
       script_id: request.script_id,
       device: request.device,
       target_runner_id: request.target_runner_id || null,
+      rebuild_source: Boolean(request.execution_environment?.rebuild),
+      source_branch: request.execution_environment?.branch || null,
     },
     source: user.username || "cloudflare-d1",
   });
   return { ok: true, duplicate: false, job: await getPerfJob(env, job.id) };
 }
 
-function normalizePerfJobRequest(payload) {
+function normalizePerfJobRequest(payload, user) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw withStatus(400, "invalid job payload");
   for (const forbidden of ["command", "shell", "cwd", "env", "executable"]) {
     if (payload[forbidden] !== undefined) throw withStatus(400, `${forbidden} is not allowed`);
@@ -2260,6 +2262,10 @@ function normalizePerfJobRequest(payload) {
   if (payload.target_runner_id) {
     request.target_runner_id = safeIdentifier(payload.target_runner_id, "target_runner_id", 96);
   }
+  if (payload.execution_environment !== undefined) {
+    if (user?.role !== "admin") throw withStatus(403, "custom execution environment requires admin role");
+    request.execution_environment = normalizePerfExecutionEnvironment(payload.execution_environment);
+  }
   if (kernelName) request.kernel_name = kernelName;
   if (payload.operator_id) request.operator_id = safeIdentifier(payload.operator_id, "operator_id", 128);
   if (profTool !== "msprof") {
@@ -2267,6 +2273,49 @@ function normalizePerfJobRequest(payload) {
     request.launch_count = boundedInteger(payload.launch_count ?? 10, "launch_count", 1, 100000);
   }
   return request;
+}
+
+function normalizePerfExecutionEnvironment(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw withStatus(400, "execution_environment must be an object");
+  }
+  const allowed = new Set(["cann_path", "conda_env", "source_repo", "rebuild", "branch"]);
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) throw withStatus(400, `unsupported execution environment field: ${key}`);
+  }
+  const cannPath = normalizeRemoteAbsolutePath(value.cann_path, "cann_path");
+  const sourceRepo = normalizeRemoteAbsolutePath(value.source_repo, "source_repo");
+  const condaEnv = String(value.conda_env || "").trim();
+  if (!/^[A-Za-z0-9_.-]{1,100}$/.test(condaEnv)) throw withStatus(400, "invalid conda_env");
+  if (value.rebuild !== undefined && typeof value.rebuild !== "boolean") {
+    throw withStatus(400, "rebuild must be a boolean");
+  }
+  const rebuild = value.rebuild === true;
+  const branch = String(value.branch || "").trim();
+  if (rebuild && !branch) throw withStatus(400, "branch is required when rebuilding source");
+  if (!rebuild && branch) throw withStatus(400, "branch requires rebuild=true");
+  if (branch && (
+    branch.length > 200
+    || !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(branch)
+    || branch.includes("..")
+    || branch.includes("//")
+    || branch.includes("@{")
+    || branch.endsWith("/")
+    || branch.endsWith(".")
+    || branch.endsWith(".lock")
+  )) throw withStatus(400, "invalid source branch");
+  return { cann_path: cannPath, conda_env: condaEnv, source_repo: sourceRepo, rebuild, branch };
+}
+
+function normalizeRemoteAbsolutePath(value, field) {
+  const text = String(value || "").trim();
+  if (text === "/" || !text.startsWith("/") || text.length > 500 || !/^\/[A-Za-z0-9._+@/-]+$/.test(text)) {
+    throw withStatus(400, `invalid ${field}`);
+  }
+  if (text.includes("//") || text.split("/").some((part) => part === "." || part === "..")) {
+    throw withStatus(400, `invalid ${field}`);
+  }
+  return text.replace(/\/+$/, "");
 }
 
 function normalizePerfAttributes(value) {
@@ -2742,6 +2791,11 @@ async function sweepExpiredPerfLeases(env) {
 
 function runnerCanExecute(runnerId, capabilities, request) {
   if (request.target_runner_id && request.target_runner_id !== runnerId) return false;
+  if (request.execution_environment) {
+    const environment = capabilities.execution_environment || {};
+    if (!environment.customizable) return false;
+    if (request.execution_environment.rebuild && !environment.source_build) return false;
+  }
   const tools = Array.isArray(capabilities.prof_tools) ? capabilities.prof_tools : [];
   if (tools.length && !tools.includes(request.prof_tool)) return false;
   const chips = Array.isArray(capabilities.chips) ? capabilities.chips : (capabilities.chip ? [capabilities.chip] : []);
@@ -3330,3 +3384,5 @@ function withStatus(status, message) {
   error.status = status;
   return error;
 }
+
+export { normalizePerfExecutionEnvironment, runnerCanExecute };

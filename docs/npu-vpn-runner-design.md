@@ -121,6 +121,8 @@ flowchart LR
 
 - Relay 进入固定项目目录并执行服务端白名单生成的命令，不接收用户提供的任意 Shell。
 - 每次命令先加载目标服务器的 CANN `set_env.sh`，再加载 Conda 初始化脚本；A2 激活 `fla_dump`，A5 激活 `f30077529`。
+- 管理员可以按任务选择 Relay 允许根目录内的 CANN、Conda 和源码仓库；普通用户继续使用 Relay 默认环境。
+- 指定源码分支重新编译时，Relay 在临时 Git worktree 中解析准确 commit，按芯片固定 SoC 构建并安装 wheel，不切换或修改主源码工作区。
 - `msprof` 输出到 `data/prof_gdr`，`msopprof` 输出到 `data/prof_op`。
 - 当前 SSH 会话同步等待采集完成；`systemd-run`、远端状态文件和 Device 锁属于阶段二。
 
@@ -603,7 +605,12 @@ Relay 重启或 VPN 恢复后，应先读取该文件和 systemd unit 状态，�
 - `tool` 只能是允许的 `msprof`、`msprof_op`、`msprof_op_sim`。
 - `script_id` 必须来自固定脚本清单。
 - 数值参数有类型、上下限和组合校验。
-- 文件路径不能由用户自由指定。
+- 普通用户不能指定文件路径；管理员只能指定 Relay 允许根目录内的 CANN 和源码绝对路径。
+- 自定义执行环境只包含 `cann_path`、`conda_env`、`source_repo`、`rebuild` 和 `branch`，不能提交命令、环境变量、工作目录或可执行文件。
+- 带自定义环境的任务只允许支持该能力的新版 Relay 领取；旧 Agent 不会领取并忽略这些字段。
+- 源码分支必须通过 Git ref 格式校验；Relay 优先解析服务器上已存在的本地分支，本地不存在时才 fetch origin，并将最终分支解析为准确 commit 后使用唯一临时 worktree。这使不能直接访问 GitHub 的 NPU 服务器仍可构建已同步到本地的分支。
+- 构建 SoC 由 Relay 芯片固定映射：A2=`ascend910b`、A3=`ascend910_93`、A5=`ascend950`，任务参数不能覆盖。
+- 构建命令固定为 `check_npu_env.py --build-only`、`pip wheel --no-build-isolation --no-deps` 和精确 wheel 的 `pip install --force-reinstall --no-cache-dir --no-deps`。
 - kernel 名称按允许字符集和已知算子校验。
 - 本地子进程使用参数数组，避免 `shell=True`。
 - SSH 远端命令中的固定参数必须正确引用。
@@ -640,7 +647,7 @@ D1 中每个任务只保留有限数量、有限长度的事件。当前实现�
 - 退出码和失败类型。
 - MFU、MBU、耗时等结构化指标。
 - Agent 版本、执行模式、芯片、SoC 和 Device。
-- 当前尚未采集代码 commit、CANN、profiler 和驱动版本，这些属于后续可追溯性增强。
+- 自定义源码构建会记录分支、准确 commit、CANN 路径、Conda 环境和构建 SoC；profiler 与驱动版本仍属于后续可追溯性增强。
 - 本地制品标识、受控路径、大小、SHA-256 和过期时间。
 
 ### NPU 服务器或 Relay 本地保存
@@ -789,6 +796,10 @@ PERF_REMOTE_SCRIPT=scripts/flash_gated_delta_rule.py
 PERF_REMOTE_ENV_SCRIPT=/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh
 PERF_REMOTE_CONDA_SH=/data/miniconda3/etc/profile.d/conda.sh
 PERF_REMOTE_CONDA_ENV=fla_dump
+PERF_REMOTE_SOURCE_REPO=/workspace/fazhenyao/flash-linear-attention-npu
+PERF_ALLOWED_CANN_ROOTS=/data/fazhenyao/cann
+PERF_ALLOWED_SOURCE_ROOTS=/workspace/fazhenyao;/data/fazhenyao
+PERF_REMOTE_BUILD_ROOT=/tmp/fla-runner-builds
 PERF_PROF_OUTPUT=data/prof_gdr
 PERF_OP_OUTPUT=data/prof_op
 PERF_NPU_DEVICE=2
@@ -813,6 +824,10 @@ PERF_REMOTE_SCRIPT=/home/npu_user7/fazhenyao/flash-linear-attention-npu/examples
 PERF_REMOTE_ENV_SCRIPT=/home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh
 PERF_REMOTE_CONDA_SH=/home/npu_user7/jianshuqiang/miniconda3/etc/profile.d/conda.sh
 PERF_REMOTE_CONDA_ENV=f30077529
+PERF_REMOTE_SOURCE_REPO=/home/npu_user7/fazhenyao/flash-linear-attention-npu
+PERF_ALLOWED_CANN_ROOTS=/home/npu_user7/fazhenyao/cann
+PERF_ALLOWED_SOURCE_ROOTS=/home/npu_user7/fazhenyao
+PERF_REMOTE_BUILD_ROOT=/tmp/fla-runner-builds
 PERF_PROF_OUTPUT=data/prof_gdr
 PERF_OP_OUTPUT=data/prof_op
 PERF_LOCAL_PROF_OUTPUT=data/runner-artifacts/a5/prof_gdr
@@ -941,10 +956,10 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 截至 2026-08-10，阶段一任务闭环和阶段三 R2 制品闭环均已部署，并通过真实 A2/A5 NPU 任务验证：
 
 - D1 migration 已加入 `perf_jobs`、`perf_job_events`、`perf_results`、`perf_artifacts` 和 `runner_agents`，并为 Runner 增加强制 NPU 状态刷新请求字段。
-- Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传。
+- Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传；自定义执行环境仅允许管理员提交并执行字段白名单校验。
 - `backend/runner_agent.py` 已实现主动出站注册、SSH 端口健康检查、异步 `npu-smi` 设备状态上报、自适应领取、执行期 heartbeat、结果回传和本地制品过期清理。
-- `backend/perf_runner.py` 已支持远端 CANN/Conda 环境准备、同步 SSH 执行、SSH/SCP 超时、新增结果目录识别和回收；SSH/SCP 子进程显式关闭标准输入，适配无控制台 Windows 计划任务。
-- 性能看板已改为向 Worker 异步提交任务，并提供 A2/A5 执行服务器选择、分卡占用自动更新、强制重新采样和点击展开完整进程明细；Runner 或 VPN 离线时任务继续排队。
+- `backend/perf_runner.py` 已支持远端 CANN/Conda 环境准备、允许根目录校验、分支解析、临时 Git worktree、按 A2/A3/A5 构建安装、同步 SSH 执行、SSH/SCP 超时、新增结果目录识别和回收；SSH/SCP 子进程显式关闭标准输入，适配无控制台 Windows 计划任务。
+- 性能看板已改为向 Worker 异步提交任务，并提供 A2/A5 执行服务器选择、管理员执行环境与源码分支构建设置、分卡占用自动更新、强制重新采样和点击展开完整进程明细；Runner 或 VPN 离线时任务继续排队。
 - 已增加不执行 NPU 命令的队列冒烟测试 `scripts/smoke_test_perf_queue.py`。
 - Worker 和 Relay 已配置独立 `RUNNER_TOKEN`，本机 Token 使用 DPAPI 加密保存。
 - Windows 计划任务 `FLA VPN Runner` 和 `FLA VPN Runner A5` 已安装并运行；两个计划任务都在用户登录后启动 Agent，以复用本机 VPN 会话。
