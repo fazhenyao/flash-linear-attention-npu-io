@@ -185,6 +185,8 @@ class RunnerAgent:
         self.api = RunnerApi(config)
         self.stop_event = threading.Event()
         self.current_jobs = 0
+        self.config.state_dir.mkdir(parents=True, exist_ok=True)
+        (self.config.state_dir / "jobs").mkdir(parents=True, exist_ok=True)
         self._npu_status_lock = threading.Lock()
         self._npu_status_refreshing = False
         self._npu_status_pending_refresh_id: str | None = None
@@ -198,15 +200,7 @@ class RunnerAgent:
         self._source_branches_lock = threading.Lock()
         self._source_branches_refreshing = False
         self._source_branches_pending: tuple[str, str] | None = None
-        self._source_branches = {
-            "checked_at": None,
-            "source_repo": None,
-            "branches": [],
-            "error": "等待源码分支查询",
-            "refresh_request_id": None,
-        }
-        self.config.state_dir.mkdir(parents=True, exist_ok=True)
-        (self.config.state_dir / "jobs").mkdir(parents=True, exist_ok=True)
+        self._source_branches = self._load_source_branches_cache()
 
     def stop(self, *_args: object) -> None:
         self.stop_event.set()
@@ -238,8 +232,61 @@ class RunnerAgent:
                 "source_remote_branch_query": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_branches": self.source_branches_status(),
             },
-            "agent_version": "1.6.0",
+            "agent_version": "1.6.1",
         }
+
+    def source_branches_cache_path(self) -> Path:
+        runner_key = hashlib.sha256(self.config.runner_id.encode("utf-8")).hexdigest()[:12]
+        return self.config.state_dir / f"source-branches-{runner_key}.json"
+
+    def _load_source_branches_cache(self) -> dict[str, Any]:
+        empty = {
+            "checked_at": None,
+            "source_repo": None,
+            "branches": [],
+            "error": "等待源码分支查询",
+            "refresh_request_id": None,
+            "stale": False,
+        }
+        try:
+            value = json.loads(self.source_branches_cache_path().read_text(encoding="utf-8"))
+            source_repo = str(value.get("source_repo") or "").strip()
+            branches = [
+                {"source": str(branch["source"]), "name": str(branch["name"])}
+                for branch in value.get("branches", [])[:400]
+                if isinstance(branch, dict)
+                and branch.get("source") in {"local", "remote"}
+                and isinstance(branch.get("name"), str)
+                and branch["name"]
+            ]
+            if not source_repo or not branches:
+                return empty
+            return {
+                "checked_at": value.get("checked_at"),
+                "source_repo": source_repo,
+                "branches": branches,
+                "error": "",
+                "refresh_request_id": None,
+                "stale": True,
+            }
+        except (OSError, ValueError, TypeError, KeyError, AttributeError):
+            return empty
+
+    def _save_source_branches_cache(self, status: dict[str, Any]) -> None:
+        if not status.get("branches") or not isinstance(getattr(self.config, "state_dir", None), Path):
+            return
+        path = self.source_branches_cache_path()
+        temporary = path.with_suffix(".tmp")
+        value = {
+            "checked_at": status.get("checked_at"),
+            "source_repo": status.get("source_repo"),
+            "branches": status.get("branches"),
+        }
+        try:
+            temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            temporary.replace(path)
+        except OSError:
+            pass
 
     def source_branches_status(self) -> dict[str, Any]:
         with self._source_branches_lock:
@@ -326,6 +373,12 @@ class RunnerAgent:
 
     def _refresh_source_branches(self, refresh_id: str, source_repo: str) -> None:
         checked_at = utc_now()
+        with self._source_branches_lock:
+            cached_branches = (
+                list(self._source_branches.get("branches") or [])
+                if self._source_branches.get("source_repo") == source_repo
+                else []
+            )
         try:
             branches = list_remote_source_branches(load_config(), source_repo)
             status = {
@@ -334,14 +387,17 @@ class RunnerAgent:
                 "branches": branches,
                 "error": "",
                 "refresh_request_id": refresh_id,
+                "stale": False,
             }
+            self._save_source_branches_cache(status)
         except Exception as exc:
             status = {
                 "checked_at": checked_at,
                 "source_repo": source_repo,
-                "branches": [],
+                "branches": cached_branches,
                 "error": str(exc)[:500],
                 "refresh_request_id": refresh_id,
+                "stale": bool(cached_branches),
             }
         with self._source_branches_lock:
             self._source_branches = status
@@ -584,7 +640,7 @@ class RunnerAgent:
     def environment_summary(self) -> dict[str, Any]:
         status = runner_status()
         return {
-            "agent_version": "1.6.0",
+            "agent_version": "1.6.1",
             "runner_id": self.config.runner_id,
             "mode": status.get("mode"),
             "chip": status.get("chip"),

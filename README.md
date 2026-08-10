@@ -163,7 +163,7 @@ python -m backend.runner_agent
 
 Windows Relay 可使用仓库内的 PowerShell 脚本。`protect_runner_token_windows.ps1` 通过当前 Windows 用户的 DPAPI 保存 Runner Token；`run_runner_windows.ps1` 从 `.local-secrets/runner-config.json` 加载非敏感配置；`install_runner_task_windows.ps1` 安装“用户登录时启动”的计划任务。`start_runners_windows.ps1` 和 `stop_runners_windows.ps1` 默认同时启动或停止 A2/A5 Relay。计划任务不开放任何监听端口，VPN 暂时断开时 Agent 只上报离线并继续等待。Relay 默认每 30 分钟在后台通过 SSH 分卡执行 `npu-smi info -t usages` 和 `npu-smi info -t proc-mem`，将利用率、HBM 和完整进程明细随 heartbeat 上报；性能看板每 10 秒自动读取最新状态，点击刷新可通过 Worker/D1 请求 Relay 强制重新采样，点击进程数可展开完整明细。
 
-管理员还可以在“用例执行触发”中覆盖所选 Relay 的 CANN 路径、Conda 环境和 `flash-linear-attention-npu` 源码路径。看板经 Worker/D1 请求目标 Relay 读取 NPU 服务器源码仓库的本地分支和已缓存的 `origin/*` 远程跟踪分支，并分组供管理员选择。“编译安装”会提交独立的 `build_install` 任务：Relay 在允许目录中创建 detached worktree，按 A2/A3/A5 固定映射为 `ascend910b` / `ascend910_93` / `ascend950`，依次执行源码仓库 README 要求的环境检查、wheel 构建和精确 wheel 安装，再把成功构建的 worktree 激活为该 CANN/Conda 环境的当前部署。“执行测试”只运行 profiler；选择分支时会校验并使用对应来源的已部署源码。普通用户不能提交自定义执行环境或编译任务，任务也不能覆盖构建命令、远程名称或 SoC 参数。
+管理员还可以在“用例执行触发”中覆盖所选 Relay 的 CANN 路径、Conda 环境和 `flash-linear-attention-npu` 源码路径。看板经 Worker/D1 请求目标 Relay 读取 NPU 服务器源码仓库的本地分支和已缓存的 `origin/*` 远程跟踪分支，并分组供管理员选择。Relay 先读取现有引用，再用短超时刷新 `origin`；刷新失败时保留现有引用，并将最近一次成功列表持久化到本机供 SSH 暂时不可达时继续选择。“编译安装”会提交独立的 `build_install` 任务：Relay 在允许目录中创建 detached worktree，按 A2/A3/A5 固定映射为 `ascend910b` / `ascend910_93` / `ascend950`，依次执行源码仓库 README 要求的环境检查、wheel 构建和精确 wheel 安装，再把成功构建的 worktree 激活为该 CANN/Conda 环境的当前部署。“执行测试”只运行 profiler；选择分支时会校验并使用对应来源的已部署源码。普通用户不能提交自定义执行环境或编译任务，任务也不能覆盖构建命令、远程名称或 SoC 参数。
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/protect_runner_token_windows.ps1
