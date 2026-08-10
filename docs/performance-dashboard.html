@@ -79,7 +79,7 @@
             </label>
           </div>
           <div class="perf-case-io-toolbar">
-            <button type="button" class="perf-case-download-btn" id="netCaseDownloadBtn">下载 Prof CSV</button>
+            <button type="button" class="perf-case-download-btn" id="netCaseDownloadBtn">下载完整 Prof ZIP</button>
           </div>
           <div id="netRunContext" class="perf-run-context hidden">
             <p class="perf-filter-subtitle">运行环境</p>
@@ -446,7 +446,7 @@
       document.querySelector("#triggerProfTool").addEventListener("change", updateTriggerProfToolUI);
       document.querySelector("#attrVarlen").addEventListener("change", updateVarlenFieldsUI);
       bindCommandDialogEvents();
-      document.querySelector("#netCaseDownloadBtn").addEventListener("click", () => downloadPerfCases(resolveNetCaseIds()));
+      document.querySelector("#netCaseDownloadBtn").addEventListener("click", downloadNetworkProfArchive);
       document.querySelector("#perfCaseImportBtn").addEventListener("click", promptPerfCaseImport);
       document.querySelector("#caseCompareDownloadBtn").addEventListener("click", () => downloadPerfCases(resolveCaseCompareIds()));
       document.querySelector("#profImportFolderInput").addEventListener("change", onPerfCaseFolderSelected);
@@ -476,6 +476,38 @@
       anchor.download = filename;
       anchor.click();
       URL.revokeObjectURL(url);
+    }
+
+    function cloudRunForCase(caseId) {
+      const snapshot = primarySnapshotForCase(caseId);
+      const jobs = new Map((state.jobs || []).map((job) => [job.id, job]));
+      const candidates = (state.data?.runs || [])
+        .filter((run) => run.case_id === caseId && (!snapshot?.id || run.snapshot_id === snapshot.id))
+        .map((run) => ({ run, job: jobs.get(run.id) }))
+        .filter(({ job }) => job?.status === "succeeded" && Number(job.r2_artifact_count || 0) > 0)
+        .sort((left, right) => {
+          return String(right.run.finished_at || right.run.created_at || "")
+            .localeCompare(String(left.run.finished_at || left.run.created_at || ""));
+        });
+      return candidates[0]?.run || null;
+    }
+
+    async function downloadNetworkProfArchive() {
+      if (!state.token) {
+        alert("请先登录后下载云端 Prof ZIP");
+        return;
+      }
+      const [caseId] = resolveNetCaseIds();
+      if (!caseId) {
+        alert("请先选择一个用例");
+        return;
+      }
+      const run = cloudRunForCase(caseId);
+      if (!run) {
+        alert("该用例没有可下载的云端 Prof ZIP。历史导入用例需要重新通过采集任务生成 R2 制品。");
+        return;
+      }
+      await downloadRunResult(run.id);
     }
 
     async function downloadPerfCases(caseIds) {
@@ -675,7 +707,9 @@
           if (!artifactsResponse.ok) {
             throw new Error(artifactsPayload.error || `制品查询失败（HTTP ${artifactsResponse.status}）`);
           }
-          const artifact = (artifactsPayload.artifacts || []).find((item) => item.storage === "r2" && item.download_url);
+          const r2Artifacts = (artifactsPayload.artifacts || [])
+            .filter((item) => item.storage === "r2" && item.download_url);
+          const artifact = r2Artifacts.find((item) => item.artifact_type === "prof_archive") || r2Artifacts[0];
           if (!artifact) throw new Error("该任务的原始制品仅保留在 Relay 本地");
           response = await fetch(`${WORKER_API_BASE}${artifact.download_url}`, { headers: authHeaders() });
         } else {
