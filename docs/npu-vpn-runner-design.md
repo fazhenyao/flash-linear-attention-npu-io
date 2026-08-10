@@ -6,9 +6,9 @@
 
 推荐架构为：
 
-> Cloudflare Worker/D1 负责任务控制面，VPN Runner Relay 负责跨越 VPN，NPU 服务器负责实际执行，大体积采集制品保存在 NPU 服务器或 Relay 本地磁盘。
+> Cloudflare Worker/D1 负责任务控制面，VPN Runner Relay 负责跨越 VPN，NPU 服务器负责实际执行；Relay 保留本地副本，并将压缩制品上传到私有 Cloudflare R2。
 
-当前部署不启用 R2。文中涉及 R2 或签名下载的内容属于阶段三可选扩展，不是当前闭环的组成部分。
+当前部署已启用私有 R2，在线下载由 Worker 执行用户权限校验和对象代理，不公开 Bucket，也不向浏览器或 Relay 分发 R2 凭据。
 
 本文同时记录目标架构和当前实现。标注为“阶段二”或“建议”的 systemd 持久执行、远端 Device 锁和断线恢复尚未落地；当前闭环采用 Windows Relay 同步 SSH 执行和本地制品保留。
 
@@ -38,7 +38,7 @@
 5. VPN 执行中断开时，远端命令尽可能继续执行并可恢复跟踪。
 6. 防止同一任务或同一 NPU Device 被重复并发执行。
 7. 用户不能通过任务参数执行任意 Shell 命令。
-8. 结构化指标可直接在看板展示，大文件通过 VPN/SSH 由管理员获取。
+8. 结构化指标可直接在看板展示，有权限的用户可从看板下载 R2 中的原始制品。
 9. 每次执行可追踪到用户、代码版本、运行环境、命令模板和制品。
 
 ## 4. 非目标
@@ -63,6 +63,8 @@ flowchart LR
     N -->|msprof / msopprof| P[Prof 结果目录]
     P -->|SCP 回收新增目录| R
     R -->|结构化结果与制品清单| W
+    R -->|出站 HTTPS 分片上传| O[(私有 Cloudflare R2)]
+    W -->|鉴权代理下载| O
     R -->|本地保留 30 天| L[(Relay / NPU 本地磁盘)]
 ```
 
@@ -114,11 +116,12 @@ flowchart LR
 - Relay 回收副本默认保留 30 天，由 Agent 清理；当前不会自动删除 NPU 服务器上的源目录。
 - D1 只记录制品路径、类型、大小、SHA-256 和过期时间。
 
-#### 可选 Cloudflare R2
+#### Cloudflare R2
 
-- 仅在需要浏览器在线下载制品时启用。
-- Bucket 必须保持私有，下载使用短期签名地址。
-- 启用前需要完成计费、容量上限和生命周期策略评审。
+- Bucket 保持私有，不启用公共开发 URL 或自定义公开域名。
+- Relay 使用 Runner Token 经 Worker multipart API 上传，不持有 R2 API Token。
+- 浏览器经 Worker 鉴权代理下载，不获得直接对象地址。
+- Worker 将“现有对象 + 活跃上传预留”限制在 `9,000,000,000` 字节；达到阈值时按 R2 `uploaded` 时间删除最旧的 `perf-artifacts/` 对象，并同步删除 D1 制品记录。
 
 ### 5.2 网络与攻击面
 
@@ -309,7 +312,7 @@ POST /api/runner/jobs/{job_id}/reconcile
 
 Runner 接口使用独立的服务凭据，不能复用浏览器用户 Token。
 
-阶段三启用对象存储后，再增加制品上传和签名下载接口；当前接口只登记本地制品清单。
+当前已增加 R2 multipart 上传和 Worker 鉴权下载接口；R2 上传失败时仍登记 Relay 本地制品清单并保留结构化结果。
 
 ### 9.3 用户提交示例
 
@@ -717,6 +720,7 @@ VPN 断开时取消请求保持待处理，不能声称已经取消。当前版�
 - `backend/perf_runner.py`：同步 SSH/SCP、CANN/Conda 环境准备、连接超时、新增 Prof 目录识别和结果导入。
 - `scripts/import_prof_gdr.py` / `scripts/import_msprof_op.py`：支持只返回内存结果，不要求写入仓库 JSON 快照。
 - `migrations/0009_add_perf_job_queue.sql`：任务、事件、结果、制品和 Agent 数据表。
+- `migrations/0010_add_r2_artifact_reservations.sql`：并发上传容量预留和 8 天安全过期时间。
 - `cloudflare/worker.js`：用户任务 API、Runner API、原子领取、租约、取消、重试和结果回传。
 - `docs/performance-dashboard.html`：异步提交、Runner 状态、任务状态、重试、取消和结果展示。
 - `scripts/run_runner_windows.ps1`、`scripts/protect_runner_token_windows.ps1`、`scripts/install_runner_task_windows.ps1`、`scripts/start_runners_windows.ps1` 和 `scripts/stop_runners_windows.ps1`：Windows Relay 启动、DPAPI Token、计划任务安装及 A2/A5 后台任务启停。
@@ -727,7 +731,7 @@ VPN 断开时取消请求保持待处理，不能声称已经取消。当前版�
 - NPU 服务器端 Device 锁与多 Relay 调度。
 - SSH 登录、profiler、Device 和磁盘空间的领取前预检。
 - 多 Relay 场景的轮询抖动和 Worker `retry_after_seconds` 支持。
-- 阶段三如启用对象存储，再新增 R2 binding、上传、签名下载和生命周期策略。
+- R2 容量清理审计、上传失败独立重试和下载审计。
 
 ## 22. 配置建议
 
@@ -819,7 +823,7 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 - 使用私有 R2 Bucket 保存压缩 Prof。
 - Relay 只使用已有 Runner Token，经 Worker 执行 multipart 上传，不保存 R2 API Token。
 - Worker 校验用户权限并代理下载，D1 只保存制品元数据。
-- 使用 SHA-256、30 天过期时间和 Bucket 生命周期策略控制完整性与容量。
+- 使用 SHA-256、9 GB 应用级容量阈值和按上传日期淘汰策略控制完整性与容量。
 
 验收条件：用户可以下载受控制品，D1 不存储大文件。
 
@@ -937,7 +941,7 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - A2 当前使用 `root` SSH 账号；A2/A5 均使用 `StrictHostKeyChecking=accept-new`。A2 应迁移到低权限账号，两台服务器都应预置固定主机密钥。
 - 当前没有轮询随机抖动，也不读取 Worker 返回的建议重试间隔；双 Relay 已投入运行，应尽快补齐抖动和服务端退避提示支持。
 - 30 天过期清理只覆盖 Relay 本地副本，不会删除 NPU 服务器 `data/prof_gdr` / `data/prof_op` 下的源目录。
-- R2 对象和 Relay 本地副本都按 30 天目标保留；D1 过期元数据目前不会由定时任务主动删除。
+- Relay 本地副本按 30 天保留；R2 不设置固定 30 天删除，改为达到 9 GB 安全阈值时优先清理最旧对象。
 - Windows 电脑、登录会话或 VPN 离线时，任务会继续保存在 D1 中，但不会执行。
 
 ### 26.3 下一阶段优先级
@@ -953,7 +957,13 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - Bucket 名称：`flash-linear-attention-npu-perf-artifacts`。
 - Worker binding：`PERF_ARTIFACTS`，配置在 `wrangler.toml`。
 - 存储类型：Standard；Bucket 保持私有，不启用 `r2.dev` 或自定义公开域名。
-- 生命周期：对前缀 `perf-artifacts/` 设置 30 天删除规则；未完成 multipart upload 由 R2 自动清理。
+- 免费额度保护：完整对象与活跃上传预留之和不得超过十进制 `9,000,000,000` 字节，为 10 GB-month 免费存储额度保留 10% 余量。
+- 淘汰顺序：达到阈值时按 R2 对象 `uploaded` 时间升序删除 `perf-artifacts/` 下的最旧对象，同时删除 D1 中对应 `r2://` 制品记录。
+- 并发保护：开始上传前在 D1 写入最终 ZIP 大小预留；预留 8 天后过期，覆盖 R2 默认“7 天后中止未完成 multipart upload”规则。
+- 管理查询：管理员可调用 `GET /api/perf/artifacts/storage` 查看对象数、已用字节、预留字节、可用字节和最早/最新上传时间。
+- Bucket 中非 `perf-artifacts/` 对象计入容量但不会被自动删除；若没有足够的受管制品可清理，新上传将被拒绝并退化为 Relay 本地保存。
+- 该阈值保护当前专用 Bucket 的存储量；Cloudflare 免费额度按账号汇总，后续若创建其他 R2 Bucket，其用量必须另行纳入账号级监控。
+- 本策略只约束存储数据量，不替代 Class A / Class B 月度请求次数监控；当前任务规模远低于 100 万次 A 类和 1000 万次 B 类免费额度。
 - Relay 分片：`RUNNER_R2_PART_MIB=32`，不得低于 5 MiB。
 - 下载授权：普通用户只能访问本人创建的任务，管理员可访问全部任务；Worker 返回 `private, no-store`。
 - 完整性：Relay 对最终 ZIP 计算 SHA-256，D1 保存摘要，下载响应返回 `X-Content-SHA256`。
