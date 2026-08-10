@@ -427,6 +427,17 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-attr-fieldset .perf-check-field { width:100%; box-sizing:border-box; }
 .perf-execution-environment { grid-column:1 / -1; }
 .perf-execution-environment input[readonly] { color:#6f665a; background:#f1ede5; }
+.perf-source-branch-control { display:grid; grid-template-columns:minmax(0,1fr) 34px; gap:6px; align-items:center; }
+.perf-source-branch-refresh {
+  display:grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  padding:0;
+  font-size:16px;
+  line-height:1;
+}
+.perf-source-branch-refresh.is-refreshing span { animation:perf-npu-spin .8s linear infinite; }
 .perf-check-field-compact { width:auto; min-width:34px; justify-content:center; }
 .perf-varlen-fields {
   grid-column:1 / -1;

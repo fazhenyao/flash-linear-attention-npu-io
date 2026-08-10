@@ -248,7 +248,15 @@
                 </span>
               </label>
               <label id="triggerSourceBranchWrap" class="perf-form-fieldwide">源码分支
-                <input id="triggerSourceBranch" type="text" autocomplete="off" disabled>
+                <span class="perf-source-branch-control">
+                  <select id="triggerSourceBranch" disabled>
+                    <option value="">启用重新编译后读取分支</option>
+                  </select>
+                  <button id="refreshSourceBranchesBtn" type="button" class="perf-source-branch-refresh" title="重新读取源码仓库分支" aria-label="重新读取源码仓库分支">
+                    <span aria-hidden="true">&#8635;</span>
+                  </button>
+                </span>
+                <span id="triggerSourceBranchHint" class="perf-field-hint">分支列表由所选 Relay 从 NPU 服务器读取。</span>
               </label>
             </fieldset>
             <label>测试模式
@@ -439,6 +447,9 @@
       perfPollTimer: null,
       npuStatusPollTimer: null,
       npuStatusRefreshing: false,
+      sourceBranchesRefreshing: false,
+      sourceBranchesRequestKey: "",
+      triggerSourceBranchDefault: "",
       expandedNpuProcessKey: "",
       triggerExecutionEnvironmentSynced: "",
     };
@@ -490,7 +501,9 @@
       document.querySelector("#logoutBtn").addEventListener("click", onLogout);
       document.querySelector("#addModelBtn").addEventListener("click", onAddModel);
       document.querySelector("#triggerProfTool").addEventListener("change", updateTriggerProfToolUI);
-      document.querySelector("#triggerRebuildSource").addEventListener("change", updateTriggerBuildUI);
+      document.querySelector("#triggerRebuildSource").addEventListener("change", onTriggerRebuildSourceChange);
+      document.querySelector("#triggerSourceRepo").addEventListener("change", onTriggerSourceRepoChange);
+      document.querySelector("#refreshSourceBranchesBtn").addEventListener("click", () => refreshTriggerSourceBranches(true));
       document.querySelector("#attrVarlen").addEventListener("change", updateVarlenFieldsUI);
       bindCommandDialogEvents();
       document.querySelector("#netCaseDownloadBtn").addEventListener("click", downloadNetworkProfArchive);
@@ -989,6 +1002,9 @@
       localStorage.setItem("fla-perf-runner-id", state.selectedRunnerId);
       state.triggerDeviceSynced = null;
       state.triggerExecutionEnvironmentSynced = "";
+      state.sourceBranchesRefreshing = false;
+      state.sourceBranchesRequestKey = "";
+      state.triggerSourceBranchDefault = "";
       state.expandedNpuProcessKey = "";
       syncTriggerDeviceFromRunner(true);
       syncTriggerOpDefaultsFromRunner();
@@ -1188,7 +1204,7 @@
       document.querySelector("#triggerCondaEnv").value = defaults.conda_env || "";
       document.querySelector("#triggerSourceRepo").value = defaults.source_repo || "";
       document.querySelector("#triggerRebuildSource").checked = Boolean(defaults.rebuild);
-      document.querySelector("#triggerSourceBranch").value = defaults.branch || "";
+      state.triggerSourceBranchDefault = defaults.branch || "";
       document.querySelector("#triggerBuildSoc").value = triggerBuildSoc(triggerRunnerChip(runner));
       state.triggerExecutionEnvironmentSynced = runner.id;
       updateTriggerBuildUI();
@@ -1196,13 +1212,115 @@
 
     function updateTriggerBuildUI() {
       const runner = selectedTriggerRunner();
-      const supported = Boolean(runner?.capabilities?.execution_environment?.source_build);
+      const supported = triggerSourceBranchQuerySupported(runner);
       const checkbox = document.querySelector("#triggerRebuildSource");
-      const branch = document.querySelector("#triggerSourceBranch");
       checkbox.disabled = !supported;
       if (!supported) checkbox.checked = false;
-      branch.disabled = !checkbox.checked;
-      branch.required = checkbox.checked;
+      syncTriggerSourceBranchOptions();
+    }
+
+    function triggerSourceBranchesStatus(runner = selectedTriggerRunner()) {
+      return runner?.capabilities?.execution_environment?.source_branches || null;
+    }
+
+    function triggerSourceBranchQuerySupported(runner = selectedTriggerRunner()) {
+      const environment = runner?.capabilities?.execution_environment;
+      return Boolean(environment?.source_build && environment?.source_branch_query);
+    }
+
+    function syncTriggerSourceBranchOptions() {
+      const runner = selectedTriggerRunner();
+      const supported = triggerSourceBranchQuerySupported(runner);
+      const rebuild = document.querySelector("#triggerRebuildSource").checked;
+      const repo = document.querySelector("#triggerSourceRepo").value.trim();
+      const select = document.querySelector("#triggerSourceBranch");
+      const hint = document.querySelector("#triggerSourceBranchHint");
+      const refresh = document.querySelector("#refreshSourceBranchesBtn");
+      const previous = select.value;
+      const status = triggerSourceBranchesStatus(runner);
+      const matchesRepo = status?.source_repo === repo;
+      const branches = matchesRepo && Array.isArray(status?.branches) ? status.branches : [];
+      const placeholder = state.sourceBranchesRefreshing
+        ? "正在读取分支…"
+        : (!rebuild ? "启用重新编译后读取分支" : (status?.error && matchesRepo ? "分支读取失败" : "请选择源码分支"));
+      select.innerHTML = "";
+      select.add(new Option(placeholder, ""));
+      branches.forEach((branch) => select.add(new Option(branch, branch)));
+      const preferred = branches.includes(previous)
+        ? previous
+        : (branches.includes(state.triggerSourceBranchDefault) ? state.triggerSourceBranchDefault : "");
+      select.value = preferred || (branches.length === 1 ? branches[0] : "");
+      select.disabled = !supported || !rebuild || state.sourceBranchesRefreshing || !branches.length;
+      select.required = rebuild;
+      refresh.disabled = !supported || state.sourceBranchesRefreshing || !repo || state.user?.role !== "admin";
+      refresh.classList.toggle("is-refreshing", state.sourceBranchesRefreshing);
+      if (!supported) {
+        hint.textContent = "当前 Relay 不支持源码分支查询。";
+      } else if (state.sourceBranchesRefreshing) {
+        hint.textContent = `正在从 ${repo} 读取本地分支。`;
+      } else if (matchesRepo && status?.error) {
+        hint.textContent = status.error;
+      } else if (branches.length) {
+        const checkedAt = status?.checked_at ? new Date(status.checked_at).toLocaleString("zh-CN", { hour12: false }) : "刚刚";
+        hint.textContent = `已读取 ${branches.length} 个本地分支 · ${checkedAt}`;
+      } else {
+        hint.textContent = "分支列表由所选 Relay 从 NPU 服务器读取。";
+      }
+    }
+
+    function onTriggerRebuildSourceChange() {
+      updateTriggerBuildUI();
+      if (document.querySelector("#triggerRebuildSource").checked) refreshTriggerSourceBranches(false);
+    }
+
+    function onTriggerSourceRepoChange() {
+      state.triggerSourceBranchDefault = "";
+      syncTriggerSourceBranchOptions();
+      if (document.querySelector("#triggerRebuildSource").checked) refreshTriggerSourceBranches(true);
+    }
+
+    async function refreshTriggerSourceBranches(force = false) {
+      const runner = selectedTriggerRunner();
+      const repo = document.querySelector("#triggerSourceRepo").value.trim();
+      const supported = triggerSourceBranchQuerySupported(runner);
+      if (!runner || !repo || !supported || state.user?.role !== "admin") return;
+      const current = triggerSourceBranchesStatus(runner);
+      if (!force && current?.source_repo === repo && Array.isArray(current.branches) && current.branches.length) {
+        syncTriggerSourceBranchOptions();
+        return;
+      }
+      const requestKey = `${runner.id}:${repo}`;
+      if (state.sourceBranchesRefreshing && state.sourceBranchesRequestKey === requestKey) return;
+      state.sourceBranchesRefreshing = true;
+      state.sourceBranchesRequestKey = requestKey;
+      syncTriggerSourceBranchOptions();
+      try {
+        const request = await workerPost("/api/perf/runner/source-branches/refresh", {
+          runner_id: runner.id,
+          source_repo: repo,
+        });
+        const deadline = Date.now() + 120000;
+        while (Date.now() < deadline && state.sourceBranchesRequestKey === requestKey) {
+          await wait(1500);
+          await loadRunnerStatus();
+          const refreshedRunner = triggerRunnerAgents().find((agent) => agent.id === runner.id);
+          const status = triggerSourceBranchesStatus(refreshedRunner);
+          if (status?.refresh_request_id === request.refresh_id) {
+            if (status.error) throw new Error(status.error);
+            return;
+          }
+        }
+        if (state.sourceBranchesRequestKey === requestKey) {
+          throw new Error("源码分支查询超时，请检查 Relay 与 NPU 服务器连接");
+        }
+      } catch (error) {
+        if (state.sourceBranchesRequestKey === requestKey) alert(error.message || String(error));
+      } finally {
+        if (state.sourceBranchesRequestKey === requestKey) {
+          state.sourceBranchesRefreshing = false;
+          syncTriggerSourceBranchOptions();
+        }
+      }
     }
 
     function readTriggerExecutionEnvironment() {
@@ -1217,7 +1335,7 @@
       if (!value.cann_path || !value.conda_env || !value.source_repo) {
         throw new Error("CANN 路径、Conda 环境和源码仓库路径不能为空。");
       }
-      if (value.rebuild && !value.branch) throw new Error("重新编译安装时必须填写源码分支。");
+      if (value.rebuild && !value.branch) throw new Error("重新编译安装时必须选择源码分支。");
       return value;
     }
 

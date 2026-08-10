@@ -124,6 +124,10 @@ export default {
         const user = await requireUser(request, env);
         return jsonResponse(request, env, await requestRunnerNpuStatusRefresh(env, await readJson(request), user), 202);
       }
+      if (url.pathname === "/api/perf/runner/source-branches/refresh" && request.method === "POST") {
+        const user = await requireAdminLike(request, env);
+        return jsonResponse(request, env, await requestRunnerSourceBranchesRefresh(env, await readJson(request), user), 202);
+      }
       if (url.pathname === "/api/perf/jobs" && request.method === "GET") {
         const user = await requireUser(request, env);
         return jsonResponse(request, env, await listPerfJobs(env, url, user));
@@ -2596,6 +2600,16 @@ async function registerRunner(env, payload) {
        WHERE id = ? AND npu_status_refresh_id = ?`,
     ).bind(runner.id, completedRefreshId).run();
   }
+  const completedSourceBranchesId = String(
+    runner.capabilities?.execution_environment?.source_branches?.refresh_request_id || "",
+  ).trim();
+  if (completedSourceBranchesId) {
+    await env.DB.prepare(
+      `UPDATE runner_agents
+       SET source_branches_refresh_id = NULL, source_branches_requested_at = NULL, source_branches_repo = NULL
+       WHERE id = ? AND source_branches_refresh_id = ?`,
+    ).bind(runner.id, completedSourceBranchesId).run();
+  }
   return { ok: true, runner: await getRunnerAgent(env, runner.id), lease_seconds: PERF_LEASE_SECONDS };
 }
 
@@ -2635,6 +2649,9 @@ async function getRunnerAgent(env, runnerId) {
     last_heartbeat_at: row.last_heartbeat_at,
     npu_status_refresh_id: row.npu_status_refresh_id || null,
     npu_status_refresh_requested_at: row.npu_status_refresh_requested_at || null,
+    source_branches_refresh_id: row.source_branches_refresh_id || null,
+    source_branches_requested_at: row.source_branches_requested_at || null,
+    source_branches_repo: row.source_branches_repo || null,
   };
 }
 
@@ -2692,6 +2709,71 @@ async function requestRunnerNpuStatusRefresh(env, payload, user) {
   return { ok: true, runner_id: runnerId, refresh_id: refreshId, requested_at: requestedAt, reused: false };
 }
 
+function normalizeSourceBranchesRefreshRequest(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw withStatus(400, "invalid source branches request");
+  }
+  return {
+    runner_id: safeIdentifier(payload.runner_id, "runner_id", 96),
+    source_repo: normalizeRemoteAbsolutePath(payload.source_repo, "source_repo"),
+  };
+}
+
+async function requestRunnerSourceBranchesRefresh(env, payload, user) {
+  const request = normalizeSourceBranchesRefreshRequest(payload);
+  const row = await env.DB.prepare(
+    `SELECT id, name, active, capabilities_json, source_branches_refresh_id,
+      source_branches_requested_at, source_branches_repo
+     FROM runner_agents WHERE id = ?`,
+  ).bind(request.runner_id).first();
+  if (!row || !row.active) throw withStatus(404, "Runner not found");
+  const capabilities = parseJson(row.capabilities_json, {});
+  if (!capabilities.execution_environment?.source_branch_query) {
+    throw withStatus(409, "Runner does not support source branch queries");
+  }
+
+  const pendingAt = Date.parse(row.source_branches_requested_at || 0);
+  if (
+    row.source_branches_refresh_id
+    && row.source_branches_repo === request.source_repo
+    && Date.now() - pendingAt < PERF_NPU_REFRESH_REUSE_MILLISECONDS
+  ) {
+    return {
+      ok: true,
+      runner_id: request.runner_id,
+      source_repo: request.source_repo,
+      refresh_id: row.source_branches_refresh_id,
+      requested_at: row.source_branches_requested_at,
+      reused: true,
+    };
+  }
+
+  const refreshId = `source-branches-${crypto.randomUUID()}`;
+  const requestedAt = nowIso();
+  await env.DB.prepare(
+    `UPDATE runner_agents
+     SET source_branches_refresh_id = ?, source_branches_requested_at = ?, source_branches_repo = ?, updated_at = ?
+     WHERE id = ? AND active = 1`,
+  ).bind(refreshId, requestedAt, request.source_repo, requestedAt, request.runner_id).run();
+  await insertAudit(env, {
+    ts: requestedAt,
+    action: "perf.runner.source_branches.refresh",
+    entity: "runner",
+    id: request.runner_id,
+    summary: `${user.username} 请求读取 ${row.name || request.runner_id} 的源码分支`,
+    detail: { refresh_id: refreshId, source_repo: request.source_repo },
+    source: "cloudflare-d1",
+  });
+  return {
+    ok: true,
+    runner_id: request.runner_id,
+    source_repo: request.source_repo,
+    refresh_id: refreshId,
+    requested_at: requestedAt,
+    reused: false,
+  };
+}
+
 async function getPerfRunnerStatus(env) {
   const rows = await selectAll(env, "SELECT * FROM runner_agents WHERE active = 1 ORDER BY last_heartbeat_at DESC LIMIT 20");
   const agents = rows.map((row) => {
@@ -2712,6 +2794,7 @@ async function getPerfRunnerStatus(env) {
       last_error: row.last_error || "",
       last_heartbeat_at: row.last_heartbeat_at,
       npu_status_refresh_pending: Boolean(row.npu_status_refresh_id),
+      source_branches_refresh_pending: Boolean(row.source_branches_refresh_id),
       online,
       ready: online && vpnConnected && npuReachable,
     };
@@ -3385,4 +3468,4 @@ function withStatus(status, message) {
   return error;
 }
 
-export { normalizePerfExecutionEnvironment, runnerCanExecute };
+export { normalizePerfExecutionEnvironment, normalizeSourceBranchesRefreshRequest, runnerCanExecute };

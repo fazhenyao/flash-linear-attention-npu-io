@@ -18,6 +18,7 @@ from backend.perf_runner import (
     _ssh_command,
     build_command,
     build_profiler_command,
+    list_remote_source_branches,
     load_config,
     parse_npu_smi_status,
     prof_output_root,
@@ -105,6 +106,24 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             config = AgentConfig.from_env()
 
         self.assertEqual(config.npu_status_interval_seconds, 30 * 60)
+
+    @patch("backend.perf_runner._run_remote_checked")
+    def test_source_branch_query_returns_only_valid_local_branches(self, run_remote):
+        run_remote.return_value = Mock(
+            stdout="main\nfeature/a5\nfeature/../invalid\nmain\n"
+        )
+        with patch.dict(os.environ, self.environment, clear=False):
+            config = load_config()
+
+        branches = list_remote_source_branches(
+            config,
+            "/workspace/user/flash-linear-attention-npu",
+        )
+
+        self.assertEqual(branches, ["feature/a5", "main"])
+        self.assertIn("refs/heads", run_remote.call_args.args[1])
+        with self.assertRaisesRegex(ValueError, "不在 Relay 允许目录内"):
+            list_remote_source_branches(config, "/etc/private-repo")
 
     def test_custom_remote_command_uses_selected_cann_and_conda(self):
         with patch.dict(os.environ, self.environment, clear=False):
@@ -345,6 +364,28 @@ __END_NPU__
 
         self.assertEqual(agent._npu_status["refresh_request_id"], "refresh-test")
         self.assertFalse(agent._npu_status_refreshing)
+        agent.send_runner_heartbeat.assert_called_once()
+
+    @patch("backend.runner_agent.list_remote_source_branches")
+    @patch("backend.runner_agent.load_config")
+    def test_source_branch_refresh_acknowledges_request(self, load_runner_config, list_branches):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.config = SimpleNamespace(runner_id="relay-test")
+        agent.current_jobs = 0
+        agent._source_branches_lock = threading.Lock()
+        agent._source_branches_refreshing = True
+        agent._source_branches_pending = None
+        agent._source_branches = {"branches": [], "error": ""}
+        agent.health = Mock(return_value={"vpn_connected": True, "npu_reachable": True})
+        agent.send_runner_heartbeat = Mock()
+        load_runner_config.return_value = Mock()
+        list_branches.return_value = ["feature/a5", "main"]
+
+        agent._refresh_source_branches("branches-test", "/workspace/user/repo")
+
+        self.assertEqual(agent._source_branches["refresh_request_id"], "branches-test")
+        self.assertEqual(agent._source_branches["branches"], ["feature/a5", "main"])
+        self.assertFalse(agent._source_branches_refreshing)
         agent.send_runner_heartbeat.assert_called_once()
 
     @patch("backend.perf_runner.subprocess.run")
