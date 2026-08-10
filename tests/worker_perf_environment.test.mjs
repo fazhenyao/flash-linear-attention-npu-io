@@ -15,12 +15,14 @@ test("normalizes a controlled source build environment", () => {
     source_repo: "/home/user/flash-linear-attention-npu/",
     rebuild: true,
     branch: "feature/a5-build",
+    branch_source: "remote",
   }), {
     cann_path: "/home/user/cann/ascend-toolkit",
     conda_env: "f30077529",
     source_repo: "/home/user/flash-linear-attention-npu",
     rebuild: true,
     branch: "feature/a5-build",
+    branch_source: "remote",
   });
 });
 
@@ -55,6 +57,10 @@ test("requires an explicit valid branch for source rebuilds", () => {
     () => normalizePerfExecutionEnvironment({ ...base, rebuild: "false" }),
     /rebuild must be a boolean/,
   );
+  assert.throws(
+    () => normalizePerfExecutionEnvironment({ ...base, rebuild: true, branch: "main", branch_source: "upstream" }),
+    /invalid branch_source/,
+  );
 });
 
 test("allows profile tasks to select an already deployed branch", () => {
@@ -64,8 +70,10 @@ test("allows profile tasks to select an already deployed branch", () => {
     source_repo: "/home/user/repo",
     rebuild: false,
     branch: "feature/a5",
+    branch_source: "remote",
   }, { allowBranchWithoutRebuild: true });
   assert.equal(environment.branch, "feature/a5");
+  assert.equal(environment.branch_source, "remote");
   assert.equal(environment.rebuild, false);
 });
 
@@ -81,12 +89,14 @@ test("normalizes admin build-install tasks and rejects ordinary users", () => {
       source_repo: "/home/user/repo",
       rebuild: true,
       branch: "main",
+      branch_source: "remote",
     },
   };
   const request = normalizePerfJobRequest(payload, { role: "admin" });
   assert.equal(request.task_type, "build_install");
   assert.equal(request.prof_tool, "build_install");
   assert.equal(request.script_id, "source-build");
+  assert.equal(request.execution_environment.branch_source, "remote");
   assert.throws(() => normalizePerfJobRequest(payload, { role: "user" }), /requires admin role/);
 });
 
@@ -130,6 +140,25 @@ test("routes build-install tasks only to explicitly compatible runners", () => {
   assert.equal(runnerCanExecute("runner-a5", {
     ...base,
     job_types: ["profile", "build_install"],
+  }, request), true);
+});
+
+test("routes remote branch tasks only to remote-branch capable runners", () => {
+  const request = {
+    task_type: "build_install",
+    target_runner_id: "runner-a5",
+    chip: "A5",
+    execution_environment: { rebuild: true, branch: "main", branch_source: "remote" },
+  };
+  const base = {
+    chip: "A5",
+    job_types: ["profile", "build_install"],
+    execution_environment: { customizable: true, source_build: true },
+  };
+  assert.equal(runnerCanExecute("runner-a5", base, request), false);
+  assert.equal(runnerCanExecute("runner-a5", {
+    ...base,
+    execution_environment: { ...base.execution_environment, source_remote_branch_query: true },
   }, request), true);
 });
 

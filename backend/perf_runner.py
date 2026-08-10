@@ -94,6 +94,7 @@ class ExecutionEnvironment:
     source_repo: str
     rebuild: bool
     branch: str
+    branch_source: str
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -190,7 +191,7 @@ def _valid_source_branch(branch: str) -> bool:
     )
 
 
-def list_remote_source_branches(config: PerfRunnerConfig, source_repo: str) -> list[str]:
+def list_remote_source_branches(config: PerfRunnerConfig, source_repo: str) -> list[dict[str, str]]:
     if config.mode != "ssh":
         raise ValueError("源码分支查询仅支持 SSH Relay")
     repo = _normalized_remote_absolute_path(source_repo, "源码仓库路径")
@@ -201,18 +202,26 @@ def list_remote_source_branches(config: PerfRunnerConfig, source_repo: str) -> l
         raise ValueError("源码仓库路径不在 Relay 允许目录内")
     command = (
         f"test -d {shlex.quote(repo)}/.git"
+        f" && (git -C {shlex.quote(repo)} fetch --prune origin >/dev/null 2>&1 || true)"
         f" && git -C {shlex.quote(repo)} for-each-ref "
-        f"--format={shlex.quote('%(refname:strip=2)')} refs/heads"
+        f"--format={shlex.quote('%(refname)')} refs/heads refs/remotes/origin"
     )
     result = _run_remote_checked(config, command, "源码分支查询")
-    branches = sorted({
-        line.strip()
-        for line in result.stdout.splitlines()
-        if _valid_source_branch(line.strip())
-    }, key=str.casefold)
+    branches: set[tuple[str, str]] = set()
+    for raw in result.stdout.splitlines():
+        ref = raw.strip()
+        if ref.startswith("refs/heads/"):
+            source, name = "local", ref.removeprefix("refs/heads/")
+        elif ref.startswith("refs/remotes/origin/"):
+            source, name = "remote", ref.removeprefix("refs/remotes/origin/")
+        else:
+            continue
+        if name != "HEAD" and _valid_source_branch(name):
+            branches.add((source, name))
+    ordered = sorted(branches, key=lambda item: (item[0] != "local", item[1].casefold()))
     if not branches:
-        raise RuntimeError("源码仓库没有可用的本地分支")
-    return branches[:200]
+        raise RuntimeError("源码仓库没有可用的本地或远程分支")
+    return [{"source": source, "name": name} for source, name in ordered[:400]]
 
 
 def configured_cann_path(config: PerfRunnerConfig) -> str:
@@ -227,6 +236,7 @@ def execution_environment_defaults(config: PerfRunnerConfig) -> dict[str, Any]:
         "source_repo": config.remote_source_repo,
         "rebuild": False,
         "branch": "",
+        "branch_source": "local",
     }
 
 
@@ -237,6 +247,7 @@ def execution_environment_summary(execution: ExecutionEnvironment) -> dict[str, 
         "source_repo": execution.source_repo,
         "rebuild": execution.rebuild,
         "branch": execution.branch,
+        "branch_source": execution.branch_source,
     }
 
 
@@ -263,6 +274,9 @@ def resolve_execution_environment(payload: dict[str, Any], config: PerfRunnerCon
     if not re.fullmatch(r"[A-Za-z0-9_.-]{1,100}", conda_env):
         raise ValueError("Conda 环境名称不合法")
     branch = str(value.get("branch") or "").strip()
+    branch_source = str(value.get("branch_source") or "local").strip().lower()
+    if branch_source not in {"local", "remote"}:
+        raise ValueError("源码分支来源必须为 local 或 remote")
     raw_rebuild = value.get("rebuild", False)
     if not isinstance(raw_rebuild, bool):
         raise ValueError("rebuild 必须为布尔值")
@@ -288,6 +302,7 @@ def resolve_execution_environment(payload: dict[str, Any], config: PerfRunnerCon
         source_repo=source_repo,
         rebuild=rebuild,
         branch=branch,
+        branch_source=branch_source,
     )
 
 
@@ -911,13 +926,18 @@ def _prepare_remote_source_build(
     branch_ref = shlex.quote(f"refs/heads/{execution.branch}^{{commit}}")
     origin_ref = shlex.quote(f"refs/remotes/origin/{execution.branch}^{{commit}}")
     worktree_arg = shlex.quote(worktree)
+    if execution.branch_source == "remote":
+        resolve_commit = (
+            f"commit=$(git -C {repo} rev-parse --verify {origin_ref} 2>/dev/null || true)"
+            f" && (git -C {repo} fetch --prune origin >/dev/null 2>&1 || true)"
+            f" && updated=$(git -C {repo} rev-parse --verify {origin_ref} 2>/dev/null || true)"
+            " && if [ -n \"$updated\" ]; then commit=\"$updated\"; fi"
+        )
+    else:
+        resolve_commit = f"commit=$(git -C {repo} rev-parse --verify {branch_ref} 2>/dev/null || true)"
     prepare = (
         f"git -C {repo} check-ref-format --branch {shlex.quote(execution.branch)}"
-        f" && commit=$(git -C {repo} rev-parse --verify {branch_ref} 2>/dev/null || true)"
-        " && if [ -z \"$commit\" ]; then"
-        f" git -C {repo} fetch --prune origin"
-        f" && commit=$(git -C {repo} rev-parse --verify {origin_ref} 2>/dev/null);"
-        " fi"
+        f" && {resolve_commit}"
         f" && test -n \"$commit\""
         f" && mkdir -p {shlex.quote(str(PurePosixPath(worktree).parent))}"
         f" && git -C {repo} worktree add --detach {worktree_arg} \"$commit\""
@@ -947,6 +967,7 @@ def _prepare_remote_source_build(
         _run_remote_checked(config, remote_build, "源码编译安装")
         return {
             "branch": execution.branch,
+            "branch_source": execution.branch_source,
             "commit": commit,
             "soc": soc_build_target(chip),
             "worktree": worktree,
@@ -982,7 +1003,8 @@ def _activate_remote_source_build(
     active_root = str(PurePosixPath(deployment).parent)
     command = (
         f"mkdir -p {shlex.quote(active_root)}"
-        f" && printf '%s\\n' {shlex.quote(execution.branch)} {shlex.quote(build_info['commit'])} "
+        f" && printf '%s\\n' {shlex.quote(execution.branch)} {shlex.quote(execution.branch_source)} "
+        f"{shlex.quote(build_info['commit'])} "
         f"{shlex.quote(build_info['soc'])} > {shlex.quote(marker)}"
         f" && previous=$(readlink -f {shlex.quote(deployment)} 2>/dev/null || true)"
         f" && ln -sfn {shlex.quote(worktree)} {shlex.quote(deployment)}"
@@ -1012,14 +1034,25 @@ def _resolve_remote_deployed_source(
         result = _run_remote_checked(config, inspect, "已安装源码版本检查")
     except RuntimeError:
         raise RuntimeError(
-            f"源码分支 {execution.branch} 尚未在当前 CANN/Conda 环境编译安装，请先执行编译安装任务"
+            f"源码分支 {execution.branch_source}:{execution.branch} 尚未在当前 CANN/Conda 环境编译安装，"
+            "请先执行编译安装任务"
         ) from None
     lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
     expected_soc = soc_build_target(chip)
-    if len(lines) < 3 or lines[0] != execution.branch or lines[2] != expected_soc:
+    if len(lines) >= 4:
+        installed_branch, installed_source, _, installed_soc = lines[:4]
+    else:
+        installed_branch, installed_source = (lines[0] if lines else ""), "local"
+        installed_soc = lines[2] if len(lines) >= 3 else ""
+    if (
+        installed_branch != execution.branch
+        or installed_source != execution.branch_source
+        or installed_soc != expected_soc
+    ):
         installed = lines[0] if lines else "未知"
         raise RuntimeError(
-            f"当前环境安装的是源码分支 {installed}，不是 {execution.branch}，请先执行编译安装任务"
+            f"当前环境安装的是源码分支 {installed_source}:{installed}，"
+            f"不是 {execution.branch_source}:{execution.branch}，请先执行编译安装任务"
         )
     return deployment
 
@@ -1100,7 +1133,7 @@ def _execute_build_install(payload: dict[str, Any], config: PerfRunnerConfig) ->
     return {
         "status": "done",
         "task_type": "build_install",
-        "message": f"源码分支 {execution.branch} 编译安装完成",
+        "message": f"源码分支 {execution.branch_source}:{execution.branch} 编译安装完成",
         "execution_environment": {
             **execution_environment_summary(execution),
             "commit": build_info["commit"],

@@ -1231,6 +1231,21 @@
       );
     }
 
+    function normalizeSourceBranchOption(value) {
+      if (typeof value === "string") return { name: value, source: "local" };
+      const name = String(value?.name || "").trim();
+      const source = value?.source === "remote" ? "remote" : "local";
+      return name ? { name, source } : null;
+    }
+
+    function sourceBranchOptionKey(branch) {
+      return `${branch.source}:${branch.name}`;
+    }
+
+    function sourceBranchDisplayName(branch) {
+      return branch.source === "remote" ? `origin/${branch.name}` : branch.name;
+    }
+
     function syncTriggerSourceBranchOptions() {
       const runner = selectedTriggerRunner();
       const supported = triggerSourceBranchQuerySupported(runner);
@@ -1241,17 +1256,36 @@
       const previous = select.value;
       const status = triggerSourceBranchesStatus(runner);
       const matchesRepo = status?.source_repo === repo;
-      const branches = matchesRepo && Array.isArray(status?.branches) ? status.branches : [];
+      const branches = matchesRepo && Array.isArray(status?.branches)
+        ? status.branches.map(normalizeSourceBranchOption).filter(Boolean)
+        : [];
       const placeholder = state.sourceBranchesRefreshing
         ? "正在读取分支…"
         : (status?.error && matchesRepo ? "分支读取失败" : "请选择源码分支");
       select.innerHTML = "";
       select.add(new Option(placeholder, ""));
-      branches.forEach((branch) => select.add(new Option(branch, branch)));
-      const preferred = branches.includes(previous)
+      [
+        ["local", "本地分支"],
+        ["remote", "远程分支（origin）"],
+      ].forEach(([source, label]) => {
+        const items = branches.filter((branch) => branch.source === source);
+        if (!items.length) return;
+        const group = document.createElement("optgroup");
+        group.label = label;
+        items.forEach((branch) => {
+          const option = new Option(sourceBranchDisplayName(branch), sourceBranchOptionKey(branch));
+          option.dataset.branchName = branch.name;
+          option.dataset.branchSource = branch.source;
+          group.append(option);
+        });
+        select.append(group);
+      });
+      const keys = branches.map(sourceBranchOptionKey);
+      const defaultKey = state.triggerSourceBranchDefault ? `local:${state.triggerSourceBranchDefault}` : "";
+      const preferred = keys.includes(previous)
         ? previous
-        : (branches.includes(state.triggerSourceBranchDefault) ? state.triggerSourceBranchDefault : "");
-      select.value = preferred || (branches.length === 1 ? branches[0] : "");
+        : (keys.includes(defaultKey) ? defaultKey : "");
+      select.value = preferred || (branches.length === 1 ? keys[0] : "");
       select.disabled = !supported || state.sourceBranchesRefreshing || !branches.length;
       select.required = false;
       refresh.disabled = !supported || state.sourceBranchesRefreshing || !repo || state.user?.role !== "admin";
@@ -1260,12 +1294,14 @@
       if (!supported) {
         hint.textContent = "当前 Relay 不支持源码分支查询。";
       } else if (state.sourceBranchesRefreshing) {
-        hint.textContent = `正在从 ${repo} 读取本地分支。`;
+        hint.textContent = `正在从 ${repo} 刷新源码分支。`;
       } else if (matchesRepo && status?.error) {
         hint.textContent = status.error;
       } else if (branches.length) {
         const checkedAt = status?.checked_at ? new Date(status.checked_at).toLocaleString("zh-CN", { hour12: false }) : "刚刚";
-        hint.textContent = `已读取 ${branches.length} 个本地分支 · ${checkedAt}`;
+        const localCount = branches.filter((branch) => branch.source === "local").length;
+        const remoteCount = branches.length - localCount;
+        hint.textContent = `已读取 ${localCount} 个本地分支、${remoteCount} 个远程分支 · ${checkedAt}`;
       } else {
         hint.textContent = "分支列表由所选 Relay 从 NPU 服务器读取。";
       }
@@ -1323,12 +1359,14 @@
 
     function readTriggerExecutionEnvironment(forBuild = false) {
       if (state.user?.role !== "admin") return null;
+      const selectedBranch = document.querySelector("#triggerSourceBranch").selectedOptions[0];
       const value = {
         cann_path: document.querySelector("#triggerCannPath").value.trim(),
         conda_env: document.querySelector("#triggerCondaEnv").value.trim(),
         source_repo: document.querySelector("#triggerSourceRepo").value.trim(),
         rebuild: forBuild,
-        branch: document.querySelector("#triggerSourceBranch").value.trim(),
+        branch: selectedBranch?.dataset.branchName || "",
+        branch_source: selectedBranch?.dataset.branchSource || "local",
       };
       if (!value.cann_path || !value.conda_env || !value.source_repo) {
         throw new Error("CANN 路径、Conda 环境和源码仓库路径不能为空。");
@@ -1607,7 +1645,10 @@
       } catch (error) {
         return alert(error.message || String(error));
       }
-      if (!confirm(`确认在 ${runner.name || runner.id} 的 ${executionEnvironment.conda_env} 环境编译安装 ${executionEnvironment.branch}？`)) return;
+      const branchLabel = executionEnvironment.branch_source === "remote"
+        ? `origin/${executionEnvironment.branch}`
+        : executionEnvironment.branch;
+      if (!confirm(`确认在 ${runner.name || runner.id} 的 ${executionEnvironment.conda_env} 环境编译安装 ${branchLabel}？`)) return;
       try {
         const result = await workerPost("/api/perf/jobs", {
           task_type: "build_install",
@@ -3082,7 +3123,7 @@
         const statusClass = run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral";
         return `<tr>
           <td>${escapeHtml((run.created_at || "").replace("T", " ").slice(0, 19))}</td>
-          <td>${escapeHtml(isBuild ? `编译 ${run.execution_environment?.branch || "源码"}` : (testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—"))}</td>
+          <td>${escapeHtml(isBuild ? `编译 ${run.execution_environment?.branch_source === "remote" ? "origin/" : ""}${run.execution_environment?.branch || "源码"}` : (testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—"))}</td>
           <td>${escapeHtml(scriptPath)}</td>
           <td>${escapeHtml(run.chip || "")}</td>
           <td>${escapeHtml(isBuild ? "编译安装" : profToolLabel(run.prof_tool || snap?.prof_tool || "msprof"))}</td>

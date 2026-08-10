@@ -2223,7 +2223,7 @@ async function createPerfJob(env, payload, user) {
     entity: "perf_job",
     id: job.id,
     summary: request.task_type === "build_install"
-      ? `提交源码编译安装任务：${request.execution_environment.branch}`
+      ? `提交源码编译安装任务：${request.execution_environment.branch_source}:${request.execution_environment.branch}`
       : `提交性能测试任务：${request.prof_tool}`,
     detail: {
       job_id: job.id,
@@ -2309,7 +2309,7 @@ function normalizePerfExecutionEnvironment(value, options = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw withStatus(400, "execution_environment must be an object");
   }
-  const allowed = new Set(["cann_path", "conda_env", "source_repo", "rebuild", "branch"]);
+  const allowed = new Set(["cann_path", "conda_env", "source_repo", "rebuild", "branch", "branch_source"]);
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) throw withStatus(400, `unsupported execution environment field: ${key}`);
   }
@@ -2322,6 +2322,8 @@ function normalizePerfExecutionEnvironment(value, options = {}) {
   }
   const rebuild = value.rebuild === true;
   const branch = String(value.branch || "").trim();
+  const branchSource = String(value.branch_source || "local").trim().toLowerCase();
+  if (!["local", "remote"].includes(branchSource)) throw withStatus(400, "invalid branch_source");
   if ((rebuild || options.requireBranch) && !branch) throw withStatus(400, "branch is required when rebuilding source");
   if (!rebuild && branch && !options.allowBranchWithoutRebuild) throw withStatus(400, "branch requires rebuild=true");
   if (branch && (
@@ -2334,7 +2336,7 @@ function normalizePerfExecutionEnvironment(value, options = {}) {
     || branch.endsWith(".")
     || branch.endsWith(".lock")
   )) throw withStatus(400, "invalid source branch");
-  return { cann_path: cannPath, conda_env: condaEnv, source_repo: sourceRepo, rebuild, branch };
+  return { cann_path: cannPath, conda_env: condaEnv, source_repo: sourceRepo, rebuild, branch, branch_source: branchSource };
 }
 
 function normalizeRemoteAbsolutePath(value, field) {
@@ -2911,6 +2913,7 @@ function runnerCanExecute(runnerId, capabilities, request) {
     if (!environment.customizable) return false;
     if (request.execution_environment.rebuild && !environment.source_build) return false;
     if (request.execution_environment.branch && !request.execution_environment.rebuild && !environment.source_deployment) return false;
+    if (request.execution_environment.branch_source === "remote" && !environment.source_remote_branch_query) return false;
   }
   const chips = Array.isArray(capabilities.chips) ? capabilities.chips : (capabilities.chip ? [capabilities.chip] : []);
   if (chips.length && !chips.includes(request.chip)) return false;
