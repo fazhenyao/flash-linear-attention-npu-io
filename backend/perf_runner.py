@@ -494,8 +494,23 @@ def _ssh_connection_options() -> list[str]:
 
 def _run_command(command: list[str] | str, *, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
     if isinstance(command, str):
-        return subprocess.run(command, shell=True, cwd=cwd, check=True, capture_output=True, text=True)
-    return subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
+        return subprocess.run(
+            command,
+            shell=True,
+            cwd=cwd,
+            check=True,
+            capture_output=True,
+            text=True,
+            stdin=subprocess.DEVNULL,
+        )
+    return subprocess.run(
+        command,
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+    )
 
 
 def _remote_execution_command(config: PerfRunnerConfig, invocation: str) -> str:

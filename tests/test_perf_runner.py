@@ -1,4 +1,5 @@
 import os
+import subprocess
 import tempfile
 import unittest
 import zipfile
@@ -10,6 +11,7 @@ from backend.perf_runner import (
     _remote_execution_command,
     _remote_output_path,
     _list_remote_prof_dirs,
+    _run_command,
     _scp_command,
     _ssh_command,
     build_command,
@@ -136,6 +138,14 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             self.assertIn("ConnectTimeout=10", command)
             self.assertIn("ServerAliveInterval=15", command)
             self.assertIn("ServerAliveCountMax=4", command)
+
+    @patch("backend.perf_runner.subprocess.run")
+    def test_background_commands_do_not_inherit_stdin(self, run):
+        run.return_value = Mock()
+
+        _run_command(["ssh", "example", "true"])
+
+        self.assertIs(run.call_args.kwargs["stdin"], subprocess.DEVNULL)
 
     @patch("backend.perf_runner._run_command")
     def test_remote_scan_preserves_case_sensitive_prof_prefix(self, run_command):
