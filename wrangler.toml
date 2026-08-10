@@ -11,3 +11,7 @@ ALLOWED_ORIGINS = "https://fazhenyao.github.io,http://127.0.0.1:8787,http://loca
 binding = "DB"
 database_name = "flash-linear-attention-npu-io-fazhenyao"
 database_id = "a07053d7-4a3c-40a1-8ecd-a50d7af6ab4d"
+
+[[r2_buckets]]
+binding = "PERF_ARTIFACTS"
+bucket_name = "flash-linear-attention-npu-perf-artifacts"

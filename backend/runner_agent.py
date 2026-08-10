@@ -13,7 +13,9 @@ import socket
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
+import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -50,6 +52,7 @@ class AgentConfig:
     max_concurrency: int
     state_dir: Path
     retention_days: int
+    upload_part_bytes: int
 
     @classmethod
     def from_env(cls) -> "AgentConfig":
@@ -74,6 +77,7 @@ class AgentConfig:
             max_concurrency=env_int("RUNNER_MAX_CONCURRENCY", 1, 1),
             state_dir=state_dir,
             retention_days=env_int("RUNNER_ARTIFACT_RETENTION_DAYS", 30, 1),
+            upload_part_bytes=env_int("RUNNER_R2_PART_MIB", 32, 5) * 1024 * 1024,
         )
 
 
@@ -101,6 +105,28 @@ class RunnerApi:
             raise RuntimeError(f"Runner API HTTP {exc.code}: {detail[:1000]}") from exc
         except urllib.error.URLError as exc:
             raise RuntimeError(f"Runner API 不可达：{exc.reason}") from exc
+
+    def put(self, path: str, body: bytes, headers: dict[str, str]) -> dict[str, Any]:
+        request = urllib.request.Request(
+            self.config.api_base + path,
+            data=body,
+            method="PUT",
+            headers={
+                "Authorization": f"Bearer {self.config.token}",
+                "Content-Type": "application/octet-stream",
+                "Content-Length": str(len(body)),
+                "User-Agent": f"fla-vpn-runner/{self.config.runner_id}",
+                **headers,
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=300) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Runner upload API HTTP {exc.code}: {detail[:1000]}") from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(f"Runner upload API 不可达：{exc.reason}") from exc
 
 
 class JobHeartbeat(threading.Thread):
@@ -246,13 +272,34 @@ class RunnerAgent:
             self.save_job_state(job, "running", request=request)
             result = execute(request, persist_local_data=False)
             artifacts, local_artifacts = self.build_artifacts(job, result)
+            upload_errors: list[str] = []
+            if artifacts:
+                artifacts, local_artifacts, upload_errors = self.upload_artifacts(
+                    job,
+                    artifacts,
+                    local_artifacts,
+                )
             self.save_job_state(
                 job,
                 "completed",
                 request=request,
                 artifacts=local_artifacts,
                 message=result.get("message", ""),
+                upload_errors=upload_errors,
             )
+            if upload_errors:
+                try:
+                    self.api.post(
+                        f"/api/runner/jobs/{job['id']}/events",
+                        self.job_auth(job, {
+                            "event_type": "artifact_upload_failed",
+                            "level": "warning",
+                            "message": "R2 上传失败，原始制品仅保留在 Relay 本地",
+                            "detail": {"errors": upload_errors},
+                        }),
+                    )
+                except Exception:
+                    pass
             if heartbeat.cancel_requested.is_set():
                 self.api.post(
                     f"/api/runner/jobs/{job['id']}/fail",
@@ -328,6 +375,112 @@ class RunnerAgent:
         }
         local = {**public, "local_path": str(path), "deleted": False}
         return [public], [local]
+
+    def upload_artifacts(
+        self,
+        job: dict[str, Any],
+        artifacts: list[dict[str, Any]],
+        local_artifacts: list[dict[str, Any]],
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
+        uploaded: list[dict[str, Any]] = []
+        errors: list[str] = []
+        for artifact, local in zip(artifacts, local_artifacts):
+            archive_path: Path | None = None
+            try:
+                source = Path(local["local_path"]).resolve()
+                archive_path = self.create_artifact_archive(job["id"], source)
+                archive_size, archive_sha256 = file_digest(archive_path)
+                cloud_artifact = {
+                    "id": f"artifact-{archive_sha256[:32]}",
+                    "type": "prof_archive",
+                    "filename": f"{source.name}.zip",
+                    "content_type": "application/zip",
+                    "size_bytes": archive_size,
+                    "sha256": archive_sha256,
+                    "expires_at": artifact["expires_at"],
+                }
+                stored = self.multipart_upload(job, archive_path, cloud_artifact)
+                uploaded.append(stored)
+                local.update({
+                    "storage": "r2",
+                    "cloud_artifact": stored,
+                    "source_size_bytes": local.get("size_bytes"),
+                    "source_sha256": local.get("sha256"),
+                })
+            except Exception as exc:
+                message = f"{artifact.get('filename') or 'artifact'}: {exc}"
+                errors.append(message)
+                local["upload_error"] = str(exc)
+                uploaded.append(artifact)
+            finally:
+                if archive_path and archive_path.exists():
+                    archive_path.unlink()
+        return uploaded, local_artifacts, errors
+
+    def create_artifact_archive(self, job_id: str, source: Path) -> Path:
+        upload_dir = self.config.state_dir / "uploads"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        archive_path = upload_dir / f"{job_id}-{source.name}.zip"
+        temporary = archive_path.with_suffix(".zip.tmp")
+        temporary.unlink(missing_ok=True)
+        with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED, allowZip64=True) as archive:
+            if source.is_file():
+                archive.write(source, arcname=source.name)
+            else:
+                for item in sorted(path for path in source.rglob("*") if path.is_file()):
+                    archive.write(item, arcname=(Path(source.name) / item.relative_to(source)).as_posix())
+        temporary.replace(archive_path)
+        return archive_path
+
+    def multipart_upload(
+        self,
+        job: dict[str, Any],
+        archive_path: Path,
+        artifact: dict[str, Any],
+    ) -> dict[str, Any]:
+        start = self.api.post(
+            f"/api/runner/jobs/{job['id']}/artifacts/multipart/start",
+            self.job_auth(job, {"artifact": artifact}),
+        )
+        upload_id = str(start["upload_id"])
+        artifact_id = str(start["artifact_id"])
+        parts: list[dict[str, Any]] = []
+        query = urllib.parse.urlencode({"upload_id": upload_id})
+        headers = {
+            "X-Runner-Id": self.config.runner_id,
+            "X-Attempt-Id": str(job["attempt_id"]),
+            "X-Lease-Token": str(job["lease_token"]),
+        }
+        try:
+            with archive_path.open("rb") as handle:
+                part_number = 1
+                while chunk := handle.read(self.config.upload_part_bytes):
+                    response = self.api.put(
+                        f"/api/runner/jobs/{job['id']}/artifacts/multipart/"
+                        f"{artifact_id}/parts/{part_number}?{query}",
+                        chunk,
+                        headers,
+                    )
+                    parts.append(response["part"])
+                    part_number += 1
+            completed = self.api.post(
+                f"/api/runner/jobs/{job['id']}/artifacts/multipart/{artifact_id}/complete",
+                self.job_auth(job, {
+                    "upload_id": upload_id,
+                    "parts": parts,
+                    "artifact": artifact,
+                }),
+            )
+            return completed["artifact"]
+        except Exception:
+            try:
+                self.api.post(
+                    f"/api/runner/jobs/{job['id']}/artifacts/multipart/{artifact_id}/abort",
+                    self.job_auth(job, {"upload_id": upload_id}),
+                )
+            except Exception:
+                pass
+            raise
 
     def cleanup_expired_artifacts(self) -> int:
         deleted = 0
@@ -405,6 +558,16 @@ def directory_digest(path: Path) -> tuple[int, str]:
             while chunk := handle.read(1024 * 1024):
                 size += len(chunk)
                 digest.update(chunk)
+    return size, digest.hexdigest()
+
+
+def file_digest(path: Path) -> tuple[int, str]:
+    digest = hashlib.sha256()
+    size = 0
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            size += len(chunk)
+            digest.update(chunk)
     return size, digest.hexdigest()
 
 

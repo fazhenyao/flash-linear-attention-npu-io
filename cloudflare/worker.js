@@ -60,6 +60,8 @@ const PERF_JOB_ACTIVE_STATES = new Set(["claimed", "running", "disconnected", "c
 const PERF_LEASE_SECONDS = 90;
 const PERF_EVENT_MESSAGE_LIMIT = 4000;
 const PERF_RESULT_JSON_LIMIT = 900000;
+const PERF_ARTIFACT_MAX_PARTS = 10000;
+const PERF_ARTIFACT_KEY_PREFIX = "perf-artifacts";
 
 export default {
   async fetch(request, env) {
@@ -120,6 +122,19 @@ export default {
         const payload = await readJson(request);
         return jsonResponse(request, env, await createPerfJob(env, payload, user), 201);
       }
+      const perfArtifactDownloadMatch = url.pathname.match(
+        /^\/api\/perf\/jobs\/([^/]+)\/artifacts\/([^/]+)\/download$/,
+      );
+      if (perfArtifactDownloadMatch && request.method === "GET") {
+        const user = await requireUser(request, env);
+        return downloadPerfArtifact(
+          request,
+          env,
+          decodeURIComponent(perfArtifactDownloadMatch[1]),
+          decodeURIComponent(perfArtifactDownloadMatch[2]),
+          user,
+        );
+      }
       const perfJobMatch = url.pathname.match(/^\/api\/perf\/jobs\/([^/]+)(?:\/(events|artifacts|cancel|retry))?$/);
       if (perfJobMatch) {
         const user = await requireUser(request, env);
@@ -152,6 +167,56 @@ export default {
       if (url.pathname === "/api/runner/jobs/claim" && request.method === "POST") {
         await requireRunner(request, env);
         return jsonResponse(request, env, await claimPerfJob(env, await readJson(request)));
+      }
+      const runnerMultipartStartMatch = url.pathname.match(
+        /^\/api\/runner\/jobs\/([^/]+)\/artifacts\/multipart\/start$/,
+      );
+      if (runnerMultipartStartMatch && request.method === "POST") {
+        await requireRunner(request, env);
+        return jsonResponse(
+          request,
+          env,
+          await startRunnerArtifactUpload(env, decodeURIComponent(runnerMultipartStartMatch[1]), await readJson(request)),
+          201,
+        );
+      }
+      const runnerMultipartPartMatch = url.pathname.match(
+        /^\/api\/runner\/jobs\/([^/]+)\/artifacts\/multipart\/([^/]+)\/parts\/(\d+)$/,
+      );
+      if (runnerMultipartPartMatch && request.method === "PUT") {
+        await requireRunner(request, env);
+        return jsonResponse(
+          request,
+          env,
+          await uploadRunnerArtifactPart(
+            request,
+            env,
+            decodeURIComponent(runnerMultipartPartMatch[1]),
+            decodeURIComponent(runnerMultipartPartMatch[2]),
+            Number(runnerMultipartPartMatch[3]),
+          ),
+        );
+      }
+      const runnerMultipartFinishMatch = url.pathname.match(
+        /^\/api\/runner\/jobs\/([^/]+)\/artifacts\/multipart\/([^/]+)\/(complete|abort)$/,
+      );
+      if (runnerMultipartFinishMatch && request.method === "POST") {
+        await requireRunner(request, env);
+        const payload = await readJson(request);
+        const result = runnerMultipartFinishMatch[3] === "complete"
+          ? await completeRunnerArtifactUpload(
+            env,
+            decodeURIComponent(runnerMultipartFinishMatch[1]),
+            decodeURIComponent(runnerMultipartFinishMatch[2]),
+            payload,
+          )
+          : await abortRunnerArtifactUpload(
+            env,
+            decodeURIComponent(runnerMultipartFinishMatch[1]),
+            decodeURIComponent(runnerMultipartFinishMatch[2]),
+            payload,
+          );
+        return jsonResponse(request, env, result);
       }
       const runnerJobMatch = url.pathname.match(/^\/api\/runner\/jobs\/([^/]+)\/(started|heartbeat|events|artifacts|complete|fail|reconcile)$/);
       if (runnerJobMatch && request.method === "POST") {
@@ -1935,10 +2000,17 @@ function corsHeaders(request, env) {
   const allowOrigin = allowed.includes(origin) ? origin : (allowed.includes("*") ? "*" : allowed[0] || "*");
   return {
     "Access-Control-Allow-Origin": allowOrigin,
-    "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Token",
+    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Admin-Token,X-Runner-Id,X-Attempt-Id,X-Lease-Token",
+    "Access-Control-Expose-Headers": "Content-Disposition,Content-Length,ETag,X-Content-SHA256",
     "Vary": "Origin",
   };
+}
+
+function contentDispositionAttachment(filename) {
+  const value = String(filename || "artifact").replace(/[\r\n]/g, "");
+  const fallback = value.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_") || "artifact";
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(value)}`;
 }
 
 async function hashPassword(password, salt) {
@@ -2259,7 +2331,15 @@ async function listPerfJobs(env, url, user) {
     params.push(status);
   }
   const where = clauses.length ? ` WHERE ${clauses.join(" AND ")}` : "";
-  const rows = await selectAll(env, `SELECT * FROM perf_jobs${where} ORDER BY created_at DESC LIMIT ?`, ...params, limit);
+  const rows = await selectAll(env,
+    `SELECT perf_jobs.*,
+      (SELECT COUNT(*) FROM perf_artifacts WHERE perf_artifacts.job_id = perf_jobs.id) AS artifact_count,
+      (SELECT COUNT(*) FROM perf_artifacts
+        WHERE perf_artifacts.job_id = perf_jobs.id AND perf_artifacts.object_key LIKE 'r2://%') AS r2_artifact_count
+      FROM perf_jobs${where} ORDER BY created_at DESC LIMIT ?`,
+    ...params,
+    limit,
+  );
   return { ok: true, jobs: await Promise.all(rows.map((row) => hydratePerfJob(env, row, false))) };
 }
 
@@ -2295,6 +2375,8 @@ async function hydratePerfJob(env, row, includeResult = true) {
     remote_execution_id: row.remote_execution_id || null,
     cancel_requested: Boolean(row.cancel_requested),
     retry_count: numberOr(row.retry_count, 0),
+    artifact_count: numberOr(row.artifact_count, 0),
+    r2_artifact_count: numberOr(row.r2_artifact_count, 0),
     exit_code: row.exit_code,
     created_at: row.created_at,
     claimed_at: row.claimed_at || null,
@@ -2314,6 +2396,7 @@ async function hydratePerfJob(env, row, includeResult = true) {
       detail: parseJson(result.result_json, {}),
       created_at: result.created_at,
     } : null;
+    job.artifacts = await listPerfJobArtifacts(env, row.id);
   }
   return job;
 }
@@ -2335,11 +2418,44 @@ async function listPerfJobArtifactsForUser(env, jobId, user) {
 }
 
 async function listPerfJobArtifacts(env, jobId) {
-  return selectAll(env,
+  const rows = await selectAll(env,
     `SELECT id, job_id, artifact_type, object_key, filename, content_type, size_bytes,
       sha256, expires_at, created_at FROM perf_artifacts WHERE job_id = ? ORDER BY created_at`,
     jobId,
   );
+  return rows.map((artifact) => ({
+    ...artifact,
+    storage: artifact.object_key.startsWith("r2://") ? "r2" : "relay",
+    download_url: artifact.object_key.startsWith("r2://")
+      ? `/api/perf/jobs/${encodeURIComponent(jobId)}/artifacts/${encodeURIComponent(artifact.id)}/download`
+      : null,
+  }));
+}
+
+async function downloadPerfArtifact(request, env, jobId, artifactId, user) {
+  requireArtifactBucket(env);
+  const job = await getPerfJob(env, jobId);
+  assertPerfJobAccess(job, user);
+  const artifact = await env.DB.prepare(
+    `SELECT id, job_id, object_key, filename, content_type, size_bytes, sha256, expires_at
+      FROM perf_artifacts WHERE id = ? AND job_id = ?`,
+  ).bind(artifactId, jobId).first();
+  if (!artifact) throw withStatus(404, "performance artifact not found");
+  if (!artifact.object_key.startsWith("r2://")) throw withStatus(409, "artifact is only available on the Relay");
+  if (artifact.expires_at && Date.parse(artifact.expires_at) <= Date.now()) {
+    throw withStatus(410, "performance artifact has expired");
+  }
+  const object = await env.PERF_ARTIFACTS.get(artifact.object_key.slice("r2://".length));
+  if (!object || !object.body) throw withStatus(404, "performance artifact object not found");
+  const headers = new Headers(corsHeaders(request, env));
+  object.writeHttpMetadata(headers);
+  headers.set("Content-Type", artifact.content_type || "application/octet-stream");
+  headers.set("Content-Length", String(object.size));
+  headers.set("ETag", object.httpEtag);
+  headers.set("Cache-Control", "private, no-store");
+  headers.set("Content-Disposition", contentDispositionAttachment(artifact.filename));
+  if (artifact.sha256) headers.set("X-Content-SHA256", artifact.sha256);
+  return new Response(object.body, { headers });
 }
 
 async function cancelPerfJob(env, jobId, user) {
@@ -2565,6 +2681,130 @@ async function handleRunnerJobAction(env, jobId, action, payload) {
   throw withStatus(404, "unsupported runner job action");
 }
 
+async function startRunnerArtifactUpload(env, jobId, payload) {
+  requireArtifactBucket(env);
+  const row = await authorizeRunnerJobAction(env, jobId, payload);
+  const artifact = normalizePerfArtifact(payload.artifact || payload, true);
+  const objectKey = runnerArtifactObjectKey(row.id, artifact.id);
+  const upload = await env.PERF_ARTIFACTS.createMultipartUpload(objectKey, {
+    httpMetadata: {
+      contentType: artifact.content_type,
+      contentDisposition: contentDispositionAttachment(artifact.filename),
+    },
+    customMetadata: {
+      jobId: row.id,
+      artifactId: artifact.id,
+      filename: artifact.filename,
+      sha256: artifact.sha256,
+      expiresAt: artifact.expires_at || "",
+    },
+    storageClass: "Standard",
+  });
+  return {
+    ok: true,
+    artifact_id: artifact.id,
+    upload_id: upload.uploadId,
+    object_key: `r2://${objectKey}`,
+    cancel_requested: Boolean(row.cancel_requested),
+  };
+}
+
+async function uploadRunnerArtifactPart(request, env, jobId, artifactId, partNumber) {
+  requireArtifactBucket(env);
+  const payload = runnerJobAuthFromHeaders(request);
+  const row = await authorizeRunnerJobAction(env, jobId, payload);
+  const safeArtifactId = safeIdentifier(artifactId, "artifact_id", 128);
+  const uploadId = String(new URL(request.url).searchParams.get("upload_id") || "").trim();
+  if (!uploadId || uploadId.length > 512) throw withStatus(400, "invalid upload_id");
+  if (!Number.isInteger(partNumber) || partNumber < 1 || partNumber > PERF_ARTIFACT_MAX_PARTS) {
+    throw withStatus(400, "invalid artifact part number");
+  }
+  if (!request.body) throw withStatus(400, "artifact part body is required");
+  const upload = env.PERF_ARTIFACTS.resumeMultipartUpload(
+    runnerArtifactObjectKey(row.id, safeArtifactId),
+    uploadId,
+  );
+  const part = await upload.uploadPart(partNumber, request.body);
+  return {
+    ok: true,
+    part: { partNumber: part.partNumber, etag: part.etag },
+    cancel_requested: Boolean(row.cancel_requested),
+  };
+}
+
+async function completeRunnerArtifactUpload(env, jobId, artifactId, payload) {
+  requireArtifactBucket(env);
+  const row = await authorizeRunnerJobAction(env, jobId, payload);
+  const artifact = normalizePerfArtifact({ ...(payload.artifact || {}), id: artifactId }, true);
+  const uploadId = String(payload.upload_id || "").trim();
+  if (!uploadId || uploadId.length > 512) throw withStatus(400, "invalid upload_id");
+  const parts = normalizeMultipartParts(payload.parts);
+  const objectKey = runnerArtifactObjectKey(row.id, artifact.id);
+  const upload = env.PERF_ARTIFACTS.resumeMultipartUpload(objectKey, uploadId);
+  const object = await upload.complete(parts);
+  if (artifact.size_bytes && object.size !== artifact.size_bytes) {
+    await env.PERF_ARTIFACTS.delete(objectKey);
+    throw withStatus(400, `artifact size mismatch: expected ${artifact.size_bytes}, received ${object.size}`);
+  }
+  let stored;
+  try {
+    [stored] = await storePerfArtifacts(env, row.id, [{ ...artifact, object_key: `r2://${objectKey}` }]);
+  } catch (error) {
+    await env.PERF_ARTIFACTS.delete(objectKey);
+    throw error;
+  }
+  await appendPerfJobEvent(env, row.id, row.attempt_id, "artifact_uploaded", "info", "性能制品已上传至 R2", {
+    artifact_id: artifact.id,
+    filename: artifact.filename,
+    size_bytes: object.size,
+  });
+  return { ok: true, artifact: stored, cancel_requested: Boolean(row.cancel_requested) };
+}
+
+async function abortRunnerArtifactUpload(env, jobId, artifactId, payload) {
+  requireArtifactBucket(env);
+  const row = await authorizeRunnerJobAction(env, jobId, payload);
+  const safeArtifactId = safeIdentifier(artifactId, "artifact_id", 128);
+  const uploadId = String(payload.upload_id || "").trim();
+  if (!uploadId || uploadId.length > 512) throw withStatus(400, "invalid upload_id");
+  const upload = env.PERF_ARTIFACTS.resumeMultipartUpload(
+    runnerArtifactObjectKey(row.id, safeArtifactId),
+    uploadId,
+  );
+  await upload.abort();
+  return { ok: true };
+}
+
+function runnerJobAuthFromHeaders(request) {
+  return {
+    runner_id: request.headers.get("X-Runner-Id") || "",
+    attempt_id: request.headers.get("X-Attempt-Id") || "",
+    lease_token: request.headers.get("X-Lease-Token") || "",
+  };
+}
+
+function normalizeMultipartParts(value) {
+  if (!Array.isArray(value) || !value.length || value.length > PERF_ARTIFACT_MAX_PARTS) {
+    throw withStatus(400, "invalid multipart artifact parts");
+  }
+  const seen = new Set();
+  return value.map((part) => {
+    const partNumber = boundedInteger(part.partNumber ?? part.part_number, "artifact part number", 1, PERF_ARTIFACT_MAX_PARTS);
+    const etag = String(part.etag || "").trim().slice(0, 256);
+    if (!etag || seen.has(partNumber)) throw withStatus(400, "invalid multipart artifact part");
+    seen.add(partNumber);
+    return { partNumber, etag };
+  }).sort((left, right) => left.partNumber - right.partNumber);
+}
+
+function runnerArtifactObjectKey(jobId, artifactId) {
+  return `${PERF_ARTIFACT_KEY_PREFIX}/${jobId}/${artifactId}`;
+}
+
+function requireArtifactBucket(env) {
+  if (!env.PERF_ARTIFACTS) throw withStatus(503, "R2 performance artifact bucket is not configured");
+}
+
 async function authorizeRunnerJobAction(env, jobId, payload) {
   const row = await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first();
   if (!row) throw withStatus(404, "performance job not found");
@@ -2622,20 +2862,7 @@ async function storePerfArtifacts(env, jobId, artifacts) {
   if (!Array.isArray(artifacts) || artifacts.length > 50) throw withStatus(400, "invalid artifact manifest");
   const stored = [];
   for (const artifact of artifacts) {
-    const objectKey = String(artifact.object_key || artifact.path || "").trim().slice(0, 512);
-    if (!objectKey) throw withStatus(400, "artifact object_key is required");
-    const item = {
-      id: String(artifact.id || `artifact-${crypto.randomUUID()}`).slice(0, 128),
-      artifact_type: String(artifact.type || artifact.artifact_type || "file").slice(0, 64),
-      object_key: objectKey,
-      filename: String(artifact.filename || objectKey.split(/[\\/]/).pop() || "artifact").slice(0, 255),
-      content_type: String(artifact.content_type || "application/octet-stream").slice(0, 128),
-      size_bytes: boundedInteger(artifact.size ?? artifact.size_bytes ?? 0, "artifact size", 0, 1099511627776),
-      sha256: String(artifact.sha256 || "").trim().toLowerCase(),
-      expires_at: artifact.expires_at ? String(artifact.expires_at).slice(0, 64) : null,
-      created_at: nowIso(),
-    };
-    if (item.sha256 && !/^[a-f0-9]{64}$/.test(item.sha256)) throw withStatus(400, "invalid artifact sha256");
+    const item = normalizePerfArtifact(artifact);
     await env.DB.prepare(
       `INSERT INTO perf_artifacts(
         id, job_id, artifact_type, object_key, filename, content_type, size_bytes, sha256, expires_at, created_at
@@ -2651,6 +2878,26 @@ async function storePerfArtifacts(env, jobId, artifacts) {
     stored.push({ ...item, job_id: jobId });
   }
   return stored;
+}
+
+function normalizePerfArtifact(artifact, allowMissingObjectKey = false) {
+  const objectKey = String(artifact.object_key || artifact.path || "").trim().slice(0, 512);
+  const fallbackName = objectKey.split(/[\\/]/).pop() || "artifact";
+  const item = {
+    id: safeIdentifier(artifact.id || `artifact-${crypto.randomUUID()}`, "artifact id", 128),
+    artifact_type: String(artifact.type || artifact.artifact_type || "file").trim().slice(0, 64) || "file",
+    object_key: objectKey,
+    filename: String(artifact.filename || fallbackName).trim().slice(0, 255) || "artifact",
+    content_type: String(artifact.content_type || "application/octet-stream").trim().slice(0, 128),
+    size_bytes: boundedInteger(artifact.size ?? artifact.size_bytes ?? 0, "artifact size", 0, 1099511627776),
+    sha256: String(artifact.sha256 || "").trim().toLowerCase(),
+    expires_at: artifact.expires_at ? String(artifact.expires_at).slice(0, 64) : null,
+    created_at: nowIso(),
+  };
+  if (!item.object_key && !allowMissingObjectKey) throw withStatus(400, "artifact object_key is required");
+  if (item.sha256 && !/^[a-f0-9]{64}$/.test(item.sha256)) throw withStatus(400, "invalid artifact sha256");
+  if (item.expires_at && !Number.isFinite(Date.parse(item.expires_at))) throw withStatus(400, "invalid artifact expires_at");
+  return item;
 }
 
 async function runnerJobComplete(env, row, payload) {

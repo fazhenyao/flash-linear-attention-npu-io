@@ -1,5 +1,8 @@
 import os
+import tempfile
 import unittest
+import zipfile
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -173,6 +176,62 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             {"prof_tool": "msprof"},
             persist_local_data=False,
         )
+
+    def test_runner_agent_archives_prof_directory_with_root_folder(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "PROF_000001"
+            (source / "mindstudio_profiler_output").mkdir(parents=True)
+            (source / "mindstudio_profiler_output" / "summary.csv").write_text(
+                "name,duration\noperator,1\n",
+                encoding="utf-8",
+            )
+            agent = RunnerAgent.__new__(RunnerAgent)
+            agent.config = SimpleNamespace(state_dir=root / "state")
+
+            archive_path = agent.create_artifact_archive("perf-job-test", source)
+
+            with zipfile.ZipFile(archive_path) as archive:
+                self.assertEqual(
+                    archive.namelist(),
+                    ["PROF_000001/mindstudio_profiler_output/summary.csv"],
+                )
+
+    def test_runner_agent_uploads_archive_in_configured_parts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            archive_path = Path(temporary) / "artifact.zip"
+            archive_path.write_bytes(b"abcdefghijkl")
+            agent = RunnerAgent.__new__(RunnerAgent)
+            agent.config = SimpleNamespace(runner_id="relay-test", upload_part_bytes=5)
+            agent.api = Mock()
+
+            def post(path, _payload):
+                if path.endswith("/start"):
+                    return {"upload_id": "upload-test", "artifact_id": "artifact-test"}
+                if path.endswith("/complete"):
+                    return {"artifact": {"id": "artifact-test", "storage": "r2"}}
+                return {"ok": True}
+
+            agent.api.post.side_effect = post
+            agent.api.put.side_effect = [
+                {"part": {"partNumber": 1, "etag": "etag-1"}},
+                {"part": {"partNumber": 2, "etag": "etag-2"}},
+                {"part": {"partNumber": 3, "etag": "etag-3"}},
+            ]
+            job = {
+                "id": "perf-job-test",
+                "attempt_id": "attempt-test",
+                "lease_token": "lease-test",
+            }
+
+            artifact = agent.multipart_upload(
+                job,
+                archive_path,
+                {"id": "artifact-test", "filename": "artifact.zip"},
+            )
+
+            self.assertEqual(artifact["storage"], "r2")
+            self.assertEqual(agent.api.put.call_count, 3)
 
 
 if __name__ == "__main__":
