@@ -406,8 +406,11 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-npu-process-btn:focus-visible { outline:2px solid #b87508; outline-offset:2px; }
 .perf-npu-process-detail-row > td { padding:0 8px 9px; background:#fffaf1; white-space:normal; }
 .perf-npu-process-detail-scroll {
-  width:100%;
+  position:sticky;
+  left:0;
+  width:min(100%,calc(100vw - 52px));
   max-width:100%;
+  box-sizing:border-box;
   overflow-x:auto;
   overscroll-behavior-x:contain;
   scrollbar-gutter:stable;

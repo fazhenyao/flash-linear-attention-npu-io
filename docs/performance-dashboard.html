@@ -1090,7 +1090,7 @@
           return;
         }
         const request = await workerPost("/api/perf/runner/npu-status/refresh", { runner_id: runner.id });
-        const deadline = Date.now() + 90000;
+        const deadline = Date.now() + 120000;
         while (Date.now() < deadline) {
           await wait(1500);
           await loadRunnerStatus();
