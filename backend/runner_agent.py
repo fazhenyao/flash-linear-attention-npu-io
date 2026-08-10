@@ -224,6 +224,7 @@ class RunnerAgent:
             "device": device,
             "devices": [device] if device is not None else [],
             "prof_tools": status.get("prof_tools") or [],
+            "job_types": ["profile", "build_install"] if perf_config.mode == "ssh" else ["profile"],
             "op_warm_up": status.get("op_warm_up"),
             "op_launch_count": status.get("op_launch_count"),
             "max_concurrency": self.config.max_concurrency,
@@ -232,10 +233,11 @@ class RunnerAgent:
                 "defaults": execution_environment_defaults(perf_config),
                 "customizable": perf_config.mode == "ssh",
                 "source_build": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
+                "source_deployment": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_branch_query": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_branches": self.source_branches_status(),
             },
-            "agent_version": "1.4.0",
+            "agent_version": "1.5.0",
         }
 
     def source_branches_status(self) -> dict[str, Any]:
@@ -482,12 +484,14 @@ class RunnerAgent:
 
     def run_job(self, job: dict[str, Any]) -> None:
         request = dict(job.get("request") or {})
+        task_type = str(request.get("task_type") or "profile")
+        task_label = "编译安装" if task_type == "build_install" else "测试"
         self.save_job_state(job, "claimed", request=request)
         self.api.post(
             f"/api/runner/jobs/{job['id']}/started",
             self.job_auth(job, {
                 "remote_execution_id": f"{self.config.runner_id}:{job['id']}",
-                "message": "Relay 已开始执行测试任务",
+                "message": f"Relay 已开始执行{task_label}任务",
             }),
         )
         heartbeat = JobHeartbeat(self, job)
@@ -528,7 +532,7 @@ class RunnerAgent:
             if heartbeat.cancel_requested.is_set():
                 self.api.post(
                     f"/api/runner/jobs/{job['id']}/fail",
-                    self.job_auth(job, {"canceled": True, "message": "测试完成前收到取消请求"}),
+                    self.job_auth(job, {"canceled": True, "message": f"{task_label}完成前收到取消请求"}),
                 )
                 return
             snapshot = result.get("snapshot") or {}
@@ -536,7 +540,8 @@ class RunnerAgent:
                 f"/api/runner/jobs/{job['id']}/complete",
                 self.job_auth(job, {
                     "exit_code": 0,
-                    "message": result.get("message") or "性能测试完成",
+                    "task_type": task_type,
+                    "message": result.get("message") or f"{task_label}完成",
                     "command": result.get("command") or "",
                     "profiler_command": result.get("profiler_command") or "",
                     "environment": {
@@ -547,6 +552,7 @@ class RunnerAgent:
                     "snapshot": snapshot,
                     "perf_data": result.get("data") or {},
                     "result": {
+                        "task_type": task_type,
                         "message": result.get("message") or "",
                         "prof_tool": result.get("prof_tool") or request.get("prof_tool"),
                         "prof_source": result.get("prof_source") or snapshot.get("prof_source"),
@@ -577,7 +583,7 @@ class RunnerAgent:
     def environment_summary(self) -> dict[str, Any]:
         status = runner_status()
         return {
-            "agent_version": "1.4.0",
+            "agent_version": "1.5.0",
             "runner_id": self.config.runner_id,
             "mode": status.get("mode"),
             "chip": status.get("chip"),

@@ -438,6 +438,8 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
   line-height:1;
 }
 .perf-source-branch-refresh.is-refreshing span { animation:perf-npu-spin .8s linear infinite; }
+.perf-build-install-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.perf-build-install-actions button { min-width:112px; }
 .perf-check-field-compact { width:auto; min-width:34px; justify-content:center; }
 .perf-varlen-fields {
   grid-column:1 / -1;

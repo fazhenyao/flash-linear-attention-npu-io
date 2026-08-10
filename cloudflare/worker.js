@@ -55,6 +55,7 @@ const OPERATOR_OWNER_RULES = {
 };
 const PASSWORD_HASH_ITERATIONS = 100000;
 const PERF_TOOLS = new Set(["msprof", "msprof_op", "msprof_op_sim"]);
+const PERF_TASK_TYPES = new Set(["profile", "build_install"]);
 const PERF_CHIPS = new Set(["A2", "A3", "A5"]);
 const PERF_SCRIPT_IDS = new Set(["scripts/flash_gated_delta_rule.py"]);
 const PERF_JOB_FINAL_STATES = new Set(["succeeded", "failed", "canceled", "orphaned"]);
@@ -2190,11 +2191,11 @@ async function createPerfJob(env, payload, user) {
     created_by: user.id,
     created_by_username: user.username || user.id,
     idempotency_key: idempotencyKey,
-    tool: request.prof_tool,
+    tool: request.task_type === "build_install" ? "build_install" : request.prof_tool,
     script_id: request.script_id,
     request_json: toJson(request),
     status: "queued",
-    status_message: "等待 VPN Runner 领取",
+    status_message: request.task_type === "build_install" ? "等待 VPN Runner 领取编译安装任务" : "等待 VPN Runner 领取",
     created_at: nowIso(),
   };
   try {
@@ -2221,9 +2222,12 @@ async function createPerfJob(env, payload, user) {
     action: "perf.job.create",
     entity: "perf_job",
     id: job.id,
-    summary: `提交性能测试任务：${request.prof_tool}`,
+    summary: request.task_type === "build_install"
+      ? `提交源码编译安装任务：${request.execution_environment.branch}`
+      : `提交性能测试任务：${request.prof_tool}`,
     detail: {
       job_id: job.id,
+      task_type: request.task_type,
       tool: request.prof_tool,
       script_id: request.script_id,
       device: request.device,
@@ -2241,10 +2245,19 @@ function normalizePerfJobRequest(payload, user) {
   for (const forbidden of ["command", "shell", "cwd", "env", "executable"]) {
     if (payload[forbidden] !== undefined) throw withStatus(400, `${forbidden} is not allowed`);
   }
-  const profTool = String(payload.prof_tool || payload.tool || "msprof").trim();
-  if (!PERF_TOOLS.has(profTool)) throw withStatus(400, "unsupported profiler tool");
-  const scriptId = String(payload.script_id || payload.script_path || "scripts/flash_gated_delta_rule.py").trim();
-  if (!PERF_SCRIPT_IDS.has(scriptId)) throw withStatus(400, "unsupported script_id");
+  const taskType = String(payload.task_type || "profile").trim();
+  if (!PERF_TASK_TYPES.has(taskType)) throw withStatus(400, "unsupported task_type");
+  if (taskType === "build_install" && user?.role !== "admin") {
+    throw withStatus(403, "build_install requires admin role");
+  }
+  const profTool = taskType === "build_install"
+    ? "build_install"
+    : String(payload.prof_tool || payload.tool || "msprof").trim();
+  if (taskType === "profile" && !PERF_TOOLS.has(profTool)) throw withStatus(400, "unsupported profiler tool");
+  const scriptId = taskType === "build_install"
+    ? "source-build"
+    : String(payload.script_id || payload.script_path || "scripts/flash_gated_delta_rule.py").trim();
+  if (taskType === "profile" && !PERF_SCRIPT_IDS.has(scriptId)) throw withStatus(400, "unsupported script_id");
   const chip = String(payload.chip || "A2").trim().toUpperCase();
   if (!PERF_CHIPS.has(chip)) throw withStatus(400, "chip must be A2, A3 or A5");
   const device = boundedInteger(payload.device ?? 2, "device", 0, 63);
@@ -2255,6 +2268,7 @@ function normalizePerfJobRequest(payload, user) {
   }
   const attributes = normalizePerfAttributes(payload.attributes || payload.parameters || {});
   const request = {
+    task_type: taskType,
     model_id: modelId,
     chip,
     device,
@@ -2266,20 +2280,32 @@ function normalizePerfJobRequest(payload, user) {
   if (payload.target_runner_id) {
     request.target_runner_id = safeIdentifier(payload.target_runner_id, "target_runner_id", 96);
   }
+  if (taskType === "build_install" && !request.target_runner_id) {
+    throw withStatus(400, "target_runner_id is required for build_install");
+  }
   if (payload.execution_environment !== undefined) {
     if (user?.role !== "admin") throw withStatus(403, "custom execution environment requires admin role");
-    request.execution_environment = normalizePerfExecutionEnvironment(payload.execution_environment);
+    request.execution_environment = normalizePerfExecutionEnvironment(payload.execution_environment, {
+      allowBranchWithoutRebuild: taskType === "profile",
+      requireBranch: taskType === "build_install",
+    });
   }
-  if (kernelName) request.kernel_name = kernelName;
-  if (payload.operator_id) request.operator_id = safeIdentifier(payload.operator_id, "operator_id", 128);
-  if (profTool !== "msprof") {
+  if (taskType === "build_install" && !request.execution_environment) {
+    throw withStatus(400, "execution_environment is required for build_install");
+  }
+  if (taskType === "build_install" && !request.execution_environment.rebuild) {
+    throw withStatus(400, "build_install requires rebuild=true");
+  }
+  if (taskType === "profile" && kernelName) request.kernel_name = kernelName;
+  if (taskType === "profile" && payload.operator_id) request.operator_id = safeIdentifier(payload.operator_id, "operator_id", 128);
+  if (taskType === "profile" && profTool !== "msprof") {
     request.warm_up = boundedInteger(payload.warm_up ?? 10, "warm_up", 0, 100000);
     request.launch_count = boundedInteger(payload.launch_count ?? 10, "launch_count", 1, 100000);
   }
   return request;
 }
 
-function normalizePerfExecutionEnvironment(value) {
+function normalizePerfExecutionEnvironment(value, options = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw withStatus(400, "execution_environment must be an object");
   }
@@ -2296,8 +2322,8 @@ function normalizePerfExecutionEnvironment(value) {
   }
   const rebuild = value.rebuild === true;
   const branch = String(value.branch || "").trim();
-  if (rebuild && !branch) throw withStatus(400, "branch is required when rebuilding source");
-  if (!rebuild && branch) throw withStatus(400, "branch requires rebuild=true");
+  if ((rebuild || options.requireBranch) && !branch) throw withStatus(400, "branch is required when rebuilding source");
+  if (!rebuild && branch && !options.allowBranchWithoutRebuild) throw withStatus(400, "branch requires rebuild=true");
   if (branch && (
     branch.length > 200
     || !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(branch)
@@ -2547,16 +2573,19 @@ async function retryPerfJob(env, jobId, user) {
   assertPerfJobAccess(job, user);
   if (!PERF_JOB_FINAL_STATES.has(job.status)) throw withStatus(409, "only finished jobs can be retried");
   const timestamp = nowIso();
+  const statusMessage = job.request?.task_type === "build_install"
+    ? "等待 VPN Runner 领取编译安装任务"
+    : "等待 VPN Runner 领取";
   await env.DB.batch([
     env.DB.prepare("DELETE FROM perf_results WHERE job_id = ?").bind(jobId),
     env.DB.prepare("DELETE FROM perf_artifacts WHERE job_id = ?").bind(jobId),
   ]);
   await env.DB.prepare(
-    `UPDATE perf_jobs SET status = 'queued', status_message = '等待 VPN Runner 领取', runner_id = NULL,
+    `UPDATE perf_jobs SET status = 'queued', status_message = ?, runner_id = NULL,
       attempt_id = NULL, lease_token_hash = NULL, lease_expires_at = NULL, remote_execution_id = NULL,
       cancel_requested = 0, retry_count = retry_count + 1, exit_code = NULL, claimed_at = NULL,
       started_at = NULL, finished_at = NULL, updated_at = ? WHERE id = ?`,
-  ).bind(timestamp, jobId).run();
+  ).bind(statusMessage, timestamp, jobId).run();
   await appendPerfJobEvent(env, jobId, null, "retried", "info", "任务已重新排队", { requested_by: user.username });
   await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first());
   return { ok: true, job: await getPerfJob(env, jobId) };
@@ -2874,15 +2903,20 @@ async function sweepExpiredPerfLeases(env) {
 
 function runnerCanExecute(runnerId, capabilities, request) {
   if (request.target_runner_id && request.target_runner_id !== runnerId) return false;
+  const taskType = String(request.task_type || "profile");
+  const jobTypes = Array.isArray(capabilities.job_types) ? capabilities.job_types : ["profile"];
+  if (!jobTypes.includes(taskType)) return false;
   if (request.execution_environment) {
     const environment = capabilities.execution_environment || {};
     if (!environment.customizable) return false;
     if (request.execution_environment.rebuild && !environment.source_build) return false;
+    if (request.execution_environment.branch && !request.execution_environment.rebuild && !environment.source_deployment) return false;
   }
-  const tools = Array.isArray(capabilities.prof_tools) ? capabilities.prof_tools : [];
-  if (tools.length && !tools.includes(request.prof_tool)) return false;
   const chips = Array.isArray(capabilities.chips) ? capabilities.chips : (capabilities.chip ? [capabilities.chip] : []);
   if (chips.length && !chips.includes(request.chip)) return false;
+  if (taskType === "build_install") return true;
+  const tools = Array.isArray(capabilities.prof_tools) ? capabilities.prof_tools : [];
+  if (tools.length && !tools.includes(request.prof_tool)) return false;
   const devices = Array.isArray(capabilities.devices) ? capabilities.devices.map(Number) : [];
   return !devices.length || devices.includes(Number(request.device));
 }
@@ -3184,15 +3218,17 @@ async function authorizeRunnerJobAction(env, jobId, payload) {
 
 async function runnerJobStarted(env, row, payload) {
   const timestamp = nowIso();
+  const request = parseJson(row.request_json, {});
+  const taskLabel = request.task_type === "build_install" ? "编译安装" : "NPU 测试";
   const remoteExecutionId = String(payload.remote_execution_id || `${payload.runner_id}:${row.id}`).slice(0, 256);
   await env.DB.prepare(
     `UPDATE perf_jobs SET status = 'running', status_message = ?, remote_execution_id = ?,
       started_at = COALESCE(started_at, ?), lease_expires_at = ?, updated_at = ? WHERE id = ?`,
   ).bind(
-    String(payload.message || "NPU 测试任务正在执行").slice(0, 1000), remoteExecutionId, timestamp,
+    String(payload.message || `${taskLabel}任务正在执行`).slice(0, 1000), remoteExecutionId, timestamp,
     new Date(Date.now() + PERF_LEASE_SECONDS * 1000).toISOString(), timestamp, row.id,
   ).run();
-  await appendPerfJobEvent(env, row.id, row.attempt_id, "started", "info", "NPU 测试任务开始执行", { remote_execution_id: remoteExecutionId });
+  await appendPerfJobEvent(env, row.id, row.attempt_id, "started", "info", `${taskLabel}任务开始执行`, { remote_execution_id: remoteExecutionId });
   await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(row.id).first());
   return { ok: true, job: await getPerfJob(env, row.id) };
 }
@@ -3266,6 +3302,7 @@ function normalizePerfArtifact(artifact, allowMissingObjectKey = false) {
 }
 
 async function runnerJobComplete(env, row, payload) {
+  const request = parseJson(row.request_json, {});
   const resultDetail = payload.result && typeof payload.result === "object" ? payload.result : {};
   const serialized = JSON.stringify(resultDetail);
   if (serialized.length > PERF_RESULT_JSON_LIMIT) throw withStatus(413, "result payload is too large");
@@ -3287,7 +3324,8 @@ async function runnerJobComplete(env, row, payload) {
   ).run();
   if (payload.artifacts) await storePerfArtifacts(env, row.id, payload.artifacts);
   const exitCode = boundedInteger(payload.exit_code ?? 0, "exit_code", -2147483648, 2147483647);
-  const message = String(payload.message || resultDetail.message || "性能测试完成").slice(0, 1000);
+  const defaultMessage = request.task_type === "build_install" ? "源码编译安装完成" : "性能测试完成";
+  const message = String(payload.message || resultDetail.message || defaultMessage).slice(0, 1000);
   await env.DB.prepare(
     `UPDATE perf_jobs SET status = 'succeeded', status_message = ?, exit_code = ?, finished_at = ?,
       lease_token_hash = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ?`,
@@ -3300,7 +3338,9 @@ async function runnerJobComplete(env, row, payload) {
 async function runnerJobFail(env, row, payload) {
   const canceled = Boolean(payload.canceled || row.cancel_requested);
   const status = canceled ? "canceled" : "failed";
-  const message = String(payload.message || (canceled ? "任务已取消" : "性能测试失败")).slice(0, 1000);
+  const request = parseJson(row.request_json, {});
+  const failureMessage = request.task_type === "build_install" ? "源码编译安装失败" : "性能测试失败";
+  const message = String(payload.message || (canceled ? "任务已取消" : failureMessage)).slice(0, 1000);
   const exitCode = payload.exit_code === undefined || payload.exit_code === null
     ? null
     : boundedInteger(payload.exit_code, "exit_code", -2147483648, 2147483647);
@@ -3343,12 +3383,14 @@ async function projectPerfJobRun(env, row) {
   const statusMap = { succeeded: "done", canceled: "canceled", orphaned: "failed" };
   const run = {
     id: row.id,
+    task_type: request.task_type || "profile",
     model_id: request.model_id || "gdn",
     chip: request.chip || "",
     device: request.device,
     prof_tool: request.prof_tool || row.tool,
     script_path: request.script_id || row.script_id,
     attributes: request.attributes || {},
+    execution_environment: request.execution_environment || {},
     kernel_name: request.kernel_name || "",
     status: statusMap[row.status] || row.status,
     message: row.status_message || "",
@@ -3380,6 +3422,7 @@ async function mergePerfJobCompletion(env, jobId, payload, resultDetail, snapsho
   const request = parseJson(row.request_json, {});
   const run = {
     id: jobId,
+    task_type: request.task_type || "profile",
     model_id: snapshot?.model_id || request.model_id || "gdn",
     case_id: snapshot?.case_id || null,
     snapshot_id: snapshot?.id || null,
@@ -3389,6 +3432,7 @@ async function mergePerfJobCompletion(env, jobId, payload, resultDetail, snapsho
     prof_tool: request.prof_tool,
     script_path: request.script_id,
     attributes: request.attributes || {},
+    execution_environment: request.execution_environment || {},
     kernel_name: request.kernel_name || "",
     status: "done",
     message: row.status_message,
@@ -3468,4 +3512,4 @@ function withStatus(status, message) {
   return error;
 }
 
-export { normalizePerfExecutionEnvironment, normalizeSourceBranchesRefreshRequest, runnerCanExecute };
+export { normalizePerfExecutionEnvironment, normalizePerfJobRequest, normalizeSourceBranchesRefreshRequest, runnerCanExecute };

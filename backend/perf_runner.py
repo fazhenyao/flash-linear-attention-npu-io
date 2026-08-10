@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import io
 import json
@@ -21,6 +22,7 @@ PROF_OP_ROOT = ROOT / "data" / "prof_op"
 PROF_SOURCE_PATTERN = re.compile(r"^(OPPROF_|PROF_)", re.IGNORECASE)
 MAX_PROF_UPLOAD_BYTES = 512 * 1024 * 1024
 VALID_PROF_TOOLS = {"msprof", "msprof_op", "msprof_op_sim"}
+VALID_TASK_TYPES = {"profile", "build_install"}
 VALID_CHIPS = {"A2", "A3", "A5"}
 ATTR_DEFAULTS = {
     "batch": 1,
@@ -267,8 +269,6 @@ def resolve_execution_environment(payload: dict[str, Any], config: PerfRunnerCon
     rebuild = raw_rebuild
     if rebuild and not branch:
         raise ValueError("重新编译安装时必须指定分支")
-    if not rebuild and branch:
-        raise ValueError("指定分支时必须启用重新编译安装")
     if branch and not _valid_source_branch(branch):
         raise ValueError("源码分支名称不合法")
 
@@ -327,6 +327,13 @@ def normalize_prof_tool(payload: dict[str, Any]) -> str:
     if prof_tool not in VALID_PROF_TOOLS:
         raise ValueError(f"prof_tool must be one of {sorted(VALID_PROF_TOOLS)}")
     return prof_tool
+
+
+def normalize_task_type(payload: dict[str, Any]) -> str:
+    task_type = str(payload.get("task_type") or "profile").strip()
+    if task_type not in VALID_TASK_TYPES:
+        raise ValueError(f"task_type must be one of {sorted(VALID_TASK_TYPES)}")
+    return task_type
 
 
 def prof_output_root(prof_tool: str, *, local: bool) -> Path:
@@ -878,6 +885,22 @@ def _remote_build_worktree_path(config: PerfRunnerConfig) -> str:
     return f"{root}/{uuid.uuid4().hex}"
 
 
+def _remote_deployment_path(
+    config: PerfRunnerConfig,
+    execution: ExecutionEnvironment,
+    chip: str,
+) -> str:
+    identity = json.dumps({
+        "cann_path": execution.cann_path,
+        "conda_env": execution.conda_env,
+        "source_repo": execution.source_repo,
+        "chip": chip.upper(),
+    }, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+    deployment_id = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
+    root = _normalized_remote_absolute_path(config.remote_build_root, "远端构建目录")
+    return f"{root}/active/{deployment_id}"
+
+
 def _prepare_remote_source_build(
     config: PerfRunnerConfig,
     execution: ExecutionEnvironment,
@@ -947,6 +970,60 @@ def _cleanup_remote_source_build(config: PerfRunnerConfig, source_repo: str, wor
         pass
 
 
+def _activate_remote_source_build(
+    config: PerfRunnerConfig,
+    execution: ExecutionEnvironment,
+    chip: str,
+    build_info: dict[str, str],
+) -> str:
+    worktree = build_info["worktree"]
+    deployment = _remote_deployment_path(config, execution, chip)
+    marker = f"{worktree}/.fla-runner-deployment"
+    active_root = str(PurePosixPath(deployment).parent)
+    command = (
+        f"mkdir -p {shlex.quote(active_root)}"
+        f" && printf '%s\\n' {shlex.quote(execution.branch)} {shlex.quote(build_info['commit'])} "
+        f"{shlex.quote(build_info['soc'])} > {shlex.quote(marker)}"
+        f" && previous=$(readlink -f {shlex.quote(deployment)} 2>/dev/null || true)"
+        f" && ln -sfn {shlex.quote(worktree)} {shlex.quote(deployment)}"
+        " && printf '%s\\n' \"$previous\""
+    )
+    activated = _run_remote_checked(config, command, "构建版本激活")
+    previous = next((line.strip() for line in activated.stdout.splitlines() if line.strip()), "")
+    build_root = _normalized_remote_absolute_path(config.remote_build_root, "远端构建目录")
+    if previous and previous != worktree and _path_allowed(previous, (build_root,)):
+        _cleanup_remote_source_build(config, execution.source_repo, previous)
+    return deployment
+
+
+def _resolve_remote_deployed_source(
+    config: PerfRunnerConfig,
+    execution: ExecutionEnvironment,
+    chip: str,
+) -> str:
+    deployment = _remote_deployment_path(config, execution, chip)
+    marker = f"{deployment}/.fla-runner-deployment"
+    inspect = (
+        f"test -L {shlex.quote(deployment)}"
+        f" && test -f {shlex.quote(marker)}"
+        f" && cat {shlex.quote(marker)}"
+    )
+    try:
+        result = _run_remote_checked(config, inspect, "已安装源码版本检查")
+    except RuntimeError:
+        raise RuntimeError(
+            f"源码分支 {execution.branch} 尚未在当前 CANN/Conda 环境编译安装，请先执行编译安装任务"
+        ) from None
+    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    expected_soc = soc_build_target(chip)
+    if len(lines) < 3 or lines[0] != execution.branch or lines[2] != expected_soc:
+        installed = lines[0] if lines else "未知"
+        raise RuntimeError(
+            f"当前环境安装的是源码分支 {installed}，不是 {execution.branch}，请先执行编译安装任务"
+        )
+    return deployment
+
+
 def _remote_output_path(config: PerfRunnerConfig, output: str) -> str:
     path = PurePosixPath(output)
     if path.is_absolute():
@@ -995,8 +1072,49 @@ def _import_module(script_name: str):
     return module
 
 
+def _execute_build_install(payload: dict[str, Any], config: PerfRunnerConfig) -> dict[str, Any]:
+    if config.mode != "ssh":
+        raise RuntimeError("编译安装任务仅支持 SSH Relay 模式")
+    execution = resolve_execution_environment(payload, config)
+    if not execution.branch:
+        raise ValueError("编译安装任务必须指定源码分支")
+    chip = resolve_chip(payload, config)
+    if config.dry_run:
+        return {
+            "status": "done",
+            "task_type": "build_install",
+            "message": "dry-run：未实际执行编译安装",
+            "execution_environment": execution_environment_summary(execution),
+            "dry_run": True,
+        }
+
+    _validate_remote_execution_environment(config, execution)
+    build_info = _prepare_remote_source_build(config, execution, chip)
+    activated = False
+    try:
+        deployment = _activate_remote_source_build(config, execution, chip, build_info)
+        activated = True
+    finally:
+        if not activated:
+            _cleanup_remote_source_build(config, execution.source_repo, build_info["worktree"])
+    return {
+        "status": "done",
+        "task_type": "build_install",
+        "message": f"源码分支 {execution.branch} 编译安装完成",
+        "execution_environment": {
+            **execution_environment_summary(execution),
+            "commit": build_info["commit"],
+            "soc": build_info["soc"],
+            "deployment": deployment,
+        },
+    }
+
+
 def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict[str, Any]:
     config = ensure_runner_configured()
+    task_type = normalize_task_type(payload)
+    if task_type == "build_install":
+        return _execute_build_install(payload, config)
     prof_tool = normalize_prof_tool(payload)
     chip = resolve_chip(payload, config)
     execution = resolve_execution_environment(payload, config) if config.mode == "ssh" else None
@@ -1034,9 +1152,12 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
         if execution.customized:
             _validate_remote_execution_environment(config, execution)
             remote_script = f"{execution.source_repo}/examples/flash_gated_delta_rule.py"
+            if execution.branch and not execution.rebuild:
+                deployed_source = _resolve_remote_deployed_source(config, execution, chip)
+                remote_script = f"{deployed_source}/examples/flash_gated_delta_rule.py"
         try:
             if execution.rebuild:
-                build_info = _prepare_remote_source_build(config, execution, config.chip)
+                build_info = _prepare_remote_source_build(config, execution, chip)
                 build_worktree = build_info["worktree"]
                 remote_script = f"{build_worktree}/examples/flash_gated_delta_rule.py"
             before = _list_remote_prof_dirs(config, prof_tool)
