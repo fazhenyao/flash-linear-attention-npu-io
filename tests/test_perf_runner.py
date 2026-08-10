@@ -15,6 +15,7 @@ from backend.perf_runner import (
     _scp_command,
     _ssh_command,
     build_command,
+    build_profiler_command,
     load_config,
     prof_output_root,
     resolve_chip,
@@ -78,9 +79,15 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
 
         with patch.dict(os.environ, environment, clear=False):
             command = build_command({"prof_tool": "msprof", "attributes": {}})
+            profiler_command = build_profiler_command({"prof_tool": "msprof", "attributes": {}})
 
         self.assertIn(remote_script, command)
         self.assertNotIn("python3 scripts/flash_gated_delta_rule.py", command)
+
+        self.assertTrue(profiler_command.startswith("msprof --output="))
+        self.assertIn(remote_script, profiler_command)
+        self.assertNotIn("ssh ", profiler_command)
+        self.assertNotIn("conda activate", profiler_command)
 
     def test_a5_chip_and_instance_local_artifact_roots(self):
         environment = {
@@ -172,7 +179,11 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         agent.send_runner_heartbeat = Mock()
         agent.health = Mock(return_value={})
         heartbeat_class.return_value.cancel_requested.is_set.return_value = False
-        execute.return_value = {"snapshot": {}, "data": {}}
+        execute.return_value = {
+            "snapshot": {},
+            "data": {},
+            "profiler_command": "msprof --output=data/prof_gdr python3 test.py",
+        }
         job = {
             "id": "job-test",
             "attempt_id": "attempt-test",
@@ -185,6 +196,15 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         execute.assert_called_once_with(
             {"prof_tool": "msprof"},
             persist_local_data=False,
+        )
+        complete_payload = next(
+            call.args[1]
+            for call in agent.api.post.call_args_list
+            if call.args[0].endswith("/complete")
+        )
+        self.assertEqual(
+            complete_payload["profiler_command"],
+            "msprof --output=data/prof_gdr python3 test.py",
         )
 
     def test_runner_agent_archives_prof_directory_with_root_folder(self):

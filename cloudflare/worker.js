@@ -3185,6 +3185,7 @@ async function mergePerfJobCompletion(env, jobId, payload, resultDetail, snapsho
     status: "done",
     message: row.status_message,
     command: String(payload.command || resultDetail.command || ""),
+    profiler_command: String(payload.profiler_command || resultDetail.profiler_command || ""),
     created_by: row.created_by_username || row.created_by,
     created_at: row.created_at,
     started_at: row.started_at,

@@ -313,6 +313,7 @@ class RunnerAgent:
                     "exit_code": 0,
                     "message": result.get("message") or "性能测试完成",
                     "command": result.get("command") or "",
+                    "profiler_command": result.get("profiler_command") or "",
                     "environment": self.environment_summary(),
                     "metrics": extract_snapshot_metrics(snapshot),
                     "snapshot": snapshot,

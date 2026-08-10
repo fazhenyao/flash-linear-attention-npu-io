@@ -298,7 +298,7 @@
     <div class="perf-command-dialog-backdrop" data-command-close></div>
     <div class="perf-command-dialog-panel">
       <div class="perf-command-dialog-header">
-        <h3 id="commandDialogTitle">完整命令</h3>
+        <h3 id="commandDialogTitle">Profiler 命令</h3>
         <button type="button" class="perf-command-dialog-close" aria-label="关闭" data-command-close>&times;</button>
       </div>
       <pre id="commandDialogBody" class="perf-command-dialog-body"></pre>
@@ -654,7 +654,7 @@
         if (!button) return;
         const run = displayRuns().find((item) => item.id === button.dataset.runCommand);
         if (!run) return;
-        showCommandDialog(run.command || run.message || "");
+        showCommandDialog(displayRunCommand(run));
       });
       dialog.addEventListener("click", (event) => {
         if (event.target.closest("[data-command-close]")) hideCommandDialog();
@@ -2590,6 +2590,25 @@
       return [...byId.values()];
     }
 
+    function displayRunCommand(run) {
+      const profilerCommand = String(run?.profiler_command || "").trim();
+      if (profilerCommand) return profilerCommand;
+      const command = String(run?.command || "").trim();
+      if (!command) return "";
+      const pattern = /(^|[\s;&|()])(msopprof|msprof)(?=\s|$)/g;
+      let match;
+      let start = -1;
+      while ((match = pattern.exec(command)) !== null) {
+        start = match.index + match[1].length;
+      }
+      if (start < 0) return "";
+      let extracted = command.slice(start).trim();
+      if (/^ssh(?:\.exe)?\s/i.test(command) && /['"]$/.test(extracted)) {
+        extracted = extracted.slice(0, -1).trimEnd();
+      }
+      return extracted;
+    }
+
     async function handlePerfJobAction(action, jobId) {
       if (!jobId || !["cancel", "retry"].includes(action)) return;
       const prompt = action === "cancel" ? "确认取消该测试任务？" : "确认重新提交该测试任务？";
@@ -2643,7 +2662,7 @@
       tbody.innerHTML = runs.map((run) => {
         const testCase = state.data.cases.find((item) => item.id === run.case_id);
         const snap = run.snapshot || state.data.snapshots.find((item) => item.id === run.snapshot_id);
-        const command = run.command || run.message || "—";
+        const command = displayRunCommand(run) || "—";
         const shortCommand = command.length > 48 ? `${command.slice(0, 48)}…` : command;
         const scriptPath = run.script_path || "—";
         const commandCell = command !== "—"
