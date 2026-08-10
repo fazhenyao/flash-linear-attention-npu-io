@@ -421,6 +421,8 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-npu-process-detail-table { width:100%; min-width:520px; border-collapse:collapse; table-layout:auto; }
 .perf-npu-process-detail-table th,
 .perf-npu-process-detail-table td { padding:7px 10px; text-align:left; white-space:nowrap; }
+.perf-npu-process-detail-table th:first-child,
+.perf-npu-process-detail-table td:first-child { padding-left:30px; }
 .perf-npu-process-detail-table th { color:#6f5a3f; font-size:10px; }
 .perf-npu-process-detail-table td:nth-child(2) { min-width:280px; }
 @keyframes perf-npu-spin { to { transform:rotate(360deg); } }
