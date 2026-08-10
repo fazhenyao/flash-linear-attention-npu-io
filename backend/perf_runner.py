@@ -9,6 +9,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import uuid
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -67,6 +68,10 @@ class PerfRunnerConfig:
     remote_path_prepend: str
     remote_conda_sh: str
     remote_conda_env: str
+    remote_source_repo: str
+    allowed_cann_roots: tuple[str, ...]
+    allowed_source_roots: tuple[str, ...]
+    remote_build_root: str
     local_script: Path
     npu_device: int
     chip: str
@@ -78,11 +83,26 @@ class PerfRunnerConfig:
     dry_run: bool
 
 
+@dataclass(frozen=True)
+class ExecutionEnvironment:
+    customized: bool
+    cann_path: str
+    env_script: str
+    conda_env: str
+    source_repo: str
+    rebuild: bool
+    branch: str
+
+
 def _env_bool(name: str, default: bool = False) -> bool:
     value = os.environ.get(name, "").strip().lower()
     if not value:
         return default
     return value in {"1", "true", "yes", "on"}
+
+
+def _env_paths(name: str) -> tuple[str, ...]:
+    return tuple(item.strip().rstrip("/") for item in os.environ.get(name, "").split(";") if item.strip())
 
 
 def load_config() -> PerfRunnerConfig:
@@ -108,6 +128,10 @@ def load_config() -> PerfRunnerConfig:
         remote_path_prepend=os.environ.get("PERF_REMOTE_PATH_PREPEND", "").strip(),
         remote_conda_sh=os.environ.get("PERF_REMOTE_CONDA_SH", "").strip(),
         remote_conda_env=os.environ.get("PERF_REMOTE_CONDA_ENV", "").strip(),
+        remote_source_repo=os.environ.get("PERF_REMOTE_SOURCE_REPO", "").strip().rstrip("/"),
+        allowed_cann_roots=_env_paths("PERF_ALLOWED_CANN_ROOTS"),
+        allowed_source_roots=_env_paths("PERF_ALLOWED_SOURCE_ROOTS"),
+        remote_build_root=os.environ.get("PERF_REMOTE_BUILD_ROOT", "/tmp/fla-runner-builds").strip().rstrip("/"),
         local_script=Path(os.environ.get("PERF_LOCAL_SCRIPT", DEFAULT_TRIGGER_SCRIPT)),
         npu_device=int(os.environ.get("PERF_NPU_DEVICE", "2")),
         chip=os.environ.get("PERF_CHIP", "").strip().upper() or "A2",
@@ -128,6 +152,113 @@ def to_repo_relative_path(path: Path | str) -> str:
         except ValueError:
             return candidate.as_posix()
     return candidate.as_posix()
+
+
+def _normalized_remote_absolute_path(value: str, field: str) -> str:
+    text = str(value or "").strip().rstrip("/")
+    path = PurePosixPath(text)
+    if not text.startswith("/") or len(text) > 500 or any(part in {"", ".", ".."} for part in path.parts[1:]):
+        raise ValueError(f"{field} 必须为不含路径穿越的绝对路径")
+    if not re.fullmatch(r"/[A-Za-z0-9._+@/-]+", text):
+        raise ValueError(f"{field} 包含不支持的字符")
+    return path.as_posix().rstrip("/")
+
+
+def _path_allowed(path: str, roots: tuple[str, ...]) -> bool:
+    candidate = PurePosixPath(path)
+    for raw_root in roots:
+        root = PurePosixPath(raw_root)
+        try:
+            candidate.relative_to(root)
+            return True
+        except ValueError:
+            continue
+    return False
+
+
+def configured_cann_path(config: PerfRunnerConfig) -> str:
+    script = config.remote_env_script.rstrip("/")
+    return str(PurePosixPath(script).parent) if script.endswith("/set_env.sh") else script
+
+
+def execution_environment_defaults(config: PerfRunnerConfig) -> dict[str, Any]:
+    return {
+        "cann_path": configured_cann_path(config),
+        "conda_env": config.remote_conda_env,
+        "source_repo": config.remote_source_repo,
+        "rebuild": False,
+        "branch": "",
+    }
+
+
+def execution_environment_summary(execution: ExecutionEnvironment) -> dict[str, Any]:
+    return {
+        "cann_path": execution.cann_path,
+        "conda_env": execution.conda_env,
+        "source_repo": execution.source_repo,
+        "rebuild": execution.rebuild,
+        "branch": execution.branch,
+    }
+
+
+def resolve_execution_environment(payload: dict[str, Any], config: PerfRunnerConfig) -> ExecutionEnvironment:
+    raw = payload.get("execution_environment")
+    customized = raw is not None
+    if customized and not isinstance(raw, dict):
+        raise ValueError("execution_environment 必须为对象")
+    value = dict(raw or execution_environment_defaults(config))
+    raw_cann_path = str(value.get("cann_path") or configured_cann_path(config)).strip()
+    cann_path = _normalized_remote_absolute_path(raw_cann_path, "CANN 路径") if raw_cann_path else ""
+    if cann_path and cann_path.endswith("/set_env.sh"):
+        env_script = cann_path
+        cann_path = str(PurePosixPath(cann_path).parent)
+    else:
+        env_script = f"{cann_path}/set_env.sh" if cann_path else ""
+    raw_source_repo = str(value.get("source_repo") or config.remote_source_repo).strip()
+    source_repo = (
+        _normalized_remote_absolute_path(raw_source_repo, "源码仓库路径")
+        if raw_source_repo
+        else ""
+    )
+    conda_env = str(value.get("conda_env") or config.remote_conda_env).strip()
+    if not re.fullmatch(r"[A-Za-z0-9_.-]{1,100}", conda_env):
+        raise ValueError("Conda 环境名称不合法")
+    branch = str(value.get("branch") or "").strip()
+    raw_rebuild = value.get("rebuild", False)
+    if not isinstance(raw_rebuild, bool):
+        raise ValueError("rebuild 必须为布尔值")
+    rebuild = raw_rebuild
+    if rebuild and not branch:
+        raise ValueError("重新编译安装时必须指定分支")
+    if not rebuild and branch:
+        raise ValueError("指定分支时必须启用重新编译安装")
+    if branch and (
+        len(branch) > 200
+        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", branch)
+        or ".." in branch
+        or "//" in branch
+        or "@{" in branch
+        or branch.endswith(("/", ".", ".lock"))
+    ):
+        raise ValueError("源码分支名称不合法")
+
+    cann_roots = config.allowed_cann_roots or ((configured_cann_path(config),) if configured_cann_path(config) else ())
+    source_roots = config.allowed_source_roots or (
+        (str(PurePosixPath(config.remote_source_repo).parent),) if config.remote_source_repo else ()
+    )
+    if customized and (not cann_path or not cann_roots or not _path_allowed(cann_path, cann_roots)):
+        raise ValueError("CANN 路径不在 Relay 允许目录内")
+    if customized and (not source_repo or not source_roots or not _path_allowed(source_repo, source_roots)):
+        raise ValueError("源码仓库路径不在 Relay 允许目录内")
+    return ExecutionEnvironment(
+        customized=customized,
+        cann_path=cann_path,
+        env_script=env_script,
+        conda_env=conda_env,
+        source_repo=source_repo,
+        rebuild=rebuild,
+        branch=branch,
+    )
 
 
 def local_prof_output_path(prof_tool: str, config: PerfRunnerConfig | None = None) -> str:
@@ -431,6 +562,9 @@ def build_profiler_command(payload: dict[str, Any], config: PerfRunnerConfig | N
     else:
         output = str(prof_output_root(prof_tool, local=True))
     remote_script, local_script = resolve_script_paths(payload, config)
+    if config.mode == "ssh" and payload.get("execution_environment") is not None:
+        execution = resolve_execution_environment(payload, config)
+        remote_script = f"{execution.source_repo}/examples/flash_gated_delta_rule.py"
     invocation = build_prof_invocation(
         config,
         prof_tool=prof_tool,
@@ -461,7 +595,8 @@ def build_command(payload: dict[str, Any]) -> str:
     config = load_config()
     invocation = build_profiler_command(payload, config)
     if config.mode == "ssh":
-        remote = _remote_execution_command(config, invocation)
+        execution = resolve_execution_environment(payload, config)
+        remote = _remote_execution_command(config, invocation, execution=execution)
         return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
     return invocation
 
@@ -634,20 +769,152 @@ def _run_command(command: list[str] | str, *, cwd: Path | None = None) -> subpro
     )
 
 
-def _remote_execution_command(config: PerfRunnerConfig, invocation: str) -> str:
-    if config.remote_conda_env and not config.remote_conda_sh:
+def _remote_execution_command(
+    config: PerfRunnerConfig,
+    invocation: str,
+    *,
+    execution: ExecutionEnvironment | None = None,
+    workdir: str | None = None,
+) -> str:
+    env_script = execution.env_script if execution else config.remote_env_script
+    conda_env = execution.conda_env if execution else config.remote_conda_env
+    if conda_env and not config.remote_conda_sh:
         raise ValueError("PERF_REMOTE_CONDA_ENV requires PERF_REMOTE_CONDA_SH")
     commands = []
-    if config.remote_env_script:
-        commands.append(f". {shlex.quote(config.remote_env_script)}")
+    if env_script:
+        commands.append(f". {shlex.quote(env_script)}")
     if config.remote_path_prepend:
         commands.append(f"export PATH={shlex.quote(config.remote_path_prepend)}:\"$PATH\"")
-    if config.remote_conda_env:
+    if conda_env:
         commands.append(f". {shlex.quote(config.remote_conda_sh)}")
-        commands.append(f"conda activate {shlex.quote(config.remote_conda_env)}")
-    commands.append(f"cd {shlex.quote(config.remote_workdir)}")
+        commands.append(f"conda activate {shlex.quote(conda_env)}")
+    commands.append(f"cd {shlex.quote(workdir or config.remote_workdir)}")
     commands.append(invocation)
     return " && ".join(commands)
+
+
+def soc_build_target(chip: str) -> str:
+    try:
+        return {
+            "A2": "ascend910b",
+            "A3": "ascend910_93",
+            "A5": "ascend950",
+        }[chip.upper()]
+    except KeyError as exc:
+        raise ValueError(f"没有为 {chip} 配置源码构建目标") from exc
+
+
+def _remote_command_error(label: str, exc: subprocess.CalledProcessError) -> RuntimeError:
+    detail = (exc.stderr or exc.stdout or "远端命令执行失败").strip()
+    if len(detail) > 3000:
+        detail = detail[-3000:]
+    return RuntimeError(f"{label}失败：{detail}")
+
+
+def _run_remote_checked(
+    config: PerfRunnerConfig,
+    remote_command: str,
+    label: str,
+) -> subprocess.CompletedProcess[str]:
+    try:
+        return _run_command(_ssh_command(config, remote_command))
+    except subprocess.CalledProcessError as exc:
+        raise _remote_command_error(label, exc) from None
+
+
+def _validate_remote_execution_environment(
+    config: PerfRunnerConfig,
+    execution: ExecutionEnvironment,
+) -> None:
+    checks = [
+        f"test -f {shlex.quote(execution.env_script)}",
+        f"test -f {shlex.quote(config.remote_conda_sh)}",
+        f"test -d {shlex.quote(execution.source_repo)}/.git",
+        "python --version",
+    ]
+    if not execution.rebuild:
+        checks.append(f"test -f {shlex.quote(execution.source_repo)}/examples/flash_gated_delta_rule.py")
+    remote = _remote_execution_command(
+        config,
+        " && ".join(checks),
+        execution=execution,
+        workdir=execution.source_repo,
+    )
+    _run_remote_checked(config, remote, "执行环境检查")
+
+
+def _remote_build_worktree_path(config: PerfRunnerConfig) -> str:
+    root = _normalized_remote_absolute_path(config.remote_build_root, "远端构建目录")
+    return f"{root}/{uuid.uuid4().hex}"
+
+
+def _prepare_remote_source_build(
+    config: PerfRunnerConfig,
+    execution: ExecutionEnvironment,
+    chip: str,
+) -> dict[str, str]:
+    worktree = _remote_build_worktree_path(config)
+    repo = shlex.quote(execution.source_repo)
+    branch_ref = shlex.quote(f"refs/heads/{execution.branch}^{{commit}}")
+    origin_ref = shlex.quote(f"refs/remotes/origin/{execution.branch}^{{commit}}")
+    worktree_arg = shlex.quote(worktree)
+    prepare = (
+        f"git -C {repo} check-ref-format --branch {shlex.quote(execution.branch)}"
+        f" && commit=$(git -C {repo} rev-parse --verify {branch_ref} 2>/dev/null || true)"
+        " && if [ -z \"$commit\" ]; then"
+        f" git -C {repo} fetch --prune origin"
+        f" && commit=$(git -C {repo} rev-parse --verify {origin_ref} 2>/dev/null);"
+        " fi"
+        f" && test -n \"$commit\""
+        f" && mkdir -p {shlex.quote(str(PurePosixPath(worktree).parent))}"
+        f" && git -C {repo} worktree add --detach {worktree_arg} \"$commit\""
+        " && printf '%s\\n' \"$commit\""
+    )
+    try:
+        prepared = _run_remote_checked(config, prepare, "源码分支准备")
+        commit = next((line.strip() for line in reversed(prepared.stdout.splitlines()) if line.strip()), "")
+        if not re.fullmatch(r"[0-9a-fA-F]{40,64}", commit):
+            raise RuntimeError("源码分支准备失败：未能确定提交版本")
+        build = (
+            "python scripts/check_npu_env.py --build-only"
+            " && mkdir -p dist"
+            f" && FLA_NPU_SOC={shlex.quote(soc_build_target(chip))} "
+            "python -m pip wheel --no-build-isolation --no-deps . -w dist"
+            " && wheel=$(find dist -maxdepth 1 -type f "
+            "-name 'flash_linear_attention_npu-*.whl' -print | sort | tail -n 1)"
+            " && test -n \"$wheel\""
+            " && python -m pip install --force-reinstall --no-cache-dir --no-deps \"$wheel\""
+        )
+        remote_build = _remote_execution_command(
+            config,
+            build,
+            execution=execution,
+            workdir=worktree,
+        )
+        _run_remote_checked(config, remote_build, "源码编译安装")
+        return {
+            "branch": execution.branch,
+            "commit": commit,
+            "soc": soc_build_target(chip),
+            "worktree": worktree,
+        }
+    except Exception:
+        _cleanup_remote_source_build(config, execution.source_repo, worktree)
+        raise
+
+
+def _cleanup_remote_source_build(config: PerfRunnerConfig, source_repo: str, worktree: str) -> None:
+    if not worktree:
+        return
+    remote = (
+        f"git -C {shlex.quote(source_repo)} worktree remove --force {shlex.quote(worktree)} >/dev/null 2>&1"
+        f" || rm -rf {shlex.quote(worktree)}; "
+        f"git -C {shlex.quote(source_repo)} worktree prune >/dev/null 2>&1 || true"
+    )
+    try:
+        _run_command(_ssh_command(config, remote))
+    except Exception:
+        pass
 
 
 def _remote_output_path(config: PerfRunnerConfig, output: str) -> str:
@@ -701,6 +968,8 @@ def _import_module(script_name: str):
 def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict[str, Any]:
     config = ensure_runner_configured()
     prof_tool = normalize_prof_tool(payload)
+    chip = resolve_chip(payload, config)
+    execution = resolve_execution_environment(payload, config) if config.mode == "ssh" else None
     command = build_command(payload)
     profiler_command = build_profiler_command(payload, config)
     if config.dry_run:
@@ -711,9 +980,9 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
             "profiler_command": profiler_command,
             "prof_tool": prof_tool,
             "dry_run": True,
+            "execution_environment": execution_environment_summary(execution) if execution else {},
         }
 
-    chip = resolve_chip(payload, config)
     model_id = payload.get("model_id") or "gdn"
     attrs = payload.get("attributes") or {}
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
@@ -729,20 +998,36 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
     if config.mode == "ssh":
         if not config.ssh_host:
             raise RuntimeError("PERF_SSH_HOST 未配置")
-        before = _list_remote_prof_dirs(config, prof_tool)
-        invocation = build_prof_invocation(
-            config,
-            prof_tool=prof_tool,
-            output=remote_output,
-            script=remote_script,
-            py_args=py_args,
-            kernel_name=kernel_name,
-            warm_up=warm_up,
-            launch_count=launch_count,
-        )
-        remote = _remote_execution_command(config, invocation)
-        _run_command(_ssh_command(config, remote))
-        after = _list_remote_prof_dirs(config, prof_tool)
+        assert execution is not None
+        build_info: dict[str, str] = {}
+        build_worktree = ""
+        if execution.customized:
+            _validate_remote_execution_environment(config, execution)
+            remote_script = f"{execution.source_repo}/examples/flash_gated_delta_rule.py"
+        try:
+            if execution.rebuild:
+                build_info = _prepare_remote_source_build(config, execution, config.chip)
+                build_worktree = build_info["worktree"]
+                remote_script = f"{build_worktree}/examples/flash_gated_delta_rule.py"
+            before = _list_remote_prof_dirs(config, prof_tool)
+            invocation = build_prof_invocation(
+                config,
+                prof_tool=prof_tool,
+                output=remote_output,
+                script=remote_script,
+                py_args=py_args,
+                kernel_name=kernel_name,
+                warm_up=warm_up,
+                launch_count=launch_count,
+            )
+            profiler_command = invocation
+            remote = _remote_execution_command(config, invocation, execution=execution)
+            command = " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
+            _run_remote_checked(config, remote, prof_tool_label(prof_tool))
+            after = _list_remote_prof_dirs(config, prof_tool)
+        finally:
+            if build_worktree:
+                _cleanup_remote_source_build(config, execution.source_repo, build_worktree)
         prof_name = _resolve_new_prof_dir(before, after, prof_tool)
         local_dir = local_root / prof_name
         local_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -826,6 +1111,10 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
         "prof_tool": prof_tool,
         "prof_dir": str(prof_dir),
         "prof_source": prof_dir.name,
+        "execution_environment": {
+            **execution_environment_summary(execution),
+            **({"commit": build_info.get("commit"), "soc": build_info.get("soc")} if build_info else {}),
+        } if execution else {},
         "snapshot": snapshot,
         "data": data,
     }

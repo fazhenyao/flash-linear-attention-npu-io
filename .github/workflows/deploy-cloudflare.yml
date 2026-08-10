@@ -70,7 +70,7 @@ jobs:
             exit 1
           fi
           node --check cloudflare/worker.js
-          node --test tests/worker_artifact_storage.test.mjs
+          npm run test:worker
           npx wrangler --version
 
       - name: Apply remote D1 migrations

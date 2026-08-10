@@ -228,6 +228,29 @@
               </div>
               <div id="triggerNpuProcessDetails" class="perf-npu-process-details"></div>
             </section>
+            <fieldset id="triggerExecutionEnvironment" class="perf-attr-fieldset perf-execution-environment admin-only">
+              <legend>执行环境</legend>
+              <label class="perf-form-fieldwide">CANN 路径
+                <input id="triggerCannPath" type="text" autocomplete="off">
+              </label>
+              <label>Conda 环境
+                <input id="triggerCondaEnv" type="text" autocomplete="off">
+              </label>
+              <label>构建目标
+                <input id="triggerBuildSoc" type="text" readonly>
+              </label>
+              <label class="perf-form-fieldwide">源码仓库路径
+                <input id="triggerSourceRepo" type="text" autocomplete="off">
+              </label>
+              <label class="perf-form-fieldwide">重新编译安装
+                <span class="perf-check-field">
+                  <input id="triggerRebuildSource" type="checkbox">
+                </span>
+              </label>
+              <label id="triggerSourceBranchWrap" class="perf-form-fieldwide">源码分支
+                <input id="triggerSourceBranch" type="text" autocomplete="off" disabled>
+              </label>
+            </fieldset>
             <label>测试模式
               <select id="triggerProfTool">
                 <option value="msprof">msprof（整网性能）</option>
@@ -417,6 +440,7 @@
       npuStatusPollTimer: null,
       npuStatusRefreshing: false,
       expandedNpuProcessKey: "",
+      triggerExecutionEnvironmentSynced: "",
     };
 
     init().catch((error) => {
@@ -466,6 +490,7 @@
       document.querySelector("#logoutBtn").addEventListener("click", onLogout);
       document.querySelector("#addModelBtn").addEventListener("click", onAddModel);
       document.querySelector("#triggerProfTool").addEventListener("change", updateTriggerProfToolUI);
+      document.querySelector("#triggerRebuildSource").addEventListener("change", updateTriggerBuildUI);
       document.querySelector("#attrVarlen").addEventListener("change", updateVarlenFieldsUI);
       bindCommandDialogEvents();
       document.querySelector("#netCaseDownloadBtn").addEventListener("click", downloadNetworkProfArchive);
@@ -963,9 +988,11 @@
       state.selectedRunnerId = document.querySelector("#triggerRunner").value;
       localStorage.setItem("fla-perf-runner-id", state.selectedRunnerId);
       state.triggerDeviceSynced = null;
+      state.triggerExecutionEnvironmentSynced = "";
       state.expandedNpuProcessKey = "";
       syncTriggerDeviceFromRunner(true);
       syncTriggerOpDefaultsFromRunner();
+      syncTriggerExecutionEnvironment(true);
       updateTriggerEnvFromRunner();
       renderNpuDeviceStatus();
     }
@@ -1144,6 +1171,56 @@
       node.textContent = `执行环境：${runner.name || runner.id} · ${status} · ${chip} 芯片 · 默认 NPU ${device}`;
     }
 
+    function triggerBuildSoc(chip) {
+      return ({ A2: "ascend910b", A3: "ascend910_93", A5: "ascend950" })[String(chip || "").toUpperCase()] || "";
+    }
+
+    function syncTriggerExecutionEnvironment(force = false) {
+      const runner = selectedTriggerRunner();
+      const defaults = runner?.capabilities?.execution_environment?.defaults;
+      if (!runner || !defaults || typeof defaults !== "object") return;
+      if (!force && state.triggerExecutionEnvironmentSynced === runner.id) {
+        document.querySelector("#triggerBuildSoc").value = triggerBuildSoc(triggerRunnerChip(runner));
+        updateTriggerBuildUI();
+        return;
+      }
+      document.querySelector("#triggerCannPath").value = defaults.cann_path || "";
+      document.querySelector("#triggerCondaEnv").value = defaults.conda_env || "";
+      document.querySelector("#triggerSourceRepo").value = defaults.source_repo || "";
+      document.querySelector("#triggerRebuildSource").checked = Boolean(defaults.rebuild);
+      document.querySelector("#triggerSourceBranch").value = defaults.branch || "";
+      document.querySelector("#triggerBuildSoc").value = triggerBuildSoc(triggerRunnerChip(runner));
+      state.triggerExecutionEnvironmentSynced = runner.id;
+      updateTriggerBuildUI();
+    }
+
+    function updateTriggerBuildUI() {
+      const runner = selectedTriggerRunner();
+      const supported = Boolean(runner?.capabilities?.execution_environment?.source_build);
+      const checkbox = document.querySelector("#triggerRebuildSource");
+      const branch = document.querySelector("#triggerSourceBranch");
+      checkbox.disabled = !supported;
+      if (!supported) checkbox.checked = false;
+      branch.disabled = !checkbox.checked;
+      branch.required = checkbox.checked;
+    }
+
+    function readTriggerExecutionEnvironment() {
+      if (state.user?.role !== "admin") return null;
+      const value = {
+        cann_path: document.querySelector("#triggerCannPath").value.trim(),
+        conda_env: document.querySelector("#triggerCondaEnv").value.trim(),
+        source_repo: document.querySelector("#triggerSourceRepo").value.trim(),
+        rebuild: document.querySelector("#triggerRebuildSource").checked,
+        branch: document.querySelector("#triggerSourceBranch").value.trim(),
+      };
+      if (!value.cann_path || !value.conda_env || !value.source_repo) {
+        throw new Error("CANN 路径、Conda 环境和源码仓库路径不能为空。");
+      }
+      if (value.rebuild && !value.branch) throw new Error("重新编译安装时必须填写源码分支。");
+      return value;
+    }
+
     function readTriggerDevice() {
       const raw = document.querySelector("#triggerDevice").value.trim();
       const fallback = triggerRunnerDevice(selectedTriggerRunner());
@@ -1264,6 +1341,7 @@
           syncTriggerRunnerOptions();
           syncTriggerDeviceFromRunner();
           syncTriggerOpDefaultsFromRunner();
+          syncTriggerExecutionEnvironment();
           return;
         } catch {
           state.runner = null;
@@ -1279,6 +1357,7 @@
         syncTriggerRunnerOptions();
         syncTriggerDeviceFromRunner();
         syncTriggerOpDefaultsFromRunner();
+        syncTriggerExecutionEnvironment();
       } catch {
         state.runner = null;
       }
@@ -1453,6 +1532,13 @@
         idempotency_key: crypto.randomUUID(),
         attributes,
       };
+      try {
+        const executionEnvironment = readTriggerExecutionEnvironment();
+        if (executionEnvironment) payload.execution_environment = executionEnvironment;
+      } catch (error) {
+        alert(error.message || String(error));
+        return;
+      }
       if (runner?.id) payload.target_runner_id = runner.id;
       if (profTool === "msprof_op") {
         try {
@@ -1481,6 +1567,7 @@
       renderMeta();
       fillFilters();
       updateTriggerEnvFromRunner();
+      syncTriggerExecutionEnvironment();
       renderNpuDeviceStatus();
       renderNetworkTab();
       renderCaseTab();

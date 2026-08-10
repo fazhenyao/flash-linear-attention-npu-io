@@ -425,6 +425,8 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-attr-fieldset { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fffdf8; }
 .perf-attr-fieldset legend { padding:0 6px; color:#87570a; font-size:12px; font-weight:950; }
 .perf-attr-fieldset .perf-check-field { width:100%; box-sizing:border-box; }
+.perf-execution-environment { grid-column:1 / -1; }
+.perf-execution-environment input[readonly] { color:#6f665a; background:#f1ede5; }
 .perf-check-field-compact { width:auto; min-width:34px; justify-content:center; }
 .perf-varlen-fields {
   grid-column:1 / -1;
@@ -610,6 +612,7 @@ body.editing section.admin-only { display:none !important; }
 body.editing th.admin-only,body.editing td.admin-only { display:none !important; }
 body.admin-editing .admin-only { display:inline-flex !important; }
 body.admin-editing section.admin-only { display:block !important; }
+body.admin-editing fieldset.admin-only { display:grid !important; }
 body.admin-editing th.admin-only,body.admin-editing td.admin-only { display:table-cell !important; }
 .token-box input { min-width:270px; }
 .toolbar button { align-self:flex-end; }

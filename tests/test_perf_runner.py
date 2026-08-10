@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from backend.perf_runner import (
+    _prepare_remote_source_build,
     _remote_execution_command,
     _remote_output_path,
     _list_remote_prof_dirs,
@@ -21,6 +22,8 @@ from backend.perf_runner import (
     parse_npu_smi_status,
     prof_output_root,
     resolve_chip,
+    resolve_execution_environment,
+    soc_build_target,
 )
 from backend.runner_agent import RunnerAgent
 from scripts.cube_theoretical_flops import compute_mfu
@@ -37,6 +40,10 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             "PERF_REMOTE_PATH_PREPEND": "/opt/ascend/profiler/bin:/opt/ascend/msopt/bin",
             "PERF_REMOTE_CONDA_SH": "/data/miniconda3/etc/profile.d/conda.sh",
             "PERF_REMOTE_CONDA_ENV": "fla_dump",
+            "PERF_REMOTE_SOURCE_REPO": "/workspace/user/flash-linear-attention-npu",
+            "PERF_ALLOWED_CANN_ROOTS": "/usr/local/Ascend;/data/user/cann",
+            "PERF_ALLOWED_SOURCE_ROOTS": "/workspace/user",
+            "PERF_REMOTE_BUILD_ROOT": "/tmp/fla-runner-builds",
         }
 
     def test_remote_command_loads_environment_before_changing_directory(self):
@@ -63,6 +70,84 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             "/workspace/project/data/prof_gdr",
         )
         self.assertEqual(_remote_output_path(config, "/data/prof_gdr"), "/data/prof_gdr")
+
+    def test_custom_execution_environment_is_limited_to_runner_roots(self):
+        with patch.dict(os.environ, self.environment, clear=False):
+            config = load_config()
+        payload = {
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": True,
+                "branch": "feature/a5",
+            }
+        }
+
+        execution = resolve_execution_environment(payload, config)
+
+        self.assertEqual(execution.env_script, "/data/user/cann/7_20/ascend-toolkit/set_env.sh")
+        self.assertEqual(execution.conda_env, "feature_env")
+        with self.assertRaisesRegex(ValueError, "源码仓库路径不在"):
+            resolve_execution_environment({
+                "execution_environment": {
+                    **payload["execution_environment"],
+                    "source_repo": "/etc/flash-linear-attention-npu",
+                }
+            }, config)
+
+    def test_custom_remote_command_uses_selected_cann_and_conda(self):
+        with patch.dict(os.environ, self.environment, clear=False):
+            config = load_config()
+        execution = resolve_execution_environment({
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": False,
+                "branch": "",
+            }
+        }, config)
+
+        command = _remote_execution_command(config, "python --version", execution=execution)
+
+        self.assertIn(". /data/user/cann/7_20/ascend-toolkit/set_env.sh", command)
+        self.assertIn("conda activate feature_env", command)
+
+    @patch("backend.perf_runner._run_remote_checked")
+    def test_source_build_uses_readme_commands_and_chip_soc(self, run_remote):
+        run_remote.side_effect = [
+            SimpleNamespace(stdout="a" * 40 + "\n"),
+            SimpleNamespace(stdout="Successfully installed\n"),
+        ]
+        with patch.dict(os.environ, {**self.environment, "PERF_CHIP": "A5"}, clear=False):
+            config = load_config()
+        execution = resolve_execution_environment({
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": True,
+                "branch": "feature/a5",
+            }
+        }, config)
+
+        result = _prepare_remote_source_build(config, execution, config.chip)
+
+        prepare_command = run_remote.call_args_list[0].args[1]
+        build_command = run_remote.call_args_list[1].args[1]
+        self.assertIn("refs/heads/feature/a5^{commit}", prepare_command)
+        self.assertLess(prepare_command.index("refs/heads/"), prepare_command.index("fetch --prune origin"))
+        self.assertIn("python scripts/check_npu_env.py --build-only", build_command)
+        self.assertIn("FLA_NPU_SOC=ascend950", build_command)
+        self.assertIn("python -m pip wheel --no-build-isolation --no-deps", build_command)
+        self.assertIn("--force-reinstall --no-cache-dir --no-deps", build_command)
+        self.assertEqual(result["commit"], "a" * 40)
+
+    def test_build_soc_is_fixed_by_runner_chip(self):
+        self.assertEqual(soc_build_target("A2"), "ascend910b")
+        self.assertEqual(soc_build_target("A3"), "ascend910_93")
+        self.assertEqual(soc_build_target("A5"), "ascend950")
 
     def test_ssh_dry_run_keeps_posix_output_path_on_windows(self):
         with patch.dict(os.environ, self.environment, clear=False):

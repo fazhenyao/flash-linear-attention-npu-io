@@ -22,9 +22,21 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .perf_runner import collect_npu_device_status, execute, load_config, runner_status
+    from .perf_runner import (
+        collect_npu_device_status,
+        execute,
+        execution_environment_defaults,
+        load_config,
+        runner_status,
+    )
 except ImportError:
-    from perf_runner import collect_npu_device_status, execute, load_config, runner_status  # type: ignore
+    from perf_runner import (  # type: ignore
+        collect_npu_device_status,
+        execute,
+        execution_environment_defaults,
+        load_config,
+        runner_status,
+    )
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -189,6 +201,7 @@ class RunnerAgent:
 
     def capabilities(self, *, refresh_npu: bool = True) -> dict[str, Any]:
         status = runner_status()
+        perf_config = load_config()
         device = status.get("npu_device")
         chip = status.get("chip")
         npu_status = self.npu_status(refresh=refresh_npu)
@@ -203,7 +216,12 @@ class RunnerAgent:
             "op_launch_count": status.get("op_launch_count"),
             "max_concurrency": self.config.max_concurrency,
             "npu_status": npu_status,
-            "agent_version": "1.2.0",
+            "execution_environment": {
+                "defaults": execution_environment_defaults(perf_config),
+                "customizable": perf_config.mode == "ssh",
+                "source_build": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
+            },
+            "agent_version": "1.3.0",
         }
 
     def npu_status(self, *, refresh: bool = True) -> dict[str, Any]:
@@ -432,7 +450,10 @@ class RunnerAgent:
                     "message": result.get("message") or "性能测试完成",
                     "command": result.get("command") or "",
                     "profiler_command": result.get("profiler_command") or "",
-                    "environment": self.environment_summary(),
+                    "environment": {
+                        **self.environment_summary(),
+                        **(result.get("execution_environment") or {}),
+                    },
                     "metrics": extract_snapshot_metrics(snapshot),
                     "snapshot": snapshot,
                     "perf_data": result.get("data") or {},
@@ -440,6 +461,7 @@ class RunnerAgent:
                         "message": result.get("message") or "",
                         "prof_tool": result.get("prof_tool") or request.get("prof_tool"),
                         "prof_source": result.get("prof_source") or snapshot.get("prof_source"),
+                        "execution_environment": result.get("execution_environment") or {},
                     },
                     "artifacts": artifacts,
                 }),
@@ -466,7 +488,7 @@ class RunnerAgent:
     def environment_summary(self) -> dict[str, Any]:
         status = runner_status()
         return {
-            "agent_version": "1.2.0",
+            "agent_version": "1.3.0",
             "runner_id": self.config.runner_id,
             "mode": status.get("mode"),
             "chip": status.get("chip"),
