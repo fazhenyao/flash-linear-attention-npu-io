@@ -191,24 +191,9 @@ def _valid_source_branch(branch: str) -> bool:
     )
 
 
-def list_remote_source_branches(config: PerfRunnerConfig, source_repo: str) -> list[dict[str, str]]:
-    if config.mode != "ssh":
-        raise ValueError("源码分支查询仅支持 SSH Relay")
-    repo = _normalized_remote_absolute_path(source_repo, "源码仓库路径")
-    roots = config.allowed_source_roots or (
-        (str(PurePosixPath(config.remote_source_repo).parent),) if config.remote_source_repo else ()
-    )
-    if not roots or not _path_allowed(repo, roots):
-        raise ValueError("源码仓库路径不在 Relay 允许目录内")
-    command = (
-        f"test -d {shlex.quote(repo)}/.git"
-        f" && (git -C {shlex.quote(repo)} fetch --prune origin >/dev/null 2>&1 || true)"
-        f" && git -C {shlex.quote(repo)} for-each-ref "
-        f"--format={shlex.quote('%(refname)')} refs/heads refs/remotes/origin"
-    )
-    result = _run_remote_checked(config, command, "源码分支查询")
+def _parse_source_branch_refs(output: str) -> list[dict[str, str]]:
     branches: set[tuple[str, str]] = set()
-    for raw in result.stdout.splitlines():
+    for raw in output.splitlines():
         ref = raw.strip()
         if ref.startswith("refs/heads/"):
             source, name = "local", ref.removeprefix("refs/heads/")
@@ -219,9 +204,39 @@ def list_remote_source_branches(config: PerfRunnerConfig, source_repo: str) -> l
         if name != "HEAD" and _valid_source_branch(name):
             branches.add((source, name))
     ordered = sorted(branches, key=lambda item: (item[0] != "local", item[1].casefold()))
+    return [{"source": source, "name": name} for source, name in ordered[:400]]
+
+
+def list_remote_source_branches(config: PerfRunnerConfig, source_repo: str) -> list[dict[str, str]]:
+    if config.mode != "ssh":
+        raise ValueError("源码分支查询仅支持 SSH Relay")
+    repo = _normalized_remote_absolute_path(source_repo, "源码仓库路径")
+    roots = config.allowed_source_roots or (
+        (str(PurePosixPath(config.remote_source_repo).parent),) if config.remote_source_repo else ()
+    )
+    if not roots or not _path_allowed(repo, roots):
+        raise ValueError("源码仓库路径不在 Relay 允许目录内")
+    list_command = (
+        f"test -d {shlex.quote(repo)}/.git"
+        f" && git -C {shlex.quote(repo)} for-each-ref "
+        f"--format={shlex.quote('%(refname)')} refs/heads refs/remotes/origin"
+    )
+    result = _run_remote_checked(config, list_command, "源码分支查询")
+    branches = _parse_source_branch_refs(result.stdout)
+    refresh_command = (
+        "export GIT_TERMINAL_PROMPT=0; "
+        f"timeout --signal=TERM --kill-after=2s 8s git -C {shlex.quote(repo)} "
+        "fetch --prune origin >/dev/null 2>&1"
+    )
+    try:
+        _run_remote_checked(config, refresh_command, "远程源码分支刷新")
+        refreshed = _run_remote_checked(config, list_command, "源码分支查询")
+        branches = _parse_source_branch_refs(refreshed.stdout) or branches
+    except RuntimeError:
+        pass
     if not branches:
         raise RuntimeError("源码仓库没有可用的本地或远程分支")
-    return [{"source": source, "name": name} for source, name in ordered[:400]]
+    return branches
 
 
 def configured_cann_path(config: PerfRunnerConfig) -> str:
@@ -929,7 +944,9 @@ def _prepare_remote_source_build(
     if execution.branch_source == "remote":
         resolve_commit = (
             f"commit=$(git -C {repo} rev-parse --verify {origin_ref} 2>/dev/null || true)"
-            f" && (git -C {repo} fetch --prune origin >/dev/null 2>&1 || true)"
+            " && (export GIT_TERMINAL_PROMPT=0; "
+            f"timeout --signal=TERM --kill-after=2s 30s git -C {repo} "
+            "fetch --prune origin >/dev/null 2>&1 || true)"
             f" && updated=$(git -C {repo} rev-parse --verify {origin_ref} 2>/dev/null || true)"
             " && if [ -n \"$updated\" ]; then commit=\"$updated\"; fi"
         )

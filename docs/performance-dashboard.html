@@ -1261,7 +1261,7 @@
         : [];
       const placeholder = state.sourceBranchesRefreshing
         ? "正在读取分支…"
-        : (status?.error && matchesRepo ? "分支读取失败" : "请选择源码分支");
+        : (status?.error && matchesRepo && !branches.length ? "分支读取失败" : "请选择源码分支");
       select.innerHTML = "";
       select.add(new Option(placeholder, ""));
       [
@@ -1295,6 +1295,8 @@
         hint.textContent = "当前 Relay 不支持源码分支查询。";
       } else if (state.sourceBranchesRefreshing) {
         hint.textContent = `正在从 ${repo} 刷新源码分支。`;
+      } else if (matchesRepo && status?.error && branches.length) {
+        hint.textContent = `刷新失败，继续使用上次读取的 ${branches.length} 个分支：${status.error}`;
       } else if (matchesRepo && status?.error) {
         hint.textContent = status.error;
       } else if (branches.length) {
@@ -1340,7 +1342,9 @@
           const refreshedRunner = triggerRunnerAgents().find((agent) => agent.id === runner.id);
           const status = triggerSourceBranchesStatus(refreshedRunner);
           if (status?.refresh_request_id === request.refresh_id) {
-            if (status.error) throw new Error(status.error);
+            if (status.error && !(Array.isArray(status.branches) && status.branches.length)) {
+              throw new Error(status.error);
+            }
             return;
           }
         }

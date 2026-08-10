@@ -136,12 +136,31 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             {"source": "remote", "name": "feature/remote"},
             {"source": "remote", "name": "main"},
         ])
-        self.assertIn("fetch --prune origin", run_remote.call_args.args[1])
-        self.assertIn("|| true", run_remote.call_args.args[1])
-        self.assertIn("refs/heads", run_remote.call_args.args[1])
-        self.assertIn("refs/remotes/origin", run_remote.call_args.args[1])
+        list_command = run_remote.call_args_list[0].args[1]
+        refresh_command = run_remote.call_args_list[1].args[1]
+        self.assertNotIn("fetch --prune origin", list_command)
+        self.assertIn("refs/heads", list_command)
+        self.assertIn("refs/remotes/origin", list_command)
+        self.assertIn("timeout --signal=TERM --kill-after=2s 8s", refresh_command)
+        self.assertIn("fetch --prune origin", refresh_command)
         with self.assertRaisesRegex(ValueError, "不在 Relay 允许目录内"):
             list_remote_source_branches(config, "/etc/private-repo")
+
+    @patch("backend.perf_runner._run_remote_checked")
+    def test_source_branch_query_keeps_existing_refs_when_origin_refresh_fails(self, run_remote):
+        run_remote.side_effect = [
+            SimpleNamespace(stdout="refs/heads/main\nrefs/remotes/origin/cached\n"),
+            RuntimeError("origin unavailable"),
+        ]
+        with patch.dict(os.environ, self.environment, clear=False):
+            config = load_config()
+
+        branches = list_remote_source_branches(config, "/workspace/user/flash-linear-attention-npu")
+
+        self.assertEqual(branches, [
+            {"source": "local", "name": "main"},
+            {"source": "remote", "name": "cached"},
+        ])
 
     def test_custom_remote_command_uses_selected_cann_and_conda(self):
         with patch.dict(os.environ, self.environment, clear=False):
@@ -518,6 +537,51 @@ __END_NPU__
         ])
         self.assertFalse(agent._source_branches_refreshing)
         agent.send_runner_heartbeat.assert_called_once()
+
+    @patch("backend.runner_agent.list_remote_source_branches")
+    @patch("backend.runner_agent.load_config")
+    def test_source_branch_refresh_failure_preserves_cached_branches(self, load_runner_config, list_branches):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.config = SimpleNamespace(runner_id="relay-test")
+        agent.current_jobs = 0
+        agent._source_branches_lock = threading.Lock()
+        agent._source_branches_refreshing = True
+        agent._source_branches_pending = None
+        cached = [{"source": "local", "name": "main"}]
+        agent._source_branches = {
+            "source_repo": "/workspace/user/repo",
+            "branches": cached,
+            "error": "",
+        }
+        agent.health = Mock(return_value={"vpn_connected": False, "npu_reachable": False})
+        agent.send_runner_heartbeat = Mock()
+        load_runner_config.return_value = Mock()
+        list_branches.side_effect = RuntimeError("SSH unavailable")
+
+        agent._refresh_source_branches("branches-failed", "/workspace/user/repo")
+
+        self.assertEqual(agent._source_branches["branches"], cached)
+        self.assertEqual(agent._source_branches["error"], "SSH unavailable")
+        self.assertTrue(agent._source_branches["stale"])
+        self.assertFalse(agent._source_branches_refreshing)
+        agent.send_runner_heartbeat.assert_called_once()
+
+    def test_source_branch_cache_survives_agent_restart(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config = SimpleNamespace(runner_id="relay-test", state_dir=Path(temp_dir))
+            agent = RunnerAgent(config)
+            cached = [{"source": "remote", "name": "feature/cached"}]
+            agent._save_source_branches_cache({
+                "checked_at": "2026-08-11T00:00:00Z",
+                "source_repo": "/workspace/user/repo",
+                "branches": cached,
+            })
+
+            restored = RunnerAgent(config)
+
+            self.assertEqual(restored._source_branches["branches"], cached)
+            self.assertEqual(restored._source_branches["source_repo"], "/workspace/user/repo")
+            self.assertTrue(restored._source_branches["stale"])
 
     @patch("backend.perf_runner.subprocess.run")
     def test_background_commands_do_not_inherit_stdin(self, run):
