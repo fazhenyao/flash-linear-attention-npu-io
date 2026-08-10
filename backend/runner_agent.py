@@ -173,6 +173,7 @@ class RunnerAgent:
         self.current_jobs = 0
         self._npu_status_lock = threading.Lock()
         self._npu_status_refreshing = False
+        self._npu_status_pending_refresh_id: str | None = None
         self._npu_status_checked_at = 0.0
         self._npu_status = {
             "updated_at": None,
@@ -202,7 +203,7 @@ class RunnerAgent:
             "op_launch_count": status.get("op_launch_count"),
             "max_concurrency": self.config.max_concurrency,
             "npu_status": npu_status,
-            "agent_version": "1.1.0",
+            "agent_version": "1.2.0",
         }
 
     def npu_status(self, *, refresh: bool = True) -> dict[str, Any]:
@@ -215,6 +216,7 @@ class RunnerAgent:
                 self._npu_status_checked_at = now
                 threading.Thread(
                     target=self._refresh_npu_status,
+                    args=(None,),
                     name=f"npu-status-{self.config.runner_id}",
                     daemon=True,
                 ).start()
@@ -223,7 +225,35 @@ class RunnerAgent:
                 "devices": [dict(device) for device in self._npu_status.get("devices", [])],
             }
 
-    def _refresh_npu_status(self) -> None:
+    def request_npu_status_refresh(self, refresh_id: str) -> None:
+        refresh_id = str(refresh_id or "").strip()
+        if not refresh_id:
+            return
+        with self._npu_status_lock:
+            if refresh_id == self._npu_status.get("refresh_request_id"):
+                return
+            if refresh_id == self._npu_status_pending_refresh_id:
+                return
+            if self._npu_status_refreshing:
+                self._npu_status_pending_refresh_id = refresh_id
+                return
+            self._npu_status_refreshing = True
+            self._npu_status_checked_at = time.monotonic()
+            threading.Thread(
+                target=self._refresh_npu_status,
+                args=(refresh_id,),
+                name=f"npu-status-forced-{self.config.runner_id}",
+                daemon=True,
+            ).start()
+
+    def _handle_runner_control(self, response: dict[str, Any]) -> None:
+        refresh_id = response.get("runner", {}).get("npu_status_refresh_id")
+        if refresh_id:
+            self.request_npu_status_refresh(str(refresh_id))
+
+    def _refresh_npu_status(self, refresh_id: str | None) -> None:
+        with self._npu_status_lock:
+            completed_refresh_id = self._npu_status.get("refresh_request_id")
         try:
             perf_config = load_config()
             devices = collect_npu_device_status(
@@ -238,6 +268,7 @@ class RunnerAgent:
                 "checked_at": checked_at,
                 "devices": devices,
                 "error": "" if available else "npu-smi 未返回可用设备",
+                "refresh_request_id": refresh_id or completed_refresh_id,
             }
         except Exception as exc:
             with self._npu_status_lock:
@@ -247,11 +278,22 @@ class RunnerAgent:
                 "checked_at": utc_now(),
                 "devices": previous.get("devices", []),
                 "error": str(exc)[:500],
+                "refresh_request_id": refresh_id or previous.get("refresh_request_id"),
             }
         with self._npu_status_lock:
             self._npu_status = status
             self._npu_status_checked_at = time.monotonic()
             self._npu_status_refreshing = False
+            pending_refresh_id = self._npu_status_pending_refresh_id
+            self._npu_status_pending_refresh_id = None
+            if pending_refresh_id and pending_refresh_id != status.get("refresh_request_id"):
+                self._npu_status_refreshing = True
+                threading.Thread(
+                    target=self._refresh_npu_status,
+                    args=(pending_refresh_id,),
+                    name=f"npu-status-forced-{self.config.runner_id}",
+                    daemon=True,
+                ).start()
         try:
             health = self.health()
             self.send_runner_heartbeat(health, current_jobs=self.current_jobs)
@@ -292,11 +334,15 @@ class RunnerAgent:
         }
 
     def send_runner_heartbeat(self, health: dict[str, Any], current_jobs: int = 0) -> dict[str, Any]:
-        return self.api.post("/api/runner/heartbeat", self.runner_payload(health, current_jobs))
+        response = self.api.post("/api/runner/heartbeat", self.runner_payload(health, current_jobs))
+        self._handle_runner_control(response)
+        return response
 
     def register(self) -> dict[str, Any]:
         health = self.health()
-        return self.api.post("/api/runner/register", self.runner_payload(health))
+        response = self.api.post("/api/runner/register", self.runner_payload(health))
+        self._handle_runner_control(response)
+        return response
 
     def claim(self, health: dict[str, Any]) -> dict[str, Any] | None:
         response = self.api.post("/api/runner/jobs/claim", self.runner_payload(health))
@@ -420,7 +466,7 @@ class RunnerAgent:
     def environment_summary(self) -> dict[str, Any]:
         status = runner_status()
         return {
-            "agent_version": "1.1.0",
+            "agent_version": "1.2.0",
             "runner_id": self.config.runner_id,
             "mode": status.get("mode"),
             "chip": status.get("chip"),

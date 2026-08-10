@@ -21,7 +21,6 @@ PROF_SOURCE_PATTERN = re.compile(r"^(OPPROF_|PROF_)", re.IGNORECASE)
 MAX_PROF_UPLOAD_BYTES = 512 * 1024 * 1024
 VALID_PROF_TOOLS = {"msprof", "msprof_op", "msprof_op_sim"}
 VALID_CHIPS = {"A2", "A3", "A5"}
-NPU_STATUS_PROCESS_LIMIT = 12
 ATTR_DEFAULTS = {
     "batch": 1,
     "query_heads": 32,
@@ -543,10 +542,10 @@ def parse_npu_smi_status(output: str, device_ids: list[int]) -> list[dict[str, A
         processes = [
             {
                 "pid": int(match.group(1)),
-                "name": match.group(2).strip()[:80],
+                "name": match.group(2).strip(),
                 "memory_mb": int(match.group(3)),
             }
-            for match in process_matches[:NPU_STATUS_PROCESS_LIMIT]
+            for match in process_matches
         ]
         process_count = len(process_matches)
         utilization_values = [
@@ -571,7 +570,7 @@ def parse_npu_smi_status(output: str, device_ids: list[int]) -> list[dict[str, A
             "process_count": process_count,
             "process_memory_mb": sum(int(match.group(3)) for match in process_matches),
             "processes": processes,
-            "processes_truncated": process_count > len(processes),
+            "processes_truncated": False,
         })
     return devices
 
