@@ -21,6 +21,7 @@ PROF_SOURCE_PATTERN = re.compile(r"^(OPPROF_|PROF_)", re.IGNORECASE)
 MAX_PROF_UPLOAD_BYTES = 512 * 1024 * 1024
 VALID_PROF_TOOLS = {"msprof", "msprof_op", "msprof_op_sim"}
 VALID_CHIPS = {"A2", "A3", "A5"}
+NPU_STATUS_PROCESS_LIMIT = 12
 ATTR_DEFAULTS = {
     "batch": 1,
     "query_heads": 32,
@@ -498,6 +499,119 @@ def _ssh_connection_options() -> list[str]:
         "-o", "ServerAliveInterval=15",
         "-o", "ServerAliveCountMax=4",
     ]
+
+
+def _npu_metric(output: str, label: str) -> int | float | None:
+    match = re.search(
+        rf"^\s*{re.escape(label)}\s*:\s*(-?\d+(?:\.\d+)?)\s*$",
+        output,
+        re.MULTILINE,
+    )
+    if not match:
+        return None
+    value = float(match.group(1))
+    return int(value) if value.is_integer() else value
+
+
+def parse_npu_smi_status(output: str, device_ids: list[int]) -> list[dict[str, Any]]:
+    """Parse the bounded per-device output emitted by collect_npu_device_status."""
+    blocks = {
+        int(match.group(1)): match.group(2)
+        for match in re.finditer(
+            r"^__NPU__:(\d+)\r?\n(.*?)^__END_NPU__\s*$",
+            output,
+            re.MULTILINE | re.DOTALL,
+        )
+    }
+    devices = []
+    process_pattern = re.compile(
+        r"Process id:\s*(\d+)\s+Process name:\s*(.*?)\s+Process memory\(MB\):\s*(\d+)",
+    )
+    for device_id in device_ids:
+        block = blocks.get(device_id, "")
+        usages, _, process_output = block.partition("__PROCESSES__")
+        hbm_capacity = _npu_metric(usages, "HBM Capacity(MB)")
+        hbm_usage = _npu_metric(usages, "HBM Usage Rate(%)")
+        npu_utilization = _npu_metric(usages, "NPU Utilization(%)")
+        aicore_usage = _npu_metric(usages, "Aicore Usage Rate(%)")
+        aivector_usage = _npu_metric(usages, "Aivector Usage Rate(%)")
+        available = any(
+            value is not None
+            for value in (hbm_capacity, hbm_usage, npu_utilization, aicore_usage, aivector_usage)
+        )
+        process_matches = list(process_pattern.finditer(process_output)) if available else []
+        processes = [
+            {
+                "pid": int(match.group(1)),
+                "name": match.group(2).strip()[:80],
+                "memory_mb": int(match.group(3)),
+            }
+            for match in process_matches[:NPU_STATUS_PROCESS_LIMIT]
+        ]
+        process_count = len(process_matches)
+        utilization_values = [
+            float(value)
+            for value in (npu_utilization, aicore_usage, aivector_usage)
+            if value is not None
+        ]
+        occupied = available and (process_count > 0 or any(value > 0 for value in utilization_values))
+        hbm_used = None
+        if hbm_capacity is not None and hbm_usage is not None:
+            hbm_used = round(float(hbm_capacity) * float(hbm_usage) / 100)
+        devices.append({
+            "id": device_id,
+            "available": available,
+            "status": "busy" if occupied else ("idle" if available else "unavailable"),
+            "npu_utilization_pct": npu_utilization,
+            "aicore_usage_pct": aicore_usage,
+            "aivector_usage_pct": aivector_usage,
+            "hbm_capacity_mb": hbm_capacity,
+            "hbm_usage_pct": hbm_usage,
+            "hbm_used_mb": hbm_used,
+            "process_count": process_count,
+            "process_memory_mb": sum(int(match.group(3)) for match in process_matches),
+            "processes": processes,
+            "processes_truncated": process_count > len(processes),
+        })
+    return devices
+
+
+def collect_npu_device_status(
+    config: PerfRunnerConfig,
+    *,
+    device_count: int = 8,
+    timeout_seconds: int = 60,
+) -> list[dict[str, Any]]:
+    if config.mode != "ssh":
+        raise ValueError("NPU device status currently requires PERF_RUN_MODE=ssh")
+    device_ids = list(range(max(1, min(device_count, 64))))
+    ids = " ".join(str(device_id) for device_id in device_ids)
+    remote = (
+        "export LC_ALL=C; "
+        f"for device in {ids}; do "
+        "printf '__NPU__:%s\\n' \"$device\"; "
+        "if timeout 4s npu-smi info -t usages -i \"$device\" 2>&1; then "
+        "printf '__PROCESSES__\\n'; "
+        "timeout 4s npu-smi info -t proc-mem -i \"$device\" 2>&1 || true; "
+        "else printf '__PROCESSES__\\n'; fi; "
+        "printf '__END_NPU__\\n'; "
+        "done"
+    )
+    try:
+        result = subprocess.run(
+            _ssh_command(config, remote),
+            check=False,
+            capture_output=True,
+            text=True,
+            stdin=subprocess.DEVNULL,
+            timeout=max(10, timeout_seconds),
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"npu-smi status query timed out after {timeout_seconds}s") from exc
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "SSH query failed").strip()
+        raise RuntimeError(f"npu-smi status query failed: {detail[:500]}")
+    return parse_npu_smi_status(result.stdout, device_ids)
 
 
 def _run_command(command: list[str] | str, *, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:

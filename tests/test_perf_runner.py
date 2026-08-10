@@ -17,6 +17,7 @@ from backend.perf_runner import (
     build_command,
     build_profiler_command,
     load_config,
+    parse_npu_smi_status,
     prof_output_root,
     resolve_chip,
 )
@@ -145,6 +146,63 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             self.assertIn("ConnectTimeout=10", command)
             self.assertIn("ServerAliveInterval=15", command)
             self.assertIn("ServerAliveCountMax=4", command)
+
+    def test_parse_a2_npu_smi_status_with_process(self):
+        output = """__NPU__:0
+        NPU ID                         : 0
+        Chip Count                     : 1
+        HBM Capacity(MB)               : 65536
+        HBM Usage Rate(%)              : 5
+        Aicore Usage Rate(%)           : 0
+        Aivector Usage Rate(%)         : 0
+        NPU Utilization(%)             : 0
+__PROCESSES__
+        NPU ID                         : 0
+        Process id:1654497 Process name:python            Process memory(MB):177
+        Chip ID                        : 0
+__END_NPU__
+"""
+
+        device = parse_npu_smi_status(output, [0])[0]
+
+        self.assertTrue(device["available"])
+        self.assertEqual(device["status"], "busy")
+        self.assertEqual(device["hbm_capacity_mb"], 65536)
+        self.assertEqual(device["hbm_used_mb"], 3277)
+        self.assertEqual(device["process_count"], 1)
+        self.assertEqual(device["processes"][0], {
+            "pid": 1654497,
+            "name": "python",
+            "memory_mb": 177,
+        })
+
+    def test_parse_a5_npu_smi_status_and_unavailable_slot(self):
+        output = """__NPU__:0
+        NPU ID                         : 0
+        HBM Capacity(MB)               : 131072
+        HBM Usage Rate(%)              : 15
+        Aicore Usage Rate(%)           : 0
+        Aivector Usage Rate(%)         : 2
+        NPU Utilization(%)             : 0
+__PROCESSES__
+        NPU ID                         : 0
+        No process in device.
+__END_NPU__
+__NPU__:4
+        NPU ID                         : 4
+Failed to query npu chip: 0 info.
+Failed to query "usages" info.
+__PROCESSES__
+__END_NPU__
+"""
+
+        devices = parse_npu_smi_status(output, [0, 4])
+
+        self.assertEqual(devices[0]["status"], "busy")
+        self.assertEqual(devices[0]["hbm_capacity_mb"], 131072)
+        self.assertEqual(devices[0]["process_count"], 0)
+        self.assertFalse(devices[1]["available"])
+        self.assertEqual(devices[1]["status"], "unavailable")
 
     @patch("backend.perf_runner.subprocess.run")
     def test_background_commands_do_not_inherit_stdin(self, run):
