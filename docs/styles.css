@@ -381,7 +381,11 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 }
 .perf-npu-refresh-btn.is-refreshing span:first-child { animation:perf-npu-spin .8s linear infinite; }
 .perf-npu-status-table-wrap { max-height:310px; overflow:auto; }
-.perf-npu-status-table { min-width:620px; }
+.perf-npu-status-table { width:100%; min-width:620px; table-layout:fixed; }
+.perf-npu-status-table th:nth-child(1) { width:48px; }
+.perf-npu-status-table th:nth-child(2) { width:72px; }
+.perf-npu-status-table th:nth-child(3) { width:245px; }
+.perf-npu-status-table th:nth-child(4) { width:175px; }
 .perf-npu-status-table th,
 .perf-npu-status-table td { padding:7px 8px; font-size:11px; white-space:nowrap; }
 .perf-npu-status-pill.busy { color:#8c1e1d; background:#f9e3df; }
