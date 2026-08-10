@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { normalizePerfExecutionEnvironment, runnerCanExecute } from "../cloudflare/worker.js";
+import {
+  normalizePerfExecutionEnvironment,
+  normalizeSourceBranchesRefreshRequest,
+  runnerCanExecute,
+} from "../cloudflare/worker.js";
 
 test("normalizes a controlled source build environment", () => {
   assert.deepEqual(normalizePerfExecutionEnvironment({
@@ -74,4 +78,18 @@ test("routes custom environments only to capable runners", () => {
     ...base,
     execution_environment: { customizable: true, source_build: true },
   }, request), true);
+});
+
+test("normalizes controlled source branch refresh requests", () => {
+  assert.deepEqual(normalizeSourceBranchesRefreshRequest({
+    runner_id: "runner-a5",
+    source_repo: "/home/user/flash-linear-attention-npu/",
+  }), {
+    runner_id: "runner-a5",
+    source_repo: "/home/user/flash-linear-attention-npu",
+  });
+  assert.throws(() => normalizeSourceBranchesRefreshRequest({
+    runner_id: "runner-a5",
+    source_repo: "/home/user/../private",
+  }), /invalid source_repo/);
 });

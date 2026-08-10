@@ -176,6 +176,43 @@ def _path_allowed(path: str, roots: tuple[str, ...]) -> bool:
     return False
 
 
+def _valid_source_branch(branch: str) -> bool:
+    return bool(
+        branch
+        and len(branch) <= 200
+        and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", branch)
+        and ".." not in branch
+        and "//" not in branch
+        and "@{" not in branch
+        and not branch.endswith(("/", ".", ".lock"))
+    )
+
+
+def list_remote_source_branches(config: PerfRunnerConfig, source_repo: str) -> list[str]:
+    if config.mode != "ssh":
+        raise ValueError("源码分支查询仅支持 SSH Relay")
+    repo = _normalized_remote_absolute_path(source_repo, "源码仓库路径")
+    roots = config.allowed_source_roots or (
+        (str(PurePosixPath(config.remote_source_repo).parent),) if config.remote_source_repo else ()
+    )
+    if not roots or not _path_allowed(repo, roots):
+        raise ValueError("源码仓库路径不在 Relay 允许目录内")
+    command = (
+        f"test -d {shlex.quote(repo)}/.git"
+        f" && git -C {shlex.quote(repo)} for-each-ref "
+        f"--format={shlex.quote('%(refname:strip=2)')} refs/heads"
+    )
+    result = _run_remote_checked(config, command, "源码分支查询")
+    branches = sorted({
+        line.strip()
+        for line in result.stdout.splitlines()
+        if _valid_source_branch(line.strip())
+    }, key=str.casefold)
+    if not branches:
+        raise RuntimeError("源码仓库没有可用的本地分支")
+    return branches[:200]
+
+
 def configured_cann_path(config: PerfRunnerConfig) -> str:
     script = config.remote_env_script.rstrip("/")
     return str(PurePosixPath(script).parent) if script.endswith("/set_env.sh") else script
@@ -232,14 +269,7 @@ def resolve_execution_environment(payload: dict[str, Any], config: PerfRunnerCon
         raise ValueError("重新编译安装时必须指定分支")
     if not rebuild and branch:
         raise ValueError("指定分支时必须启用重新编译安装")
-    if branch and (
-        len(branch) > 200
-        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", branch)
-        or ".." in branch
-        or "//" in branch
-        or "@{" in branch
-        or branch.endswith(("/", ".", ".lock"))
-    ):
+    if branch and not _valid_source_branch(branch):
         raise ValueError("源码分支名称不合法")
 
     cann_roots = config.allowed_cann_roots or ((configured_cann_path(config),) if configured_cann_path(config) else ())

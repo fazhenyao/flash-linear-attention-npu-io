@@ -26,6 +26,7 @@ try:
         collect_npu_device_status,
         execute,
         execution_environment_defaults,
+        list_remote_source_branches,
         load_config,
         runner_status,
     )
@@ -34,6 +35,7 @@ except ImportError:
         collect_npu_device_status,
         execute,
         execution_environment_defaults,
+        list_remote_source_branches,
         load_config,
         runner_status,
     )
@@ -193,6 +195,16 @@ class RunnerAgent:
             "devices": [],
             "error": "等待 Relay 首次查询",
         }
+        self._source_branches_lock = threading.Lock()
+        self._source_branches_refreshing = False
+        self._source_branches_pending: tuple[str, str] | None = None
+        self._source_branches = {
+            "checked_at": None,
+            "source_repo": None,
+            "branches": [],
+            "error": "等待源码分支查询",
+            "refresh_request_id": None,
+        }
         self.config.state_dir.mkdir(parents=True, exist_ok=True)
         (self.config.state_dir / "jobs").mkdir(parents=True, exist_ok=True)
 
@@ -220,9 +232,41 @@ class RunnerAgent:
                 "defaults": execution_environment_defaults(perf_config),
                 "customizable": perf_config.mode == "ssh",
                 "source_build": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
+                "source_branch_query": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
+                "source_branches": self.source_branches_status(),
             },
-            "agent_version": "1.3.0",
+            "agent_version": "1.4.0",
         }
+
+    def source_branches_status(self) -> dict[str, Any]:
+        with self._source_branches_lock:
+            return {
+                **self._source_branches,
+                "branches": list(self._source_branches.get("branches") or []),
+                "refreshing": self._source_branches_refreshing,
+            }
+
+    def request_source_branches_refresh(self, refresh_id: str, source_repo: str) -> None:
+        refresh_id = str(refresh_id or "").strip()
+        source_repo = str(source_repo or "").strip()
+        if not refresh_id or not source_repo:
+            return
+        request = (refresh_id, source_repo)
+        with self._source_branches_lock:
+            if refresh_id == self._source_branches.get("refresh_request_id"):
+                return
+            if request == self._source_branches_pending:
+                return
+            if self._source_branches_refreshing:
+                self._source_branches_pending = request
+                return
+            self._source_branches_refreshing = True
+            threading.Thread(
+                target=self._refresh_source_branches,
+                args=request,
+                name=f"source-branches-{self.config.runner_id}",
+                daemon=True,
+            ).start()
 
     def npu_status(self, *, refresh: bool = True) -> dict[str, Any]:
         now = time.monotonic()
@@ -265,9 +309,54 @@ class RunnerAgent:
             ).start()
 
     def _handle_runner_control(self, response: dict[str, Any]) -> None:
-        refresh_id = response.get("runner", {}).get("npu_status_refresh_id")
+        runner = response.get("runner", {})
+        refresh_id = runner.get("npu_status_refresh_id")
         if refresh_id:
             self.request_npu_status_refresh(str(refresh_id))
+        source_branches_refresh_id = runner.get("source_branches_refresh_id")
+        source_branches_repo = runner.get("source_branches_repo")
+        if source_branches_refresh_id and source_branches_repo:
+            self.request_source_branches_refresh(
+                str(source_branches_refresh_id),
+                str(source_branches_repo),
+            )
+
+    def _refresh_source_branches(self, refresh_id: str, source_repo: str) -> None:
+        checked_at = utc_now()
+        try:
+            branches = list_remote_source_branches(load_config(), source_repo)
+            status = {
+                "checked_at": checked_at,
+                "source_repo": source_repo,
+                "branches": branches,
+                "error": "",
+                "refresh_request_id": refresh_id,
+            }
+        except Exception as exc:
+            status = {
+                "checked_at": checked_at,
+                "source_repo": source_repo,
+                "branches": [],
+                "error": str(exc)[:500],
+                "refresh_request_id": refresh_id,
+            }
+        with self._source_branches_lock:
+            self._source_branches = status
+            self._source_branches_refreshing = False
+            pending = self._source_branches_pending
+            self._source_branches_pending = None
+            if pending and pending[0] != refresh_id:
+                self._source_branches_refreshing = True
+                threading.Thread(
+                    target=self._refresh_source_branches,
+                    args=pending,
+                    name=f"source-branches-{self.config.runner_id}",
+                    daemon=True,
+                ).start()
+        try:
+            self.send_runner_heartbeat(self.health(), current_jobs=self.current_jobs)
+        except Exception:
+            pass
 
     def _refresh_npu_status(self, refresh_id: str | None) -> None:
         with self._npu_status_lock:
@@ -488,7 +577,7 @@ class RunnerAgent:
     def environment_summary(self) -> dict[str, Any]:
         status = runner_status()
         return {
-            "agent_version": "1.3.0",
+            "agent_version": "1.4.0",
             "runner_id": self.config.runner_id,
             "mode": status.get("mode"),
             "chip": status.get("chip"),
