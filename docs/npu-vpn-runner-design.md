@@ -16,6 +16,21 @@
 
 最终安全决策为：即使 Relay 具备公网可达条件，也不把 Relay 建设为公网服务。Relay 不提供 Webhook、不运行公网 HTTP API、不开放公网监听端口；任务领取、状态回传和制品上传全部由 Relay 主动发起出站连接。
 
+### 1.1 当前实现摘要（2026-08-10）
+
+| 层级 | 当前实现 | 关键边界 |
+| --- | --- | --- |
+| 用户界面 | GitHub Pages 性能看板 | 只调用 Worker HTTPS，不直接访问 Relay、NPU 或 R2 |
+| 公网控制面 | Cloudflare Worker + D1 | 认证、任务队列、精确路由、租约、状态、指标和制品元数据 |
+| 对象存储 | 私有 Cloudflare R2 | 保存 ZIP；由 Worker 鉴权代理下载，Bucket 不公开 |
+| VPN 边界 | 当前 Windows 电脑上的两个 Relay 计划任务 | 只发起出站 HTTPS 和 VPN 内 SSH/SCP，不监听公网端口 |
+| 执行面 | A2 `192.168.9.221` 与 A5 `192.168.13.241` | 加载各自 CANN/Conda 环境，执行白名单 profiler 命令 |
+| 本地兜底 | Relay 本地 Prof 目录，默认保留 30 天 | R2 上传失败时仍保留结构化结果和本地原始制品 |
+
+当前完整链路为：用户在看板选择 A2/A5 并提交任务，Worker 将任务写入 D1；目标 Relay 经自适应轮询领取任务，通过同步 SSH 执行 `msprof` / `msopprof`，再以 SCP 回收新 Prof 目录。Relay 在内存中解析指标，生成 ZIP 和 SHA-256，经 Worker multipart API 上传私有 R2；Worker 在 D1 登记对象元数据。登录用户随后从看板点击“下载”，由 Worker 校验任务归属后代理返回 R2 对象。
+
+当前已完成队列、双 Relay、A2/A5 精确路由、R2 上传、容量保护和看板下载闭环。尚未完成的是远端持久执行、Device 锁、实时进程取消和 Agent 重启后的自动 reconcile；因此执行期 VPN 中断仍需人工核对远端进程和 Prof 目录。
+
 ## 2. 当前条件
 
 - 性能看板部署在 GitHub Pages，可访问 Cloudflare Worker。
@@ -100,18 +115,18 @@ flowchart LR
 - 复用 `backend/perf_runner.py` 的命令构建和结果导入逻辑。
 - 通过同步 SSH 命令执行采集，通过 SCP 回收本次新增的结果目录。
 - 发送 heartbeat、进度和日志摘要。
-- 在本地保留制品并回传结构化结果、路径、大小和 SHA-256。
+- 在本地保留制品，生成 ZIP 和 SHA-256，经 Worker multipart API 上传 R2，并回传结构化结果和制品元数据。
 
 #### 当前 NPU 服务器执行方式
 
 - Relay 进入固定项目目录并执行服务端白名单生成的命令，不接收用户提供的任意 Shell。
-- 每次命令先加载 CANN `set_env.sh`，再加载 Conda 初始化脚本并激活 `fla_dump`。
+- 每次命令先加载目标服务器的 CANN `set_env.sh`，再加载 Conda 初始化脚本；A2 激活 `fla_dump`，A5 激活 `f30077529`。
 - `msprof` 输出到 `data/prof_gdr`，`msopprof` 输出到 `data/prof_op`。
 - 当前 SSH 会话同步等待采集完成；`systemd-run`、远端状态文件和 Device 锁属于阶段二。
 
 #### 本地制品存储
 
-- NPU 服务器或 Relay 保存 Prof 压缩包、CSV、JSON、图片和完整日志。
+- NPU 服务器和 Relay 保存原始 Prof 目录及其中的 CSV、JSON 和分析文件；Relay 只在上传期间生成临时 ZIP。
 - 制品目录不得通过公网服务暴露，只允许管理员经 VPN/SSH 访问。
 - Relay 回收副本默认保留 30 天，由 Agent 清理；当前不会自动删除 NPU 服务器上的源目录。
 - D1 只记录制品路径、类型、大小、SHA-256 和过期时间。
@@ -185,6 +200,7 @@ sequenceDiagram
     participant D as D1
     participant R as VPN Relay
     participant N as NPU Server
+    participant O as Private R2
 
     UI->>W: POST /api/perf/jobs
     W->>D: INSERT queued job
@@ -204,11 +220,17 @@ sequenceDiagram
     N-->>R: SSH 命令退出
     R->>N: SSH 识别本次新增结果目录
     R->>N: SCP 回收完整结果目录
-    R->>R: 解析指标，计算目录大小和 SHA-256
-    R->>W: POST /complete，回传结构化结果和制品元数据
+    R->>R: 解析指标，生成 ZIP 和 SHA-256
+    R->>W: multipart start / parts / complete
+    W->>O: 写入 perf-artifacts/{job_id}/{artifact_id}
+    R->>W: POST /complete，回传结构化结果和 R2 制品元数据
     W->>D: 保存结果和制品元数据
     UI->>W: GET /api/perf/jobs/{job_id}
     W-->>UI: succeeded + metrics + artifact manifest
+    UI->>W: GET artifact download
+    W->>O: 鉴权读取私有对象
+    O-->>W: ZIP stream
+    W-->>UI: private, no-store ZIP
 ```
 
 ### 7.1 自适应任务领取
@@ -599,7 +621,7 @@ retaining_artifacts
 finalizing
 ```
 
-D1 中每个任务只保留有限数量、有限长度的事件。完整 stdout/stderr 保存在本地制品目录。看板显示日志尾部，不持续把大日志写入 D1。
+D1 中每个任务只保留有限数量、有限长度的事件。当前实现不按任务单独持久化完整 stdout/stderr；Agent 运行日志保存在 Relay 本机受限日志文件中。看板显示日志尾部，不持续把大日志写入 D1。
 
 ## 17. 结果与制品管理
 
@@ -617,7 +639,7 @@ D1 中每个任务只保留有限数量、有限长度的事件。完整 stdout/
 - 完整的 `PROF_*` / `OPPROF_*` 目录，当前不压缩。
 - Prof 目录内由 CANN 生成的原始 CSV、JSON 和分析文件。
 - Relay 任务状态与制品清单保存在 `data/runner-state`，Agent 运行日志保存在 `.local-secrets/runner.log`。
-- 当前没有为每个任务单独持久化完整 SSH stdout/stderr，也没有自动生成可视化图片或可复现压缩包。
+- 当前没有为每个任务单独持久化完整 SSH stdout/stderr，也没有自动生成可视化图片。Relay 会生成可复现 ZIP 用于 R2 上传，并在上传完成或失败后删除本地临时 ZIP，继续保留原始 Prof 目录。
 
 ### 当前制品处理
 
@@ -626,7 +648,7 @@ D1 中每个任务只保留有限数量、有限长度的事件。完整 stdout/
 - Relay 计算整个目录的总大小和 SHA-256，在本机生成 ZIP，并以 32 MiB 分片通过 Worker 上传到私有 R2 Bucket。
 - Worker 使用 R2 multipart API 写入对象；完成后在 D1 登记 `r2://perf-artifacts/{job_id}/{artifact_id}`、ZIP 大小、SHA-256 和过期时间。
 - R2 上传失败不覆盖结构化结果：任务仍可完成，D1 登记 `relay://{runner_id}/{job_id}/{directory}`，看板显示“仅 Relay 本地”。
-- 用户下载时由 Worker 校验登录会话和任务归属，再代理读取私有 R2 对象；Bucket 不开放 `r2.dev` 公网访问，不向浏览器或 Relay分发 R2 API 凭据。
+- 用户下载时由 Worker 校验登录会话和任务归属，再代理读取私有 R2 对象；Bucket 不开放 `r2.dev` 公网访问，不向浏览器或 Relay 分发 R2 API 凭据。
 - 制品默认保留 30 天，由 Agent 在后续轮询中清理过期目录。
 - 本地目录 `data/prof_gdr` 和 `data/prof_op` 已加入 Git 忽略列表。
 
@@ -663,8 +685,8 @@ VPN 断开时取消请求保持待处理，不能声称已经取消。当前版�
 - Relay 不配置任务 Webhook，不接受 Worker 主动连接。
 - 用户 Token：只能提交和查询其权限范围内的任务。
 - Runner Token：只能调用 `/api/runner/*`，不能管理用户和项目任务。
-- Worker 中只保存 Runner Token 哈希或使用可轮换签名密钥。
-- Runner Token 定期轮换并绑定 Agent ID。
+- Worker 通过 Cloudflare Secret 保存当前共享的 `RUNNER_TOKEN`；Relay 使用 Windows DPAPI 保存同一 Token，不写入仓库。
+- 当前 A2/A5 共享 Runner Token，并用不同 `RUNNER_ID` 和任务租约区分；按 Agent 独立签发、吊销和轮换 Token 属于后续加固项。
 - NPU 服务器不保存 Cloudflare 管理员 Token。
 - 本地制品目录仅允许运行账户和受控管理员读取，不提供公网下载地址。
 - Worker 对提交、领取、取消、重试和制品清单变更全部写审计日志。
@@ -717,7 +739,7 @@ VPN 断开时取消请求保持待处理，不能声称已经取消。当前版�
 ### 已落地
 
 - `backend/runner_agent.py`：Agent 注册、健康检查、自适应领取、租约 heartbeat、执行、回传和本地制品清理。
-- `backend/perf_runner.py`：同步 SSH/SCP、CANN/Conda 环境准备、连接超时、新增 Prof 目录识别和结果导入。
+- `backend/perf_runner.py`：同步 SSH/SCP、CANN/Conda 环境准备、连接超时、新增 Prof 目录识别和结果导入；后台子进程使用 `stdin=DEVNULL`，避免 Windows 计划任务模式下 OpenSSH 继承无效标准输入而卡住。
 - `scripts/import_prof_gdr.py` / `scripts/import_msprof_op.py`：支持只返回内存结果，不要求写入仓库 JSON 快照。
 - `migrations/0009_add_perf_job_queue.sql`：任务、事件、结果、制品和 Agent 数据表。
 - `migrations/0010_add_r2_artifact_reservations.sql`：并发上传容量预留和 8 天安全过期时间。
@@ -754,7 +776,7 @@ PERF_SSH_USER=root
 PERF_SSH_PORT=22
 PERF_SSH_IDENTITY_FILE=C:/Users/Administrator/.ssh/id_ed25519
 PERF_REMOTE_WORKDIR=/workspace/fazhenyao/flash-linear-attention-npu-io
-PERF_REMOTE_SCRIPT=/home/npu_user7/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py
+PERF_REMOTE_SCRIPT=scripts/flash_gated_delta_rule.py
 PERF_REMOTE_ENV_SCRIPT=/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh
 PERF_REMOTE_CONDA_SH=/data/miniconda3/etc/profile.d/conda.sh
 PERF_REMOTE_CONDA_ENV=fla_dump
@@ -778,7 +800,7 @@ PERF_SSH_USER=npu_user7
 PERF_SSH_PORT=22
 PERF_SSH_IDENTITY_FILE=C:/Users/Administrator/.ssh/id_rsa
 PERF_REMOTE_WORKDIR=/home/npu_user7/fazhenyao/flash-linear-attention-npu-io
-PERF_REMOTE_SCRIPT=scripts/flash_gated_delta_rule.py
+PERF_REMOTE_SCRIPT=/home/npu_user7/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py
 PERF_REMOTE_ENV_SCRIPT=/home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh
 PERF_REMOTE_CONDA_SH=/home/npu_user7/jianshuqiang/miniconda3/etc/profile.d/conda.sh
 PERF_REMOTE_CONDA_ENV=f30077529
@@ -813,12 +835,12 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 
 - 远端改用 systemd 持久执行。
 - 增加断线恢复、取消、重试和 Device 锁。
-- 引入 `attempt_id`、租约和幂等键。
-- 增加 Agent 健康状态和告警。
+- 强化现有 `attempt_id`、租约和幂等机制，加入断线 reconcile 和远端状态关联。
+- 基于现有 Agent 健康状态增加告警和运维处置。
 
 验收条件：执行中断开 VPN 后，恢复连接可以继续追踪同一任务且不会重复执行。
 
-### 阶段三：云端制品管理
+### 阶段三：云端制品管理（已完成）
 
 - 使用私有 R2 Bucket 保存压缩 Prof。
 - Relay 只使用已有 Runner Token，经 Worker 执行 multipart 上传，不保存 R2 API Token。
@@ -826,6 +848,8 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 - 使用 SHA-256、9 GB 应用级容量阈值和按上传日期淘汰策略控制完整性与容量。
 
 验收条件：用户可以下载受控制品，D1 不存储大文件。
+
+2026-08-10 已完成真实 A5 下载闭环验证：看板任务 `perf-job-6d2deefe-7c6a-491e-90e1-5e3e64e0c548` 在 NPU 7 上完成 `msprof`，Relay 回收并上传 `PROF_000001_20260810115124509_00479767DDIPEQDE.zip`。从线上看板下载的 ZIP 为 `314,068` 字节、包含 85 个文件，SHA-256 `d3e83697278dfc1fd9734756389e8bed199551735f806e60bf1214b41fed495b` 与 Relay 上传记录一致。
 
 ### 阶段四：生产化
 
@@ -835,6 +859,8 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 - 建立自动化 API、状态机、断线恢复和权限测试。
 
 ## 24. 验收测试场景
+
+以下列表同时包含已验证场景和阶段二目标。2026-08-10 已在真实环境验证场景 2 和 R2 上传/鉴权下载闭环；原子领取、幂等、白名单和权限边界已有代码及自动测试覆盖。场景 1 和 5 在 VPN 刚恢复时仍可能因 SSH 预检失败而结束当前尝试，需要增强预检和安全重新排队；4、6、7、8、9 仍属于阶段二目标。
 
 1. VPN 未连接时提交任务，任务保持等待且不失败。
 2. VPN 恢复后 Relay 自动领取并执行任务。
@@ -903,12 +929,12 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 
 ## 26. 实施状态
 
-截至 2026-08-10，阶段一闭环已经部署并通过真实 NPU 任务验证，阶段三 R2 代码已完成：
+截至 2026-08-10，阶段一任务闭环和阶段三 R2 制品闭环均已部署，并通过真实 A2/A5 NPU 任务验证：
 
 - D1 migration 已加入 `perf_jobs`、`perf_job_events`、`perf_results`、`perf_artifacts` 和 `runner_agents`。
 - Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传。
 - `backend/runner_agent.py` 已实现主动出站注册、SSH 端口健康检查、自适应领取、执行期 heartbeat、结果回传和本地制品过期清理。
-- `backend/perf_runner.py` 已支持远端 CANN/Conda 环境准备、同步 SSH 执行、SSH/SCP 超时、新增结果目录识别和回收。
+- `backend/perf_runner.py` 已支持远端 CANN/Conda 环境准备、同步 SSH 执行、SSH/SCP 超时、新增结果目录识别和回收；SSH/SCP 子进程显式关闭标准输入，适配无控制台 Windows 计划任务。
 - 性能看板已改为向 Worker 异步提交任务，并提供 A2/A5 执行服务器选择；Runner 或 VPN 离线时任务继续排队。
 - 已增加不执行 NPU 命令的队列冒烟测试 `scripts/smoke_test_perf_queue.py`。
 - Worker 和 Relay 已配置独立 `RUNNER_TOKEN`，本机 Token 使用 DPAPI 加密保存。
@@ -918,6 +944,8 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - A5 的芯片频率和 HBM 带宽理论常量尚未录入，A5 结果中的 MFU/MBU 保持空值，不使用 A2 常量代算。
 - Worker 已增加私有 R2 binding、multipart 上传、任务归属鉴权下载和制品元数据接口；Relay 已增加 ZIP、分片上传及失败降级逻辑；看板已增加云端制品下载入口。
 - Cloudflare R2 Bucket `flash-linear-attention-npu-perf-artifacts` 已创建，默认存储类为 Standard，公开访问已禁用。
+- R2 已增加 9 GB 应用级阈值、并发上传容量预留和按上传日期淘汰最旧制品的策略；管理员可查询 Bucket 受管用量。
+- 已从 GitHub Pages 看板完成真实 A5 Prof ZIP 下载并校验 SHA-256，确认“看板 -> Worker 鉴权 -> 私有 R2 -> 浏览器下载”链路可用。
 
 ### 26.1 当前 Windows Relay 的本机凭据与启动方式
 
@@ -943,6 +971,7 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - 30 天过期清理只覆盖 Relay 本地副本，不会删除 NPU 服务器 `data/prof_gdr` / `data/prof_op` 下的源目录。
 - Relay 本地副本按 30 天保留；R2 不设置固定 30 天删除，改为达到 9 GB 安全阈值时优先清理最旧对象。
 - Windows 电脑、登录会话或 VPN 离线时，任务会继续保存在 D1 中，但不会执行。
+- 执行期强制重启 Relay 会让任务在 heartbeat 租约过期后进入 `disconnected`，不会自动重新执行；管理员必须确认远端进程和 Prof 目录后再决定重试。
 
 ### 26.3 下一阶段优先级
 
