@@ -25,7 +25,7 @@ from backend.perf_runner import (
     resolve_execution_environment,
     soc_build_target,
 )
-from backend.runner_agent import RunnerAgent
+from backend.runner_agent import AgentConfig, RunnerAgent
 from scripts.cube_theoretical_flops import compute_mfu
 from scripts.hbm_theoretical_bytes import compute_mbu
 
@@ -95,6 +95,16 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
                     "source_repo": "/etc/flash-linear-attention-npu",
                 }
             }, config)
+
+    def test_npu_status_automatic_refresh_defaults_to_thirty_minutes(self):
+        with patch.dict(
+            os.environ,
+            {"RUNNER_TOKEN": "test-token", "RUNNER_ID": "relay-test"},
+            clear=True,
+        ):
+            config = AgentConfig.from_env()
+
+        self.assertEqual(config.npu_status_interval_seconds, 30 * 60)
 
     def test_custom_remote_command_uses_selected_cann_and_conda(self):
         with patch.dict(os.environ, self.environment, clear=False):

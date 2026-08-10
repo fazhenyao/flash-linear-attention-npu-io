@@ -246,7 +246,7 @@ VPN 或 SSH 不可用：本轮不领取，沿用相同线性退避，最大 30 �
 成功领取并完成任务：下一轮等待重置为 2 秒
 任务执行中：单并发，不领取新任务；独立线程每 15 秒发送 job heartbeat
 Worker 请求异常：至少等待 5 秒并指数退避，最大 120 秒
-NPU 状态：独立后台线程最多每 30 秒发起一次查询，完成后立即补发 Runner heartbeat
+NPU 状态：独立后台线程最多每 30 分钟发起一次自动查询，完成后立即补发 Runner heartbeat
 看板状态：登录后每 10 秒读取一次 Worker 中的最新状态，不触发 NPU 命令
 ```
 
@@ -530,7 +530,7 @@ WHERE id = ?
 5. 单条 `npu-smi` 使用远端 4 秒超时，整轮 SSH 查询使用 60 秒超时；单卡查询失败只将该卡标为“不可用”，不丢弃其他卡结果。
 6. 领取后执行真正的 profiling SSH 命令；SSH/SCP 使用 `BatchMode=yes`、`ConnectTimeout=10`、`ServerAliveInterval=15` 和 `ServerAliveCountMax=4`。
 
-设备状态查询与任务领取解耦：自动查询在线程中执行并使用 30 秒缓存，强制请求绕过缓存并在当前查询结束后再启动一轮，完成后随 Runner heartbeat 写入 D1，因此不会阻塞队列轮询。占用判定为“存在设备进程，或 NPU/AI Core/AI Vector 任一利用率大于 0”；HBM 本身存在驱动基线占用，不单独作为忙碌判据。每张卡上报 `npu-smi` 返回的全部进程明细，同时保留进程数和进程内存总量；Worker 的 capabilities JSON 上限调整为 200 KB。
+设备状态查询与任务领取解耦：自动查询在线程中执行并使用 30 分钟缓存，强制请求绕过缓存并在当前查询结束后再启动一轮，完成后随 Runner heartbeat 写入 D1，因此不会阻塞队列轮询。占用判定为“存在设备进程，或 NPU/AI Core/AI Vector 任一利用率大于 0”；HBM 本身存在驱动基线占用，不单独作为忙碌判据。每张卡上报 `npu-smi` 返回的全部进程明细，同时保留进程数和进程内存总量；Worker 的 capabilities JSON 上限调整为 200 KB。
 
 当前设备状态用于提交前观察，不是服务器端 Device 锁，也不阻止用户向已占用卡提交任务。端口探测和 `npu-smi` 仍不能完整证明 CANN、Conda、profiler、磁盘空间或目标脚本正常；这些检查和原子 Device 锁仍需在领取前预检与执行层补齐。
 
