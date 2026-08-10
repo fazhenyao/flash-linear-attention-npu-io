@@ -620,7 +620,10 @@ D1 中每个任务只保留有限数量、有限长度的事件。完整 stdout/
 
 - profiler 在 NPU 服务器生成目录后，Relay 通过 SCP 回收完整目录。
 - Relay 使用导入器在内存中生成结构化结果，并回传 Worker/D1；Relay 模式不会改写仓库中的 `data/performance-data.json` 和 `docs/performance-data.json`。
-- Relay 计算整个目录的总大小和 SHA-256，并登记 `relay://{runner_id}/{job_id}/{directory}` 制品标识。
+- Relay 计算整个目录的总大小和 SHA-256，在本机生成 ZIP，并以 32 MiB 分片通过 Worker 上传到私有 R2 Bucket。
+- Worker 使用 R2 multipart API 写入对象；完成后在 D1 登记 `r2://perf-artifacts/{job_id}/{artifact_id}`、ZIP 大小、SHA-256 和过期时间。
+- R2 上传失败不覆盖结构化结果：任务仍可完成，D1 登记 `relay://{runner_id}/{job_id}/{directory}`，看板显示“仅 Relay 本地”。
+- 用户下载时由 Worker 校验登录会话和任务归属，再代理读取私有 R2 对象；Bucket 不开放 `r2.dev` 公网访问，不向浏览器或 Relay分发 R2 API 凭据。
 - 制品默认保留 30 天，由 Agent 在后续轮询中清理过期目录。
 - 本地目录 `data/prof_gdr` 和 `data/prof_op` 已加入 Git 忽略列表。
 
@@ -811,11 +814,12 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 
 验收条件：执行中断开 VPN 后，恢复连接可以继续追踪同一任务且不会重复执行。
 
-### 阶段三：可选的云端制品管理
+### 阶段三：云端制品管理
 
-- 按实际在线下载需求决定是否接入 R2 或其他 S3 兼容对象存储。
-- 上传完整日志、CSV、图片和压缩 Prof。
-- 增加签名下载、SHA-256、大小限制和生命周期策略。
+- 使用私有 R2 Bucket 保存压缩 Prof。
+- Relay 只使用已有 Runner Token，经 Worker 执行 multipart 上传，不保存 R2 API Token。
+- Worker 校验用户权限并代理下载，D1 只保存制品元数据。
+- 使用 SHA-256、30 天过期时间和 Bucket 生命周期策略控制完整性与容量。
 
 验收条件：用户可以下载受控制品，D1 不存储大文件。
 
@@ -846,17 +850,17 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 
 ## 25. 当前部署决策
 
-当前采用“Worker/D1 队列 + VPN Runner Relay 主动拉取 + 同步 SSH 远端执行 + Relay 本地制品保留”，不启用 R2。
+当前采用“Worker/D1 队列 + VPN Runner Relay 主动拉取 + 同步 SSH 远端执行 + Relay 本地副本 + 私有 R2 在线下载”。
 
 - Worker/D1 保存任务状态、结构化性能指标、审计信息和制品清单。
 - 看板允许显式选择 A2 或 A5 执行服务器，Worker 使用 `target_runner_id` 保证任务只被指定 Relay 领取。
 - 两个 Relay Agent 运行在同一台 Windows VPN 电脑上，各自连接一台 NPU 服务器，配置、状态、日志和本地制品目录互相隔离。
-- Relay 保存回收后的原始 Prof 和分析文件，默认保留 30 天；NPU 服务器源目录当前需要单独清理。
-- 看板当前不提供原始制品的公网下载；管理员通过 VPN/SSH 获取文件。
+- Relay 保存回收后的原始 Prof 和分析文件，默认保留 30 天；同时压缩并分片上传到 R2，NPU 服务器源目录当前需要单独清理。
+- 登录用户可从任意电脑通过看板下载自己提交任务的 R2 制品，管理员可下载全部任务制品。
 - Relay 仍只发起出站 HTTPS 请求，不开放公网入站端口。
-- R2 是后续可选能力，不是任务提交、执行、状态回传和指标展示的前置条件。
+- R2 上传失败不影响结构化指标回传；原始制品退化为 Relay 本地保存。
 
-不允许把大型 Prof 压缩包、完整 stdout/stderr 或图片写入 D1。若后续需要浏览器在线下载制品，再实施阶段三，并补充私有 Bucket、短期签名 URL、容量限制和生命周期策略。
+不允许把大型 Prof 压缩包、完整 stdout/stderr 或图片写入 D1。R2 Bucket 保持私有，下载必须经过 Worker 的任务权限校验；Relay 和浏览器均不持有 R2 凭据。
 
 Relay 即使具备公网入站和出站能力，也不作为公网服务使用：
 
@@ -895,7 +899,7 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 
 ## 26. 实施状态
 
-截至 2026-08-08，阶段一闭环已经部署并通过真实 NPU 任务验证：
+截至 2026-08-10，阶段一闭环已经部署并通过真实 NPU 任务验证，阶段三 R2 代码已完成：
 
 - D1 migration 已加入 `perf_jobs`、`perf_job_events`、`perf_results`、`perf_artifacts` 和 `runner_agents`。
 - Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传。
@@ -908,6 +912,8 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - 已验证看板同时显示两个在线 Runner，并完成 A2 NPU 2 与 A5 NPU 7 的真实 `msprof` 任务领取、执行、回收、解析和结果展示。
 - Relay 导入结果时只构建内存数据并回传 D1，不再改写仓库性能快照；本地 Prof 目录已加入 Git 忽略列表。
 - A5 的芯片频率和 HBM 带宽理论常量尚未录入，A5 结果中的 MFU/MBU 保持空值，不使用 A2 常量代算。
+- Worker 已增加私有 R2 binding、multipart 上传、任务归属鉴权下载和制品元数据接口；Relay 已增加 ZIP、分片上传及失败降级逻辑；看板已增加云端制品下载入口。
+- Cloudflare R2 Bucket `flash-linear-attention-npu-perf-artifacts` 已创建，默认存储类为 Standard，公开访问已禁用。
 
 ### 26.1 当前 Windows Relay 的本机凭据与启动方式
 
@@ -931,7 +937,7 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - A2 当前使用 `root` SSH 账号；A2/A5 均使用 `StrictHostKeyChecking=accept-new`。A2 应迁移到低权限账号，两台服务器都应预置固定主机密钥。
 - 当前没有轮询随机抖动，也不读取 Worker 返回的建议重试间隔；双 Relay 已投入运行，应尽快补齐抖动和服务端退避提示支持。
 - 30 天过期清理只覆盖 Relay 本地副本，不会删除 NPU 服务器 `data/prof_gdr` / `data/prof_op` 下的源目录。
-- R2 未启用，看板不能直接下载原始 Prof；管理员需从 Relay 本地或经 VPN/SSH 获取。
+- R2 对象和 Relay 本地副本都按 30 天目标保留；D1 过期元数据目前不会由定时任务主动删除。
 - Windows 电脑、登录会话或 VPN 离线时，任务会继续保存在 D1 中，但不会执行。
 
 ### 26.3 下一阶段优先级
@@ -940,4 +946,14 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 2. 实现远端任务目录、进程组/systemd 持久执行、Device 锁和状态文件。
 3. 实现执行期取消、Agent 重启恢复和 Worker reconcile。
 4. 增加领取前 profiler/Device/磁盘预检、轮询抖动和服务端退避提示支持。
-5. 根据是否需要浏览器下载原始 Prof，再决定是否接入 R2。
+5. 增加 R2 上传失败的独立重试、过期 D1 元数据清理和制品下载审计。
+
+## 27. R2 部署配置
+
+- Bucket 名称：`flash-linear-attention-npu-perf-artifacts`。
+- Worker binding：`PERF_ARTIFACTS`，配置在 `wrangler.toml`。
+- 存储类型：Standard；Bucket 保持私有，不启用 `r2.dev` 或自定义公开域名。
+- 生命周期：对前缀 `perf-artifacts/` 设置 30 天删除规则；未完成 multipart upload 由 R2 自动清理。
+- Relay 分片：`RUNNER_R2_PART_MIB=32`，不得低于 5 MiB。
+- 下载授权：普通用户只能访问本人创建的任务，管理员可访问全部任务；Worker 返回 `private, no-store`。
+- 完整性：Relay 对最终 ZIP 计算 SHA-256，D1 保存摘要，下载响应返回 `X-Content-SHA256`。

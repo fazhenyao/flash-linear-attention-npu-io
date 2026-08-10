@@ -181,7 +181,7 @@ python scripts/smoke_test_perf_queue.py `
   --runner-token test-runner
 ```
 
-当前不使用 R2。D1 仅保存任务状态、结构化指标和制品清单；原始 Prof、CSV 和完整日志保留在 Relay/NPU 本地，默认 30 天。
+原始 Prof 由 Relay 回收并压缩，通过 Worker 分片上传到私有 R2 Bucket；登录用户可在看板下载有权限的任务制品。D1 仅保存任务状态、结构化指标和制品元数据，Relay 本地副本默认保留 30 天。R2 上传失败时结构化结果仍会回传，原始制品退化为仅 Relay 本地保存。
 
 ### 人员账号初始化与改密
 

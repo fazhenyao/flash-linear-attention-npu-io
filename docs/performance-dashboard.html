@@ -663,12 +663,25 @@
     }
 
     async function downloadRunResult(runId) {
-      if (!LOCAL_API_BASE) {
-        alert("未配置本地 API，无法下载执行结果");
-        return;
-      }
       try {
-        const response = await fetch(`${LOCAL_API_BASE}/api/perf/runs/${encodeURIComponent(runId)}/download`);
+        const run = displayRuns().find((item) => item.id === runId);
+        let response;
+        if (run?.cloud_job) {
+          const artifactsResponse = await fetch(
+            `${WORKER_API_BASE}/api/perf/jobs/${encodeURIComponent(runId)}/artifacts`,
+            { headers: authHeaders() },
+          );
+          const artifactsPayload = await artifactsResponse.json().catch(() => ({}));
+          if (!artifactsResponse.ok) {
+            throw new Error(artifactsPayload.error || `制品查询失败（HTTP ${artifactsResponse.status}）`);
+          }
+          const artifact = (artifactsPayload.artifacts || []).find((item) => item.storage === "r2" && item.download_url);
+          if (!artifact) throw new Error("该任务的原始制品仅保留在 Relay 本地");
+          response = await fetch(`${WORKER_API_BASE}${artifact.download_url}`, { headers: authHeaders() });
+        } else {
+          if (!LOCAL_API_BASE) throw new Error("未配置本地 API，无法下载执行结果");
+          response = await fetch(`${LOCAL_API_BASE}/api/perf/runs/${encodeURIComponent(runId)}/download`);
+        }
         if (!response.ok) {
           const error = await response.json().catch(() => ({}));
           throw new Error(error.error || `下载失败（HTTP ${response.status}）`);
@@ -689,6 +702,10 @@
     }
 
     function canDownloadRunResult(run, snap) {
+      if (run.cloud_job) {
+        return Number(run.r2_artifact_count || 0) > 0
+          || (run.artifacts || []).some((artifact) => artifact.storage === "r2");
+      }
       return Boolean(LOCAL_API_BASE) && run.status === "done" && Boolean(run.snapshot_id || snap);
     }
 
@@ -2523,6 +2540,9 @@
         created_at: job.created_at,
         started_at: job.started_at,
         finished_at: job.finished_at,
+        artifact_count: Number(job.artifact_count || 0),
+        r2_artifact_count: Number(job.r2_artifact_count || 0),
+        artifacts: job.artifacts || [],
         cloud_job: true,
       };
     }
@@ -2558,7 +2578,14 @@
       if (run.cloud_job && ["failed", "canceled", "orphaned"].includes(rawStatus)) {
         return `<button type="button" class="perf-download-btn" data-job-action="retry" data-job-id="${escapeHtml(run.id)}">重试</button>`;
       }
-      if (run.cloud_job && rawStatus === "succeeded") return "Relay 本地保留";
+      if (run.cloud_job && rawStatus === "succeeded") {
+        if (canDownloadRunResult(run, snap)) {
+          return `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载 profiling 原始结果">下载</button>`;
+        }
+        return Number(run.artifact_count || 0) > 0 || (run.artifacts || []).length
+          ? "仅 Relay 本地"
+          : "无原始制品";
+      }
       return canDownloadRunResult(run, snap)
         ? `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载 profiling 原始结果">下载</button>`
         : "—";
