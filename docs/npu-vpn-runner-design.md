@@ -245,6 +245,7 @@ VPN 或 SSH 不可用：本轮不领取，沿用相同线性退避，最大 30 �
 任务执行中：单并发，不领取新任务；独立线程每 15 秒发送 job heartbeat
 Worker 请求异常：至少等待 5 秒并指数退避，最大 120 秒
 NPU 状态：独立后台线程最多每 30 秒发起一次查询，完成后立即补发 Runner heartbeat
+看板状态：登录后每 10 秒读取一次 Worker 中的最新状态，不触发 NPU 命令
 ```
 
 当前实现没有随机抖动，也没有采用 Worker 返回的 `retry_after_seconds`。部署多个 Relay 时，应增加抖动并尊重服务端建议间隔，避免同时集中请求。
@@ -253,7 +254,9 @@ NPU 状态：独立后台线程最多每 30 秒发起一次查询，完成后立
 
 ### 7.2 多 Relay 精确路由
 
-看板从 Worker 的 Runner 状态接口读取在线 Agent，并在“执行服务器”下拉框中显示 Runner 名称、芯片、默认 NPU 卡号和在线状态。选择服务器后，“NPU 设备占用”表同时展示该 Agent 最近上报的每张卡状态、NPU/AI Core/AI Vector 利用率、HBM 使用量和进程摘要；刷新按钮重新读取 Worker/D1 中最近一次 heartbeat，不建立到 Relay 或 NPU 的入站连接。提交任务时同时发送：
+看板从 Worker 的 Runner 状态接口读取在线 Agent，并在“执行服务器”下拉框中显示 Runner 名称、芯片、默认 NPU 卡号和在线状态。选择服务器后，“NPU 设备占用”表展示该 Agent 最近上报的每张卡状态、NPU/AI Core/AI Vector 利用率、HBM 使用量和进程数，并每 10 秒自动读取最新 heartbeat。点击进程数可展开完整 PID、进程名和显存明细，详情区域限制在组件宽度内，字段过长时允许横向滚动。
+
+刷新按钮执行强制重新采样，而不是只读取缓存：浏览器向 Worker 创建带唯一 ID 的刷新请求，Worker 将请求持久化在 `runner_agents`；Relay 在下一次出站 heartbeat 响应中收到请求后，立即启动新一轮 `npu-smi`，再将同一 ID 随结果上报。Worker 确认该 ID 后清除待处理请求，看板轮询到对应 ID 才结束“正在重新采样”状态。请求在 Relay 暂时离线时不会丢失，整个过程仍不建立到 Relay 或 NPU 的入站连接；120 秒内的并发请求复用同一个待处理 ID，避免重复采样和相互覆盖。提交任务时同时发送：
 
 - `target_runner_id`：指定本次任务必须由哪个 Agent 领取。
 - `chip`、`device` 和 `prof_tool`：继续作为能力匹配和执行参数。
@@ -525,7 +528,7 @@ WHERE id = ?
 5. 单条 `npu-smi` 使用远端 4 秒超时，整轮 SSH 查询使用 60 秒超时；单卡查询失败只将该卡标为“不可用”，不丢弃其他卡结果。
 6. 领取后执行真正的 profiling SSH 命令；SSH/SCP 使用 `BatchMode=yes`、`ConnectTimeout=10`、`ServerAliveInterval=15` 和 `ServerAliveCountMax=4`。
 
-设备状态查询与任务领取解耦：查询在线程中执行并使用 30 秒缓存，完成后随 Runner heartbeat 写入 D1，因此不会阻塞队列轮询。占用判定为“存在设备进程，或 NPU/AI Core/AI Vector 任一利用率大于 0”；HBM 本身存在驱动基线占用，不单独作为忙碌判据。每张卡最多上报 12 条进程明细，同时保留完整进程数和进程内存总量，确保整个 capabilities JSON 不超过 Worker 的 20 KB 限制。
+设备状态查询与任务领取解耦：自动查询在线程中执行并使用 30 秒缓存，强制请求绕过缓存并在当前查询结束后再启动一轮，完成后随 Runner heartbeat 写入 D1，因此不会阻塞队列轮询。占用判定为“存在设备进程，或 NPU/AI Core/AI Vector 任一利用率大于 0”；HBM 本身存在驱动基线占用，不单独作为忙碌判据。每张卡上报 `npu-smi` 返回的全部进程明细，同时保留进程数和进程内存总量；Worker 的 capabilities JSON 上限调整为 200 KB。
 
 当前设备状态用于提交前观察，不是服务器端 Device 锁，也不阻止用户向已占用卡提交任务。端口探测和 `npu-smi` 仍不能完整证明 CANN、Conda、profiler、磁盘空间或目标脚本正常；这些检查和原子 Device 锁仍需在领取前预检与执行层补齐。
 
@@ -937,11 +940,11 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 
 截至 2026-08-10，阶段一任务闭环和阶段三 R2 制品闭环均已部署，并通过真实 A2/A5 NPU 任务验证：
 
-- D1 migration 已加入 `perf_jobs`、`perf_job_events`、`perf_results`、`perf_artifacts` 和 `runner_agents`。
+- D1 migration 已加入 `perf_jobs`、`perf_job_events`、`perf_results`、`perf_artifacts` 和 `runner_agents`，并为 Runner 增加强制 NPU 状态刷新请求字段。
 - Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传。
 - `backend/runner_agent.py` 已实现主动出站注册、SSH 端口健康检查、异步 `npu-smi` 设备状态上报、自适应领取、执行期 heartbeat、结果回传和本地制品过期清理。
 - `backend/perf_runner.py` 已支持远端 CANN/Conda 环境准备、同步 SSH 执行、SSH/SCP 超时、新增结果目录识别和回收；SSH/SCP 子进程显式关闭标准输入，适配无控制台 Windows 计划任务。
-- 性能看板已改为向 Worker 异步提交任务，并提供 A2/A5 执行服务器选择及分卡占用展示；Runner 或 VPN 离线时任务继续排队。
+- 性能看板已改为向 Worker 异步提交任务，并提供 A2/A5 执行服务器选择、分卡占用自动更新、强制重新采样和点击展开完整进程明细；Runner 或 VPN 离线时任务继续排队。
 - 已增加不执行 NPU 命令的队列冒烟测试 `scripts/smoke_test_perf_queue.py`。
 - Worker 和 Relay 已配置独立 `RUNNER_TOKEN`，本机 Token 使用 DPAPI 加密保存。
 - Windows 计划任务 `FLA VPN Runner` 和 `FLA VPN Runner A5` 已安装并运行；两个计划任务都在用户登录后启动 Agent，以复用本机 VPN 会话。
@@ -971,7 +974,7 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - 同步 SSH 执行依赖连接持续存在；执行期 VPN/SSH 中断后尚不能通过远端状态文件自动恢复。
 - 取消请求只能设置本地标记，尚不能实时终止远端 profiler 进程。
 - 服务器端尚未实现 Device 锁，多 Relay 或人工任务需要运维协调。
-- 看板设备状态来自 Relay 最近一次缓存采样，不是实时锁状态；网络、采样和 heartbeat 会带来数十秒延迟。
+- 看板自动更新来自 Relay 最近一次采样，不是实时锁状态；需要立即确认时可点击刷新强制重新采样，但网络、`npu-smi` 和 heartbeat 仍会带来数秒至数十秒延迟。
 - 领取前只检查 SSH TCP 端口，SSH 认证、CANN/Conda、profiler、Device 和磁盘空间在执行阶段才暴露错误。
 - A2 当前使用 `root` SSH 账号；A2/A5 均使用 `StrictHostKeyChecking=accept-new`。A2 应迁移到低权限账号，两台服务器都应预置固定主机密钥。
 - 当前没有轮询随机抖动，也不读取 Worker 返回的建议重试间隔；双 Relay 已投入运行，应尽快补齐抖动和服务端退避提示支持。

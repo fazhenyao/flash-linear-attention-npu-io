@@ -62,6 +62,8 @@ const PERF_JOB_ACTIVE_STATES = new Set(["claimed", "running", "disconnected", "c
 const PERF_LEASE_SECONDS = 90;
 const PERF_EVENT_MESSAGE_LIMIT = 4000;
 const PERF_RESULT_JSON_LIMIT = 900000;
+const PERF_RUNNER_CAPABILITIES_JSON_LIMIT = 200000;
+const PERF_NPU_REFRESH_REUSE_MILLISECONDS = 120000;
 const PERF_ARTIFACT_MAX_PARTS = 10000;
 const PERF_ARTIFACT_KEY_PREFIX = "perf-artifacts";
 const PERF_ARTIFACT_STORAGE_LIMIT_BYTES = 9_000_000_000;
@@ -117,6 +119,10 @@ export default {
       if (url.pathname === "/api/perf/runner" && request.method === "GET") {
         await requireUser(request, env);
         return jsonResponse(request, env, await getPerfRunnerStatus(env));
+      }
+      if (url.pathname === "/api/perf/runner/npu-status/refresh" && request.method === "POST") {
+        const user = await requireUser(request, env);
+        return jsonResponse(request, env, await requestRunnerNpuStatusRefresh(env, await readJson(request), user), 202);
       }
       if (url.pathname === "/api/perf/jobs" && request.method === "GET") {
         const user = await requireUser(request, env);
@@ -2533,6 +2539,14 @@ async function registerRunner(env, payload) {
     runner.id, runner.name, toJson(runner.capabilities), runner.vpn_connected ? 1 : 0,
     runner.npu_reachable ? 1 : 0, runner.current_jobs, runner.last_error, timestamp, timestamp, timestamp,
   ).run();
+  const completedRefreshId = String(runner.capabilities?.npu_status?.refresh_request_id || "").trim();
+  if (completedRefreshId) {
+    await env.DB.prepare(
+      `UPDATE runner_agents
+       SET npu_status_refresh_id = NULL, npu_status_refresh_requested_at = NULL
+       WHERE id = ? AND npu_status_refresh_id = ?`,
+    ).bind(runner.id, completedRefreshId).run();
+  }
   return { ok: true, runner: await getRunnerAgent(env, runner.id), lease_seconds: PERF_LEASE_SECONDS };
 }
 
@@ -2545,7 +2559,7 @@ function normalizeRunnerPayload(payload) {
   const id = safeIdentifier(payload.runner_id || payload.id, "runner_id", 96);
   const capabilities = payload.capabilities && typeof payload.capabilities === "object" ? payload.capabilities : {};
   const serialized = JSON.stringify(capabilities);
-  if (serialized.length > 20000) throw withStatus(400, "runner capabilities are too large");
+  if (serialized.length > PERF_RUNNER_CAPABILITIES_JSON_LIMIT) throw withStatus(400, "runner capabilities are too large");
   return {
     id,
     name: String(payload.name || id).trim().slice(0, 160) || id,
@@ -2570,7 +2584,63 @@ async function getRunnerAgent(env, runnerId) {
     current_jobs: numberOr(row.current_jobs, 0),
     last_error: row.last_error || "",
     last_heartbeat_at: row.last_heartbeat_at,
+    npu_status_refresh_id: row.npu_status_refresh_id || null,
+    npu_status_refresh_requested_at: row.npu_status_refresh_requested_at || null,
   };
+}
+
+async function requestRunnerNpuStatusRefresh(env, payload, user) {
+  const runnerId = safeIdentifier(payload.runner_id, "runner_id", 96);
+  const row = await env.DB.prepare(
+    "SELECT id, name, active, npu_status_refresh_id, npu_status_refresh_requested_at FROM runner_agents WHERE id = ?",
+  ).bind(runnerId).first();
+  if (!row || !row.active) throw withStatus(404, "Runner not found");
+
+  const pendingAt = Date.parse(row.npu_status_refresh_requested_at || 0);
+  if (row.npu_status_refresh_id && Date.now() - pendingAt < PERF_NPU_REFRESH_REUSE_MILLISECONDS) {
+    return {
+      ok: true,
+      runner_id: runnerId,
+      refresh_id: row.npu_status_refresh_id,
+      requested_at: row.npu_status_refresh_requested_at,
+      reused: true,
+    };
+  }
+
+  const refreshId = `npu-refresh-${crypto.randomUUID()}`;
+  const requestedAt = nowIso();
+  const staleBefore = new Date(Date.now() - PERF_NPU_REFRESH_REUSE_MILLISECONDS).toISOString();
+  const update = await env.DB.prepare(
+    `UPDATE runner_agents
+     SET npu_status_refresh_id = ?, npu_status_refresh_requested_at = ?, updated_at = ?
+     WHERE id = ? AND active = 1
+       AND (npu_status_refresh_id IS NULL OR npu_status_refresh_requested_at IS NULL OR npu_status_refresh_requested_at <= ?)`,
+  ).bind(refreshId, requestedAt, requestedAt, runnerId, staleBefore).run();
+  if (numberOr(update.meta?.changes, 0) !== 1) {
+    const pending = await env.DB.prepare(
+      "SELECT npu_status_refresh_id, npu_status_refresh_requested_at FROM runner_agents WHERE id = ?",
+    ).bind(runnerId).first();
+    if (!pending?.npu_status_refresh_id) {
+      return requestRunnerNpuStatusRefresh(env, payload, user);
+    }
+    return {
+      ok: true,
+      runner_id: runnerId,
+      refresh_id: pending?.npu_status_refresh_id,
+      requested_at: pending?.npu_status_refresh_requested_at,
+      reused: true,
+    };
+  }
+  await insertAudit(env, {
+    ts: requestedAt,
+    action: "perf.runner.npu_status.refresh",
+    entity: "runner",
+    id: runnerId,
+    summary: `${user.username} 请求重新采样 ${row.name || runnerId} 的 NPU 状态`,
+    detail: { refresh_id: refreshId },
+    source: "cloudflare-d1",
+  });
+  return { ok: true, runner_id: runnerId, refresh_id: refreshId, requested_at: requestedAt, reused: false };
 }
 
 async function getPerfRunnerStatus(env) {
@@ -2592,6 +2662,7 @@ async function getPerfRunnerStatus(env) {
       current_jobs: numberOr(row.current_jobs, 0),
       last_error: row.last_error || "",
       last_heartbeat_at: row.last_heartbeat_at,
+      npu_status_refresh_pending: Boolean(row.npu_status_refresh_id),
       online,
       ready: online && vpnConnected && npuReachable,
     };

@@ -148,7 +148,7 @@ GitHub 仓库需要配置以下 Actions Secrets：
 
 性能看板通过 Worker 创建异步任务。VPN Relay 只主动访问 Worker HTTPS 和 VPN 内的 NPU SSH，不监听公网端口。完整架构与安全边界见 `docs/npu-vpn-runner-design.md`。
 
-1. 应用 `migrations/0009_add_perf_job_queue.sql` 并部署 Worker。
+1. 应用 `migrations/0009_add_perf_job_queue.sql` 至当前最新迁移并部署 Worker。
 2. 生成高强度随机 `RUNNER_TOKEN`，分别配置为 Worker secret 和 Relay 环境变量。
 3. 根据 `data/perf-runner.example.env` 配置 Relay、VPN 后的 NPU SSH 地址和 profiling 工具参数。
 4. 启动 Relay：
@@ -161,7 +161,7 @@ python -m backend.runner_agent
 
 `--check` 只检查本地执行配置和 NPU SSH 端口；`--once` 执行一次 heartbeat/领取循环，适合上线前验证。生产环境应安装为 Linux systemd 或 Windows Service，并将 Token、SSH 私钥和 VPN 凭据放入系统凭据存储或受限环境文件。
 
-Windows Relay 可使用仓库内的 PowerShell 脚本。`protect_runner_token_windows.ps1` 通过当前 Windows 用户的 DPAPI 保存 Runner Token；`run_runner_windows.ps1` 从 `.local-secrets/runner-config.json` 加载非敏感配置；`install_runner_task_windows.ps1` 安装“用户登录时启动”的计划任务。`start_runners_windows.ps1` 和 `stop_runners_windows.ps1` 默认同时启动或停止 A2/A5 Relay。计划任务不开放任何监听端口，VPN 暂时断开时 Agent 只上报离线并继续等待。Relay 默认每 30 秒在后台通过 SSH 分卡执行 `npu-smi info -t usages` 和 `npu-smi info -t proc-mem`，将利用率、HBM 和进程摘要随 heartbeat 上报；性能看板的“用例执行触发”页可按服务器查看各卡占用情况。
+Windows Relay 可使用仓库内的 PowerShell 脚本。`protect_runner_token_windows.ps1` 通过当前 Windows 用户的 DPAPI 保存 Runner Token；`run_runner_windows.ps1` 从 `.local-secrets/runner-config.json` 加载非敏感配置；`install_runner_task_windows.ps1` 安装“用户登录时启动”的计划任务。`start_runners_windows.ps1` 和 `stop_runners_windows.ps1` 默认同时启动或停止 A2/A5 Relay。计划任务不开放任何监听端口，VPN 暂时断开时 Agent 只上报离线并继续等待。Relay 默认每 30 秒在后台通过 SSH 分卡执行 `npu-smi info -t usages` 和 `npu-smi info -t proc-mem`，将利用率、HBM 和完整进程明细随 heartbeat 上报；性能看板每 10 秒自动读取最新状态，点击刷新可通过 Worker/D1 请求 Relay 强制重新采样，点击进程数可展开完整明细。
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/protect_runner_token_windows.ps1

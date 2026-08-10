@@ -392,6 +392,32 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-npu-status-pill.idle { color:#1d6a56; background:#e4f2ec; }
 .perf-npu-status-pill.unavailable { color:#70695d; background:#eee9df; }
 .perf-npu-process-cell { max-width:260px; overflow:hidden; text-overflow:ellipsis; }
+.perf-npu-process-btn {
+  appearance:none;
+  border:0;
+  padding:2px 0;
+  background:transparent;
+  color:#87570a;
+  font:inherit;
+  font-weight:900;
+  cursor:pointer;
+}
+.perf-npu-process-btn:hover { text-decoration:underline; }
+.perf-npu-process-btn:focus-visible { outline:2px solid #b87508; outline-offset:2px; }
+.perf-npu-process-detail-row > td { padding:0 8px 9px; background:#fffaf1; white-space:normal; }
+.perf-npu-process-detail-scroll {
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+  scrollbar-gutter:stable;
+  border-top:1px solid rgba(184,117,8,.18);
+}
+.perf-npu-process-detail-table { width:100%; min-width:520px; border-collapse:collapse; table-layout:auto; }
+.perf-npu-process-detail-table th,
+.perf-npu-process-detail-table td { padding:7px 10px; text-align:left; white-space:nowrap; }
+.perf-npu-process-detail-table th { color:#6f5a3f; font-size:10px; }
+.perf-npu-process-detail-table td:nth-child(2) { min-width:280px; }
 @keyframes perf-npu-spin { to { transform:rotate(360deg); } }
 .perf-attr-fieldset { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fffdf8; }
 .perf-attr-fieldset legend { padding:0 6px; color:#87570a; font-size:12px; font-weight:950; }

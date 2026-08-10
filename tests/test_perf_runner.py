@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+import threading
 import unittest
 import zipfile
 from pathlib import Path
@@ -203,6 +204,53 @@ __END_NPU__
         self.assertEqual(devices[0]["process_count"], 0)
         self.assertFalse(devices[1]["available"])
         self.assertEqual(devices[1]["status"], "unavailable")
+
+    def test_parse_npu_smi_status_returns_all_processes(self):
+        process_lines = "\n".join(
+            f"Process id:{1000 + index} Process name:python-{index} Process memory(MB):{index + 1}"
+            for index in range(20)
+        )
+        output = f"""__NPU__:0
+HBM Capacity(MB) : 65536
+HBM Usage Rate(%) : 10
+NPU Utilization(%) : 0
+__PROCESSES__
+{process_lines}
+__END_NPU__
+"""
+
+        device = parse_npu_smi_status(output, [0])[0]
+
+        self.assertEqual(device["process_count"], 20)
+        self.assertEqual(len(device["processes"]), 20)
+        self.assertFalse(device["processes_truncated"])
+        self.assertEqual(device["processes"][-1]["pid"], 1019)
+
+    @patch("backend.runner_agent.collect_npu_device_status")
+    @patch("backend.runner_agent.load_config")
+    def test_forced_npu_status_refresh_acknowledges_request(self, load_runner_config, collect_status):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.config = SimpleNamespace(
+            runner_id="relay-test",
+            npu_device_count=8,
+            npu_status_timeout_seconds=60,
+        )
+        agent.current_jobs = 0
+        agent._npu_status_lock = threading.Lock()
+        agent._npu_status_refreshing = True
+        agent._npu_status_pending_refresh_id = None
+        agent._npu_status_checked_at = 0.0
+        agent._npu_status = {"updated_at": None, "devices": [], "error": ""}
+        agent.health = Mock(return_value={"vpn_connected": True, "npu_reachable": True})
+        agent.send_runner_heartbeat = Mock()
+        load_runner_config.return_value = Mock()
+        collect_status.return_value = [{"id": 0, "available": True, "processes": []}]
+
+        agent._refresh_npu_status("refresh-test")
+
+        self.assertEqual(agent._npu_status["refresh_request_id"], "refresh-test")
+        self.assertFalse(agent._npu_status_refreshing)
+        agent.send_runner_heartbeat.assert_called_once()
 
     @patch("backend.perf_runner.subprocess.run")
     def test_background_commands_do_not_inherit_stdin(self, run):
