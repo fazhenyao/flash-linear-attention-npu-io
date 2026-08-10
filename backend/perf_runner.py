@@ -418,8 +418,8 @@ def build_prof_invocation(
     return " ".join(parts)
 
 
-def build_command(payload: dict[str, Any]) -> str:
-    config = load_config()
+def build_profiler_command(payload: dict[str, Any], config: PerfRunnerConfig | None = None) -> str:
+    config = config or load_config()
     prof_tool = normalize_prof_tool(payload)
     attrs = payload.get("attributes") or {}
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
@@ -442,8 +442,7 @@ def build_command(payload: dict[str, Any]) -> str:
         launch_count=launch_count,
     )
     if config.mode == "ssh":
-        remote = _remote_execution_command(config, invocation)
-        return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
+        return invocation
     local_output = local_prof_output_path(prof_tool, config)
     invocation = build_prof_invocation(
         config,
@@ -455,6 +454,15 @@ def build_command(payload: dict[str, Any]) -> str:
         warm_up=warm_up,
         launch_count=launch_count,
     )
+    return invocation
+
+
+def build_command(payload: dict[str, Any]) -> str:
+    config = load_config()
+    invocation = build_profiler_command(payload, config)
+    if config.mode == "ssh":
+        remote = _remote_execution_command(config, invocation)
+        return " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
     return invocation
 
 
@@ -581,11 +589,13 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
     config = ensure_runner_configured()
     prof_tool = normalize_prof_tool(payload)
     command = build_command(payload)
+    profiler_command = build_profiler_command(payload, config)
     if config.dry_run:
         return {
             "status": "done",
             "message": "dry-run：未实际执行",
             "command": command,
+            "profiler_command": profiler_command,
             "prof_tool": prof_tool,
             "dry_run": True,
         }
@@ -699,6 +709,7 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
         "status": "done",
         "message": f"{prof_tool_label(prof_tool)} 执行并导入：{prof_dir.name}",
         "command": command,
+        "profiler_command": profiler_command,
         "prof_tool": prof_tool,
         "prof_dir": str(prof_dir),
         "prof_source": prof_dir.name,
