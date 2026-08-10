@@ -1,3 +1,5 @@
+import { planArtifactStorageCleanup } from "./artifact_storage.js";
+
 const DEFAULT_PROJECT = {
   name: "flash-linear-attention-npu",
   repository: "https://github.com/flashserve/flash-linear-attention-npu",
@@ -62,6 +64,7 @@ const PERF_EVENT_MESSAGE_LIMIT = 4000;
 const PERF_RESULT_JSON_LIMIT = 900000;
 const PERF_ARTIFACT_MAX_PARTS = 10000;
 const PERF_ARTIFACT_KEY_PREFIX = "perf-artifacts";
+const PERF_ARTIFACT_STORAGE_LIMIT_BYTES = 9_000_000_000;
 
 export default {
   async fetch(request, env) {
@@ -103,6 +106,13 @@ export default {
         await requireAdminLike(request, env);
         const payload = await readJson(request);
         return jsonResponse(request, env, await addPerfModel(env, payload.model || payload), 201);
+      }
+      if (url.pathname === "/api/perf/artifacts/storage" && request.method === "GET") {
+        await requireAdminLike(request, env);
+        return jsonResponse(request, env, {
+          ok: true,
+          storage: await getPerfArtifactStorageUsage(env),
+        });
       }
       if (url.pathname === "/api/perf/runner" && request.method === "GET") {
         await requireUser(request, env);
@@ -2685,21 +2695,41 @@ async function startRunnerArtifactUpload(env, jobId, payload) {
   requireArtifactBucket(env);
   const row = await authorizeRunnerJobAction(env, jobId, payload);
   const artifact = normalizePerfArtifact(payload.artifact || payload, true);
+  if (artifact.size_bytes > PERF_ARTIFACT_STORAGE_LIMIT_BYTES) {
+    throw withStatus(413, "artifact is larger than the R2 free-tier storage limit");
+  }
   const objectKey = runnerArtifactObjectKey(row.id, artifact.id);
-  const upload = await env.PERF_ARTIFACTS.createMultipartUpload(objectKey, {
-    httpMetadata: {
-      contentType: artifact.content_type,
-      contentDisposition: contentDispositionAttachment(artifact.filename),
-    },
-    customMetadata: {
-      jobId: row.id,
-      artifactId: artifact.id,
-      filename: artifact.filename,
-      sha256: artifact.sha256,
-      expiresAt: artifact.expires_at || "",
-    },
-    storageClass: "Standard",
-  });
+  await reservePerfArtifactUpload(env, row.id, artifact, objectKey);
+  let cleanup;
+  try {
+    cleanup = await enforcePerfArtifactStorageLimit(env);
+  } catch (error) {
+    await releasePerfArtifactUpload(env, artifact.id);
+    throw error;
+  }
+  if (cleanup.deleted_count) {
+    await appendPerfJobEvent(env, row.id, row.attempt_id, "artifact_storage_cleanup", "info", "R2 容量达到阈值，已清理最旧制品", cleanup);
+  }
+  let upload;
+  try {
+    upload = await env.PERF_ARTIFACTS.createMultipartUpload(objectKey, {
+      httpMetadata: {
+        contentType: artifact.content_type,
+        contentDisposition: contentDispositionAttachment(artifact.filename),
+      },
+      customMetadata: {
+        jobId: row.id,
+        artifactId: artifact.id,
+        filename: artifact.filename,
+        sha256: artifact.sha256,
+        expiresAt: artifact.expires_at || "",
+      },
+      storageClass: "Standard",
+    });
+  } catch (error) {
+    await releasePerfArtifactUpload(env, artifact.id);
+    throw error;
+  }
   return {
     ok: true,
     artifact_id: artifact.id,
@@ -2744,13 +2774,21 @@ async function completeRunnerArtifactUpload(env, jobId, artifactId, payload) {
   const object = await upload.complete(parts);
   if (artifact.size_bytes && object.size !== artifact.size_bytes) {
     await env.PERF_ARTIFACTS.delete(objectKey);
+    await releasePerfArtifactUpload(env, artifact.id);
     throw withStatus(400, `artifact size mismatch: expected ${artifact.size_bytes}, received ${object.size}`);
   }
   let stored;
   try {
+    await releasePerfArtifactUpload(env, artifact.id);
     [stored] = await storePerfArtifacts(env, row.id, [{ ...artifact, object_key: `r2://${objectKey}` }]);
+    const cleanup = await enforcePerfArtifactStorageLimit(env, { protectedKey: objectKey });
+    if (cleanup.deleted_count) {
+      await appendPerfJobEvent(env, row.id, row.attempt_id, "artifact_storage_cleanup", "info", "R2 容量达到阈值，已清理最旧制品", cleanup);
+    }
   } catch (error) {
     await env.PERF_ARTIFACTS.delete(objectKey);
+    await env.DB.prepare("DELETE FROM perf_artifacts WHERE job_id = ? AND object_key = ?")
+      .bind(row.id, `r2://${objectKey}`).run();
     throw error;
   }
   await appendPerfJobEvent(env, row.id, row.attempt_id, "artifact_uploaded", "info", "性能制品已上传至 R2", {
@@ -2771,7 +2809,11 @@ async function abortRunnerArtifactUpload(env, jobId, artifactId, payload) {
     runnerArtifactObjectKey(row.id, safeArtifactId),
     uploadId,
   );
-  await upload.abort();
+  try {
+    await upload.abort();
+  } finally {
+    await releasePerfArtifactUpload(env, safeArtifactId);
+  }
   return { ok: true };
 }
 
@@ -2803,6 +2845,121 @@ function runnerArtifactObjectKey(jobId, artifactId) {
 
 function requireArtifactBucket(env) {
   if (!env.PERF_ARTIFACTS) throw withStatus(503, "R2 performance artifact bucket is not configured");
+}
+
+async function getPerfArtifactStorageUsage(env) {
+  requireArtifactBucket(env);
+  const reservedBytes = await getActivePerfArtifactReservationBytes(env);
+  const objects = await listPerfArtifactObjects(env);
+  const usedBytes = objects.reduce((total, object) => total + numberOr(object.size, 0), 0);
+  const uploaded = objects
+    .map((object) => object.uploaded instanceof Date ? object.uploaded : new Date(object.uploaded))
+    .filter((value) => Number.isFinite(value.getTime()))
+    .sort((left, right) => left - right);
+  return {
+    storage_class: "Standard",
+    object_prefix: `${PERF_ARTIFACT_KEY_PREFIX}/`,
+    limit_bytes: PERF_ARTIFACT_STORAGE_LIMIT_BYTES,
+    used_bytes: usedBytes,
+    reserved_bytes: reservedBytes,
+    available_bytes: Math.max(0, PERF_ARTIFACT_STORAGE_LIMIT_BYTES - usedBytes - reservedBytes),
+    utilization: PERF_ARTIFACT_STORAGE_LIMIT_BYTES
+      ? Number(((usedBytes + reservedBytes) / PERF_ARTIFACT_STORAGE_LIMIT_BYTES).toFixed(6))
+      : 0,
+    object_count: objects.length,
+    managed_object_count: objects.filter((object) => object.key.startsWith(`${PERF_ARTIFACT_KEY_PREFIX}/`)).length,
+    oldest_uploaded_at: uploaded[0]?.toISOString() || null,
+    newest_uploaded_at: uploaded.at(-1)?.toISOString() || null,
+  };
+}
+
+async function enforcePerfArtifactStorageLimit(env, options = {}) {
+  requireArtifactBucket(env);
+  const reserveBytes = await getActivePerfArtifactReservationBytes(env);
+  const protectedKey = String(options.protectedKey || "");
+  const targetBytes = PERF_ARTIFACT_STORAGE_LIMIT_BYTES - reserveBytes;
+  const objects = await listPerfArtifactObjects(env);
+  const plan = planArtifactStorageCleanup(objects, {
+    targetBytes,
+    protectedKey,
+    managedPrefix: `${PERF_ARTIFACT_KEY_PREFIX}/`,
+  });
+  const usedBytes = plan.usedBytes;
+  const deleted = plan.deleted;
+  if (usedBytes > targetBytes) {
+    throw withStatus(507, "R2 artifact storage limit cannot reserve enough capacity");
+  }
+  if (deleted.length) {
+    await deletePerfArtifactObjects(env, deleted.map((object) => object.key));
+  }
+  return {
+    limit_bytes: PERF_ARTIFACT_STORAGE_LIMIT_BYTES,
+    reserve_bytes: reserveBytes,
+    used_bytes: Math.max(0, usedBytes),
+    available_bytes: Math.max(0, PERF_ARTIFACT_STORAGE_LIMIT_BYTES - usedBytes - reserveBytes),
+    deleted_count: deleted.length,
+    deleted_bytes: deleted.reduce((total, object) => total + numberOr(object.size, 0), 0),
+    oldest_deleted_at: deleted.length
+      ? new Date(deleted[0].uploaded || 0).toISOString()
+      : null,
+  };
+}
+
+async function reservePerfArtifactUpload(env, jobId, artifact, objectKey) {
+  const timestamp = nowIso();
+  const expiresAt = new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString();
+  await env.DB.prepare(
+    `INSERT INTO perf_artifact_upload_reservations(
+      artifact_id, job_id, object_key, size_bytes, expires_at, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(artifact_id) DO UPDATE SET
+      job_id = excluded.job_id, object_key = excluded.object_key,
+      size_bytes = excluded.size_bytes, expires_at = excluded.expires_at`,
+  ).bind(artifact.id, jobId, objectKey, artifact.size_bytes, expiresAt, timestamp).run();
+}
+
+async function releasePerfArtifactUpload(env, artifactId) {
+  await env.DB.prepare("DELETE FROM perf_artifact_upload_reservations WHERE artifact_id = ?")
+    .bind(artifactId).run();
+}
+
+async function getActivePerfArtifactReservationBytes(env) {
+  const timestamp = nowIso();
+  await env.DB.prepare("DELETE FROM perf_artifact_upload_reservations WHERE expires_at <= ?")
+    .bind(timestamp).run();
+  const row = await env.DB.prepare(
+    "SELECT COALESCE(SUM(size_bytes), 0) AS reserved_bytes FROM perf_artifact_upload_reservations WHERE expires_at > ?",
+  ).bind(timestamp).first();
+  return numberOr(row?.reserved_bytes, 0);
+}
+
+async function listPerfArtifactObjects(env) {
+  const objects = [];
+  let cursor;
+  do {
+    const page = await env.PERF_ARTIFACTS.list({
+      limit: 1000,
+      cursor,
+    });
+    objects.push(...page.objects);
+    if (!page.truncated) break;
+    if (!page.cursor) throw withStatus(503, "R2 artifact listing did not return a continuation cursor");
+    cursor = page.cursor;
+  } while (cursor);
+  return objects;
+}
+
+async function deletePerfArtifactObjects(env, objectKeys) {
+  const databaseKeys = objectKeys.map((key) => `r2://${key}`);
+  for (let offset = 0; offset < databaseKeys.length; offset += 50) {
+    const chunk = databaseKeys.slice(offset, offset + 50);
+    const placeholders = chunk.map(() => "?").join(",");
+    await env.DB.prepare(`DELETE FROM perf_artifacts WHERE object_key IN (${placeholders})`)
+      .bind(...chunk).run();
+  }
+  for (let offset = 0; offset < objectKeys.length; offset += 1000) {
+    await env.PERF_ARTIFACTS.delete(objectKeys.slice(offset, offset + 1000));
+  }
 }
 
 async function authorizeRunnerJobAction(env, jobId, payload) {

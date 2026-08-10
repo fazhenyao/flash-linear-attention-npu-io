@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:worker": "node --test tests/worker_artifact_storage.test.mjs",
     "cf:dev": "wrangler dev",
     "cf:deploy": "wrangler deploy",
     "cf:migrate:local": "wrangler d1 migrations apply flash-linear-attention-npu-io-fazhenyao --local",
