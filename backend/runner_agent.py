@@ -235,9 +235,10 @@ class RunnerAgent:
                 "source_build": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_deployment": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_branch_query": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
+                "source_remote_branch_query": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_branches": self.source_branches_status(),
             },
-            "agent_version": "1.5.0",
+            "agent_version": "1.6.0",
         }
 
     def source_branches_status(self) -> dict[str, Any]:
@@ -583,7 +584,7 @@ class RunnerAgent:
     def environment_summary(self) -> dict[str, Any]:
         status = runner_status()
         return {
-            "agent_version": "1.5.0",
+            "agent_version": "1.6.0",
             "runner_id": self.config.runner_id,
             "mode": status.get("mode"),
             "chip": status.get("chip"),

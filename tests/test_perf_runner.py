@@ -111,9 +111,16 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertEqual(config.npu_status_interval_seconds, 30 * 60)
 
     @patch("backend.perf_runner._run_remote_checked")
-    def test_source_branch_query_returns_only_valid_local_branches(self, run_remote):
+    def test_source_branch_query_returns_local_and_remote_branches(self, run_remote):
         run_remote.return_value = Mock(
-            stdout="main\nfeature/a5\nfeature/../invalid\nmain\n"
+            stdout=(
+                "refs/heads/main\n"
+                "refs/heads/feature/a5\n"
+                "refs/remotes/origin/HEAD\n"
+                "refs/remotes/origin/main\n"
+                "refs/remotes/origin/feature/remote\n"
+                "refs/remotes/origin/feature/../invalid\n"
+            )
         )
         with patch.dict(os.environ, self.environment, clear=False):
             config = load_config()
@@ -123,8 +130,16 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             "/workspace/user/flash-linear-attention-npu",
         )
 
-        self.assertEqual(branches, ["feature/a5", "main"])
+        self.assertEqual(branches, [
+            {"source": "local", "name": "feature/a5"},
+            {"source": "local", "name": "main"},
+            {"source": "remote", "name": "feature/remote"},
+            {"source": "remote", "name": "main"},
+        ])
+        self.assertIn("fetch --prune origin", run_remote.call_args.args[1])
+        self.assertIn("|| true", run_remote.call_args.args[1])
         self.assertIn("refs/heads", run_remote.call_args.args[1])
+        self.assertIn("refs/remotes/origin", run_remote.call_args.args[1])
         with self.assertRaisesRegex(ValueError, "不在 Relay 允许目录内"):
             list_remote_source_branches(config, "/etc/private-repo")
 
@@ -161,6 +176,7 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
 
         self.assertFalse(execution.rebuild)
         self.assertEqual(execution.branch, "feature/a5")
+        self.assertEqual(execution.branch_source, "local")
 
     @patch("backend.perf_runner._run_remote_checked")
     def test_source_build_uses_readme_commands_and_chip_soc(self, run_remote):
@@ -185,12 +201,39 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         prepare_command = run_remote.call_args_list[0].args[1]
         build_command = run_remote.call_args_list[1].args[1]
         self.assertIn("refs/heads/feature/a5^{commit}", prepare_command)
-        self.assertLess(prepare_command.index("refs/heads/"), prepare_command.index("fetch --prune origin"))
+        self.assertNotIn("fetch --prune origin", prepare_command)
         self.assertIn("python scripts/check_npu_env.py --build-only", build_command)
         self.assertIn("FLA_NPU_SOC=ascend950", build_command)
         self.assertIn("python -m pip wheel --no-build-isolation --no-deps", build_command)
         self.assertIn("--force-reinstall --no-cache-dir --no-deps", build_command)
         self.assertEqual(result["commit"], "a" * 40)
+
+    @patch("backend.perf_runner._run_remote_checked")
+    def test_remote_source_build_refreshes_origin_and_uses_cached_ref_offline(self, run_remote):
+        run_remote.side_effect = [
+            SimpleNamespace(stdout="b" * 40 + "\n"),
+            SimpleNamespace(stdout="Successfully installed\n"),
+        ]
+        with patch.dict(os.environ, {**self.environment, "PERF_CHIP": "A5"}, clear=False):
+            config = load_config()
+        execution = resolve_execution_environment({
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": True,
+                "branch": "feature/remote",
+                "branch_source": "remote",
+            }
+        }, config)
+
+        result = _prepare_remote_source_build(config, execution, config.chip)
+
+        prepare_command = run_remote.call_args_list[0].args[1]
+        self.assertIn("refs/remotes/origin/feature/remote^{commit}", prepare_command)
+        self.assertIn("fetch --prune origin", prepare_command)
+        self.assertIn("|| true", prepare_command)
+        self.assertEqual(result["branch_source"], "remote")
 
     def test_build_soc_is_fixed_by_runner_chip(self):
         self.assertEqual(soc_build_target("A2"), "ascend910b")
@@ -217,7 +260,7 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         }
         run_remote.side_effect = [
             SimpleNamespace(stdout="\n"),
-            SimpleNamespace(stdout=f"feature/a5\n{'a' * 40}\nascend950\n"),
+            SimpleNamespace(stdout=f"feature/a5\nlocal\n{'a' * 40}\nascend950\n"),
         ]
 
         deployment = _activate_remote_source_build(config, execution, "A5", build_info)
@@ -461,12 +504,18 @@ __END_NPU__
         agent.health = Mock(return_value={"vpn_connected": True, "npu_reachable": True})
         agent.send_runner_heartbeat = Mock()
         load_runner_config.return_value = Mock()
-        list_branches.return_value = ["feature/a5", "main"]
+        list_branches.return_value = [
+            {"source": "local", "name": "main"},
+            {"source": "remote", "name": "feature/a5"},
+        ]
 
         agent._refresh_source_branches("branches-test", "/workspace/user/repo")
 
         self.assertEqual(agent._source_branches["refresh_request_id"], "branches-test")
-        self.assertEqual(agent._source_branches["branches"], ["feature/a5", "main"])
+        self.assertEqual(agent._source_branches["branches"], [
+            {"source": "local", "name": "main"},
+            {"source": "remote", "name": "feature/a5"},
+        ])
         self.assertFalse(agent._source_branches_refreshing)
         agent.send_runner_heartbeat.assert_called_once()
 
