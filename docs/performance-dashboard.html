@@ -212,6 +212,21 @@
             <label class="perf-form-fieldwide">执行服务器
               <select id="triggerRunner" aria-label="执行服务器"></select>
             </label>
+            <section class="perf-npu-status perf-form-fieldwide" aria-labelledby="triggerNpuStatusTitle">
+              <div class="perf-npu-status-header">
+                <strong id="triggerNpuStatusTitle">NPU 设备占用</strong>
+                <button id="refreshNpuStatusBtn" type="button" class="perf-npu-refresh-btn" title="读取 Relay 最近上报的设备状态">
+                  <span aria-hidden="true">&#8635;</span><span>刷新</span>
+                </button>
+              </div>
+              <p id="triggerNpuStatusHint" class="perf-field-hint">等待 Relay 上报 npu-smi 状态。</p>
+              <div class="table-wrap perf-npu-status-table-wrap">
+                <table class="stats-table perf-npu-status-table">
+                  <thead><tr><th>NPU</th><th>状态</th><th>利用率</th><th>HBM</th><th>进程</th></tr></thead>
+                  <tbody id="triggerNpuStatusRows"></tbody>
+                </table>
+              </div>
+            </section>
             <label>测试模式
               <select id="triggerProfTool">
                 <option value="msprof">msprof（整网性能）</option>
@@ -398,6 +413,7 @@
       selectedRunnerId: localStorage.getItem("fla-perf-runner-id") || "",
       jobs: [],
       perfPollTimer: null,
+      npuStatusRefreshing: false,
     };
 
     init().catch((error) => {
@@ -440,6 +456,7 @@
       document.querySelector("#caseCompareClearBtn").addEventListener("click", clearCompareCases);
       document.querySelector("#triggerForm").addEventListener("submit", onTriggerSubmit);
       document.querySelector("#triggerRunner").addEventListener("change", onTriggerRunnerChange);
+      document.querySelector("#refreshNpuStatusBtn").addEventListener("click", refreshNpuDeviceStatus);
       document.querySelector("#loginBtn").addEventListener("click", onLogin);
       document.querySelector("#logoutBtn").addEventListener("click", onLogout);
       document.querySelector("#addModelBtn").addEventListener("click", onAddModel);
@@ -944,6 +961,88 @@
       syncTriggerDeviceFromRunner(true);
       syncTriggerOpDefaultsFromRunner();
       updateTriggerEnvFromRunner();
+      renderNpuDeviceStatus();
+    }
+
+    function triggerRunnerNpuStatus(agent) {
+      return agent?.capabilities?.npu_status || null;
+    }
+
+    function npuStatusLabel(status) {
+      return ({ busy: "占用", idle: "空闲", unavailable: "不可用" })[status] || "未知";
+    }
+
+    function formatNpuMemoryMb(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return "—";
+      return number >= 1024 ? `${(number / 1024).toFixed(1)} GB` : `${number.toFixed(0)} MB`;
+    }
+
+    function npuProcessText(device) {
+      const processes = Array.isArray(device?.processes) ? device.processes : [];
+      if (!Number(device?.process_count)) return "无";
+      const text = processes.map((process) => {
+        const memory = Number.isFinite(Number(process.memory_mb)) ? `，${formatNpuMemoryMb(process.memory_mb)}` : "";
+        return `${process.name || "process"}（PID ${process.pid}${memory}）`;
+      }).join("；");
+      return device.processes_truncated ? `${text}；另有其他进程` : text;
+    }
+
+    function renderNpuDeviceStatus() {
+      const rows = document.querySelector("#triggerNpuStatusRows");
+      const hint = document.querySelector("#triggerNpuStatusHint");
+      const button = document.querySelector("#refreshNpuStatusBtn");
+      if (!rows || !hint || !button) return;
+      button.disabled = state.npuStatusRefreshing || (!state.user && Boolean(WORKER_API_BASE));
+      button.classList.toggle("is-refreshing", state.npuStatusRefreshing);
+      const runner = selectedTriggerRunner();
+      const status = triggerRunnerNpuStatus(runner);
+      const devices = Array.isArray(status?.devices) ? status.devices : [];
+      if (!runner) {
+        hint.textContent = state.user ? "尚无 Relay 上报设备状态。" : "登录后可查看 NPU 设备占用。";
+        rows.innerHTML = '<tr><td colspan="5" class="empty">暂无设备状态</td></tr>';
+        return;
+      }
+      const updatedAt = status?.updated_at ? new Date(status.updated_at) : null;
+      const validTime = updatedAt && !Number.isNaN(updatedAt.getTime());
+      const ageMs = validTime ? Date.now() - updatedAt.getTime() : null;
+      const freshness = validTime
+        ? `最近上报：${updatedAt.toLocaleString("zh-CN", { hour12: false })}${ageMs > 120000 ? "（可能已过期）" : ""}`
+        : "等待首次查询";
+      hint.textContent = `${runner.name || runner.id} · ${freshness}${status?.error ? ` · ${status.error}` : ""}`;
+      if (!devices.length) {
+        rows.innerHTML = '<tr><td colspan="5" class="empty">Relay 正在查询 npu-smi，请稍后刷新</td></tr>';
+        return;
+      }
+      rows.innerHTML = devices.map((device) => {
+        const processText = npuProcessText(device);
+        const utilization = device.available
+          ? `NPU ${device.npu_utilization_pct ?? "—"}% · Core ${device.aicore_usage_pct ?? "—"}% · Vector ${device.aivector_usage_pct ?? "—"}%`
+          : "—";
+        const hbm = device.available
+          ? `${formatNpuMemoryMb(device.hbm_used_mb)} / ${formatNpuMemoryMb(device.hbm_capacity_mb)}（${device.hbm_usage_pct ?? "—"}%）`
+          : "—";
+        return `<tr>
+          <td><strong>${escapeHtml(device.id)}</strong></td>
+          <td><span class="stat-pill perf-npu-status-pill ${escapeHtml(device.status || "unavailable")}">${escapeHtml(npuStatusLabel(device.status))}</span></td>
+          <td>${escapeHtml(utilization)}</td>
+          <td>${escapeHtml(hbm)}</td>
+          <td class="perf-npu-process-cell" title="${escapeHtml(processText)}">${escapeHtml(processText)}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    async function refreshNpuDeviceStatus() {
+      if (state.npuStatusRefreshing) return;
+      state.npuStatusRefreshing = true;
+      renderNpuDeviceStatus();
+      try {
+        await loadRunnerStatus();
+        updateTriggerEnvFromRunner();
+      } finally {
+        state.npuStatusRefreshing = false;
+        renderNpuDeviceStatus();
+      }
     }
 
     function syncTriggerDeviceFromRunner(force = false) {
@@ -1315,6 +1414,7 @@
       renderMeta();
       fillFilters();
       updateTriggerEnvFromRunner();
+      renderNpuDeviceStatus();
       renderNetworkTab();
       renderCaseTab();
       renderRuns();

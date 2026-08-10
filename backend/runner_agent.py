@@ -22,9 +22,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .perf_runner import execute, load_config, runner_status
+    from .perf_runner import collect_npu_device_status, execute, load_config, runner_status
 except ImportError:
-    from perf_runner import execute, load_config, runner_status  # type: ignore
+    from perf_runner import collect_npu_device_status, execute, load_config, runner_status  # type: ignore
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,6 +53,9 @@ class AgentConfig:
     state_dir: Path
     retention_days: int
     upload_part_bytes: int
+    npu_status_interval_seconds: int
+    npu_status_timeout_seconds: int
+    npu_device_count: int
 
     @classmethod
     def from_env(cls) -> "AgentConfig":
@@ -78,6 +81,9 @@ class AgentConfig:
             state_dir=state_dir,
             retention_days=env_int("RUNNER_ARTIFACT_RETENTION_DAYS", 30, 1),
             upload_part_bytes=env_int("RUNNER_R2_PART_MIB", 32, 5) * 1024 * 1024,
+            npu_status_interval_seconds=env_int("RUNNER_NPU_STATUS_INTERVAL_SECONDS", 30, 10),
+            npu_status_timeout_seconds=env_int("RUNNER_NPU_STATUS_TIMEOUT_SECONDS", 60, 10),
+            npu_device_count=env_int("RUNNER_NPU_DEVICE_COUNT", 8, 1),
         )
 
 
@@ -164,16 +170,27 @@ class RunnerAgent:
         self.config = config
         self.api = RunnerApi(config)
         self.stop_event = threading.Event()
+        self.current_jobs = 0
+        self._npu_status_lock = threading.Lock()
+        self._npu_status_refreshing = False
+        self._npu_status_checked_at = 0.0
+        self._npu_status = {
+            "updated_at": None,
+            "checked_at": None,
+            "devices": [],
+            "error": "等待 Relay 首次查询",
+        }
         self.config.state_dir.mkdir(parents=True, exist_ok=True)
         (self.config.state_dir / "jobs").mkdir(parents=True, exist_ok=True)
 
     def stop(self, *_args: object) -> None:
         self.stop_event.set()
 
-    def capabilities(self) -> dict[str, Any]:
+    def capabilities(self, *, refresh_npu: bool = True) -> dict[str, Any]:
         status = runner_status()
         device = status.get("npu_device")
         chip = status.get("chip")
+        npu_status = self.npu_status(refresh=refresh_npu)
         return {
             "mode": status.get("mode"),
             "chip": chip,
@@ -184,8 +201,62 @@ class RunnerAgent:
             "op_warm_up": status.get("op_warm_up"),
             "op_launch_count": status.get("op_launch_count"),
             "max_concurrency": self.config.max_concurrency,
-            "agent_version": "1.0.0",
+            "npu_status": npu_status,
+            "agent_version": "1.1.0",
         }
+
+    def npu_status(self, *, refresh: bool = True) -> dict[str, Any]:
+        now = time.monotonic()
+        with self._npu_status_lock:
+            interval = self.config.npu_status_interval_seconds
+            stale = now - self._npu_status_checked_at >= interval
+            if refresh and stale and not self._npu_status_refreshing:
+                self._npu_status_refreshing = True
+                self._npu_status_checked_at = now
+                threading.Thread(
+                    target=self._refresh_npu_status,
+                    name=f"npu-status-{self.config.runner_id}",
+                    daemon=True,
+                ).start()
+            return {
+                **self._npu_status,
+                "devices": [dict(device) for device in self._npu_status.get("devices", [])],
+            }
+
+    def _refresh_npu_status(self) -> None:
+        try:
+            perf_config = load_config()
+            devices = collect_npu_device_status(
+                perf_config,
+                device_count=self.config.npu_device_count,
+                timeout_seconds=self.config.npu_status_timeout_seconds,
+            )
+            available = sum(1 for device in devices if device.get("available"))
+            checked_at = utc_now()
+            status = {
+                "updated_at": checked_at,
+                "checked_at": checked_at,
+                "devices": devices,
+                "error": "" if available else "npu-smi 未返回可用设备",
+            }
+        except Exception as exc:
+            with self._npu_status_lock:
+                previous = self._npu_status
+            status = {
+                "updated_at": previous.get("updated_at"),
+                "checked_at": utc_now(),
+                "devices": previous.get("devices", []),
+                "error": str(exc)[:500],
+            }
+        with self._npu_status_lock:
+            self._npu_status = status
+            self._npu_status_checked_at = time.monotonic()
+            self._npu_status_refreshing = False
+        try:
+            health = self.health()
+            self.send_runner_heartbeat(health, current_jobs=self.current_jobs)
+        except Exception:
+            pass
 
     def health(self) -> dict[str, Any]:
         status = runner_status()
@@ -213,7 +284,7 @@ class RunnerAgent:
         return {
             "runner_id": self.config.runner_id,
             "name": self.config.runner_name,
-            "capabilities": self.capabilities(),
+            "capabilities": self.capabilities(refresh_npu=bool(health.get("npu_reachable"))),
             "vpn_connected": bool(health.get("vpn_connected")),
             "npu_reachable": bool(health.get("npu_reachable")),
             "current_jobs": current_jobs,
@@ -268,6 +339,7 @@ class RunnerAgent:
         )
         heartbeat = JobHeartbeat(self, job)
         heartbeat.start()
+        self.current_jobs = 1
         try:
             self.save_job_state(job, "running", request=request)
             result = execute(request, persist_local_data=False)
@@ -337,6 +409,7 @@ class RunnerAgent:
                 }),
             )
         finally:
+            self.current_jobs = 0
             heartbeat.stop()
             heartbeat.join(timeout=2)
             try:
@@ -347,7 +420,7 @@ class RunnerAgent:
     def environment_summary(self) -> dict[str, Any]:
         status = runner_status()
         return {
-            "agent_version": "1.0.0",
+            "agent_version": "1.1.0",
             "runner_id": self.config.runner_id,
             "mode": status.get("mode"),
             "chip": status.get("chip"),
