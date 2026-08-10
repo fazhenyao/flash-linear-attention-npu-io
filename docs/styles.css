@@ -380,7 +380,7 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
   font-weight:900;
 }
 .perf-npu-refresh-btn.is-refreshing span:first-child { animation:perf-npu-spin .8s linear infinite; }
-.perf-npu-status-table-wrap { container-type:inline-size; max-height:310px; overflow:auto; }
+.perf-npu-status-table-wrap { max-height:310px; overflow:auto; }
 .stats-table.perf-npu-status-table { width:100%; min-width:620px; table-layout:fixed; }
 .perf-npu-status-table th:nth-child(1) { width:48px; }
 .perf-npu-status-table th:nth-child(2) { width:72px; }
@@ -404,14 +404,12 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 }
 .perf-npu-process-btn:hover { text-decoration:underline; }
 .perf-npu-process-btn:focus-visible { outline:2px solid #b87508; outline-offset:2px; }
-.perf-npu-process-detail-row > td { padding:0 8px 9px; background:#fffaf1; white-space:normal; }
+.perf-npu-process-details { display:grid; gap:5px; min-width:0; }
+.perf-npu-process-details:empty { display:none; }
+.perf-npu-process-detail-title { color:#6f5a3f; font-size:11px; }
 .perf-npu-process-detail-scroll {
-  position:sticky;
-  left:0;
-  width:min(100%,calc(100vw - 52px));
-  width:min(100%,100cqi);
+  width:100%;
   max-width:100%;
-  max-width:100cqi;
   box-sizing:border-box;
   overflow-x:auto;
   overscroll-behavior-x:contain;
@@ -421,8 +419,6 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-npu-process-detail-table { width:100%; min-width:520px; border-collapse:collapse; table-layout:auto; }
 .perf-npu-process-detail-table th,
 .perf-npu-process-detail-table td { padding:7px 10px; text-align:left; white-space:nowrap; }
-.perf-npu-process-detail-table th:first-child,
-.perf-npu-process-detail-table td:first-child { padding-left:30px; }
 .perf-npu-process-detail-table th { color:#6f5a3f; font-size:10px; }
 .perf-npu-process-detail-table td:nth-child(2) { min-width:280px; }
 @keyframes perf-npu-spin { to { transform:rotate(360deg); } }
