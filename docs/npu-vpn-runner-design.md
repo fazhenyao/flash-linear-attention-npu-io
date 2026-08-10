@@ -27,11 +27,11 @@
 | 执行面 | A2 `192.168.9.221` 与 A5 `192.168.13.241` | 加载默认或管理员选择的 CANN/Conda/源码环境，执行白名单 profiler 命令，可按分支构建 wheel |
 | 本地兜底 | Relay 本地 Prof 目录，默认保留 30 天 | R2 上传失败时仍保留结构化结果和本地原始制品 |
 
-当前测试链路为：用户在看板选择 A2/A5 和 NPU 卡号后提交任务，Worker 校验结构化参数并写入 D1；目标 Relay 经自适应轮询领取任务。管理员可以随任务覆盖 CANN 路径、Conda 环境和源码仓库，并可指定源码仓库已有分支重新构建安装；Relay 验证路径与分支，在独立临时 worktree 中按芯片构建 wheel。随后 Relay 通过同步 SSH 执行服务端生成的 `msprof` / `msopprof` 命令，以 SCP 回收本次新增 Prof 目录，在内存中解析指标，生成 ZIP 和 SHA-256，经 Worker multipart API 上传私有 R2。登录用户从看板下载时，由 Worker 校验任务归属后代理返回 R2 对象。
+当前链路把源码编译安装与性能测试分成两种独立任务。管理员选择 A2/A5、CANN、Conda、源码仓库和分支后，可先提交 `build_install`；Relay 在独立 worktree 中构建并安装 wheel，成功后将该 worktree 激活为当前环境的已部署源码，不执行 profiler。用户随后提交 `profile` 任务，Relay 校验所选分支与当前部署一致，再通过同步 SSH 执行服务端生成的 `msprof` / `msopprof` 命令，以 SCP 回收本次新增 Prof 目录，在内存中解析指标，生成 ZIP 和 SHA-256，经 Worker multipart API 上传私有 R2。登录用户从看板下载时，由 Worker 校验任务归属后代理返回 R2 对象。
 
 NPU 状态链路与任务领取解耦：每个 Relay 默认每 30 分钟在后台分卡执行 `npu-smi info -t usages` 和 `npu-smi info -t proc-mem`，通过 heartbeat 把利用率、HBM 和完整进程明细写入 D1；看板每 10 秒只读取最近缓存。用户点击“刷新”时，Worker 将强制刷新请求持久化，Relay 在下一次出站 heartbeat 收到请求后立即重新采样，因此不需要向 Relay 开放入站端口。
 
-当前已完成队列、双 Relay、A2/A5 精确路由、管理员自定义执行环境与源码分支构建、NPU 占用查询与强制刷新、R2 上传、9 GB 容量保护和看板下载闭环。尚未完成的是远端持久执行、Device 锁、实时进程取消和 Agent 重启后的自动 reconcile；因此执行期 VPN 中断仍需人工核对远端进程和 Prof 目录。
+当前已完成队列、双 Relay、A2/A5 精确路由、管理员自定义执行环境、独立源码编译安装任务、NPU 占用查询与强制刷新、R2 上传、9 GB 容量保护和看板下载闭环。尚未完成的是远端持久执行、Device 锁、实时进程取消和 Agent 重启后的自动 reconcile；因此执行期 VPN 中断仍需人工核对远端进程和 Prof 目录。
 
 ## 2. 当前条件
 
@@ -91,7 +91,7 @@ flowchart LR
 
 - 提交结构化测试参数，选择目标 A2/A5 Relay 和 NPU 卡号。
 - 展示任务状态、排队原因、执行日志摘要、结构化指标和最近一次 NPU 设备占用。
-- 管理员可选择 CANN 路径、Conda 环境、源码仓库，并指定已有分支重新编译安装。
+- 管理员可选择 CANN 路径、Conda 环境、源码仓库和已有分支，单独提交编译安装任务。
 - 提供强制刷新 NPU 状态、取消、重试、结构化结果查看和完整 Prof ZIP 下载入口。
 - 不持有 Runner 凭据和 SSH 凭据。
 
@@ -126,7 +126,7 @@ flowchart LR
 - Relay 进入固定项目目录并执行服务端白名单生成的命令，不接收用户提供的任意 Shell。
 - 每次命令先加载目标服务器的 CANN `set_env.sh`，再加载 Conda 初始化脚本；A2 激活 `fla_dump`，A5 激活 `f30077529`。
 - 管理员可以按任务选择 Relay 允许根目录内的 CANN、Conda 和源码仓库；普通用户继续使用 Relay 默认环境。
-- 指定源码分支重新编译时，Relay 优先解析本地分支，缺失时才尝试从 `origin` 获取；随后在临时 Git worktree 中解析准确 commit，按芯片固定 SoC 构建并安装 wheel，不切换或修改主源码工作区。
+- 独立编译任务优先解析本地分支，缺失时才尝试从 `origin` 获取；随后在 detached worktree 中解析准确 commit，按芯片固定 SoC 构建并安装 wheel，不切换或修改主源码工作区。成功版本通过环境专属链接保留，供后续测试使用。
 - `msprof` 输出到 `data/prof_gdr`，`msopprof` 输出到 `data/prof_op`。
 - 当前 SSH 会话同步等待采集完成；`systemd-run`、远端状态文件和 Device 锁属于阶段二。
 
@@ -273,29 +273,30 @@ Worker 领取任务时先校验 `target_runner_id`，再校验 Agent 上报的�
 
 任务提交仍只接受 Worker 白名单中的 `script_id`。`PERF_REMOTE_SCRIPT` 是受信任的 Relay 本机配置，用于把该白名单 ID 映射到特定 NPU 主机上的脚本路径；浏览器用户不能提交或覆盖远端路径。
 
-### 7.3 管理员自定义执行环境与源码重编译
+### 7.3 管理员自定义执行环境与独立编译安装
 
-选择 Relay 后，看板从该 Relay 的 capabilities 读取默认 CANN 路径、Conda 环境、源码仓库和构建能力。普通用户只能使用这些默认值；管理员勾选“重新编译安装”后，看板通过 Worker 在 D1 写入带 Runner 和源码路径的分支查询请求。Relay 在下一次出站 heartbeat 收到请求后，通过 SSH 读取目标仓库的本地 `refs/heads`，再把分支列表和同一请求 ID 随 heartbeat 回传。看板轮询到匹配结果后填充下拉框，因此不需要向 Relay 增加入站接口，也不会在前端写死分支。管理员可以随任务提交以下 `execution_environment` 字段：
+选择 Relay 后，看板从该 Relay 的 capabilities 读取默认 CANN 路径、Conda 环境、源码仓库和构建能力。普通用户只能使用这些默认值；管理员进入界面后，看板通过 Worker 在 D1 写入带 Runner 和源码路径的分支查询请求。Relay 在下一次出站 heartbeat 收到请求后，通过 SSH 读取目标仓库的本地 `refs/heads`，再把分支列表和同一请求 ID 随 heartbeat 回传。看板轮询到匹配结果后填充下拉框，因此不需要向 Relay 增加入站接口，也不会在前端写死分支。管理员可以提交以下 `execution_environment` 字段：
 
 | 字段 | 含义 | 约束 |
 | --- | --- | --- |
 | `cann_path` | Ascend Toolkit 根目录或其 `set_env.sh` | 必须为 POSIX 绝对路径，并位于 Relay 配置的 `PERF_ALLOWED_CANN_ROOTS` 内 |
 | `conda_env` | Conda 环境名称 | 只允许字母、数字、点、下划线和连字符 |
 | `source_repo` | `flash-linear-attention-npu` 源码仓库 | 必须为 POSIX 绝对路径，并位于 `PERF_ALLOWED_SOURCE_ROOTS` 内 |
-| `rebuild` | 是否在测试前重新构建安装 | 必须为布尔值；启用时必须指定 `branch` |
-| `branch` | 从 Relay 返回的本地源码分支中选择 | 未启用 `rebuild` 时不得提交；服务端仍拒绝 `..`、`@{`、双斜线、`.lock` 等危险形式 |
+| `rebuild` | 是否执行构建 | `build_install` 固定为 `true`；新 `profile` 任务固定为 `false`；旧的组合任务仍兼容 |
+| `branch` | 从 Relay 返回的本地源码分支中选择 | 编译任务必须提交；测试任务提交时表示必须使用该环境中已部署的同分支版本；服务端仍拒绝危险 Git ref 形式 |
 
-Worker 先执行角色、字段白名单、路径格式和分支格式校验；分支查询要求 Relay 显式上报 `source_branch_query=true`，任务领取时还要求目标 Relay 上报 `execution_environment.customizable=true`，重新构建任务额外要求 `source_build=true`。Relay 再执行允许根目录校验和远端文件检查，形成控制面与执行面双重约束。
+Worker 先执行角色、任务类型、字段白名单、路径格式和分支格式校验；`build_install` 只允许管理员提交，必须指定目标 Relay，并要求 Relay 显式上报 `job_types`、`source_build` 和 `source_deployment` 能力。Relay 再执行允许根目录校验、远端文件检查和已部署版本匹配，形成控制面与执行面双重约束。
 
-重新构建流程固定为：
+独立编译与测试流程固定为：
 
 1. 看板下拉框只列出目标仓库本地 `refs/heads`，保证所选分支已经存在于 NPU 服务器；Relay 执行时再次使用 `git check-ref-format` 校验分支并解析 `refs/heads/<branch>`。通过 API 直接提交的合法非本地分支仍会尝试 `git fetch --prune origin`，但不由下拉框主动提供。
 2. 把分支解析为准确 commit，在 `PERF_REMOTE_BUILD_ROOT` 下创建唯一 detached worktree，不切换主源码仓库当前分支。
 3. 在管理员选择的 CANN/Conda 环境中执行源码仓库 README 对应流程：`python scripts/check_npu_env.py --build-only`、构建 wheel、再精确安装本次生成的 wheel。
 4. 构建目标由 Relay 芯片固定映射，用户不能覆盖：A2 为 `ascend910b`、A3 为 `ascend910_93`、A5 为 `ascend950`。
-5. 从该 worktree 的 `examples/flash_gated_delta_rule.py` 执行 profiling，并在任务成功或失败后移除临时 worktree。
+5. 构建成功后，在 `PERF_REMOTE_BUILD_ROOT/active` 下原子更新当前环境的部署链接；同一 CANN、Conda、源码仓库和芯片组合只保留最新激活 worktree，并清理前一个版本。
+6. 后续测试选择分支时，Relay 必须确认部署标记中的分支和 SoC 匹配，再从已激活 worktree 的 `examples/flash_gated_delta_rule.py` 执行 profiling；不匹配则要求先执行编译安装。
 
-当前 A5 主机不能稳定访问 GitHub，因此要在 A5 上重编译的分支应预先存在于本地源码仓库；本地分支存在时不会触发网络 fetch。任务记录保存实际 CANN、Conda、源码仓库、分支、commit 和 SoC，执行记录界面仍只展示对应的 `msprof` 或 `msopprof` profiler 命令，不暴露环境准备和构建 Shell。
+当前 A5 主机不能稳定访问 GitHub，因此要在 A5 上编译的分支应预先存在于本地源码仓库；本地分支存在时不会触发网络 fetch。任务记录保存实际 CANN、Conda、源码仓库、分支、commit 和 SoC。编译任务记录显示“编译安装”及结果，不展示构建 Shell；测试任务的命令字段仍只展示对应的 `msprof` 或 `msopprof` profiler 命令。
 
 ## 8. 任务状态机
 
@@ -814,14 +815,14 @@ VPN 断开时取消请求保持待处理，不能声称已经取消。当前版�
 ### 已落地
 
 - `backend/runner_agent.py`：Agent 注册、健康检查、自适应领取、租约 heartbeat、30 分钟 NPU 自动采样、强制状态刷新、执行、R2 分片上传、结果回传和本地制品清理。
-- `backend/perf_runner.py`：同步 SSH/SCP、CANN/Conda/源码环境准备、允许根目录校验、本地优先分支解析、临时 worktree、按芯片构建安装、连接超时、新增 Prof 目录识别和结果导入；后台子进程使用 `stdin=DEVNULL`，避免 Windows 计划任务模式下 OpenSSH 继承无效标准输入而卡住。
+- `backend/perf_runner.py`：同步 SSH/SCP、CANN/Conda/源码环境准备、允许根目录校验、本地优先分支解析、独立编译安装、环境专属部署链接、按芯片构建、连接超时、新增 Prof 目录识别和结果导入；后台子进程使用 `stdin=DEVNULL`，避免 Windows 计划任务模式下 OpenSSH 继承无效标准输入而卡住。
 - `scripts/import_prof_gdr.py` / `scripts/import_msprof_op.py`：支持只返回内存结果，不要求写入仓库 JSON 快照。
 - `migrations/0009_add_perf_job_queue.sql`：任务、事件、结果、制品和 Agent 数据表。
 - `migrations/0010_add_r2_artifact_reservations.sql`：并发上传容量预留和 8 天安全过期时间。
 - `migrations/0011_add_npu_status_refresh.sql`：在 `runner_agents` 中持久化强制 NPU 状态刷新请求和请求时间。
 - `migrations/0012_add_source_branch_refresh.sql`：持久化源码分支查询请求 ID、请求时间和目标源码仓库。
-- `cloudflare/worker.js`：用户任务 API、Runner API、管理员执行环境校验、能力路由、原子领取、租约、NPU 强制刷新、取消、重试、R2 容量保护、鉴权下载和结果回传。
-- `docs/performance-dashboard.html`：异步提交、A2/A5 选择、NPU 占用与进程明细、管理员执行环境、动态源码分支下拉和分支构建、任务状态、重试、取消、结果展示和 Prof ZIP 下载。
+- `cloudflare/worker.js`：`profile` / `build_install` 任务 API、Runner API、管理员执行环境校验、能力路由、原子领取、租约、NPU 强制刷新、取消、重试、R2 容量保护、鉴权下载和结果回传。
+- `docs/performance-dashboard.html`：异步提交、A2/A5 选择、NPU 占用与进程明细、管理员执行环境、动态源码分支下拉、独立编译安装按钮、任务状态、重试、取消、结果展示和 Prof ZIP 下载。
 - `scripts/run_runner_windows.ps1`、`scripts/protect_runner_token_windows.ps1`、`scripts/install_runner_task_windows.ps1`、`scripts/start_runners_windows.ps1` 和 `scripts/stop_runners_windows.ps1`：Windows Relay 启动、DPAPI Token、计划任务安装及 A2/A5 后台任务启停。
 
 ### 待落地
@@ -1025,11 +1026,11 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - D1 migration 已加入 `perf_jobs`、`perf_job_events`、`perf_results`、`perf_artifacts` 和 `runner_agents`，并为 Runner 增加强制 NPU 状态刷新请求字段。
 - Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传；自定义执行环境仅允许管理员提交并执行字段白名单校验。
 - `backend/runner_agent.py` 已实现主动出站注册、SSH 端口健康检查、异步 `npu-smi` 设备状态上报、自适应领取、执行期 heartbeat、结果回传和本地制品过期清理。
-- `backend/perf_runner.py` 已支持远端 CANN/Conda 环境准备、允许根目录校验、分支解析、临时 Git worktree、按 A2/A3/A5 构建安装、同步 SSH 执行、SSH/SCP 超时、新增结果目录识别和回收；SSH/SCP 子进程显式关闭标准输入，适配无控制台 Windows 计划任务。
-- 性能看板已改为向 Worker 异步提交任务，并提供 A2/A5 执行服务器选择、管理员执行环境与源码分支构建设置、分卡占用自动更新、强制重新采样和点击展开完整进程明细；Runner 或 VPN 离线时任务继续排队。
+- `backend/perf_runner.py` 已支持远端 CANN/Conda 环境准备、允许根目录校验、分支解析、独立编译安装任务、环境专属激活 worktree、按 A2/A3/A5 构建、同步 SSH 执行、SSH/SCP 超时、新增结果目录识别和回收；SSH/SCP 子进程显式关闭标准输入，适配无控制台 Windows 计划任务。
+- 性能看板已改为向 Worker 分别提交编译安装与测试任务，并提供 A2/A5 执行服务器选择、管理员执行环境与源码分支设置、分卡占用自动更新、强制重新采样和点击展开完整进程明细；Runner 或 VPN 离线时任务继续排队。
 - 源码分支已从自由文本改为动态下拉框；分支查询请求经 D1 和 Relay 出站 heartbeat 传递，Relay 只返回所选源码仓库中通过格式校验的本地分支，源码路径变化时会重新查询。
 - NPU 状态自动采样间隔已从 30 秒调整为 30 分钟；看板仍每 10 秒读取 D1 缓存，点击刷新会通过 Worker 持久化请求并强制 Relay 立即重新执行 `npu-smi`。
-- 执行记录的命令字段只展示 `msprof` 或 `msopprof` profiler 命令；环境加载、Git worktree 和构建安装命令不在看板暴露。
+- 编译任务在执行记录中独立显示“编译安装”和安装结果，不生成 Prof/R2 制品；测试任务的命令字段只展示 `msprof` 或 `msopprof` profiler 命令，环境加载、Git worktree 和构建 Shell 不在看板暴露。
 - 已增加不执行 NPU 命令的队列冒烟测试 `scripts/smoke_test_perf_queue.py`。
 - Runner 接口使用独立于浏览器用户会话的 `RUNNER_TOKEN`；A2/A5 当前共享这一服务 Token，本机副本使用 DPAPI 加密保存，后续应拆分为可单独吊销的每 Relay 凭据。
 - Windows 计划任务 `FLA VPN Runner` 和 `FLA VPN Runner A5` 已安装并运行；两个计划任务都在用户登录后启动 Agent，以复用本机 VPN 会话。

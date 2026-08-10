@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   normalizePerfExecutionEnvironment,
+  normalizePerfJobRequest,
   normalizeSourceBranchesRefreshRequest,
   runnerCanExecute,
 } from "../cloudflare/worker.js";
@@ -56,6 +57,39 @@ test("requires an explicit valid branch for source rebuilds", () => {
   );
 });
 
+test("allows profile tasks to select an already deployed branch", () => {
+  const environment = normalizePerfExecutionEnvironment({
+    cann_path: "/home/user/cann",
+    conda_env: "fla",
+    source_repo: "/home/user/repo",
+    rebuild: false,
+    branch: "feature/a5",
+  }, { allowBranchWithoutRebuild: true });
+  assert.equal(environment.branch, "feature/a5");
+  assert.equal(environment.rebuild, false);
+});
+
+test("normalizes admin build-install tasks and rejects ordinary users", () => {
+  const payload = {
+    task_type: "build_install",
+    chip: "A5",
+    device: 7,
+    target_runner_id: "runner-a5",
+    execution_environment: {
+      cann_path: "/home/user/cann",
+      conda_env: "fla",
+      source_repo: "/home/user/repo",
+      rebuild: true,
+      branch: "main",
+    },
+  };
+  const request = normalizePerfJobRequest(payload, { role: "admin" });
+  assert.equal(request.task_type, "build_install");
+  assert.equal(request.prof_tool, "build_install");
+  assert.equal(request.script_id, "source-build");
+  assert.throws(() => normalizePerfJobRequest(payload, { role: "user" }), /requires admin role/);
+});
+
 test("routes custom environments only to capable runners", () => {
   const request = {
     target_runner_id: "runner-a5",
@@ -77,6 +111,48 @@ test("routes custom environments only to capable runners", () => {
   assert.equal(runnerCanExecute("runner-a5", {
     ...base,
     execution_environment: { customizable: true, source_build: true },
+  }, request), true);
+});
+
+test("routes build-install tasks only to explicitly compatible runners", () => {
+  const request = {
+    task_type: "build_install",
+    target_runner_id: "runner-a5",
+    chip: "A5",
+    execution_environment: { rebuild: true, branch: "main" },
+  };
+  const base = {
+    chip: "A5",
+    devices: [7],
+    execution_environment: { customizable: true, source_build: true },
+  };
+  assert.equal(runnerCanExecute("runner-a5", base, request), false);
+  assert.equal(runnerCanExecute("runner-a5", {
+    ...base,
+    job_types: ["profile", "build_install"],
+  }, request), true);
+});
+
+test("requires deployment capability when profiling a selected branch", () => {
+  const request = {
+    task_type: "profile",
+    target_runner_id: "runner-a5",
+    chip: "A5",
+    device: 7,
+    prof_tool: "msprof",
+    execution_environment: { rebuild: false, branch: "main" },
+  };
+  const base = {
+    chip: "A5",
+    devices: [7],
+    prof_tools: ["msprof"],
+    job_types: ["profile"],
+    execution_environment: { customizable: true, source_build: true },
+  };
+  assert.equal(runnerCanExecute("runner-a5", base, request), false);
+  assert.equal(runnerCanExecute("runner-a5", {
+    ...base,
+    execution_environment: { ...base.execution_environment, source_deployment: true },
   }, request), true);
 });
 

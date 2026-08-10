@@ -9,7 +9,9 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from backend.perf_runner import (
+    _activate_remote_source_build,
     _prepare_remote_source_build,
+    _resolve_remote_deployed_source,
     _remote_execution_command,
     _remote_output_path,
     _list_remote_prof_dirs,
@@ -18,6 +20,7 @@ from backend.perf_runner import (
     _ssh_command,
     build_command,
     build_profiler_command,
+    execute,
     list_remote_source_branches,
     load_config,
     parse_npu_smi_status,
@@ -143,6 +146,22 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertIn(". /data/user/cann/7_20/ascend-toolkit/set_env.sh", command)
         self.assertIn("conda activate feature_env", command)
 
+    def test_profile_can_select_a_previously_deployed_branch(self):
+        with patch.dict(os.environ, self.environment, clear=False):
+            config = load_config()
+        execution = resolve_execution_environment({
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": False,
+                "branch": "feature/a5",
+            }
+        }, config)
+
+        self.assertFalse(execution.rebuild)
+        self.assertEqual(execution.branch, "feature/a5")
+
     @patch("backend.perf_runner._run_remote_checked")
     def test_source_build_uses_readme_commands_and_chip_soc(self, run_remote):
         run_remote.side_effect = [
@@ -177,6 +196,69 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertEqual(soc_build_target("A2"), "ascend910b")
         self.assertEqual(soc_build_target("A3"), "ascend910_93")
         self.assertEqual(soc_build_target("A5"), "ascend950")
+
+    @patch("backend.perf_runner._run_remote_checked")
+    def test_activated_build_is_resolved_for_later_profile(self, run_remote):
+        with patch.dict(os.environ, {**self.environment, "PERF_CHIP": "A5"}, clear=False):
+            config = load_config()
+        execution = resolve_execution_environment({
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": False,
+                "branch": "feature/a5",
+            }
+        }, config)
+        build_info = {
+            "worktree": "/tmp/fla-runner-builds/build-1",
+            "commit": "a" * 40,
+            "soc": "ascend950",
+        }
+        run_remote.side_effect = [
+            SimpleNamespace(stdout="\n"),
+            SimpleNamespace(stdout=f"feature/a5\n{'a' * 40}\nascend950\n"),
+        ]
+
+        deployment = _activate_remote_source_build(config, execution, "A5", build_info)
+        resolved = _resolve_remote_deployed_source(config, execution, "A5")
+
+        self.assertEqual(resolved, deployment)
+        self.assertIn("ln -sfn", run_remote.call_args_list[0].args[1])
+        self.assertIn(".fla-runner-deployment", run_remote.call_args_list[1].args[1])
+
+    @patch("backend.perf_runner._activate_remote_source_build")
+    @patch("backend.perf_runner._prepare_remote_source_build")
+    @patch("backend.perf_runner._validate_remote_execution_environment")
+    @patch("backend.perf_runner.ensure_runner_configured")
+    def test_build_install_task_does_not_execute_profiler(self, configured, validate, prepare, activate):
+        with patch.dict(os.environ, {**self.environment, "PERF_CHIP": "A5"}, clear=False):
+            config = load_config()
+        configured.return_value = config
+        prepare.return_value = {
+            "worktree": "/tmp/fla-runner-builds/build-1",
+            "commit": "b" * 40,
+            "soc": "ascend950",
+        }
+        activate.return_value = "/tmp/fla-runner-builds/active/current"
+
+        result = execute({
+            "task_type": "build_install",
+            "chip": "A5",
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": True,
+                "branch": "feature/a5",
+            },
+        }, persist_local_data=False)
+
+        self.assertEqual(result["task_type"], "build_install")
+        self.assertNotIn("profiler_command", result)
+        validate.assert_called_once()
+        prepare.assert_called_once()
+        activate.assert_called_once()
 
     def test_ssh_dry_run_keeps_posix_output_path_on_windows(self):
         with patch.dict(os.environ, self.environment, clear=False):
@@ -448,6 +530,41 @@ __END_NPU__
             complete_payload["profiler_command"],
             "msprof --output=data/prof_gdr python3 test.py",
         )
+
+    @patch("backend.runner_agent.JobHeartbeat")
+    @patch("backend.runner_agent.execute")
+    def test_runner_agent_completes_build_without_prof_artifacts(self, execute, heartbeat_class):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.config = SimpleNamespace(runner_id="relay-test")
+        agent.api = Mock()
+        agent.save_job_state = Mock()
+        agent.build_artifacts = Mock(return_value=([], []))
+        agent.environment_summary = Mock(return_value={})
+        agent.send_runner_heartbeat = Mock()
+        agent.health = Mock(return_value={})
+        heartbeat_class.return_value.cancel_requested.is_set.return_value = False
+        execute.return_value = {
+            "task_type": "build_install",
+            "message": "源码分支 main 编译安装完成",
+            "execution_environment": {"branch": "main", "commit": "c" * 40},
+        }
+        job = {
+            "id": "job-build",
+            "attempt_id": "attempt-build",
+            "lease_token": "lease-build",
+            "request": {"task_type": "build_install"},
+        }
+
+        agent.run_job(job)
+
+        complete_payload = next(
+            call.args[1]
+            for call in agent.api.post.call_args_list
+            if call.args[0].endswith("/complete")
+        )
+        self.assertEqual(complete_payload["task_type"], "build_install")
+        self.assertEqual(complete_payload["artifacts"], [])
+        self.assertEqual(complete_payload["snapshot"], {})
 
     def test_runner_agent_archives_prof_directory_with_root_folder(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -242,22 +242,21 @@
               <label class="perf-form-fieldwide">源码仓库路径
                 <input id="triggerSourceRepo" type="text" autocomplete="off">
               </label>
-              <label class="perf-form-fieldwide">重新编译安装
-                <span class="perf-check-field">
-                  <input id="triggerRebuildSource" type="checkbox">
-                </span>
-              </label>
               <label id="triggerSourceBranchWrap" class="perf-form-fieldwide">源码分支
                 <span class="perf-source-branch-control">
                   <select id="triggerSourceBranch" disabled>
-                    <option value="">启用重新编译后读取分支</option>
+                    <option value="">请选择源码分支</option>
                   </select>
                   <button id="refreshSourceBranchesBtn" type="button" class="perf-source-branch-refresh" title="重新读取源码仓库分支" aria-label="重新读取源码仓库分支">
                     <span aria-hidden="true">&#8635;</span>
                   </button>
                 </span>
-                <span id="triggerSourceBranchHint" class="perf-field-hint">分支列表由所选 Relay 从 NPU 服务器读取。</span>
+                <span id="triggerSourceBranchHint" class="perf-field-hint">编译安装后，测试任务将使用该分支对应的已部署源码。</span>
               </label>
+              <div class="perf-build-install-actions perf-form-fieldwide">
+                <button id="triggerBuildInstallBtn" type="button">编译安装</button>
+                <span class="perf-field-hint">仅构建并安装源码，不执行性能测试。</span>
+              </div>
             </fieldset>
             <label>测试模式
               <select id="triggerProfTool">
@@ -501,9 +500,10 @@
       document.querySelector("#logoutBtn").addEventListener("click", onLogout);
       document.querySelector("#addModelBtn").addEventListener("click", onAddModel);
       document.querySelector("#triggerProfTool").addEventListener("change", updateTriggerProfToolUI);
-      document.querySelector("#triggerRebuildSource").addEventListener("change", onTriggerRebuildSourceChange);
       document.querySelector("#triggerSourceRepo").addEventListener("change", onTriggerSourceRepoChange);
+      document.querySelector("#triggerSourceBranch").addEventListener("change", updateTriggerBuildUI);
       document.querySelector("#refreshSourceBranchesBtn").addEventListener("click", () => refreshTriggerSourceBranches(true));
+      document.querySelector("#triggerBuildInstallBtn").addEventListener("click", onBuildInstallSubmit);
       document.querySelector("#attrVarlen").addEventListener("change", updateVarlenFieldsUI);
       bindCommandDialogEvents();
       document.querySelector("#netCaseDownloadBtn").addEventListener("click", downloadNetworkProfArchive);
@@ -1203,19 +1203,16 @@
       document.querySelector("#triggerCannPath").value = defaults.cann_path || "";
       document.querySelector("#triggerCondaEnv").value = defaults.conda_env || "";
       document.querySelector("#triggerSourceRepo").value = defaults.source_repo || "";
-      document.querySelector("#triggerRebuildSource").checked = Boolean(defaults.rebuild);
       state.triggerSourceBranchDefault = defaults.branch || "";
       document.querySelector("#triggerBuildSoc").value = triggerBuildSoc(triggerRunnerChip(runner));
       state.triggerExecutionEnvironmentSynced = runner.id;
       updateTriggerBuildUI();
+      void refreshTriggerSourceBranches(false);
     }
 
     function updateTriggerBuildUI() {
       const runner = selectedTriggerRunner();
       const supported = triggerSourceBranchQuerySupported(runner);
-      const checkbox = document.querySelector("#triggerRebuildSource");
-      checkbox.disabled = !supported;
-      if (!supported) checkbox.checked = false;
       syncTriggerSourceBranchOptions();
     }
 
@@ -1225,13 +1222,18 @@
 
     function triggerSourceBranchQuerySupported(runner = selectedTriggerRunner()) {
       const environment = runner?.capabilities?.execution_environment;
-      return Boolean(environment?.source_build && environment?.source_branch_query);
+      const jobTypes = Array.isArray(runner?.capabilities?.job_types) ? runner.capabilities.job_types : [];
+      return Boolean(
+        environment?.source_build
+        && environment?.source_deployment
+        && environment?.source_branch_query
+        && jobTypes.includes("build_install")
+      );
     }
 
     function syncTriggerSourceBranchOptions() {
       const runner = selectedTriggerRunner();
       const supported = triggerSourceBranchQuerySupported(runner);
-      const rebuild = document.querySelector("#triggerRebuildSource").checked;
       const repo = document.querySelector("#triggerSourceRepo").value.trim();
       const select = document.querySelector("#triggerSourceBranch");
       const hint = document.querySelector("#triggerSourceBranchHint");
@@ -1242,7 +1244,7 @@
       const branches = matchesRepo && Array.isArray(status?.branches) ? status.branches : [];
       const placeholder = state.sourceBranchesRefreshing
         ? "正在读取分支…"
-        : (!rebuild ? "启用重新编译后读取分支" : (status?.error && matchesRepo ? "分支读取失败" : "请选择源码分支"));
+        : (status?.error && matchesRepo ? "分支读取失败" : "请选择源码分支");
       select.innerHTML = "";
       select.add(new Option(placeholder, ""));
       branches.forEach((branch) => select.add(new Option(branch, branch)));
@@ -1250,9 +1252,10 @@
         ? previous
         : (branches.includes(state.triggerSourceBranchDefault) ? state.triggerSourceBranchDefault : "");
       select.value = preferred || (branches.length === 1 ? branches[0] : "");
-      select.disabled = !supported || !rebuild || state.sourceBranchesRefreshing || !branches.length;
-      select.required = rebuild;
+      select.disabled = !supported || state.sourceBranchesRefreshing || !branches.length;
+      select.required = false;
       refresh.disabled = !supported || state.sourceBranchesRefreshing || !repo || state.user?.role !== "admin";
+      document.querySelector("#triggerBuildInstallBtn").disabled = !supported || !select.value || state.user?.role !== "admin";
       refresh.classList.toggle("is-refreshing", state.sourceBranchesRefreshing);
       if (!supported) {
         hint.textContent = "当前 Relay 不支持源码分支查询。";
@@ -1268,15 +1271,10 @@
       }
     }
 
-    function onTriggerRebuildSourceChange() {
-      updateTriggerBuildUI();
-      if (document.querySelector("#triggerRebuildSource").checked) refreshTriggerSourceBranches(false);
-    }
-
     function onTriggerSourceRepoChange() {
       state.triggerSourceBranchDefault = "";
       syncTriggerSourceBranchOptions();
-      if (document.querySelector("#triggerRebuildSource").checked) refreshTriggerSourceBranches(true);
+      refreshTriggerSourceBranches(true);
     }
 
     async function refreshTriggerSourceBranches(force = false) {
@@ -1323,19 +1321,19 @@
       }
     }
 
-    function readTriggerExecutionEnvironment() {
+    function readTriggerExecutionEnvironment(forBuild = false) {
       if (state.user?.role !== "admin") return null;
       const value = {
         cann_path: document.querySelector("#triggerCannPath").value.trim(),
         conda_env: document.querySelector("#triggerCondaEnv").value.trim(),
         source_repo: document.querySelector("#triggerSourceRepo").value.trim(),
-        rebuild: document.querySelector("#triggerRebuildSource").checked,
+        rebuild: forBuild,
         branch: document.querySelector("#triggerSourceBranch").value.trim(),
       };
       if (!value.cann_path || !value.conda_env || !value.source_repo) {
         throw new Error("CANN 路径、Conda 环境和源码仓库路径不能为空。");
       }
-      if (value.rebuild && !value.branch) throw new Error("重新编译安装时必须选择源码分支。");
+      if (forBuild && !value.branch) throw new Error("编译安装时必须选择源码分支。");
       return value;
     }
 
@@ -1598,6 +1596,37 @@
       renderAll();
     }
 
+    async function onBuildInstallSubmit() {
+      if (!WORKER_API_BASE) return alert("未配置 Cloudflare Worker API。");
+      if (!state.token || state.user?.role !== "admin") return alert("只有管理员可以提交编译安装任务。");
+      const runner = selectedTriggerRunner();
+      if (!runner?.id) return alert("请选择执行服务器。");
+      let executionEnvironment;
+      try {
+        executionEnvironment = readTriggerExecutionEnvironment(true);
+      } catch (error) {
+        return alert(error.message || String(error));
+      }
+      if (!confirm(`确认在 ${runner.name || runner.id} 的 ${executionEnvironment.conda_env} 环境编译安装 ${executionEnvironment.branch}？`)) return;
+      try {
+        const result = await workerPost("/api/perf/jobs", {
+          task_type: "build_install",
+          chip: triggerRunnerChip(runner),
+          device: triggerRunnerDevice(runner),
+          target_runner_id: runner.id,
+          execution_environment: executionEnvironment,
+          idempotency_key: crypto.randomUUID(),
+        });
+        await Promise.all([loadData(), loadPerfJobs(), loadRunnerStatus()]);
+        renderAll();
+        maybeStartPerfPolling();
+        const job = result.job || {};
+        alert(job.status === "queued" ? "编译安装任务已提交，等待 VPN Runner 领取。" : (job.status_message || "编译安装任务已提交"));
+      } catch (error) {
+        alert(error.message || String(error));
+      }
+    }
+
     async function onTriggerSubmit(event) {
       event.preventDefault();
       if (!WORKER_API_BASE) {
@@ -1642,6 +1671,7 @@
       const profTool = document.querySelector("#triggerProfTool").value;
       const kernelName = document.querySelector("#triggerKernel").value.trim();
       const payload = {
+        task_type: "profile",
         model_id: "gdn",
         chip,
         device,
@@ -2930,6 +2960,7 @@
       const snapshotId = job.result?.snapshot_id || null;
       return {
         id: job.id,
+        task_type: request.task_type || "profile",
         model_id: request.model_id || "gdn",
         case_id: job.result?.case_id || null,
         snapshot_id: snapshotId,
@@ -2949,6 +2980,7 @@
         artifact_count: Number(job.artifact_count || 0),
         r2_artifact_count: Number(job.r2_artifact_count || 0),
         artifacts: job.artifacts || [],
+        execution_environment: request.execution_environment || job.result?.detail?.execution_environment || {},
         cloud_job: true,
       };
     }
@@ -2983,7 +3015,9 @@
 
     async function handlePerfJobAction(action, jobId) {
       if (!jobId || !["cancel", "retry"].includes(action)) return;
-      const prompt = action === "cancel" ? "确认取消该测试任务？" : "确认重新提交该测试任务？";
+      const job = state.jobs.find((item) => item.id === jobId);
+      const taskLabel = job?.request?.task_type === "build_install" ? "编译安装任务" : "测试任务";
+      const prompt = action === "cancel" ? `确认取消该${taskLabel}？` : `确认重新提交该${taskLabel}？`;
       if (!confirm(prompt)) return;
       try {
         await workerPost(`/api/perf/jobs/${encodeURIComponent(jobId)}/${action}`, {});
@@ -3004,6 +3038,7 @@
         return `<button type="button" class="perf-download-btn" data-job-action="retry" data-job-id="${escapeHtml(run.id)}">重试</button>`;
       }
       if (run.cloud_job && rawStatus === "succeeded") {
+        if (run.task_type === "build_install") return "安装完成";
         if (canDownloadRunResult(run, snap)) {
           return `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载 profiling 原始结果">下载</button>`;
         }
@@ -3028,27 +3063,29 @@
       const tbody = document.querySelector("#runRows");
       const runs = displayRuns().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
       if (!runs.length) {
-        tbody.innerHTML = '<tr><td colspan="10" class="empty">暂无执行记录，可在左侧提交用例测试。</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="empty">暂无执行记录，可在左侧提交编译安装或测试任务。</td></tr>';
         return;
       }
       tbody.innerHTML = runs.map((run) => {
+        const isBuild = run.task_type === "build_install";
         const testCase = state.data.cases.find((item) => item.id === run.case_id);
         const snap = run.snapshot || state.data.snapshots.find((item) => item.id === run.snapshot_id);
         const command = displayRunCommand(run) || "—";
         const shortCommand = command.length > 48 ? `${command.slice(0, 48)}…` : command;
-        const scriptPath = run.script_path || "—";
+        const scriptPath = isBuild ? (run.execution_environment?.source_repo || run.script_path || "—") : (run.script_path || "—");
         const commandCell = command !== "—"
           ? `<button type="button" class="perf-command-cell-btn" data-run-command="${escapeHtml(run.id)}" title="点击查看完整命令">${escapeHtml(shortCommand)}</button>`
           : escapeHtml(shortCommand);
         const resultCell = runResultCell(run, snap);
-        const totalTime = Number(snap?.total_time_ms);
+        const elapsed = Date.parse(run.finished_at || "") - Date.parse(run.started_at || "");
+        const totalTime = Number.isFinite(Number(snap?.total_time_ms)) ? Number(snap.total_time_ms) : (isBuild && elapsed >= 0 ? elapsed : NaN);
         const statusClass = run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral";
         return `<tr>
           <td>${escapeHtml((run.created_at || "").replace("T", " ").slice(0, 19))}</td>
-          <td>${escapeHtml(testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—")}</td>
+          <td>${escapeHtml(isBuild ? `编译 ${run.execution_environment?.branch || "源码"}` : (testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—"))}</td>
           <td>${escapeHtml(scriptPath)}</td>
           <td>${escapeHtml(run.chip || "")}</td>
-          <td>${escapeHtml(profToolLabel(run.prof_tool || snap?.prof_tool || "msprof"))}</td>
+          <td>${escapeHtml(isBuild ? "编译安装" : profToolLabel(run.prof_tool || snap?.prof_tool || "msprof"))}</td>
           <td><span class="stat-pill ${statusClass}" title="${escapeHtml(run.message || "")}">${escapeHtml(runStatusLabel(run.raw_job_status || run.status))}</span></td>
           <td>${Number.isFinite(totalTime) ? `${totalTime.toFixed(1)} ms` : "—"}</td>
           <td>${resultCell}</td>
