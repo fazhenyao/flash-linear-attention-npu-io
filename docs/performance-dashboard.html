@@ -226,6 +226,7 @@
                   <tbody id="triggerNpuStatusRows"></tbody>
                 </table>
               </div>
+              <div id="triggerNpuProcessDetails" class="perf-npu-process-details"></div>
             </section>
             <label>测试模式
               <select id="triggerProfTool">
@@ -995,16 +996,13 @@
         <td>${escapeHtml(process.name || "process")}</td>
         <td>${escapeHtml(formatNpuMemoryMb(process.memory_mb))}</td>
       </tr>`).join("");
-      return `<tr class="perf-npu-process-detail-row">
-        <td colspan="5">
-          <div class="perf-npu-process-detail-scroll" tabindex="0" aria-label="NPU ${escapeHtml(device.id)} 全部进程">
-            <table class="perf-npu-process-detail-table">
-              <thead><tr><th>PID</th><th>进程名称</th><th>占用显存</th></tr></thead>
-              <tbody>${processRows}</tbody>
-            </table>
-          </div>
-        </td>
-      </tr>`;
+      return `<strong class="perf-npu-process-detail-title">NPU ${escapeHtml(device.id)} 进程</strong>
+        <div class="perf-npu-process-detail-scroll" tabindex="0" aria-label="NPU ${escapeHtml(device.id)} 全部进程">
+          <table class="perf-npu-process-detail-table">
+            <thead><tr><th>PID</th><th>进程名称</th><th>占用显存</th></tr></thead>
+            <tbody>${processRows}</tbody>
+          </table>
+        </div>`;
     }
 
     function onNpuProcessToggle(event) {
@@ -1019,7 +1017,8 @@
       const rows = document.querySelector("#triggerNpuStatusRows");
       const hint = document.querySelector("#triggerNpuStatusHint");
       const button = document.querySelector("#refreshNpuStatusBtn");
-      if (!rows || !hint || !button) return;
+      const details = document.querySelector("#triggerNpuProcessDetails");
+      if (!rows || !hint || !button || !details) return;
       button.disabled = state.npuStatusRefreshing || (!state.user && Boolean(WORKER_API_BASE));
       button.classList.toggle("is-refreshing", state.npuStatusRefreshing);
       const runner = selectedTriggerRunner();
@@ -1028,6 +1027,7 @@
       if (!runner) {
         hint.textContent = state.user ? "尚无 Relay 上报设备状态。" : "登录后可查看 NPU 设备占用。";
         rows.innerHTML = '<tr><td colspan="5" class="empty">暂无设备状态</td></tr>';
+        details.innerHTML = "";
         return;
       }
       const updatedAt = status?.updated_at ? new Date(status.updated_at) : null;
@@ -1039,6 +1039,7 @@
       hint.textContent = `${runner.name || runner.id} · ${state.npuStatusRefreshing ? "正在重新采样 · " : ""}${freshness}${status?.error ? ` · ${status.error}` : ""}`;
       if (!devices.length) {
         rows.innerHTML = '<tr><td colspan="5" class="empty">Relay 正在查询 npu-smi，请稍后刷新</td></tr>';
+        details.innerHTML = "";
         return;
       }
       rows.innerHTML = devices.map((device) => {
@@ -1060,8 +1061,10 @@
           <td>${escapeHtml(utilization)}</td>
           <td>${escapeHtml(hbm)}</td>
           <td class="perf-npu-process-cell">${processCell}</td>
-        </tr>${renderNpuProcessDetails(runner, device)}`;
+        </tr>`;
       }).join("");
+      const expandedDevice = devices.find((device) => state.expandedNpuProcessKey === npuProcessKey(runner, device));
+      details.innerHTML = expandedDevice ? renderNpuProcessDetails(runner, expandedDevice) : "";
     }
 
     function startNpuStatusPolling() {
