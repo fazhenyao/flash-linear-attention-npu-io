@@ -93,7 +93,7 @@ class AgentConfig:
             state_dir=state_dir,
             retention_days=env_int("RUNNER_ARTIFACT_RETENTION_DAYS", 30, 1),
             upload_part_bytes=env_int("RUNNER_R2_PART_MIB", 32, 5) * 1024 * 1024,
-            npu_status_interval_seconds=env_int("RUNNER_NPU_STATUS_INTERVAL_SECONDS", 30, 10),
+            npu_status_interval_seconds=env_int("RUNNER_NPU_STATUS_INTERVAL_SECONDS", 1800, 10),
             npu_status_timeout_seconds=env_int("RUNNER_NPU_STATUS_TIMEOUT_SECONDS", 60, 10),
             npu_device_count=env_int("RUNNER_NPU_DEVICE_COUNT", 8, 1),
         )
