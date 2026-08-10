@@ -2211,7 +2211,7 @@ async function createPerfJob(env, payload, user) {
     action: "perf.job.create",
     entity: "perf_job",
     id: job.id,
-    summary: `提交性能采集任务：${request.prof_tool}`,
+    summary: `提交性能测试任务：${request.prof_tool}`,
     detail: {
       job_id: job.id,
       tool: request.prof_tool,
@@ -2981,10 +2981,10 @@ async function runnerJobStarted(env, row, payload) {
     `UPDATE perf_jobs SET status = 'running', status_message = ?, remote_execution_id = ?,
       started_at = COALESCE(started_at, ?), lease_expires_at = ?, updated_at = ? WHERE id = ?`,
   ).bind(
-    String(payload.message || "NPU 采集任务正在执行").slice(0, 1000), remoteExecutionId, timestamp,
+    String(payload.message || "NPU 测试任务正在执行").slice(0, 1000), remoteExecutionId, timestamp,
     new Date(Date.now() + PERF_LEASE_SECONDS * 1000).toISOString(), timestamp, row.id,
   ).run();
-  await appendPerfJobEvent(env, row.id, row.attempt_id, "started", "info", "NPU 采集任务开始执行", { remote_execution_id: remoteExecutionId });
+  await appendPerfJobEvent(env, row.id, row.attempt_id, "started", "info", "NPU 测试任务开始执行", { remote_execution_id: remoteExecutionId });
   await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(row.id).first());
   return { ok: true, job: await getPerfJob(env, row.id) };
 }
@@ -3079,7 +3079,7 @@ async function runnerJobComplete(env, row, payload) {
   ).run();
   if (payload.artifacts) await storePerfArtifacts(env, row.id, payload.artifacts);
   const exitCode = boundedInteger(payload.exit_code ?? 0, "exit_code", -2147483648, 2147483647);
-  const message = String(payload.message || resultDetail.message || "性能采集完成").slice(0, 1000);
+  const message = String(payload.message || resultDetail.message || "性能测试完成").slice(0, 1000);
   await env.DB.prepare(
     `UPDATE perf_jobs SET status = 'succeeded', status_message = ?, exit_code = ?, finished_at = ?,
       lease_token_hash = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ?`,
@@ -3092,7 +3092,7 @@ async function runnerJobComplete(env, row, payload) {
 async function runnerJobFail(env, row, payload) {
   const canceled = Boolean(payload.canceled || row.cancel_requested);
   const status = canceled ? "canceled" : "failed";
-  const message = String(payload.message || (canceled ? "任务已取消" : "性能采集失败")).slice(0, 1000);
+  const message = String(payload.message || (canceled ? "任务已取消" : "性能测试失败")).slice(0, 1000);
   const exitCode = payload.exit_code === undefined || payload.exit_code === null
     ? null
     : boundedInteger(payload.exit_code, "exit_code", -2147483648, 2147483647);

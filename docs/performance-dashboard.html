@@ -212,7 +212,7 @@
             <label class="perf-form-fieldwide">执行服务器
               <select id="triggerRunner" aria-label="执行服务器"></select>
             </label>
-            <label>采集模式
+            <label>测试模式
               <select id="triggerProfTool">
                 <option value="msprof">msprof（整网性能）</option>
                 <option value="msprof_op">msopprof（算子调优）</option>
@@ -220,10 +220,10 @@
             </label>
             <label id="triggerKernelWrap" class="hidden perf-form-fieldwide">目标算子 / kernel
               <input id="triggerKernel" type="text" placeholder="例如 ChunkGatedDeltaRuleFwdH|ChunkFwdO">
-              <span class="perf-field-hint">msopprof 多 kernel 用竖线分隔，写入单个 --kernel-name；留空则采集脚本执行过程中遇到的全部 kernel（可形成整网饼图）。</span>
+              <span class="perf-field-hint">msopprof 多 kernel 用竖线分隔，写入单个 --kernel-name；留空则测试脚本执行过程中遇到的全部 kernel（可形成整网饼图）。</span>
             </label>
             <fieldset id="triggerOpOptions" class="perf-attr-fieldset hidden">
-              <legend>msopprof 采集</legend>
+              <legend>msopprof 测试</legend>
               <label>warm-up <input id="triggerWarmUp" type="number" min="0" step="1" value="10"></label>
               <label>launch-count <input id="triggerLaunchCount" type="number" min="1" step="1" value="10"></label>
               <span class="perf-field-hint perf-form-fieldwide">对应 msopprof 的 --warm-up 与 --launch-count；默认 10 / 10，可由环境变量 PERF_OP_WARM_UP / PERF_OP_LAUNCH_COUNT 覆盖初始值。</span>
@@ -278,7 +278,7 @@
                   <th>用例</th>
                   <th>脚本</th>
                   <th>芯片</th>
-                  <th>采集</th>
+                  <th>测试</th>
                   <th>状态</th>
                   <th>总耗时</th>
                   <th>结果</th>
@@ -504,7 +504,7 @@
       }
       const run = cloudRunForCase(caseId);
       if (!run) {
-        alert("该用例没有可下载的云端 Prof ZIP。历史导入用例需要重新通过采集任务生成 R2 制品。");
+        alert("该用例没有可下载的云端 Prof ZIP。历史导入用例需要重新通过测试任务生成 R2 制品。");
         return;
       }
       await downloadRunResult(run.id);
@@ -867,7 +867,7 @@
       const tools = new Set(snaps.map(snapshotProfTool));
       if (tools.has("msprof_op") || tools.has("msprof_op_sim")) {
         if (snaps.some(isMultiKernelOpProfSnapshot)) {
-          text += " · msopprof 多 kernel 采集，可在算子下拉里切换查看各算子指标";
+          text += " · msopprof 多 kernel 测试，可在算子下拉里切换查看各算子指标";
         } else {
           text += " · 当前对比为 msopprof 单算子调优数据，算子选择已锁定";
         }
@@ -878,9 +878,9 @@
     function caseMetricChartHintText(rows, selectedCases) {
       const snaps = compareSnapshots(selectedCases);
       if (snaps.some(isMultiKernelOpProfSnapshot)) {
-        return "msopprof 多 kernel 采集，可在算子下拉里切换查看各算子指标";
+        return "msopprof 多 kernel 测试，可在算子下拉里切换查看各算子指标";
       }
-      return "msopprof 单算子采集，横轴为用例、纵轴为所选指标";
+      return "msopprof 单算子测试，横轴为用例、纵轴为所选指标";
     }
 
     function triggerRunnerAgents() {
@@ -962,7 +962,7 @@
       const node = document.querySelector("#triggerEnvHint");
       if (!node) return;
       if (!state.user) {
-        node.textContent = "执行环境：登录后可向 Cloudflare 队列提交采集任务。";
+        node.textContent = "执行环境：登录后可向 Cloudflare 队列提交测试任务。";
         return;
       }
       const runner = selectedTriggerRunner();
@@ -1242,7 +1242,7 @@
         return;
       }
       if (!state.token || !state.user) {
-        alert("请先登录后再提交采集任务。");
+        alert("请先登录后再提交测试任务。");
         return;
       }
       const runner = selectedTriggerRunner();
@@ -1304,7 +1304,7 @@
         renderAll();
         maybeStartPerfPolling();
         const job = result.job || {};
-        alert(job.status === "queued" ? "采集任务已提交，等待 VPN Runner 领取。" : (job.status_message || "任务已提交"));
+        alert(job.status === "queued" ? "测试任务已提交，等待 VPN Runner 领取。" : (job.status_message || "任务已提交"));
       } catch (error) {
         alert(error.message || String(error));
       }
@@ -1335,7 +1335,7 @@
         status = `${state.user.username} · ${readyAgents.length || 1} 个 Runner 在线 · ${chips}`;
       }
       else if (loggedIn && WORKER_API_BASE) status = `${state.user.username} · ${state.runner?.error || "Runner 离线，任务将排队"}`;
-      else if (useWorkerWrite()) status = loggedIn ? status : "只读模式 · 登录后可提交采集任务";
+      else if (useWorkerWrite()) status = loggedIn ? status : "只读模式 · 登录后可提交测试任务";
       else if (WORKER_API_BASE && state.dataSource === "local-fallback") status = "本地快照模式 · Worker /api/perf 未就绪";
       document.querySelector("#authStatus").textContent = status;
       document.querySelector("#workerLogin").classList.toggle("hidden", loggedIn || !useWorkerWrite());
@@ -1855,7 +1855,7 @@
         `日期：${snap.label}`,
         `模型：${model?.label || snap.model_id}`,
         `芯片：${snap.chip}`,
-        `采集：${profToolLabel(snapshotProfTool(snap))}`,
+        `测试：${profToolLabel(snapshotProfTool(snap))}`,
       ];
       if (snap.kernel_name) parts.push(`Kernel：${snap.kernel_name}`);
       if (snap.prof_source) parts.push(`Prof：${snap.prof_source}`);
@@ -2592,7 +2592,7 @@
 
     async function handlePerfJobAction(action, jobId) {
       if (!jobId || !["cancel", "retry"].includes(action)) return;
-      const prompt = action === "cancel" ? "确认取消该采集任务？" : "确认重新提交该采集任务？";
+      const prompt = action === "cancel" ? "确认取消该测试任务？" : "确认重新提交该测试任务？";
       if (!confirm(prompt)) return;
       try {
         await workerPost(`/api/perf/jobs/${encodeURIComponent(jobId)}/${action}`, {});

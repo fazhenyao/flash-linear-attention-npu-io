@@ -150,7 +150,7 @@ class JobHeartbeat(threading.Thread):
                     f"/api/runner/jobs/{self.job['id']}/heartbeat",
                     self.agent.job_auth(self.job, {
                         "state": "running" if health["npu_reachable"] else "disconnected",
-                        "message": "采集执行中" if health["npu_reachable"] else "VPN 或 NPU SSH 暂不可达",
+                        "message": "测试执行中" if health["npu_reachable"] else "VPN 或 NPU SSH 暂不可达",
                     }),
                 )
                 if response.get("cancel_requested"):
@@ -263,7 +263,7 @@ class RunnerAgent:
             f"/api/runner/jobs/{job['id']}/started",
             self.job_auth(job, {
                 "remote_execution_id": f"{self.config.runner_id}:{job['id']}",
-                "message": "Relay 已开始执行采集任务",
+                "message": "Relay 已开始执行测试任务",
             }),
         )
         heartbeat = JobHeartbeat(self, job)
@@ -303,7 +303,7 @@ class RunnerAgent:
             if heartbeat.cancel_requested.is_set():
                 self.api.post(
                     f"/api/runner/jobs/{job['id']}/fail",
-                    self.job_auth(job, {"canceled": True, "message": "采集完成前收到取消请求"}),
+                    self.job_auth(job, {"canceled": True, "message": "测试完成前收到取消请求"}),
                 )
                 return
             snapshot = result.get("snapshot") or {}
@@ -311,7 +311,7 @@ class RunnerAgent:
                 f"/api/runner/jobs/{job['id']}/complete",
                 self.job_auth(job, {
                     "exit_code": 0,
-                    "message": result.get("message") or "性能采集完成",
+                    "message": result.get("message") or "性能测试完成",
                     "command": result.get("command") or "",
                     "environment": self.environment_summary(),
                     "metrics": extract_snapshot_metrics(snapshot),
