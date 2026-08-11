@@ -256,6 +256,7 @@
               <div class="perf-build-install-actions perf-form-fieldwide">
                 <button id="triggerBuildInstallBtn" type="button">编译安装</button>
                 <span class="perf-field-hint">仅构建并安装源码，不执行性能测试。</span>
+                <span id="triggerBuildInstallStatus" class="perf-build-install-status" role="status" aria-live="polite"></span>
               </div>
             </fieldset>
             <label>测试模式
@@ -356,6 +357,22 @@
     </div>
   </div>
 
+  <div id="buildInstallDialog" class="perf-command-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="buildInstallDialogTitle">
+    <div class="perf-command-dialog-backdrop" data-build-install-close></div>
+    <div class="perf-command-dialog-panel perf-confirm-dialog-panel">
+      <div class="perf-command-dialog-header">
+        <h3 id="buildInstallDialogTitle">确认编译安装</h3>
+        <button type="button" class="perf-command-dialog-close" aria-label="关闭" data-build-install-close>&times;</button>
+      </div>
+      <pre id="buildInstallDialogBody" class="perf-command-dialog-body"></pre>
+      <p id="buildInstallDialogError" class="perf-dialog-error hidden" role="alert"></p>
+      <div class="perf-command-dialog-actions">
+        <button type="button" data-build-install-close>取消</button>
+        <button type="button" id="buildInstallConfirmBtn" class="primary">确认编译</button>
+      </div>
+    </div>
+  </div>
+
   <input id="profImportFolderInput" type="file" webkitdirectory directory multiple class="hidden" aria-hidden="true">
 
   <script src="./config.js?v=20260720-local-api-proxy"></script>
@@ -452,6 +469,8 @@
       triggerSourceBranchDefault: "",
       expandedNpuProcessKey: "",
       triggerExecutionEnvironmentSynced: "",
+      pendingBuildInstall: null,
+      buildInstallSubmitting: false,
     };
 
     init().catch((error) => {
@@ -506,6 +525,7 @@
       document.querySelector("#refreshSourceBranchesBtn").addEventListener("click", () => refreshTriggerSourceBranches(true));
       document.querySelector("#triggerBuildInstallBtn").addEventListener("click", onBuildInstallSubmit);
       document.querySelector("#attrVarlen").addEventListener("change", updateVarlenFieldsUI);
+      bindBuildInstallDialogEvents();
       bindCommandDialogEvents();
       document.querySelector("#netCaseDownloadBtn").addEventListener("click", downloadNetworkProfArchive);
       document.querySelector("#perfCaseImportBtn").addEventListener("click", promptPerfCaseImport);
@@ -694,6 +714,105 @@
         await importProfFolder(payload, detectProfSourceFromPaths(relPaths));
       } catch (error) {
         alert(error.message || String(error));
+      }
+    }
+
+    function bindBuildInstallDialogEvents() {
+      const dialog = document.querySelector("#buildInstallDialog");
+      dialog.addEventListener("click", (event) => {
+        if (event.target.closest("[data-build-install-close]")) hideBuildInstallDialog(true);
+      });
+      document.querySelector("#buildInstallConfirmBtn").addEventListener("click", submitBuildInstall);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !dialog.classList.contains("hidden")) hideBuildInstallDialog(true);
+      });
+    }
+
+    function setBuildInstallStatus(message, tone = "") {
+      const node = document.querySelector("#triggerBuildInstallStatus");
+      node.textContent = message || "";
+      node.className = `perf-build-install-status${tone ? ` is-${tone}` : ""}`;
+    }
+
+    function showBuildInstallDialog(runner, executionEnvironment) {
+      const branchLabel = executionEnvironment.branch_source === "remote"
+        ? `origin/${executionEnvironment.branch}`
+        : executionEnvironment.branch;
+      state.pendingBuildInstall = {
+        runner: {
+          id: runner.id,
+          name: runner.name || runner.id,
+          chip: triggerRunnerChip(runner),
+          npu_device: triggerRunnerDevice(runner),
+        },
+        executionEnvironment,
+        idempotencyKey: crypto.randomUUID(),
+      };
+      document.querySelector("#buildInstallDialogBody").textContent = [
+        `执行服务器：${runner.name || runner.id}`,
+        `Conda 环境：${executionEnvironment.conda_env}`,
+        `源码仓库：${executionEnvironment.source_repo}`,
+        `源码分支：${branchLabel}`,
+      ].join("\n");
+      const errorNode = document.querySelector("#buildInstallDialogError");
+      errorNode.textContent = "";
+      errorNode.classList.add("hidden");
+      document.querySelector("#buildInstallDialog").classList.remove("hidden");
+      setBuildInstallStatus("等待确认", "pending");
+      document.querySelector("#buildInstallConfirmBtn").focus();
+    }
+
+    function hideBuildInstallDialog(canceled = false) {
+      if (state.buildInstallSubmitting) return;
+      document.querySelector("#buildInstallDialog").classList.add("hidden");
+      state.pendingBuildInstall = null;
+      if (canceled) setBuildInstallStatus("已取消", "neutral");
+    }
+
+    async function submitBuildInstall() {
+      const pending = state.pendingBuildInstall;
+      if (!pending || state.buildInstallSubmitting) return;
+      const confirmButton = document.querySelector("#buildInstallConfirmBtn");
+      const triggerButton = document.querySelector("#triggerBuildInstallBtn");
+      const errorNode = document.querySelector("#buildInstallDialogError");
+      state.buildInstallSubmitting = true;
+      confirmButton.disabled = true;
+      confirmButton.textContent = "提交中…";
+      triggerButton.disabled = true;
+      triggerButton.textContent = "提交中…";
+      errorNode.textContent = "";
+      errorNode.classList.add("hidden");
+      setBuildInstallStatus("正在提交编译安装任务…", "pending");
+      try {
+        const result = await workerPost("/api/perf/jobs", {
+          task_type: "build_install",
+          chip: triggerRunnerChip(pending.runner),
+          device: triggerRunnerDevice(pending.runner),
+          target_runner_id: pending.runner.id,
+          execution_environment: pending.executionEnvironment,
+          idempotency_key: pending.idempotencyKey,
+        });
+        await Promise.all([loadData(), loadPerfJobs(), loadRunnerStatus()]);
+        renderAll();
+        maybeStartPerfPolling();
+        const job = result.job || {};
+        const message = job.status === "queued"
+          ? "编译安装任务已提交，等待 VPN Runner 领取。"
+          : (job.status_message || "编译安装任务已提交");
+        document.querySelector("#buildInstallDialog").classList.add("hidden");
+        state.pendingBuildInstall = null;
+        setBuildInstallStatus(message, "positive");
+      } catch (error) {
+        const message = error.message || String(error);
+        errorNode.textContent = `提交失败：${message}`;
+        errorNode.classList.remove("hidden");
+        setBuildInstallStatus(`提交失败：${message}`, "negative");
+      } finally {
+        state.buildInstallSubmitting = false;
+        confirmButton.disabled = false;
+        confirmButton.textContent = "确认编译";
+        triggerButton.textContent = "编译安装";
+        updateTriggerBuildUI();
       }
     }
 
@@ -1297,7 +1416,7 @@
       select.disabled = !supported || state.sourceBranchesRefreshing || !branches.length;
       select.required = false;
       refresh.disabled = !supported || state.sourceBranchesRefreshing || !repo || state.user?.role !== "admin";
-      document.querySelector("#triggerBuildInstallBtn").disabled = !supported || !select.value || state.user?.role !== "admin";
+      document.querySelector("#triggerBuildInstallBtn").disabled = !supported || !select.value || state.user?.role !== "admin" || state.buildInstallSubmitting;
       refresh.classList.toggle("is-refreshing", state.sourceBranchesRefreshing);
       if (!supported) {
         hint.textContent = "当前 Relay 不支持源码分支查询。";
@@ -1647,37 +1766,17 @@
     }
 
     async function onBuildInstallSubmit() {
-      if (!WORKER_API_BASE) return alert("未配置 Cloudflare Worker API。");
-      if (!state.token || state.user?.role !== "admin") return alert("只有管理员可以提交编译安装任务。");
+      if (!WORKER_API_BASE) return setBuildInstallStatus("未配置 Cloudflare Worker API。", "negative");
+      if (!state.token || state.user?.role !== "admin") return setBuildInstallStatus("只有管理员可以提交编译安装任务。", "negative");
       const runner = selectedTriggerRunner();
-      if (!runner?.id) return alert("请选择执行服务器。");
+      if (!runner?.id) return setBuildInstallStatus("请选择执行服务器。", "negative");
       let executionEnvironment;
       try {
         executionEnvironment = readTriggerExecutionEnvironment(true);
       } catch (error) {
-        return alert(error.message || String(error));
+        return setBuildInstallStatus(error.message || String(error), "negative");
       }
-      const branchLabel = executionEnvironment.branch_source === "remote"
-        ? `origin/${executionEnvironment.branch}`
-        : executionEnvironment.branch;
-      if (!confirm(`确认在 ${runner.name || runner.id} 的 ${executionEnvironment.conda_env} 环境编译安装 ${branchLabel}？`)) return;
-      try {
-        const result = await workerPost("/api/perf/jobs", {
-          task_type: "build_install",
-          chip: triggerRunnerChip(runner),
-          device: triggerRunnerDevice(runner),
-          target_runner_id: runner.id,
-          execution_environment: executionEnvironment,
-          idempotency_key: crypto.randomUUID(),
-        });
-        await Promise.all([loadData(), loadPerfJobs(), loadRunnerStatus()]);
-        renderAll();
-        maybeStartPerfPolling();
-        const job = result.job || {};
-        alert(job.status === "queued" ? "编译安装任务已提交，等待 VPN Runner 领取。" : (job.status_message || "编译安装任务已提交"));
-      } catch (error) {
-        alert(error.message || String(error));
-      }
+      showBuildInstallDialog(runner, executionEnvironment);
     }
 
     async function onTriggerSubmit(event) {
