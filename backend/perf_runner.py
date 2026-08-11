@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
 import importlib.util
 import io
@@ -878,6 +880,10 @@ def _remote_command_error(label: str, exc: subprocess.CalledProcessError) -> Run
     return RuntimeError(f"{label}失败：{detail}")
 
 
+class RemoteConnectionError(RuntimeError):
+    pass
+
+
 def _run_remote_checked(
     config: PerfRunnerConfig,
     remote_command: str,
@@ -886,6 +892,9 @@ def _run_remote_checked(
     try:
         return _run_command(_ssh_command(config, remote_command))
     except subprocess.CalledProcessError as exc:
+        if exc.returncode == 255:
+            detail = (exc.stderr or exc.stdout or "SSH connection failed").strip()
+            raise RemoteConnectionError(f"{label}连接失败：{detail[-1000:]}") from None
         raise _remote_command_error(label, exc) from None
 
 
@@ -935,8 +944,10 @@ def _prepare_remote_source_build(
     config: PerfRunnerConfig,
     execution: ExecutionEnvironment,
     chip: str,
+    *,
+    worktree: str | None = None,
 ) -> dict[str, str]:
-    worktree = _remote_build_worktree_path(config)
+    worktree = worktree or _remote_build_worktree_path(config)
     repo = shlex.quote(execution.source_repo)
     branch_ref = shlex.quote(f"refs/heads/{execution.branch}^{{commit}}")
     origin_ref = shlex.quote(f"refs/remotes/origin/{execution.branch}^{{commit}}")
@@ -992,6 +1003,258 @@ def _prepare_remote_source_build(
     except Exception:
         _cleanup_remote_source_build(config, execution.source_repo, worktree)
         raise
+
+
+def persistent_build_handle(
+    payload: dict[str, Any],
+    execution_id: str,
+    config: PerfRunnerConfig | None = None,
+) -> dict[str, Any]:
+    config = config or ensure_runner_configured()
+    if config.mode != "ssh":
+        raise RuntimeError("编译安装任务仅支持 SSH Relay 模式")
+    if not re.fullmatch(r"[A-Za-z0-9_.:-]{8,128}", execution_id):
+        raise ValueError("invalid persistent build execution id")
+    execution = resolve_execution_environment(payload, config)
+    if not execution.branch:
+        raise ValueError("编译安装任务必须指定源码分支")
+    chip = resolve_chip(payload, config)
+    worktree = (
+        PurePosixPath(_normalized_remote_absolute_path(config.remote_build_root, "远端构建目录"))
+        / "attempts"
+        / execution_id
+    ).as_posix()
+    return {
+        "execution_id": execution_id,
+        "worktree": worktree,
+        "control_dir": f"{worktree}/.fla-runner",
+        "log_path": f"{worktree}/.fla-runner/build.log",
+        "source_repo": execution.source_repo,
+        "branch": execution.branch,
+        "branch_source": execution.branch_source,
+        "chip": chip,
+        "soc": soc_build_target(chip),
+        "execution_environment": execution_environment_summary(execution),
+    }
+
+
+def _persistent_build_script(
+    config: PerfRunnerConfig,
+    execution: ExecutionEnvironment,
+    chip: str,
+    build_info: dict[str, str],
+) -> str:
+    worktree = build_info["worktree"]
+    control = f"{worktree}/.fla-runner"
+    deployment = _remote_deployment_path(config, execution, chip)
+    marker = f"{worktree}/.fla-runner-deployment"
+    build_root = _normalized_remote_absolute_path(config.remote_build_root, "远端构建目录")
+    setup = _remote_execution_command(
+        config,
+        (
+            "python scripts/check_npu_env.py --build-only"
+            " && mkdir -p dist"
+            f" && FLA_NPU_SOC={shlex.quote(soc_build_target(chip))} "
+            "python -m pip wheel --no-build-isolation --no-deps . -w dist"
+            " && wheel=$(find dist -maxdepth 1 -type f "
+            "-name 'flash_linear_attention_npu-*.whl' -print | sort | tail -n 1)"
+            " && test -n \"$wheel\""
+            " && python -m pip install --force-reinstall --no-cache-dir --no-deps \"$wheel\""
+        ),
+        execution=execution,
+        workdir=worktree,
+    )
+    metadata = " ".join(
+        shlex.quote(value)
+        for value in (
+            execution.branch,
+            execution.branch_source,
+            build_info["commit"],
+            build_info["soc"],
+        )
+    )
+    return f"""#!/usr/bin/env bash
+set +e
+control={shlex.quote(control)}
+state_file="$control/state"
+exit_file="$control/exit_code"
+log_file="$control/build.log"
+write_value() {{
+  printf '%s\n' "$2" > "$1.tmp"
+  mv -f "$1.tmp" "$1"
+}}
+finish() {{
+  write_value "$exit_file" "$1"
+  write_value "$state_file" "$2"
+}}
+cancel_build() {{
+  printf '%s\n' '[runner] cancellation signal received' >> "$log_file"
+  finish 143 canceled
+  exit 143
+}}
+trap cancel_build TERM INT
+mkdir -p "$control"
+printf '%s\n' "$$" > "$control/pid"
+write_value "$state_file" running
+rm -f "$exit_file"
+printf '%s\n' '[runner] persistent build started' >> "$log_file"
+(
+  set -e
+  {setup}
+  mkdir -p {shlex.quote(str(PurePosixPath(deployment).parent))}
+  printf '%s\n' {metadata} > {shlex.quote(marker)}
+  previous=$(readlink -f {shlex.quote(deployment)} 2>/dev/null || true)
+  ln -sfn {shlex.quote(worktree)} {shlex.quote(deployment)}
+  if [ -n "$previous" ] && [ "$previous" != {shlex.quote(worktree)} ]; then
+    case "$previous" in
+      {shlex.quote(build_root)}/*)
+        git -C {shlex.quote(execution.source_repo)} worktree remove --force "$previous" >/dev/null 2>&1 || true
+        git -C {shlex.quote(execution.source_repo)} worktree prune >/dev/null 2>&1 || true
+        ;;
+    esac
+  fi
+) >> "$log_file" 2>&1
+code=$?
+if [ "$code" -eq 0 ]; then
+  printf '%s\n' '[runner] persistent build completed' >> "$log_file"
+  finish 0 succeeded
+else
+  printf '[runner] persistent build failed with exit code %s\n' "$code" >> "$log_file"
+  finish "$code" failed
+fi
+exit "$code"
+"""
+
+
+def start_persistent_build_install(
+    payload: dict[str, Any],
+    handle: dict[str, Any],
+    config: PerfRunnerConfig | None = None,
+) -> dict[str, Any]:
+    config = config or ensure_runner_configured()
+    execution = resolve_execution_environment(payload, config)
+    chip = resolve_chip(payload, config)
+    _validate_remote_execution_environment(config, execution)
+    status = poll_persistent_build_install(handle, config, allow_missing=True)
+    if status["state"] in {"running", "succeeded", "failed", "canceled"}:
+        return {**handle, **{key: status.get(key) for key in ("commit", "soc", "deployment") if status.get(key)}}
+    worktree = str(handle["worktree"])
+    _cleanup_remote_source_build(config, execution.source_repo, worktree)
+    build_info = _prepare_remote_source_build(config, execution, chip, worktree=worktree)
+    script = _persistent_build_script(config, execution, chip, build_info)
+    encoded = base64.b64encode(script.encode("utf-8")).decode("ascii")
+    control = shlex.quote(str(handle["control_dir"]))
+    script_path = shlex.quote(f"{handle['control_dir']}/run-build.sh")
+    remote = (
+        f"mkdir -p {control}"
+        f" && printf '%s' {shlex.quote(encoded)} | base64 -d > {script_path}"
+        f" && chmod 700 {script_path}"
+        f" && {{ setsid nohup {script_path} </dev/null >/dev/null 2>&1 &"
+        f" starter=$!; printf '%s\n' \"$starter\"; }}"
+    )
+    _run_remote_checked(config, remote, "持久编译任务启动")
+    return {
+        **handle,
+        "commit": build_info["commit"],
+        "soc": build_info["soc"],
+        "deployment": _remote_deployment_path(config, execution, chip),
+    }
+
+
+def _parse_persistent_build_status(output: str, handle: dict[str, Any]) -> dict[str, Any]:
+    values: dict[str, str] = {}
+    for line in output.splitlines():
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        if key.startswith("__"):
+            values[key.strip("_")] = value
+    log_tail = ""
+    encoded_log = values.get("LOG_BASE64", "")
+    if encoded_log:
+        try:
+            log_tail = base64.b64decode(encoded_log, validate=True).decode("utf-8", errors="replace")
+        except (ValueError, binascii.Error):
+            log_tail = "[runner] build log could not be decoded"
+    raw_exit = values.get("EXIT_CODE", "")
+    try:
+        exit_code = int(raw_exit) if raw_exit else None
+    except ValueError:
+        exit_code = None
+    state = values.get("STATE", "missing") or "missing"
+    alive = values.get("ALIVE") == "1"
+    if state == "running" and not alive:
+        state = "failed"
+        if exit_code is None:
+            exit_code = -1
+        log_tail = (log_tail + "\n[runner] remote build process disappeared without a final state").strip()
+    return {
+        **handle,
+        "state": state,
+        "pid": values.get("PID", ""),
+        "alive": alive,
+        "exit_code": exit_code,
+        "log_tail": log_tail,
+        "log_size": int(values.get("LOG_SIZE", "0") or 0),
+    }
+
+
+def poll_persistent_build_install(
+    handle: dict[str, Any],
+    config: PerfRunnerConfig | None = None,
+    *,
+    allow_missing: bool = False,
+) -> dict[str, Any]:
+    config = config or ensure_runner_configured()
+    control = shlex.quote(str(handle["control_dir"]))
+    remote = (
+        f"control={control}; "
+        "state=$(cat \"$control/state\" 2>/dev/null || true); "
+        "pid=$(cat \"$control/pid\" 2>/dev/null || true); "
+        "exit_code=$(cat \"$control/exit_code\" 2>/dev/null || true); "
+        "alive=0; if [ -n \"$pid\" ] && kill -0 \"$pid\" 2>/dev/null; then alive=1; fi; "
+        "log_size=$(wc -c < \"$control/build.log\" 2>/dev/null || printf 0); "
+        "log_base64=$(tail -c 16000 \"$control/build.log\" 2>/dev/null | base64 | tr -d '\\n'); "
+        "printf '__STATE__=%s\\n__PID__=%s\\n__ALIVE__=%s\\n__EXIT_CODE__=%s\\n__LOG_SIZE__=%s\\n__LOG_BASE64__=%s\\n' "
+        "\"${state:-missing}\" \"$pid\" \"$alive\" \"$exit_code\" \"$log_size\" \"$log_base64\""
+    )
+    result = _run_remote_checked(config, remote, "持久编译状态查询")
+    return _parse_persistent_build_status(result.stdout, handle)
+
+
+def cancel_persistent_build_install(
+    handle: dict[str, Any],
+    config: PerfRunnerConfig | None = None,
+) -> None:
+    config = config or ensure_runner_configured()
+    control = shlex.quote(str(handle["control_dir"]))
+    remote = (
+        f"control={control}; pid=$(cat \"$control/pid\" 2>/dev/null || true); "
+        "if [ -n \"$pid\" ] && kill -0 \"$pid\" 2>/dev/null; then "
+        "kill -TERM -- \"-$pid\" 2>/dev/null || kill -TERM \"$pid\" 2>/dev/null || true; fi"
+    )
+    _run_remote_checked(config, remote, "持久编译任务取消")
+
+
+def persistent_build_result(handle: dict[str, Any], status: dict[str, Any]) -> dict[str, Any]:
+    if status.get("state") != "succeeded":
+        detail = str(status.get("log_tail") or "远端编译未返回日志").strip()
+        raise RuntimeError(f"源码编译安装失败（退出码 {status.get('exit_code')}）：{detail[-3000:]}")
+    environment = dict(handle.get("execution_environment") or {})
+    environment.update({
+        "commit": handle.get("commit"),
+        "soc": handle.get("soc"),
+        "deployment": handle.get("deployment"),
+        "build_log": handle.get("log_path"),
+    })
+    return {
+        "status": "done",
+        "task_type": "build_install",
+        "message": f"源码分支 {handle.get('branch_source')}:{handle.get('branch')} 编译安装完成",
+        "execution_environment": environment,
+        "build_log": handle.get("log_path"),
+        "build_log_tail": status.get("log_tail") or "",
+    }
 
 
 def _cleanup_remote_source_build(config: PerfRunnerConfig, source_repo: str, worktree: str) -> None:

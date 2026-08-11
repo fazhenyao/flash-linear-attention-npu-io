@@ -51,17 +51,28 @@ try {
     $env:RUNNER_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($tokenPointer)
     Push-Location $repoRoot
     try {
-        if ($LogFile) {
-            $logDirectory = Split-Path -Parent $LogFile
-            if ($logDirectory) {
-                New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+        $supervise = -not ($Once -or $Check)
+        do {
+            if ($LogFile) {
+                $logDirectory = Split-Path -Parent $LogFile
+                if ($logDirectory) {
+                    New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+                }
+                Add-Content -LiteralPath $LogFile -Encoding UTF8 -Value "[$([DateTime]::Now.ToString('s'))] [launcher] starting Runner agent"
+                & $python @runnerArguments *>> $LogFile
             }
-            & $python @runnerArguments *>> $LogFile
-        }
-        else {
-            & $python @runnerArguments
-        }
-        exit $LASTEXITCODE
+            else {
+                & $python @runnerArguments
+            }
+            $exitCode = $LASTEXITCODE
+            if (-not $supervise) {
+                exit $exitCode
+            }
+            if ($LogFile) {
+                Add-Content -LiteralPath $LogFile -Encoding UTF8 -Value "[$([DateTime]::Now.ToString('s'))] [launcher] Runner agent exited with code $exitCode; restarting in 5 seconds"
+            }
+            Start-Sleep -Seconds 5
+        } while ($true)
     }
     finally {
         Pop-Location

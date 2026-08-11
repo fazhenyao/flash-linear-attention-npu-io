@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>性能看板 - flash-linear-attention-npu</title>
-  <link rel="stylesheet" href="./styles.css?v=20260810-npu-status-3">
+  <link rel="stylesheet" href="./styles.css?v=20260811-build-log-1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -350,7 +350,7 @@
       </div>
       <pre id="commandDialogBody" class="perf-command-dialog-body"></pre>
       <div class="perf-command-dialog-actions">
-        <button type="button" id="commandCopyBtn" class="primary">复制命令</button>
+        <button type="button" id="commandCopyBtn" class="primary">复制内容</button>
         <button type="button" data-command-close>关闭</button>
       </div>
     </div>
@@ -711,11 +711,16 @@
           downloadRunResult(downloadBtn.dataset.runDownload);
           return;
         }
+        const logBtn = event.target.closest("[data-run-logs]");
+        if (logBtn) {
+          showRunLogs(logBtn.dataset.runLogs);
+          return;
+        }
         const button = event.target.closest("[data-run-command]");
         if (!button) return;
         const run = displayRuns().find((item) => item.id === button.dataset.runCommand);
         if (!run) return;
-        showCommandDialog(displayRunCommand(run));
+        showCommandDialog(displayRunCommand(run), { title: "Profiler 命令", copyLabel: "复制命令" });
       });
       dialog.addEventListener("click", (event) => {
         if (event.target.closest("[data-command-close]")) hideCommandDialog();
@@ -726,9 +731,11 @@
       });
     }
 
-    function showCommandDialog(command) {
+    function showCommandDialog(command, options = {}) {
       const dialog = document.querySelector("#commandDialog");
       const body = document.querySelector("#commandDialogBody");
+      document.querySelector("#commandDialogTitle").textContent = options.title || "详情";
+      document.querySelector("#commandCopyBtn").textContent = options.copyLabel || "复制内容";
       state.activeCommand = String(command || "");
       body.textContent = state.activeCommand || "—";
       dialog.classList.remove("hidden");
@@ -2034,6 +2041,34 @@
       });
     }
 
+    async function showRunLogs(runId) {
+      showCommandDialog("正在读取编译日志…", { title: "编译日志", copyLabel: "复制日志" });
+      try {
+        const response = await fetch(
+          `${WORKER_API_BASE}/api/perf/jobs/${encodeURIComponent(runId)}/events`,
+          { headers: authHeaders() },
+        );
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || `日志查询失败（HTTP ${response.status}）`);
+        const events = Array.isArray(payload.events) ? payload.events : [];
+        const progress = events.filter((event) => event.event_type === "build_progress" && event.detail?.log_tail);
+        const latest = progress.at(-1);
+        const lines = [];
+        if (latest?.detail?.remote_log) lines.push(`远端日志：${latest.detail.remote_log}`, "");
+        if (latest?.detail?.log_tail) lines.push(latest.detail.log_tail.trim(), "", "任务事件");
+        lines.push(...events.map((event) => {
+          const time = String(event.created_at || "").replace("T", " ").slice(0, 19);
+          return `[${time}] [${event.level || "info"}] ${event.message || event.event_type || "事件"}`;
+        }));
+        showCommandDialog(lines.filter((line, index) => line || index < lines.length - 1).join("\n") || "暂无编译日志。", {
+          title: "编译日志",
+          copyLabel: "复制日志",
+        });
+      } catch (error) {
+        showCommandDialog(`读取失败：${error.message || error}`, { title: "编译日志", copyLabel: "复制日志" });
+      }
+    }
+
     function attrEqSelectValues(key) {
       const values = new Set();
       const enumValues = attrEqEnumValues(key);
@@ -3105,16 +3140,20 @@
 
     function runActionCell(run, snap) {
       const rawStatus = run.raw_job_status || run.status;
+      const actions = [];
+      if (run.cloud_job && run.task_type === "build_install") {
+        actions.push(`<button type="button" class="perf-download-btn" data-run-logs="${escapeHtml(run.id)}">日志</button>`);
+      }
       if (run.cloud_job && ["queued", "waiting_runner", "waiting_vpn", "claimed", "running", "disconnected", "cancel_requested"].includes(rawStatus)) {
-        return `<button type="button" class="perf-download-btn" data-job-action="cancel" data-job-id="${escapeHtml(run.id)}">取消</button>`;
+        actions.push(`<button type="button" class="perf-download-btn" data-job-action="cancel" data-job-id="${escapeHtml(run.id)}">取消</button>`);
       }
-      if (run.cloud_job && ["failed", "canceled", "orphaned"].includes(rawStatus)) {
-        return `<button type="button" class="perf-download-btn" data-job-action="retry" data-job-id="${escapeHtml(run.id)}">重试</button>`;
+      else if (run.cloud_job && ["failed", "canceled", "orphaned"].includes(rawStatus)) {
+        actions.push(`<button type="button" class="perf-download-btn" data-job-action="retry" data-job-id="${escapeHtml(run.id)}">重试</button>`);
       }
-      if (run.task_type !== "build_install" && canDownloadRunResult(run, snap)) {
-        return `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载完整 Prof ZIP">下载</button>`;
+      else if (run.task_type !== "build_install" && canDownloadRunResult(run, snap)) {
+        actions.push(`<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载完整 Prof ZIP">下载</button>`);
       }
-      return "—";
+      return actions.length ? `<span class="perf-run-actions">${actions.join("")}</span>` : "—";
     }
 
     function runStatusLabel(status) {

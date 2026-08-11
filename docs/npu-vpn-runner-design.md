@@ -10,28 +10,30 @@
 
 当前部署已启用私有 R2，在线下载由 Worker 执行用户权限校验和对象代理，不公开 Bucket，也不向浏览器或 Relay 分发 R2 凭据。
 
-本文同时记录目标架构和当前实现。标注为“阶段二”或“建议”的 systemd 持久执行、远端 Device 锁和断线恢复尚未落地；当前闭环采用 Windows Relay 同步 SSH 执行和本地制品保留。
+本文同时记录目标架构和当前实现。build_install 已采用 NPU 服务器持久进程、状态文件和 Relay 重启恢复；profile 仍采用 Windows Relay 同步 SSH 执行。远端 Device 锁和测试任务断线恢复仍属于后续阶段。
 
 该方案不要求 NPU 服务器暴露公网端口，也不要求 Cloudflare Worker 直接连接 SSH。
 
 最终安全决策为：即使 Relay 具备公网可达条件，也不把 Relay 建设为公网服务。Relay 不提供 Webhook、不运行公网 HTTP API、不开放公网监听端口；任务领取、状态回传和制品上传全部由 Relay 主动发起出站连接。
 
-### 1.1 当前实现摘要（2026-08-10）
+### 1.1 当前实现摘要（2026-08-11）
 
 | 层级 | 当前实现 | 关键边界 |
 | --- | --- | --- |
 | 用户界面 | GitHub Pages 性能看板 | 提交测试、查看 A2/A5 与 NPU 占用、管理员配置执行环境并从 NPU 仓库分支列表中选择构建分支、下载 Prof ZIP |
 | 公网控制面 | Cloudflare Worker + D1 | 认证、任务队列、精确路由、租约、强制状态刷新、指标和制品元数据 |
 | 对象存储 | 私有 Cloudflare R2 | 保存 ZIP；由 Worker 鉴权代理下载，Bucket 不公开 |
-| VPN 边界 | 当前 Windows 电脑上的两个 Relay 计划任务 | 主动领取任务，每 30 分钟自动查询一次 NPU 状态；只发起出站 HTTPS 和 VPN 内 SSH/SCP |
-| 执行面 | A2 `192.168.9.221` 与 A5 `192.168.13.241` | 加载默认或管理员选择的 CANN/Conda/源码环境，执行白名单 profiler 命令，可按分支构建 wheel |
+| VPN 边界 | 当前 Windows 电脑上的两个 Relay 计划任务 | 主动领取任务，每 30 分钟自动查询一次 NPU 状态；启动器监督 Agent，异常退出后 5 秒重启 |
+| 执行面 | A2 `192.168.9.221` 与 A5 `192.168.13.241` | 测试使用同步 SSH；编译使用独立 worktree、脱离 SSH 的进程、状态文件和持久日志 |
 | 本地兜底 | Relay 本地 Prof 目录，默认保留 30 天 | R2 上传失败时仍保留结构化结果和本地原始制品 |
 
-当前链路把源码编译安装与性能测试分成两种独立任务。管理员选择 A2/A5、CANN、Conda、源码仓库和分支后，可先提交 `build_install`；Relay 在独立 worktree 中构建并安装 wheel，成功后将该 worktree 激活为当前环境的已部署源码，不执行 profiler。用户随后提交 `profile` 任务，Relay 校验所选分支与当前部署一致，再通过同步 SSH 执行服务端生成的 `msprof` / `msopprof` 命令，以 SCP 回收本次新增 Prof 目录，在内存中解析指标，生成 ZIP 和 SHA-256，经 Worker multipart API 上传私有 R2。登录用户从看板下载时，由 Worker 校验任务归属后代理返回 R2 对象。
+当前链路把源码编译安装与性能测试分成两种独立任务。管理员提交 build_install 后，Relay 在按 attempt_id 隔离的 worktree 中写入并以 setsid + nohup 启动构建脚本；脚本把 PID、状态、退出码和完整日志保存在 .fla-runner/，成功后激活环境专属部署链接。Relay 只通过短 SSH 连接轮询状态，把最近日志摘要写入 Worker 事件。Relay 进程退出后，Windows 启动器会重启 Agent；Agent 从本地任务记录恢复租约和远端句柄，不重复启动编译，只继续轮询并回传原结果。
+
+用户随后提交 profile 任务，Relay 校验所选分支与当前部署一致，再通过同步 SSH 执行服务端生成的 msprof / msopprof 命令，以 SCP 回收本次新增 Prof 目录，在内存中解析指标，生成 ZIP 和 SHA-256，经 Worker multipart API 上传私有 R2。登录用户从看板下载时，由 Worker 校验任务归属后代理返回 R2 对象。
 
 NPU 状态链路与任务领取解耦：每个 Relay 默认每 30 分钟在后台分卡执行 `npu-smi info -t usages` 和 `npu-smi info -t proc-mem`，通过 heartbeat 把利用率、HBM 和完整进程明细写入 D1；看板每 10 秒只读取最近缓存。用户点击“刷新”时，Worker 将强制刷新请求持久化，Relay 在下一次出站 heartbeat 收到请求后立即重新采样，因此不需要向 Relay 开放入站端口。
 
-当前已完成队列、双 Relay、A2/A5 精确路由、管理员自定义执行环境、独立源码编译安装任务、NPU 占用查询与强制刷新、R2 上传、9 GB 容量保护和看板下载闭环。尚未完成的是远端持久执行、Device 锁、实时进程取消和 Agent 重启后的自动 reconcile；因此执行期 VPN 中断仍需人工核对远端进程和 Prof 目录。
+当前已完成队列、双 Relay、A2/A5 精确路由、管理员自定义执行环境、编译任务持久执行与重启恢复、编译进程组取消、编译日志查看、NPU 占用查询与强制刷新、R2 上传、9 GB 容量保护和看板下载闭环。尚未完成的是 Device 锁和 profile 任务的远端持久执行；因此性能测试期间 VPN 中断仍需人工核对远端进程和 Prof 目录。
 
 ## 2. 当前条件
 
@@ -117,7 +119,7 @@ flowchart LR
 - 领取前检查 NPU SSH 端口可达性；默认每 30 分钟后台分卡查询 `npu-smi`，并支持 Worker 下发的强制刷新请求；执行时由 SSH 命令加载并验证远端环境。
 - 复用 `backend/perf_runner.py` 的命令构建和结果导入逻辑。
 - 上报默认执行环境和 `customizable` / `source_build` 能力，确保自定义环境和构建任务只路由给兼容 Agent。
-- 通过同步 SSH 命令执行采集，通过 SCP 回收本次新增的结果目录。
+- 编译任务通过短 SSH 连接启动和轮询远端持久进程；测试任务通过同步 SSH 执行，并以 SCP 回收本次新增的结果目录。
 - 发送 heartbeat、进度和日志摘要。
 - 在本地保留制品，生成 ZIP 和 SHA-256，经 Worker multipart API 上传 R2，并回传结构化结果和制品元数据。
 
@@ -128,7 +130,7 @@ flowchart LR
 - 管理员可以按任务选择 Relay 允许根目录内的 CANN、Conda 和源码仓库；普通用户继续使用 Relay 默认环境。
 - 独立编译任务可明确选择本地分支或 `origin` 远程跟踪分支；远程分支构建会尝试刷新 `origin`，失败时回退到服务器已有的缓存引用。随后在 detached worktree 中解析准确 commit，按芯片固定 SoC 构建并安装 wheel，不切换或修改主源码工作区。成功版本通过环境专属链接保留，供后续测试使用。
 - `msprof` 输出到 `data/prof_gdr`，`msopprof` 输出到 `data/prof_op`。
-- 当前 SSH 会话同步等待采集完成；`systemd-run`、远端状态文件和 Device 锁属于阶段二。
+- 编译脚本使用 setsid + nohup 脱离 SSH 会话，并原子写入 state、exit_code、pid 和 build.log；测试命令仍同步等待 SSH 会话。Device 锁和测试任务远端状态文件属于后续阶段。
 
 #### 本地制品存储
 
@@ -332,8 +334,9 @@ stateDiagram-v2
 
 - 领取前 VPN 不可用：不领取任务，记录 `waiting_vpn`。
 - 领取后尚未远端启动：安全释放任务并重新排队。
-- 远端启动后 VPN 断开：Worker 可标记 `disconnected`，但当前同步 SSH 实现通常会因 SSH 失败而结束本次尝试。
-- VPN 恢复后按 `job_id` 查询远端状态并继续跟踪属于阶段二；当前 Agent 尚未实现自动 reconcile。
+- 编译远端启动后 VPN 断开：构建进程继续运行，Worker 可暂时标记 disconnected；Relay 保留同一 attempt_id 和远端句柄，连接恢复后继续轮询。
+- 测试远端启动后 VPN 断开：当前同步 SSH 实现通常会因 SSH 失败而结束本次尝试，仍需人工核对。
+- Relay 重启后先扫描本地活跃编译记录；running 状态继续查询远端状态，reporting / reporting_failure 状态只重发已持久化的原结果，不重新执行编译。
 - 无法确认远端状态：进入 `orphaned`，禁止自动重跑。
 - 只有确认旧进程不存在或已结束，才允许人工或自动重新执行。
 
@@ -955,7 +958,7 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 
 ## 24. 验收测试场景
 
-以下列表同时包含已验证场景和阶段二目标。2026-08-10 已在真实环境验证场景 2 和 R2 上传/鉴权下载闭环；原子领取、幂等、白名单和权限边界已有代码及自动测试覆盖。场景 1 和 5 在 VPN 刚恢复时仍可能因 SSH 预检失败而结束当前尝试，需要增强预检和安全重新排队；4、6、7、8、9 仍属于阶段二目标。
+以下列表同时包含已验证场景和后续目标。2026-08-11 已验证编译子进程脱离 SSH 后继续运行并写出成功终态；Agent 重启恢复、结果回传重试、Worker 终态幂等由自动测试覆盖。场景 6 至 9 当前只对 build_install 成立，profile 仍属于后续目标；Device 锁仍未实现。
 
 1. VPN 未连接时提交任务，任务保持等待且不失败。
 2. VPN 恢复后 Relay 自动领取并执行任务。
@@ -975,7 +978,7 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 
 ## 25. 当前部署决策
 
-当前采用“Worker/D1 队列 + VPN Runner Relay 主动拉取 + 同步 SSH 远端执行 + Relay 本地副本 + 私有 R2 在线下载”。
+当前采用“Worker/D1 队列 + VPN Runner Relay 主动拉取 + 编译持久执行/测试同步 SSH + Relay 本地副本 + 私有 R2 在线下载”。
 
 - Worker/D1 保存任务状态、结构化性能指标、审计信息和制品清单。
 - 看板允许显式选择 A2 或 A5 执行服务器，Worker 使用 `target_runner_id` 保证任务只被指定 Relay 领取。
@@ -1061,8 +1064,8 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 
 ### 26.2 当前已知限制
 
-- 同步 SSH 执行依赖连接持续存在；执行期 VPN/SSH 中断后尚不能通过远端状态文件自动恢复。
-- 取消请求只能设置本地标记，尚不能实时终止远端 profiler 进程。
+- profile 同步 SSH 执行依赖连接持续存在；执行期 VPN/SSH 中断后尚不能通过远端状态文件自动恢复。
+- build_install 取消会向远端进程组发送 TERM；profile 取消仍只能设置本地标记，尚不能实时终止远端 profiler 进程。
 - 服务器端尚未实现 Device 锁，多 Relay 或人工任务需要运维协调。
 - 看板自动更新来自 Relay 最近一次采样，不是实时锁状态；自动缓存最多可能已有约 30 分钟，需要立即确认时应点击刷新强制重新采样，但网络、`npu-smi` 和 heartbeat 仍会带来数秒至数十秒延迟。
 - 领取前只检查 SSH TCP 端口，SSH 认证、CANN/Conda、profiler、Device 和磁盘空间在执行阶段才暴露错误。
@@ -1072,13 +1075,13 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - 30 天过期清理只覆盖 Relay 本地副本，不会删除 NPU 服务器 `data/prof_gdr` / `data/prof_op` 下的源目录。
 - Relay 本地副本按 30 天保留；R2 不设置固定 30 天删除，改为达到 9 GB 安全阈值时优先清理最旧对象。
 - Windows 电脑、登录会话或 VPN 离线时，任务会继续保存在 D1 中，但不会执行。
-- 执行期强制重启 Relay 会让任务在 heartbeat 租约过期后进入 `disconnected`，不会自动重新执行；管理员必须确认远端进程和 Prof 目录后再决定重试。
+- build_install 执行期强制重启 Relay 后会从本地状态恢复并继续追踪同一远端进程；profile 仍需管理员确认远端进程和 Prof 目录后再决定重试。
 
 ### 26.3 下一阶段优先级
 
 1. 建立低权限 NPU 服务账号和固定 `known_hosts`，并为每个 Relay 签发可独立轮换的 Runner Token。
-2. 实现远端任务目录、进程组/systemd 持久执行、Device 锁和状态文件。
-3. 实现执行期取消、Agent 重启恢复和 Worker reconcile。
+2. 将 build_install 已有的远端任务目录、进程组、状态文件和 Agent 重启恢复模式扩展到 profile，并增加 Device 锁。
+3. 为 profile 实现进程组取消和结果 reconcile。
 4. 增加领取前 profiler/Device/磁盘预检、轮询抖动和服务端退避提示支持。
 5. 增加 R2 上传失败的独立重试、过期 D1 元数据清理和制品下载审计。
 

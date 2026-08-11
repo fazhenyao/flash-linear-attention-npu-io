@@ -507,6 +507,12 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
   font-weight:900;
 }
 .perf-download-btn:hover { background:#dff1e8; }
+.perf-run-actions {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+}
 .perf-command-dialog {
   position:fixed;
   inset:0;
