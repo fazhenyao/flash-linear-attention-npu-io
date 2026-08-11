@@ -30,6 +30,7 @@ from backend.perf_runner import (
     persistent_build_handle,
     poll_persistent_build_install,
     prof_output_root,
+    RemoteBuildOrphanedError,
     RemoteConnectionError,
     resolve_chip,
     resolve_execution_environment,
@@ -284,7 +285,9 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         handle = persistent_build_handle(payload, "attempt-12345678", config)
 
         self.assertEqual(handle["execution_id"], "attempt-12345678")
-        self.assertEqual(handle["worktree"], "/tmp/fla-runner-builds/attempts/attempt-12345678")
+        self.assertEqual(handle["worktree"], "/tmp/fla-runner-builds/worktrees/attempt-12345678")
+        self.assertEqual(handle["control_dir"], "/tmp/fla-runner-builds/controls/attempt-12345678")
+        self.assertNotIn(handle["control_dir"], handle["worktree"])
         self.assertEqual(handle["log_path"], f"{handle['control_dir']}/build.log")
 
     def test_persistent_build_status_decodes_log_and_exit_code(self):
@@ -304,6 +307,22 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertEqual(status["exit_code"], 2)
         self.assertEqual(status["log_tail"], log)
 
+    def test_persistent_build_status_tracks_live_process_when_state_is_missing(self):
+        output = "\n".join([
+            "__STATE__=missing",
+            "__PID__=123",
+            "__ALIVE__=1",
+            "__EXIT_CODE__=",
+            "__LOG_SIZE__=0",
+            "__LOG_BASE64__=",
+        ])
+
+        status = _parse_persistent_build_status(output, {"worktree": "/tmp/build"})
+
+        self.assertEqual(status["state"], "running")
+        self.assertTrue(status["active"])
+        self.assertIn("without a state file", status["log_tail"])
+
     @patch("backend.perf_runner._run_remote_checked", side_effect=RemoteConnectionError("VPN unavailable"))
     def test_persistent_build_poll_does_not_treat_ssh_failure_as_missing(self, _run_remote):
         with patch.dict(os.environ, self.environment, clear=False):
@@ -317,7 +336,6 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
 
     @patch("backend.perf_runner._run_remote_checked")
     @patch("backend.perf_runner._persistent_build_script", return_value="#!/bin/bash\nexit 0\n")
-    @patch("backend.perf_runner._prepare_remote_source_build")
     @patch("backend.perf_runner._cleanup_remote_source_build")
     @patch("backend.perf_runner._validate_remote_execution_environment")
     @patch("backend.perf_runner.poll_persistent_build_install")
@@ -326,16 +344,10 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         poll,
         _validate,
         _cleanup,
-        prepare,
         _script,
         run_remote,
     ):
         poll.return_value = {"state": "missing"}
-        prepare.return_value = {
-            "worktree": "/tmp/fla-runner-builds/attempts/attempt-12345678",
-            "commit": "c" * 40,
-            "soc": "ascend950",
-        }
         with patch.dict(os.environ, {**self.environment, "PERF_CHIP": "A5"}, clear=False):
             config = load_config()
         payload = {
@@ -357,6 +369,75 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertIn("&& { setsid nohup", command)
         self.assertIn("starter=$!", command)
         self.assertTrue(command.endswith("; }"))
+        _cleanup.assert_called_once()
+
+    def test_persistent_build_script_builds_once_and_uses_environment_lock(self):
+        with patch.dict(os.environ, {**self.environment, "PERF_CHIP": "A5"}, clear=False):
+            config = load_config()
+        payload = {
+            "task_type": "build_install",
+            "chip": "A5",
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": True,
+                "branch": "main",
+            },
+        }
+        handle = persistent_build_handle(payload, "attempt-12345678", config)
+        execution = resolve_execution_environment(payload, config)
+
+        from backend.perf_runner import _persistent_build_script
+        script = _persistent_build_script(config, execution, "A5", handle)
+
+        self.assertEqual(script.count("python -m pip wheel"), 1)
+        self.assertEqual(script.count("python -m pip install"), 1)
+        self.assertIn('exec 9>"$lock_path"', script)
+        self.assertIn("flock 9", script)
+        self.assertIn("/controls/attempt-12345678", script)
+        self.assertIn("/worktrees/attempt-12345678", script)
+
+    def test_persistent_build_status_recovers_success_from_active_marker(self):
+        output = "\n".join([
+            "__STATE__=succeeded",
+            "__PID__=",
+            "__ALIVE__=0",
+            "__EXIT_CODE__=0",
+            "__LOG_SIZE__=0",
+            "__LOG_BASE64__=",
+            f"__COMMIT__={'d' * 40}",
+            "__DEPLOYMENT__=/tmp/fla-runner-builds/active/environment",
+            "__RECOVERED__=1",
+        ])
+
+        status = _parse_persistent_build_status(output, {"execution_id": "attempt-12345678"})
+
+        self.assertEqual(status["state"], "succeeded")
+        self.assertEqual(status["commit"], "d" * 40)
+        self.assertTrue(status["recovered_from_deployment"])
+
+    def test_missing_persistent_build_result_is_orphaned(self):
+        with self.assertRaisesRegex(RemoteBuildOrphanedError, "无法确认"):
+            from backend.perf_runner import persistent_build_result
+            persistent_build_result({}, {"state": "missing"})
+
+    @patch("backend.perf_runner._run_remote_checked")
+    def test_build_acknowledgement_keeps_three_deployments(self, run_remote):
+        from backend.perf_runner import acknowledge_persistent_build_install
+
+        with patch.dict(os.environ, {**self.environment, "PERF_CHIP": "A5"}, clear=False):
+            config = load_config()
+        acknowledge_persistent_build_install({
+            "control_dir": "/tmp/fla-runner-builds/controls/attempt-12345678",
+            "deployment": "/tmp/fla-runner-builds/active/environment",
+            "source_repo": "/workspace/user/flash-linear-attention-npu",
+        }, config)
+
+        command = run_remote.call_args.args[1]
+        self.assertIn("acknowledged.tmp", command)
+        self.assertIn('[ "$kept" -le 3 ]', command)
+        self.assertIn('"$worktrees_root"/*', command)
 
     @patch("backend.perf_runner._run_remote_checked")
     def test_activated_build_is_resolved_for_later_profile(self, run_remote):
@@ -842,6 +923,33 @@ __END_NPU__
         self.assertNotIn("completed", states)
         posted_paths = [call.args[0] for call in agent.api.post.call_args_list]
         self.assertFalse(any(path.endswith("/fail") for path in posted_paths))
+
+    @patch("backend.runner_agent.JobHeartbeat")
+    def test_missing_remote_build_is_reconciled_as_orphaned(self, heartbeat_class):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.config = SimpleNamespace(runner_id="relay-test")
+        agent.api = Mock()
+        agent.save_job_state = Mock()
+        agent.send_runner_heartbeat = Mock()
+        agent.health = Mock(return_value={})
+        agent.run_persistent_build_job = Mock(side_effect=RemoteBuildOrphanedError("远端状态无法确认"))
+        heartbeat_class.return_value.cancel_requested.is_set.return_value = False
+        job = {
+            "id": "job-orphaned",
+            "attempt_id": "attempt-orphaned",
+            "lease_token": "lease-orphaned",
+            "request": {"task_type": "build_install"},
+            "remote_build": {"control_dir": "/tmp/fla-runner-builds/controls/attempt-orphaned"},
+        }
+
+        agent.run_job(job)
+
+        posted_paths = [call.args[0] for call in agent.api.post.call_args_list]
+        self.assertTrue(any(path.endswith("/reconcile") for path in posted_paths))
+        self.assertFalse(any(path.endswith("/fail") for path in posted_paths))
+        states = [call.args[1] for call in agent.save_job_state.call_args_list]
+        self.assertIn("reporting_orphaned", states)
+        self.assertIn("orphaned", states)
 
     def test_runner_agent_archives_prof_directory_with_root_folder(self):
         with tempfile.TemporaryDirectory() as temporary:

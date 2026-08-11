@@ -3098,10 +3098,17 @@
       if (!jobId || !["cancel", "retry"].includes(action)) return;
       const job = state.jobs.find((item) => item.id === jobId);
       const taskLabel = job?.request?.task_type === "build_install" ? "编译安装任务" : "测试任务";
-      const prompt = action === "cancel" ? `确认取消该${taskLabel}？` : `确认重新提交该${taskLabel}？`;
+      const orphanedRetry = action === "retry" && job?.status === "orphaned";
+      const prompt = action === "cancel"
+        ? `确认取消该${taskLabel}？`
+        : orphanedRetry
+          ? `该${taskLabel}的远端状态无法确认。仅在已核对并确认远端进程停止后才能重试，是否确认已停止？`
+          : `确认重新提交该${taskLabel}？`;
       if (!confirm(prompt)) return;
       try {
-        await workerPost(`/api/perf/jobs/${encodeURIComponent(jobId)}/${action}`, {});
+        await workerPost(`/api/perf/jobs/${encodeURIComponent(jobId)}/${action}`, {
+          ...(orphanedRetry ? { confirm_remote_stopped: true } : {}),
+        });
         await Promise.all([loadData(), loadPerfJobs(), loadRunnerStatus()]);
         renderAll();
         maybeStartPerfPolling();

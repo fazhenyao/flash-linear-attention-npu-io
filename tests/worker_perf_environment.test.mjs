@@ -2,12 +2,34 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  assertPerfJobRetryAllowed,
   normalizePerfExecutionEnvironment,
   normalizePerfJobRequest,
   normalizeSourceBranchesRefreshRequest,
   perfJobCancelTransition,
   runnerCanExecute,
 } from "../cloudflare/worker.js";
+
+test("requires explicit admin confirmation before retrying an orphaned job", () => {
+  assert.throws(
+    () => assertPerfJobRetryAllowed({ status: "orphaned" }, {}, { role: "admin" }),
+    /confirm the remote process has stopped/,
+  );
+  assert.throws(
+    () => assertPerfJobRetryAllowed(
+      { status: "orphaned" },
+      { confirm_remote_stopped: true },
+      { role: "developer" },
+    ),
+    /admin confirmation/,
+  );
+  assert.doesNotThrow(() => assertPerfJobRetryAllowed(
+    { status: "orphaned" },
+    { confirm_remote_stopped: true },
+    { role: "admin" },
+  ));
+  assert.doesNotThrow(() => assertPerfJobRetryAllowed({ status: "failed" }, {}, { role: "developer" }));
+});
 
 test("normalizes a controlled source build environment", () => {
   assert.deepEqual(normalizePerfExecutionEnvironment({

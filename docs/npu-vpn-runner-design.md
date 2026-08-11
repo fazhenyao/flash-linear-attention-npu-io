@@ -27,7 +27,7 @@
 | 执行面 | A2 `192.168.9.221` 与 A5 `192.168.13.241` | 测试使用同步 SSH；编译使用独立 worktree、脱离 SSH 的进程、状态文件和持久日志 |
 | 本地兜底 | Relay 本地 Prof 目录，默认保留 30 天 | R2 上传失败时仍保留结构化结果和本地原始制品 |
 
-当前链路把源码编译安装与性能测试分成两种独立任务。管理员提交 build_install 后，Relay 在按 attempt_id 隔离的 worktree 中写入并以 setsid + nohup 启动构建脚本；脚本把 PID、状态、退出码和完整日志保存在 .fla-runner/，成功后激活环境专属部署链接。Relay 只通过短 SSH 连接轮询状态，把最近日志摘要写入 Worker 事件。Relay 进程退出后，Windows 启动器会重启 Agent；Agent 从本地任务记录恢复租约和远端句柄，不重复启动编译，只继续轮询并回传原结果。
+当前链路把源码编译安装与性能测试分成两种独立任务。管理员提交 `build_install` 后，Relay 仅通过一次短 SSH 调用在 NPU 服务器启动 `setsid + nohup` 脚本；脚本在环境锁内解析 commit、创建 detached worktree，并执行一次环境检查、wheel 构建、安装和安装校验。`controls/<attempt_id>` 独立保存 PID、阶段、退出码、commit 和完整日志，`worktrees/<attempt_id>` 只保存源码，清理 worktree 不会删除执行证据。Relay 退出后由 Windows 启动器重启，Agent 从本地任务记录恢复同一远端句柄，不重复编译。
 
 用户随后提交 profile 任务，Relay 校验所选分支与当前部署一致，再通过同步 SSH 执行服务端生成的 msprof / msopprof 命令，以 SCP 回收本次新增 Prof 目录，在内存中解析指标，生成 ZIP 和 SHA-256，经 Worker multipart API 上传私有 R2。登录用户从看板下载时，由 Worker 校验任务归属后代理返回 R2 对象。
 
@@ -130,7 +130,7 @@ flowchart LR
 - 管理员可以按任务选择 Relay 允许根目录内的 CANN、Conda 和源码仓库；普通用户继续使用 Relay 默认环境。
 - 独立编译任务可明确选择本地分支或 `origin` 远程跟踪分支；远程分支构建会尝试刷新 `origin`，失败时回退到服务器已有的缓存引用。随后在 detached worktree 中解析准确 commit，按芯片固定 SoC 构建并安装 wheel，不切换或修改主源码工作区。成功版本通过环境专属链接保留，供后续测试使用。
 - `msprof` 输出到 `data/prof_gdr`，`msopprof` 输出到 `data/prof_op`。
-- 编译脚本使用 setsid + nohup 脱离 SSH 会话，并原子写入 state、exit_code、pid 和 build.log；测试命令仍同步等待 SSH 会话。Device 锁和测试任务远端状态文件属于后续阶段。
+- 编译脚本使用 `setsid + nohup` 脱离 SSH 会话，并在 worktree 外原子写入 state、exit_code、pid、commit 和 build.log；同一 CANN、Conda、源码仓库和芯片组合使用独立 `flock` 串行构建安装。测试命令仍同步等待 SSH 会话。Device 锁和测试任务远端状态文件属于后续阶段。
 
 #### 本地制品存储
 
@@ -293,11 +293,12 @@ Worker 先执行角色、任务类型、字段白名单、路径格式和分支�
 独立编译与测试流程固定为：
 
 1. 看板下拉框列出目标仓库的 `refs/heads/<branch>` 和已缓存的 `refs/remotes/origin/<branch>`，并明确携带 `branch_source`；Relay 执行时再次使用 `git check-ref-format` 校验分支。选择远程分支时会用 30 秒远端超时尝试 `git fetch --prune origin` 更新引用，网络不可用时继续使用查询时已经存在的缓存 commit。
-2. 把分支解析为准确 commit，在 `PERF_REMOTE_BUILD_ROOT` 下创建唯一 detached worktree，不切换主源码仓库当前分支。
-3. 在管理员选择的 CANN/Conda 环境中执行源码仓库 README 对应流程：`python scripts/check_npu_env.py --build-only`、构建 wheel、再精确安装本次生成的 wheel。
+2. 短 SSH 只写入并启动远端脚本；脚本获取当前环境的 `locks/<environment_id>.lock` 后，把分支解析为准确 commit，在 `worktrees/<attempt_id>` 创建唯一 detached worktree，不切换主源码仓库当前分支。
+3. 在管理员选择的 CANN/Conda 环境中只执行一次源码仓库 README 对应流程：`python scripts/check_npu_env.py --build-only`、构建 wheel、精确安装本次生成的 wheel，再使用 `pip show` 校验安装结果。
 4. 构建目标由 Relay 芯片固定映射，用户不能覆盖：A2 为 `ascend910b`、A3 为 `ascend910_93`、A5 为 `ascend950`。
-5. 构建成功后，在 `PERF_REMOTE_BUILD_ROOT/active` 下原子更新当前环境的部署链接；同一 CANN、Conda、源码仓库和芯片组合只保留最新激活 worktree，并清理前一个版本。
-6. 后续测试选择分支时，Relay 必须确认部署标记中的分支和 SoC 匹配，再从已激活 worktree 的 `examples/flash_gated_delta_rule.py` 执行 profiling；不匹配则要求先执行编译安装。
+5. 构建成功后先写入包含 branch、commit、SoC、attempt_id 和环境部署标识的 marker，再通过临时链接和 `mv -T` 原子更新 `active/<environment_id>`；激活后再次校验链接目标和 marker。
+6. Worker 确认成功结果已持久化后，Relay 写入 acknowledged 标记，并只清理同一环境更旧的成功 worktree；当前版本保留当前版本及前两个成功版本，以便核对和回退。控制目录和日志不随 worktree 清理。
+7. 后续测试选择分支时，Relay 必须确认部署标记中的分支和 SoC 匹配，再从已激活 worktree 的 `examples/flash_gated_delta_rule.py` 执行 profiling；不匹配则要求先执行编译安装。
 
 当前 A5 主机不能稳定访问 GitHub，因此要在 A5 上编译的远程分支应预先存在于 `refs/remotes/origin/*` 缓存中，或者直接使用本地分支。本地分支不会触发网络 fetch；远程分支即使刷新失败也可使用已有缓存。任务记录保存实际 CANN、Conda、源码仓库、分支来源、分支、commit 和 SoC。编译任务记录显示“编译安装”及结果，不展示构建 Shell；测试任务的命令字段仍只展示对应的 `msprof` 或 `msopprof` profiler 命令。
 
@@ -336,9 +337,9 @@ stateDiagram-v2
 - 领取后尚未远端启动：安全释放任务并重新排队。
 - 编译远端启动后 VPN 断开：构建进程继续运行，Worker 可暂时标记 disconnected；Relay 保留同一 attempt_id 和远端句柄，连接恢复后继续轮询。
 - 测试远端启动后 VPN 断开：当前同步 SSH 实现通常会因 SSH 失败而结束本次尝试，仍需人工核对。
-- Relay 重启后先扫描本地活跃编译记录；running 状态继续查询远端状态，reporting / reporting_failure 状态只重发已持久化的原结果，不重新执行编译。
-- 无法确认远端状态：进入 `orphaned`，禁止自动重跑。
-- 只有确认旧进程不存在或已结束，才允许人工或自动重新执行。
+- Relay 重启后先扫描本地活跃编译记录；活跃构建阶段继续查询远端状态，`reporting` / `reporting_failure` / `reporting_orphaned` 只重发已持久化的原结果，不重新执行编译。
+- 控制目录缺失时，Relay 会核对 active marker 的 attempt_id；匹配则恢复为成功，不匹配或也缺失才进入 `orphaned`。
+- `orphaned` 禁止自动重跑；只有管理员核对并在看板明确确认旧进程已停止后，Worker 才接受重试，并记录确认人、旧状态和旧 attempt_id。
 
 不能简单地在 heartbeat 超时后重新排队，因为原任务可能仍在 NPU 上运行，重新执行会产生重复任务和 Device 冲突。当前版本在执行期断线后应由管理员确认远端进程和 Prof 目录，再决定是否重试。
 
@@ -688,7 +689,7 @@ Relay 重启或 VPN 恢复后，应先读取该文件和 systemd unit 状态，�
 
 ## 16. 日志和进度
 
-当前空闲时，Runner heartbeat 随每次轮询发送；执行任务时，独立线程每 15 秒发送 job heartbeat。当前只上报执行开始、完成、失败及连接健康状态，尚未实现以下细粒度阶段事件：
+当前空闲时，Runner heartbeat 随每次轮询发送；执行任务时，独立线程每 15 秒发送 job heartbeat。编译任务上报远端真实阶段：`starting`、`waiting_lock`、`preparing`、`checking`、`building`、`installing`、`validating` 和 `activating`，SSH 不可达时上报 disconnected 并保留最后阶段。profile 尚未实现以下细粒度阶段事件：
 
 ```text
 checking_vpn
@@ -757,7 +758,8 @@ VPN 断开时取消请求保持待处理，不能声称已经取消。当前版�
 
 - 领取前失败可以自动重试。
 - SSH 启动前失败可以安全重新排队。
-- 远端启动后的失败默认需要状态核对。
+- 远端启动后的普通失败可在保留日志的前提下重试；远端状态无法确认时进入 `orphaned`。
+- `orphaned` 仅允许管理员在看板确认远端进程已经停止后重试，Worker 保存该确认审计；普通用户和未携带确认的请求均被拒绝。
 - 每次重试生成新的 `attempt_id`，但保留原 `job_id`。
 - 限制最大自动重试次数并使用退避时间。
 
@@ -1033,6 +1035,8 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传；自定义执行环境仅允许管理员提交并执行字段白名单校验。
 - `backend/runner_agent.py` 已实现主动出站注册、SSH 端口健康检查、异步 `npu-smi` 设备状态上报、自适应领取、执行期 heartbeat、结果回传和本地制品过期清理。
 - `backend/perf_runner.py` 已支持远端 CANN/Conda 环境准备、允许根目录校验、分支解析、独立编译安装任务、环境专属激活 worktree、按 A2/A3/A5 构建、同步 SSH 执行、SSH/SCP 超时、新增结果目录识别和回收；SSH/SCP 子进程显式关闭标准输入，适配无控制台 Windows 计划任务。
+- 持久编译采用 `controls/`、`worktrees/`、`locks/`、`active/` 分离布局；控制日志不会因 worktree 清理丢失。远端脚本在环境锁内只构建安装一次，原子激活并校验 marker；Worker 确认结果后保留最近三个成功 worktree。
+- 编译 heartbeat 展示远端真实阶段；控制记录缺失时可从 active marker 恢复成功，否则通过 reconcile 标记 `orphaned`。`orphaned` 重试要求管理员显式确认远端进程已停止。
 - 性能看板已改为向 Worker 分别提交编译安装与测试任务，并提供 A2/A5 执行服务器选择、管理员执行环境与源码分支设置、分卡占用自动更新、强制重新采样和点击展开完整进程明细；Runner 或 VPN 离线时任务继续排队。
 - 源码分支已从自由文本改为动态分组下拉框；分支查询请求经 D1 和 Relay 出站 heartbeat 传递，Relay 返回所选源码仓库中通过格式校验的本地分支和 `origin` 远程跟踪分支，源码路径变化时会重新查询。远程刷新失败时继续使用先读取的引用；完整查询失败时保留并持久化最近一次成功列表，看板不会清空仍可用的缓存选项。
 - NPU 状态自动采样间隔已从 30 秒调整为 30 分钟；看板仍每 10 秒读取 D1 缓存，点击刷新会通过 Worker 持久化请求并强制 Relay 立即重新执行 `npu-smi`。
@@ -1076,6 +1080,7 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - Relay 本地副本按 30 天保留；R2 不设置固定 30 天删除，改为达到 9 GB 安全阈值时优先清理最旧对象。
 - Windows 电脑、登录会话或 VPN 离线时，任务会继续保存在 D1 中，但不会执行。
 - build_install 执行期强制重启 Relay 后会从本地状态恢复并继续追踪同一远端进程；profile 仍需管理员确认远端进程和 Prof 目录后再决定重试。
+- 编译环境锁只约束由本系统提交、且使用同一 `PERF_REMOTE_BUILD_ROOT` 的 build_install；人工在同一 Conda 环境执行 `pip install` 不受该锁约束，仍需运维协调。
 
 ### 26.3 下一阶段优先级
 

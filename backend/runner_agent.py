@@ -23,6 +23,7 @@ from typing import Any
 
 try:
     from .perf_runner import (
+        acknowledge_persistent_build_install,
         cancel_persistent_build_install,
         collect_npu_device_status,
         execute,
@@ -32,12 +33,14 @@ try:
         persistent_build_handle,
         persistent_build_result,
         poll_persistent_build_install,
+        RemoteBuildOrphanedError,
         RemoteConnectionError,
         runner_status,
         start_persistent_build_install,
     )
 except ImportError:
     from perf_runner import (  # type: ignore
+        acknowledge_persistent_build_install,
         cancel_persistent_build_install,
         collect_npu_device_status,
         execute,
@@ -47,6 +50,7 @@ except ImportError:
         persistent_build_handle,
         persistent_build_result,
         poll_persistent_build_install,
+        RemoteBuildOrphanedError,
         RemoteConnectionError,
         runner_status,
         start_persistent_build_install,
@@ -169,6 +173,10 @@ class JobHeartbeat(threading.Thread):
         self.stop_event = threading.Event()
         self.cancel_requested = threading.Event()
         self.last_error = ""
+        self.remote_state = ""
+
+    def set_remote_state(self, state: str) -> None:
+        self.remote_state = str(state or "")
 
     def stop(self) -> None:
         self.stop_event.set()
@@ -178,11 +186,23 @@ class JobHeartbeat(threading.Thread):
             try:
                 health = self.agent.health()
                 self.agent.send_runner_heartbeat(health, current_jobs=1)
+                task_type = str((self.job.get("request") or {}).get("task_type") or "profile")
+                if task_type == "build_install" and self.remote_state:
+                    heartbeat_state = "disconnected" if not health["npu_reachable"] else "running"
+                    message = (
+                        f"远端编译阶段：{self.remote_state}"
+                        if health["npu_reachable"]
+                        else f"VPN 或 NPU SSH 暂不可达，最后远端阶段：{self.remote_state}"
+                    )
+                else:
+                    heartbeat_state = "running" if health["npu_reachable"] else "disconnected"
+                    message = "测试执行中" if health["npu_reachable"] else "VPN 或 NPU SSH 暂不可达"
                 response = self.agent.api.post(
                     f"/api/runner/jobs/{self.job['id']}/heartbeat",
                     self.agent.job_auth(self.job, {
-                        "state": "running" if health["npu_reachable"] else "disconnected",
-                        "message": "测试执行中" if health["npu_reachable"] else "VPN 或 NPU SSH 暂不可达",
+                        "state": heartbeat_state,
+                        "remote_state": self.remote_state or None,
+                        "message": message,
                     }),
                 )
                 if response.get("cancel_requested"):
@@ -244,7 +264,7 @@ class RunnerAgent:
                 "source_remote_branch_query": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_branches": self.source_branches_status(),
             },
-            "agent_version": "1.6.1",
+            "agent_version": "1.7.0",
         }
 
     def source_branches_cache_path(self) -> Path:
@@ -556,9 +576,9 @@ class RunnerAgent:
             "request": dict(job.get("request") or previous.get("request") or {}),
             **extra,
         }
-        if state in {"claimed", "running", "reporting", "reporting_failure"} and job.get("lease_token"):
+        if state in {"claimed", "running", "reporting", "reporting_failure", "reporting_orphaned"} and job.get("lease_token"):
             record["lease_token"] = job["lease_token"]
-        elif state in {"completed", "failed", "canceled"}:
+        elif state in {"completed", "failed", "canceled", "orphaned"}:
             record.pop("lease_token", None)
         temporary = path.with_suffix(".tmp")
         temporary.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -573,7 +593,7 @@ class RunnerAgent:
                 continue
             request = dict(record.get("request") or {})
             if (
-                record.get("state") not in {"claimed", "running", "reporting", "reporting_failure"}
+                record.get("state") not in {"claimed", "running", "reporting", "reporting_failure", "reporting_orphaned"}
                 or request.get("task_type") != "build_install"
                 or not record.get("job_id")
                 or not record.get("attempt_id")
@@ -624,6 +644,7 @@ class RunnerAgent:
                     time.sleep(5)
 
         status = poll_when_reachable(allow_missing=True)
+        heartbeat.set_remote_state(str(status.get("state") or "unknown"))
         if status.get("state") == "missing":
             while True:
                 try:
@@ -640,7 +661,7 @@ class RunnerAgent:
                     time.sleep(5)
             job["remote_build"] = handle
             self.save_job_state(job, "running", request=request, remote_build=handle)
-        elif not resume and status.get("state") not in {"running", "succeeded"}:
+        elif not resume and not status.get("active") and status.get("state") != "succeeded":
             raise RuntimeError(f"远端编译任务处于不可启动状态：{status.get('state')}")
 
         last_log_size = -1
@@ -652,6 +673,9 @@ class RunnerAgent:
                 cancel_persistent_build_install(handle, config)
                 cancel_sent = True
             status = poll_when_reachable()
+            heartbeat.set_remote_state(str(status.get("state") or "unknown"))
+            if status.get("commit"):
+                handle["commit"] = status["commit"]
             self.save_job_state(
                 job,
                 "running",
@@ -693,7 +717,7 @@ class RunnerAgent:
             if status.get("state") == "missing" and now - started_waiting_at < 30:
                 time.sleep(2)
                 continue
-            if status.get("state") != "running":
+            if not status.get("active"):
                 return persistent_build_result(handle, status)
             time.sleep(5)
 
@@ -709,6 +733,12 @@ class RunnerAgent:
             except Exception as exc:
                 print(f"[runner] 编译任务 {job['id']} 成功结果回传失败，将继续重试：{exc}", flush=True)
                 return False
+            remote_build = dict(record.get("remote_build") or self.load_job_state(job["id"]).get("remote_build") or {})
+            if request.get("task_type") == "build_install" and remote_build:
+                try:
+                    acknowledge_persistent_build_install(remote_build, load_config())
+                except Exception as exc:
+                    print(f"[runner] 编译任务 {job['id']} 远端清理延后：{exc}", flush=True)
             self.save_job_state(
                 job,
                 "completed",
@@ -729,6 +759,17 @@ class RunnerAgent:
                 return False
             terminal_state = "canceled" if payload.get("canceled") else "failed"
             self.save_job_state(job, terminal_state, request=request, error=record.get("error") or "")
+            return True
+        if state == "reporting_orphaned":
+            payload = record.get("reconcile_payload")
+            if not isinstance(payload, dict):
+                raise RuntimeError("本地编译状态确认记录缺少 reconcile_payload")
+            try:
+                self.api.post(f"/api/runner/jobs/{job['id']}/reconcile", payload)
+            except Exception as exc:
+                print(f"[runner] 编译任务 {job['id']} 状态确认回传失败，将继续重试：{exc}", flush=True)
+                return False
+            self.save_job_state(job, "orphaned", request=request, error=record.get("error") or "")
             return True
         return False
 
@@ -755,7 +796,7 @@ class RunnerAgent:
         heartbeat.start()
         self.current_jobs = 1
         try:
-            if resume and recovery_state.get("state") in {"reporting", "reporting_failure"}:
+            if resume and recovery_state.get("state") in {"reporting", "reporting_failure", "reporting_orphaned"}:
                 self.report_persisted_outcome(job, recovery_state)
                 return
             self.save_job_state(job, "running", request=request)
@@ -814,6 +855,7 @@ class RunnerAgent:
                 outcome_record = {
                     "state": "reporting",
                     "request": request,
+                    "remote_build": job.get("remote_build") or {},
                     "artifacts": local_artifacts,
                     "message": result.get("message", ""),
                     "upload_errors": upload_errors,
@@ -826,6 +868,28 @@ class RunnerAgent:
                 )
                 self.report_persisted_outcome(job, outcome_record)
             except Exception as exc:
+                if isinstance(exc, RemoteBuildOrphanedError):
+                    reconcile_payload = self.job_auth(job, {
+                        "remote_state": "missing",
+                        "message": str(exc),
+                        "detail": {
+                            "error_type": exc.__class__.__name__,
+                            "remote_build": job.get("remote_build") or {},
+                        },
+                    })
+                    outcome_record = {
+                        "state": "reporting_orphaned",
+                        "request": request,
+                        "error": str(exc),
+                        "reconcile_payload": reconcile_payload,
+                    }
+                    self.save_job_state(
+                        job,
+                        "reporting_orphaned",
+                        **{key: value for key, value in outcome_record.items() if key != "state"},
+                    )
+                    self.report_persisted_outcome(job, outcome_record)
+                    return
                 canceled = heartbeat.cancel_requested.is_set() or isinstance(exc, InterruptedError)
                 failure_payload = self.job_auth(job, {
                     "message": str(exc),
@@ -856,7 +920,7 @@ class RunnerAgent:
     def environment_summary(self) -> dict[str, Any]:
         status = runner_status()
         return {
-            "agent_version": "1.6.1",
+            "agent_version": "1.7.0",
             "runner_id": self.config.runner_id,
             "mode": status.get("mode"),
             "chip": status.get("chip"),

@@ -26,6 +26,17 @@ MAX_PROF_UPLOAD_BYTES = 512 * 1024 * 1024
 VALID_PROF_TOOLS = {"msprof", "msprof_op", "msprof_op_sim"}
 VALID_TASK_TYPES = {"profile", "build_install"}
 VALID_CHIPS = {"A2", "A3", "A5"}
+PERSISTENT_BUILD_ACTIVE_STATES = {
+    "starting",
+    "waiting_lock",
+    "preparing",
+    "checking",
+    "building",
+    "installing",
+    "validating",
+    "activating",
+    "running",
+}
 ATTR_DEFAULTS = {
     "batch": 1,
     "query_heads": 32,
@@ -884,6 +895,12 @@ class RemoteConnectionError(RuntimeError):
     pass
 
 
+class RemoteBuildOrphanedError(RuntimeError):
+    """The Relay can connect, but cannot prove the remote build outcome."""
+
+    pass
+
+
 def _run_remote_checked(
     config: PerfRunnerConfig,
     remote_command: str,
@@ -906,6 +923,7 @@ def _validate_remote_execution_environment(
         f"test -f {shlex.quote(execution.env_script)}",
         f"test -f {shlex.quote(config.remote_conda_sh)}",
         f"test -d {shlex.quote(execution.source_repo)}/.git",
+        "command -v flock >/dev/null",
         "python --version",
     ]
     if not execution.rebuild:
@@ -938,6 +956,16 @@ def _remote_deployment_path(
     deployment_id = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
     root = _normalized_remote_absolute_path(config.remote_build_root, "远端构建目录")
     return f"{root}/active/{deployment_id}"
+
+
+def _remote_build_lock_path(
+    config: PerfRunnerConfig,
+    execution: ExecutionEnvironment,
+    chip: str,
+) -> str:
+    deployment = PurePosixPath(_remote_deployment_path(config, execution, chip))
+    root = PurePosixPath(_normalized_remote_absolute_path(config.remote_build_root, "远端构建目录"))
+    return (root / "locks" / f"{deployment.name}.lock").as_posix()
 
 
 def _prepare_remote_source_build(
@@ -1019,16 +1047,17 @@ def persistent_build_handle(
     if not execution.branch:
         raise ValueError("编译安装任务必须指定源码分支")
     chip = resolve_chip(payload, config)
-    worktree = (
-        PurePosixPath(_normalized_remote_absolute_path(config.remote_build_root, "远端构建目录"))
-        / "attempts"
-        / execution_id
-    ).as_posix()
+    root = PurePosixPath(_normalized_remote_absolute_path(config.remote_build_root, "远端构建目录"))
+    worktree = (root / "worktrees" / execution_id).as_posix()
+    control_dir = (root / "controls" / execution_id).as_posix()
+    deployment = _remote_deployment_path(config, execution, chip)
     return {
         "execution_id": execution_id,
         "worktree": worktree,
-        "control_dir": f"{worktree}/.fla-runner",
-        "log_path": f"{worktree}/.fla-runner/build.log",
+        "control_dir": control_dir,
+        "log_path": f"{control_dir}/build.log",
+        "deployment": deployment,
+        "lock_path": _remote_build_lock_path(config, execution, chip),
         "source_repo": execution.source_repo,
         "branch": execution.branch,
         "branch_source": execution.branch_source,
@@ -1045,37 +1074,52 @@ def _persistent_build_script(
     build_info: dict[str, str],
 ) -> str:
     worktree = build_info["worktree"]
-    control = f"{worktree}/.fla-runner"
-    deployment = _remote_deployment_path(config, execution, chip)
+    control = build_info["control_dir"]
+    execution_id = build_info["execution_id"]
+    deployment = build_info["deployment"]
+    lock_path = build_info["lock_path"]
     marker = f"{worktree}/.fla-runner-deployment"
-    build_root = _normalized_remote_absolute_path(config.remote_build_root, "远端构建目录")
+    repo = shlex.quote(execution.source_repo)
+    branch_ref = shlex.quote(f"refs/heads/{execution.branch}^{{commit}}")
+    origin_ref = shlex.quote(f"refs/remotes/origin/{execution.branch}^{{commit}}")
+    if execution.branch_source == "remote":
+        resolve_commit = (
+            f"commit=$(git -C {repo} rev-parse --verify {origin_ref} 2>/dev/null || true)"
+            " && (export GIT_TERMINAL_PROMPT=0; "
+            f"timeout --signal=TERM --kill-after=2s 30s git -C {repo} "
+            "fetch --prune origin >> \"$log_file\" 2>&1 || true)"
+            f" && updated=$(git -C {repo} rev-parse --verify {origin_ref} 2>/dev/null || true)"
+            " && if [ -n \"$updated\" ]; then commit=\"$updated\"; fi"
+        )
+    else:
+        resolve_commit = f"commit=$(git -C {repo} rev-parse --verify {branch_ref} 2>/dev/null || true)"
     setup = _remote_execution_command(
         config,
         (
-            "python scripts/check_npu_env.py --build-only"
-            " && mkdir -p dist"
+            "write_value \"$state_file\" checking"
+            " && python scripts/check_npu_env.py --build-only"
+            " && write_value \"$state_file\" building"
+            " && rm -rf .fla-runner-dist && mkdir -p .fla-runner-dist"
             f" && FLA_NPU_SOC={shlex.quote(soc_build_target(chip))} "
-            "python -m pip wheel --no-build-isolation --no-deps . -w dist"
-            " && wheel=$(find dist -maxdepth 1 -type f "
+            "python -m pip wheel --no-build-isolation --no-deps . -w .fla-runner-dist"
+            " && wheel=$(find .fla-runner-dist -maxdepth 1 -type f "
             "-name 'flash_linear_attention_npu-*.whl' -print | sort | tail -n 1)"
             " && test -n \"$wheel\""
+            " && write_value \"$state_file\" installing"
             " && python -m pip install --force-reinstall --no-cache-dir --no-deps \"$wheel\""
+            " && write_value \"$state_file\" validating"
+            " && python -m pip show flash-linear-attention-npu >/dev/null"
         ),
         execution=execution,
         workdir=worktree,
     )
-    metadata = " ".join(
-        shlex.quote(value)
-        for value in (
-            execution.branch,
-            execution.branch_source,
-            build_info["commit"],
-            build_info["soc"],
-        )
-    )
     return f"""#!/usr/bin/env bash
 set +e
 control={shlex.quote(control)}
+worktree={shlex.quote(worktree)}
+repo={repo}
+deployment={shlex.quote(deployment)}
+lock_path={shlex.quote(lock_path)}
 state_file="$control/state"
 exit_file="$control/exit_code"
 log_file="$control/build.log"
@@ -1095,24 +1139,33 @@ cancel_build() {{
 trap cancel_build TERM INT
 mkdir -p "$control"
 printf '%s\n' "$$" > "$control/pid"
-write_value "$state_file" running
+write_value "$state_file" starting
 rm -f "$exit_file"
 printf '%s\n' '[runner] persistent build started' >> "$log_file"
 (
   set -e
+  mkdir -p "$(dirname "$lock_path")" "$(dirname "$worktree")" "$(dirname "$deployment")"
+  exec 9>"$lock_path"
+  write_value "$state_file" waiting_lock
+  flock 9
+  write_value "$state_file" preparing
+  git -C "$repo" check-ref-format --branch {shlex.quote(execution.branch)}
+  {resolve_commit}
+  test -n "$commit"
+  write_value "$control/commit" "$commit"
+  git -C "$repo" worktree remove --force "$worktree" >/dev/null 2>&1 || rm -rf "$worktree"
+  git -C "$repo" worktree prune >/dev/null 2>&1 || true
+  git -C "$repo" worktree add --detach "$worktree" "$commit"
   {setup}
-  mkdir -p {shlex.quote(str(PurePosixPath(deployment).parent))}
-  printf '%s\n' {metadata} > {shlex.quote(marker)}
-  previous=$(readlink -f {shlex.quote(deployment)} 2>/dev/null || true)
-  ln -sfn {shlex.quote(worktree)} {shlex.quote(deployment)}
-  if [ -n "$previous" ] && [ "$previous" != {shlex.quote(worktree)} ]; then
-    case "$previous" in
-      {shlex.quote(build_root)}/*)
-        git -C {shlex.quote(execution.source_repo)} worktree remove --force "$previous" >/dev/null 2>&1 || true
-        git -C {shlex.quote(execution.source_repo)} worktree prune >/dev/null 2>&1 || true
-        ;;
-    esac
-  fi
+  write_value "$state_file" activating
+  printf '%s\n' {shlex.quote(execution.branch)} {shlex.quote(execution.branch_source)} "$commit" \
+    {shlex.quote(soc_build_target(chip))} {shlex.quote(execution_id)} "$deployment" > {shlex.quote(marker)}
+  link_tmp="$deployment.tmp-{shlex.quote(execution_id)}"
+  rm -f "$link_tmp"
+  ln -s "$worktree" "$link_tmp"
+  mv -Tf "$link_tmp" "$deployment"
+  test "$(readlink -f "$deployment")" = "$(readlink -f "$worktree")"
+  test "$(sed -n '5p' "$deployment/.fla-runner-deployment")" = {shlex.quote(execution_id)}
 ) >> "$log_file" 2>&1
 code=$?
 if [ "$code" -eq 0 ]; then
@@ -1136,11 +1189,14 @@ def start_persistent_build_install(
     chip = resolve_chip(payload, config)
     _validate_remote_execution_environment(config, execution)
     status = poll_persistent_build_install(handle, config, allow_missing=True)
-    if status["state"] in {"running", "succeeded", "failed", "canceled"}:
+    if status["state"] in PERSISTENT_BUILD_ACTIVE_STATES | {"succeeded", "failed", "canceled"}:
         return {**handle, **{key: status.get(key) for key in ("commit", "soc", "deployment") if status.get(key)}}
     worktree = str(handle["worktree"])
     _cleanup_remote_source_build(config, execution.source_repo, worktree)
-    build_info = _prepare_remote_source_build(config, execution, chip, worktree=worktree)
+    build_info = {
+        **handle,
+        "soc": soc_build_target(chip),
+    }
     script = _persistent_build_script(config, execution, chip, build_info)
     encoded = base64.b64encode(script.encode("utf-8")).decode("ascii")
     control = shlex.quote(str(handle["control_dir"]))
@@ -1155,7 +1211,6 @@ def start_persistent_build_install(
     _run_remote_checked(config, remote, "持久编译任务启动")
     return {
         **handle,
-        "commit": build_info["commit"],
         "soc": build_info["soc"],
         "deployment": _remote_deployment_path(config, execution, chip),
     }
@@ -1183,7 +1238,10 @@ def _parse_persistent_build_status(output: str, handle: dict[str, Any]) -> dict[
         exit_code = None
     state = values.get("STATE", "missing") or "missing"
     alive = values.get("ALIVE") == "1"
-    if state == "running" and not alive:
+    if state == "missing" and alive:
+        state = "running"
+        log_tail = (log_tail + "\n[runner] recovered a live build process without a state file").strip()
+    if state in PERSISTENT_BUILD_ACTIVE_STATES and not alive:
         state = "failed"
         if exit_code is None:
             exit_code = -1
@@ -1196,6 +1254,10 @@ def _parse_persistent_build_status(output: str, handle: dict[str, Any]) -> dict[
         "exit_code": exit_code,
         "log_tail": log_tail,
         "log_size": int(values.get("LOG_SIZE", "0") or 0),
+        "commit": values.get("COMMIT") or handle.get("commit"),
+        "deployment": values.get("DEPLOYMENT") or handle.get("deployment"),
+        "recovered_from_deployment": values.get("RECOVERED") == "1",
+        "active": state in PERSISTENT_BUILD_ACTIVE_STATES,
     }
 
 
@@ -1207,16 +1269,25 @@ def poll_persistent_build_install(
 ) -> dict[str, Any]:
     config = config or ensure_runner_configured()
     control = shlex.quote(str(handle["control_dir"]))
+    deployment = shlex.quote(str(handle.get("deployment") or ""))
+    execution_id = shlex.quote(str(handle.get("execution_id") or ""))
     remote = (
-        f"control={control}; "
+        f"control={control}; deployment={deployment}; execution_id={execution_id}; "
         "state=$(cat \"$control/state\" 2>/dev/null || true); "
         "pid=$(cat \"$control/pid\" 2>/dev/null || true); "
         "exit_code=$(cat \"$control/exit_code\" 2>/dev/null || true); "
         "alive=0; if [ -n \"$pid\" ] && kill -0 \"$pid\" 2>/dev/null; then alive=1; fi; "
         "log_size=$(wc -c < \"$control/build.log\" 2>/dev/null || printf 0); "
         "log_base64=$(tail -c 16000 \"$control/build.log\" 2>/dev/null | base64 | tr -d '\\n'); "
-        "printf '__STATE__=%s\\n__PID__=%s\\n__ALIVE__=%s\\n__EXIT_CODE__=%s\\n__LOG_SIZE__=%s\\n__LOG_BASE64__=%s\\n' "
-        "\"${state:-missing}\" \"$pid\" \"$alive\" \"$exit_code\" \"$log_size\" \"$log_base64\""
+        "commit=$(cat \"$control/commit\" 2>/dev/null || true); recovered=0; "
+        "marker_match=0; if [ -n \"$deployment\" ] && [ -f \"$deployment/.fla-runner-deployment\" ]; then "
+        "marker_attempt=$(sed -n '5p' \"$deployment/.fla-runner-deployment\" 2>/dev/null || true); "
+        "if [ \"$marker_attempt\" = \"$execution_id\" ]; then marker_match=1; fi; fi; "
+        "if [ \"$state\" = succeeded ] && [ \"$marker_match\" != 1 ]; then state=missing; exit_code=; fi; "
+        "if [ -z \"$state\" ] && [ \"$marker_match\" = 1 ]; then state=succeeded; exit_code=0; recovered=1; "
+        "commit=$(sed -n '3p' \"$deployment/.fla-runner-deployment\" 2>/dev/null || true); fi; "
+        "printf '__STATE__=%s\\n__PID__=%s\\n__ALIVE__=%s\\n__EXIT_CODE__=%s\\n__LOG_SIZE__=%s\\n__LOG_BASE64__=%s\\n__COMMIT__=%s\\n__DEPLOYMENT__=%s\\n__RECOVERED__=%s\\n' "
+        "\"${state:-missing}\" \"$pid\" \"$alive\" \"$exit_code\" \"$log_size\" \"$log_base64\" \"$commit\" \"$deployment\" \"$recovered\""
     )
     result = _run_remote_checked(config, remote, "持久编译状态查询")
     return _parse_persistent_build_status(result.stdout, handle)
@@ -1236,13 +1307,54 @@ def cancel_persistent_build_install(
     _run_remote_checked(config, remote, "持久编译任务取消")
 
 
+def acknowledge_persistent_build_install(
+    handle: dict[str, Any],
+    config: PerfRunnerConfig | None = None,
+) -> None:
+    """Acknowledge Worker persistence, then retain the newest three deployments."""
+    config = config or ensure_runner_configured()
+    root = _normalized_remote_absolute_path(config.remote_build_root, "远端构建目录")
+    control = shlex.quote(str(handle["control_dir"]))
+    deployment = shlex.quote(str(handle.get("deployment") or ""))
+    source_repo = shlex.quote(str(handle["source_repo"]))
+    worktrees_root = shlex.quote(f"{root}/worktrees")
+    remote = f"""
+control={control}
+deployment={deployment}
+worktrees_root={worktrees_root}
+mkdir -p "$control"
+printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$control/acknowledged.tmp"
+mv -f "$control/acknowledged.tmp" "$control/acknowledged"
+active=$(readlink -f "$deployment" 2>/dev/null || true)
+kept=0
+while IFS= read -r marker; do
+  [ -n "$marker" ] || continue
+  [ "$(sed -n '6p' "$marker" 2>/dev/null || true)" = "$deployment" ] || continue
+  candidate=${{marker%/.fla-runner-deployment}}
+  kept=$((kept + 1))
+  if [ "$kept" -le 3 ] || [ "$candidate" = "$active" ]; then continue; fi
+  case "$candidate" in
+    "$worktrees_root"/*)
+      git -C {source_repo} worktree remove --force "$candidate" >/dev/null 2>&1 || true
+      ;;
+  esac
+done < <(find "$worktrees_root" -mindepth 2 -maxdepth 2 -name .fla-runner-deployment -printf '%T@ %p\n' 2>/dev/null | sort -nr | cut -d' ' -f2-)
+git -C {source_repo} worktree prune >/dev/null 2>&1 || true
+"""
+    _run_remote_checked(config, remote, "持久编译结果确认")
+
+
 def persistent_build_result(handle: dict[str, Any], status: dict[str, Any]) -> dict[str, Any]:
+    if status.get("state") == "missing":
+        raise RemoteBuildOrphanedError(
+            "远端编译控制记录和已激活版本均无法确认，请核对远端进程后再决定是否重试"
+        )
     if status.get("state") != "succeeded":
         detail = str(status.get("log_tail") or "远端编译未返回日志").strip()
         raise RuntimeError(f"源码编译安装失败（退出码 {status.get('exit_code')}）：{detail[-3000:]}")
     environment = dict(handle.get("execution_environment") or {})
     environment.update({
-        "commit": handle.get("commit"),
+        "commit": status.get("commit") or handle.get("commit"),
         "soc": handle.get("soc"),
         "deployment": handle.get("deployment"),
         "build_log": handle.get("log_path"),

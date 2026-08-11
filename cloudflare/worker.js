@@ -174,7 +174,7 @@ export default {
           return jsonResponse(request, env, await cancelPerfJob(env, jobId, user));
         }
         if (action === "retry" && request.method === "POST") {
-          return jsonResponse(request, env, await retryPerfJob(env, jobId, user));
+          return jsonResponse(request, env, await retryPerfJob(env, jobId, user, await readOptionalJson(request)));
         }
       }
       if (url.pathname === "/api/runner/register" && request.method === "POST") {
@@ -2604,10 +2604,29 @@ function perfJobCancelTransition(job, nowMs = Date.now()) {
   };
 }
 
-async function retryPerfJob(env, jobId, user) {
+function assertPerfJobRetryAllowed(job, payload, user) {
+  if (!PERF_JOB_FINAL_STATES.has(job.status)) throw withStatus(409, "only finished jobs can be retried");
+  if (job.status !== "orphaned") return;
+  if (user?.role !== "admin") throw withStatus(403, "orphaned jobs require admin confirmation");
+  if (payload?.confirm_remote_stopped !== true) {
+    throw withStatus(409, "confirm the remote process has stopped before retrying an orphaned job");
+  }
+}
+
+async function readOptionalJson(request) {
+  const text = await request.text();
+  if (!text.trim()) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw withStatus(400, "invalid json");
+  }
+}
+
+async function retryPerfJob(env, jobId, user, payload = {}) {
   const job = await getPerfJob(env, jobId);
   assertPerfJobAccess(job, user);
-  if (!PERF_JOB_FINAL_STATES.has(job.status)) throw withStatus(409, "only finished jobs can be retried");
+  assertPerfJobRetryAllowed(job, payload, user);
   const timestamp = nowIso();
   const statusMessage = job.request?.task_type === "build_install"
     ? "等待 VPN Runner 领取编译安装任务"
@@ -2622,7 +2641,12 @@ async function retryPerfJob(env, jobId, user) {
       cancel_requested = 0, retry_count = retry_count + 1, exit_code = NULL, claimed_at = NULL,
       started_at = NULL, finished_at = NULL, updated_at = ? WHERE id = ?`,
   ).bind(statusMessage, timestamp, jobId).run();
-  await appendPerfJobEvent(env, jobId, null, "retried", "info", "任务已重新排队", { requested_by: user.username });
+  await appendPerfJobEvent(env, jobId, null, "retried", "info", "任务已重新排队", {
+    requested_by: user.username,
+    confirmed_remote_stopped: job.status === "orphaned" ? true : undefined,
+    previous_status: job.status,
+    previous_attempt_id: job.attempt_id || null,
+  });
   await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first());
   return { ok: true, job: await getPerfJob(env, jobId) };
 }
@@ -3590,6 +3614,7 @@ function withStatus(status, message) {
 }
 
 export {
+  assertPerfJobRetryAllowed,
   normalizePerfExecutionEnvironment,
   normalizePerfJobRequest,
   normalizeSourceBranchesRefreshRequest,
