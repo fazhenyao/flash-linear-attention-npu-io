@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-11T08:49:29+08:00",
+  "generatedAt": "2026-08-11T14:43:49+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 204,
+  "total": 205,
   "items": [
+    {
+      "number": 297,
+      "title": "fix(kda): 修复 A5 前向同步与 varlen workspace 越界",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/297",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-11T06:04:56Z",
+      "createdAt": "2026-08-11T03:33:34Z",
+      "headRef": "codex/chunk-kda-fwd-atk",
+      "labels": []
+    },
     {
       "number": 296,
       "title": "feat: 添加基于主线的 KDA 正向一键性能测试入口",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-10T11:03:16Z",
+      "updatedAt": "2026-08-11T03:15:33Z",
       "createdAt": "2026-08-10T09:26:49Z",
       "headRef": "codex/benchmark-kda-main",
       "labels": []
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-10T08:55:21Z",
+      "updatedAt": "2026-08-11T03:57:53Z",
       "createdAt": "2026-08-10T08:43:11Z",
       "headRef": "fix/cleanup-egg-info-residual",
       "labels": []
@@ -95,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-08T10:40:47Z",
+      "updatedAt": "2026-08-11T03:12:42Z",
       "createdAt": "2026-08-06T13:02:19Z",
       "headRef": "20260806_204500_docs-README-usability",
       "labels": []
@@ -131,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-06T03:57:24Z",
+      "updatedAt": "2026-08-11T03:45:58Z",
       "createdAt": "2026-08-04T06:38:29Z",
       "headRef": "adapt",
       "labels": []
