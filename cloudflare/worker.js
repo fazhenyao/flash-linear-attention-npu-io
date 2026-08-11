@@ -3213,13 +3213,16 @@ async function authorizeRunnerJobAction(env, jobId, payload) {
   const runnerId = safeIdentifier(payload.runner_id, "runner_id", 96);
   if (row.runner_id !== runnerId) throw withStatus(409, "job is owned by another runner");
   if (!payload.attempt_id || row.attempt_id !== payload.attempt_id) throw withStatus(409, "attempt_id mismatch");
+  if (PERF_JOB_FINAL_STATES.has(row.status)) return row;
   const leaseHash = await sha256Text(String(payload.lease_token || ""));
   if (!row.lease_token_hash || !timingSafeEqual(row.lease_token_hash, leaseHash)) throw withStatus(401, "invalid job lease");
-  if (PERF_JOB_FINAL_STATES.has(row.status)) throw withStatus(409, "performance job is already finished");
   return row;
 }
 
 async function runnerJobStarted(env, row, payload) {
+  if (PERF_JOB_FINAL_STATES.has(row.status)) {
+    return { ok: true, final: true, job: await getPerfJob(env, row.id) };
+  }
   const timestamp = nowIso();
   const request = parseJson(row.request_json, {});
   const taskLabel = request.task_type === "build_install" ? "编译安装" : "NPU 测试";
@@ -3237,6 +3240,15 @@ async function runnerJobStarted(env, row, payload) {
 }
 
 async function runnerJobHeartbeat(env, row, payload) {
+  if (PERF_JOB_FINAL_STATES.has(row.status)) {
+    return {
+      ok: true,
+      final: true,
+      final_status: row.status,
+      cancel_requested: Boolean(row.cancel_requested),
+      lease_seconds: PERF_LEASE_SECONDS,
+    };
+  }
   const disconnected = payload.state === "disconnected";
   const status = row.cancel_requested ? "cancel_requested" : (disconnected ? "disconnected" : (row.status === "disconnected" ? "running" : row.status));
   const message = String(payload.message || row.status_message || "Runner heartbeat").slice(0, 1000);
@@ -3305,6 +3317,10 @@ function normalizePerfArtifact(artifact, allowMissingObjectKey = false) {
 }
 
 async function runnerJobComplete(env, row, payload) {
+  if (PERF_JOB_FINAL_STATES.has(row.status)) {
+    if (row.status !== "succeeded") throw withStatus(409, `performance job already finished as ${row.status}`);
+    return { ok: true, final: true, job: await getPerfJob(env, row.id), artifacts: await listPerfJobArtifacts(env, row.id) };
+  }
   const request = parseJson(row.request_json, {});
   const resultDetail = payload.result && typeof payload.result === "object" ? payload.result : {};
   const serialized = JSON.stringify(resultDetail);
@@ -3339,6 +3355,12 @@ async function runnerJobComplete(env, row, payload) {
 }
 
 async function runnerJobFail(env, row, payload) {
+  if (PERF_JOB_FINAL_STATES.has(row.status)) {
+    if (!["failed", "canceled"].includes(row.status)) {
+      throw withStatus(409, `performance job already finished as ${row.status}`);
+    }
+    return { ok: true, final: true, job: await getPerfJob(env, row.id) };
+  }
   const canceled = Boolean(payload.canceled || row.cancel_requested);
   const status = canceled ? "canceled" : "failed";
   const request = parseJson(row.request_json, {});

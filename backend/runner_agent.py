@@ -23,21 +23,33 @@ from typing import Any
 
 try:
     from .perf_runner import (
+        cancel_persistent_build_install,
         collect_npu_device_status,
         execute,
         execution_environment_defaults,
         list_remote_source_branches,
         load_config,
+        persistent_build_handle,
+        persistent_build_result,
+        poll_persistent_build_install,
+        RemoteConnectionError,
         runner_status,
+        start_persistent_build_install,
     )
 except ImportError:
     from perf_runner import (  # type: ignore
+        cancel_persistent_build_install,
         collect_npu_device_status,
         execute,
         execution_environment_defaults,
         list_remote_source_branches,
         load_config,
+        persistent_build_handle,
+        persistent_build_result,
+        poll_persistent_build_install,
+        RemoteConnectionError,
         runner_status,
+        start_persistent_build_install,
     )
 
 
@@ -525,77 +537,259 @@ class RunnerAgent:
     def job_state_path(self, job_id: str) -> Path:
         return self.config.state_dir / "jobs" / f"{job_id}.json"
 
+    def load_job_state(self, job_id: str) -> dict[str, Any]:
+        try:
+            return json.loads(self.job_state_path(job_id).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+
     def save_job_state(self, job: dict[str, Any], state: str, **extra: Any) -> None:
+        path = self.job_state_path(job["id"])
+        previous = self.load_job_state(job["id"])
         record = {
+            **previous,
             "job_id": job["id"],
             "attempt_id": job.get("attempt_id"),
             "runner_id": self.config.runner_id,
             "state": state,
             "updated_at": utc_now(),
+            "request": dict(job.get("request") or previous.get("request") or {}),
             **extra,
         }
-        path = self.job_state_path(job["id"])
+        if state in {"claimed", "running", "reporting", "reporting_failure"} and job.get("lease_token"):
+            record["lease_token"] = job["lease_token"]
+        elif state in {"completed", "failed", "canceled"}:
+            record.pop("lease_token", None)
         temporary = path.with_suffix(".tmp")
         temporary.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         temporary.replace(path)
 
-    def run_job(self, job: dict[str, Any]) -> None:
+    def recover_build_jobs(self) -> int:
+        recovered = 0
+        for path in sorted((self.config.state_dir / "jobs").glob("*.json")):
+            try:
+                record = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            request = dict(record.get("request") or {})
+            if (
+                record.get("state") not in {"claimed", "running", "reporting", "reporting_failure"}
+                or request.get("task_type") != "build_install"
+                or not record.get("job_id")
+                or not record.get("attempt_id")
+                or not record.get("lease_token")
+            ):
+                continue
+            job = {
+                "id": record["job_id"],
+                "attempt_id": record["attempt_id"],
+                "lease_token": record["lease_token"],
+                "request": request,
+                "remote_build": record.get("remote_build") or {},
+                "recovery_state": record,
+            }
+            try:
+                self.run_job(job, resume=True)
+                recovered += 1
+            except Exception as exc:
+                print(f"[runner] 恢复编译任务 {job['id']} 失败：{exc}", flush=True)
+        return recovered
+
+    def run_persistent_build_job(
+        self,
+        job: dict[str, Any],
+        heartbeat: JobHeartbeat,
+        *,
+        resume: bool,
+    ) -> dict[str, Any]:
         request = dict(job.get("request") or {})
-        task_type = str(request.get("task_type") or "profile")
-        task_label = "编译安装" if task_type == "build_install" else "测试"
-        self.save_job_state(job, "claimed", request=request)
-        self.api.post(
-            f"/api/runner/jobs/{job['id']}/started",
-            self.job_auth(job, {
-                "remote_execution_id": f"{self.config.runner_id}:{job['id']}",
-                "message": f"Relay 已开始执行{task_label}任务",
-            }),
-        )
-        heartbeat = JobHeartbeat(self, job)
-        heartbeat.start()
-        self.current_jobs = 1
-        try:
-            self.save_job_state(job, "running", request=request)
-            result = execute(request, persist_local_data=False)
-            artifacts, local_artifacts = self.build_artifacts(job, result)
-            upload_errors: list[str] = []
-            if artifacts:
-                artifacts, local_artifacts, upload_errors = self.upload_artifacts(
-                    job,
-                    artifacts,
-                    local_artifacts,
-                )
+        config = load_config()
+        handle = dict(job.get("remote_build") or {})
+        if not handle:
+            handle = persistent_build_handle(request, str(job["attempt_id"]), config)
+        self.save_job_state(job, "running", request=request, remote_build=handle)
+
+        def poll_when_reachable(*, allow_missing: bool = False) -> dict[str, Any]:
+            while True:
+                try:
+                    return poll_persistent_build_install(handle, config, allow_missing=allow_missing)
+                except RemoteConnectionError as exc:
+                    self.save_job_state(
+                        job,
+                        "running",
+                        request=request,
+                        remote_build=handle,
+                        connection_error=str(exc),
+                    )
+                    time.sleep(5)
+
+        status = poll_when_reachable(allow_missing=True)
+        if status.get("state") == "missing":
+            while True:
+                try:
+                    handle = start_persistent_build_install(request, handle, config)
+                    break
+                except RemoteConnectionError as exc:
+                    self.save_job_state(
+                        job,
+                        "running",
+                        request=request,
+                        remote_build=handle,
+                        connection_error=str(exc),
+                    )
+                    time.sleep(5)
+            job["remote_build"] = handle
+            self.save_job_state(job, "running", request=request, remote_build=handle)
+        elif not resume and status.get("state") not in {"running", "succeeded"}:
+            raise RuntimeError(f"远端编译任务处于不可启动状态：{status.get('state')}")
+
+        last_log_size = -1
+        last_event_at = 0.0
+        cancel_sent = False
+        started_waiting_at = time.monotonic()
+        while True:
+            if heartbeat.cancel_requested.is_set() and not cancel_sent:
+                cancel_persistent_build_install(handle, config)
+                cancel_sent = True
+            status = poll_when_reachable()
             self.save_job_state(
                 job,
-                "completed",
+                "running",
                 request=request,
-                artifacts=local_artifacts,
-                message=result.get("message", ""),
-                upload_errors=upload_errors,
+                remote_build=handle,
+                remote_status={
+                    "state": status.get("state"),
+                    "pid": status.get("pid"),
+                    "alive": status.get("alive"),
+                    "exit_code": status.get("exit_code"),
+                    "log_size": status.get("log_size"),
+                    "log_tail": str(status.get("log_tail") or "")[-16000:],
+                },
             )
-            if upload_errors:
+            now = time.monotonic()
+            log_size = int(status.get("log_size") or 0)
+            if log_size != last_log_size and now - last_event_at >= 30:
+                lines = [line.strip() for line in str(status.get("log_tail") or "").splitlines() if line.strip()]
+                message = lines[-1] if lines else "远端编译正在执行"
                 try:
                     self.api.post(
                         f"/api/runner/jobs/{job['id']}/events",
                         self.job_auth(job, {
-                            "event_type": "artifact_upload_failed",
-                            "level": "warning",
-                            "message": "R2 上传失败，原始制品仅保留在 Relay 本地",
-                            "detail": {"errors": upload_errors},
+                            "event_type": "build_progress",
+                            "level": "info",
+                            "message": message[-1000:],
+                            "detail": {
+                                "remote_log": handle.get("log_path"),
+                                "log_size": log_size,
+                                "state": status.get("state"),
+                                "log_tail": str(status.get("log_tail") or "")[-8000:],
+                            },
                         }),
                     )
                 except Exception:
                     pass
-            if heartbeat.cancel_requested.is_set():
+                last_log_size = log_size
+                last_event_at = now
+            if status.get("state") == "missing" and now - started_waiting_at < 30:
+                time.sleep(2)
+                continue
+            if status.get("state") != "running":
+                return persistent_build_result(handle, status)
+            time.sleep(5)
+
+    def report_persisted_outcome(self, job: dict[str, Any], record: dict[str, Any]) -> bool:
+        state = str(record.get("state") or "")
+        request = dict(job.get("request") or record.get("request") or {})
+        if state == "reporting":
+            payload = record.get("completion_payload")
+            if not isinstance(payload, dict):
+                raise RuntimeError("本地编译成功记录缺少 completion_payload")
+            try:
+                self.api.post(f"/api/runner/jobs/{job['id']}/complete", payload)
+            except Exception as exc:
+                print(f"[runner] 编译任务 {job['id']} 成功结果回传失败，将继续重试：{exc}", flush=True)
+                return False
+            self.save_job_state(
+                job,
+                "completed",
+                request=request,
+                artifacts=record.get("artifacts") or [],
+                message=record.get("message") or "",
+                upload_errors=record.get("upload_errors") or [],
+            )
+            return True
+        if state == "reporting_failure":
+            payload = record.get("failure_payload")
+            if not isinstance(payload, dict):
+                raise RuntimeError("本地编译失败记录缺少 failure_payload")
+            try:
+                self.api.post(f"/api/runner/jobs/{job['id']}/fail", payload)
+            except Exception as exc:
+                print(f"[runner] 编译任务 {job['id']} 失败结果回传失败，将继续重试：{exc}", flush=True)
+                return False
+            terminal_state = "canceled" if payload.get("canceled") else "failed"
+            self.save_job_state(job, terminal_state, request=request, error=record.get("error") or "")
+            return True
+        return False
+
+    def run_job(self, job: dict[str, Any], *, resume: bool = False) -> None:
+        request = dict(job.get("request") or {})
+        task_type = str(request.get("task_type") or "profile")
+        task_label = "编译安装" if task_type == "build_install" else "测试"
+        recovery_state = dict(job.get("recovery_state") or {})
+        if not resume:
+            self.save_job_state(job, "claimed", request=request)
+        if not resume or recovery_state.get("state") == "claimed":
+            try:
                 self.api.post(
-                    f"/api/runner/jobs/{job['id']}/fail",
-                    self.job_auth(job, {"canceled": True, "message": f"{task_label}完成前收到取消请求"}),
+                    f"/api/runner/jobs/{job['id']}/started",
+                    self.job_auth(job, {
+                        "remote_execution_id": f"{self.config.runner_id}:{job['id']}:{job.get('attempt_id')}",
+                        "message": f"Relay 已开始执行{task_label}任务",
+                    }),
                 )
+            except Exception as exc:
+                print(f"[runner] 任务 {job['id']} 启动确认失败，将继续重试：{exc}", flush=True)
                 return
-            snapshot = result.get("snapshot") or {}
-            self.api.post(
-                f"/api/runner/jobs/{job['id']}/complete",
-                self.job_auth(job, {
+        heartbeat = JobHeartbeat(self, job)
+        heartbeat.start()
+        self.current_jobs = 1
+        try:
+            if resume and recovery_state.get("state") in {"reporting", "reporting_failure"}:
+                self.report_persisted_outcome(job, recovery_state)
+                return
+            self.save_job_state(job, "running", request=request)
+            try:
+                result = (
+                    self.run_persistent_build_job(job, heartbeat, resume=resume)
+                    if task_type == "build_install"
+                    else execute(request, persist_local_data=False)
+                )
+                artifacts, local_artifacts = self.build_artifacts(job, result)
+                upload_errors: list[str] = []
+                if artifacts:
+                    artifacts, local_artifacts, upload_errors = self.upload_artifacts(
+                        job,
+                        artifacts,
+                        local_artifacts,
+                    )
+                if upload_errors:
+                    try:
+                        self.api.post(
+                            f"/api/runner/jobs/{job['id']}/events",
+                            self.job_auth(job, {
+                                "event_type": "artifact_upload_failed",
+                                "level": "warning",
+                                "message": "R2 上传失败，原始制品仅保留在 Relay 本地",
+                                "detail": {"errors": upload_errors},
+                            }),
+                        )
+                    except Exception:
+                        pass
+                if heartbeat.cancel_requested.is_set():
+                    raise InterruptedError(f"{task_label}完成前收到取消请求")
+                snapshot = result.get("snapshot") or {}
+                completion_payload = self.job_auth(job, {
                     "exit_code": 0,
                     "task_type": task_type,
                     "message": result.get("message") or f"{task_label}完成",
@@ -616,18 +810,40 @@ class RunnerAgent:
                         "execution_environment": result.get("execution_environment") or {},
                     },
                     "artifacts": artifacts,
-                }),
-            )
-        except Exception as exc:
-            self.save_job_state(job, "failed", request=request, error=str(exc))
-            self.api.post(
-                f"/api/runner/jobs/{job['id']}/fail",
-                self.job_auth(job, {
+                })
+                outcome_record = {
+                    "state": "reporting",
+                    "request": request,
+                    "artifacts": local_artifacts,
+                    "message": result.get("message", ""),
+                    "upload_errors": upload_errors,
+                    "completion_payload": completion_payload,
+                }
+                self.save_job_state(
+                    job,
+                    "reporting",
+                    **{key: value for key, value in outcome_record.items() if key != "state"},
+                )
+                self.report_persisted_outcome(job, outcome_record)
+            except Exception as exc:
+                canceled = heartbeat.cancel_requested.is_set() or isinstance(exc, InterruptedError)
+                failure_payload = self.job_auth(job, {
                     "message": str(exc),
                     "error_type": exc.__class__.__name__,
-                    "canceled": heartbeat.cancel_requested.is_set(),
-                }),
-            )
+                    "canceled": canceled,
+                })
+                outcome_record = {
+                    "state": "reporting_failure",
+                    "request": request,
+                    "error": str(exc),
+                    "failure_payload": failure_payload,
+                }
+                self.save_job_state(
+                    job,
+                    "reporting_failure",
+                    **{key: value for key, value in outcome_record.items() if key != "state"},
+                )
+                self.report_persisted_outcome(job, outcome_record)
         finally:
             self.current_jobs = 0
             heartbeat.stop()
@@ -822,7 +1038,8 @@ class RunnerAgent:
         delay = self.config.poll_min_seconds
         while not self.stop_event.is_set():
             try:
-                worked = self.run_once()
+                recovered = self.recover_build_jobs()
+                worked = bool(recovered) or self.run_once()
                 delay = self.config.poll_min_seconds if worked else min(self.config.poll_max_seconds, delay + 2)
             except Exception as exc:
                 print(f"[runner] {exc}", flush=True)

@@ -1,4 +1,6 @@
 import os
+import base64
+import json
 import subprocess
 import tempfile
 import threading
@@ -10,6 +12,7 @@ from unittest.mock import Mock, patch
 
 from backend.perf_runner import (
     _activate_remote_source_build,
+    _parse_persistent_build_status,
     _prepare_remote_source_build,
     _resolve_remote_deployed_source,
     _remote_execution_command,
@@ -24,10 +27,14 @@ from backend.perf_runner import (
     list_remote_source_branches,
     load_config,
     parse_npu_smi_status,
+    persistent_build_handle,
+    poll_persistent_build_install,
     prof_output_root,
+    RemoteConnectionError,
     resolve_chip,
     resolve_execution_environment,
     soc_build_target,
+    start_persistent_build_install,
 )
 from backend.runner_agent import AgentConfig, RunnerAgent
 from scripts.cube_theoretical_flops import compute_mfu
@@ -258,6 +265,98 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertEqual(soc_build_target("A2"), "ascend910b")
         self.assertEqual(soc_build_target("A3"), "ascend910_93")
         self.assertEqual(soc_build_target("A5"), "ascend950")
+
+    def test_persistent_build_handle_isolated_by_attempt(self):
+        with patch.dict(os.environ, {**self.environment, "PERF_CHIP": "A5"}, clear=False):
+            config = load_config()
+        payload = {
+            "task_type": "build_install",
+            "chip": "A5",
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": True,
+                "branch": "feature/a5",
+            },
+        }
+
+        handle = persistent_build_handle(payload, "attempt-12345678", config)
+
+        self.assertEqual(handle["execution_id"], "attempt-12345678")
+        self.assertEqual(handle["worktree"], "/tmp/fla-runner-builds/attempts/attempt-12345678")
+        self.assertEqual(handle["log_path"], f"{handle['control_dir']}/build.log")
+
+    def test_persistent_build_status_decodes_log_and_exit_code(self):
+        log = "building operator\ncompiler failed\n"
+        output = "\n".join([
+            "__STATE__=failed",
+            "__PID__=123",
+            "__ALIVE__=0",
+            "__EXIT_CODE__=2",
+            f"__LOG_SIZE__={len(log)}",
+            f"__LOG_BASE64__={base64.b64encode(log.encode()).decode()}",
+        ])
+
+        status = _parse_persistent_build_status(output, {"worktree": "/tmp/build"})
+
+        self.assertEqual(status["state"], "failed")
+        self.assertEqual(status["exit_code"], 2)
+        self.assertEqual(status["log_tail"], log)
+
+    @patch("backend.perf_runner._run_remote_checked", side_effect=RemoteConnectionError("VPN unavailable"))
+    def test_persistent_build_poll_does_not_treat_ssh_failure_as_missing(self, _run_remote):
+        with patch.dict(os.environ, self.environment, clear=False):
+            config = load_config()
+        handle = {
+            "control_dir": "/tmp/fla-runner-builds/attempts/attempt-12345678/.fla-runner",
+        }
+
+        with self.assertRaisesRegex(RemoteConnectionError, "VPN unavailable"):
+            poll_persistent_build_install(handle, config, allow_missing=True)
+
+    @patch("backend.perf_runner._run_remote_checked")
+    @patch("backend.perf_runner._persistent_build_script", return_value="#!/bin/bash\nexit 0\n")
+    @patch("backend.perf_runner._prepare_remote_source_build")
+    @patch("backend.perf_runner._cleanup_remote_source_build")
+    @patch("backend.perf_runner._validate_remote_execution_environment")
+    @patch("backend.perf_runner.poll_persistent_build_install")
+    def test_persistent_build_starts_only_the_script_in_background(
+        self,
+        poll,
+        _validate,
+        _cleanup,
+        prepare,
+        _script,
+        run_remote,
+    ):
+        poll.return_value = {"state": "missing"}
+        prepare.return_value = {
+            "worktree": "/tmp/fla-runner-builds/attempts/attempt-12345678",
+            "commit": "c" * 40,
+            "soc": "ascend950",
+        }
+        with patch.dict(os.environ, {**self.environment, "PERF_CHIP": "A5"}, clear=False):
+            config = load_config()
+        payload = {
+            "task_type": "build_install",
+            "chip": "A5",
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": True,
+                "branch": "main",
+            },
+        }
+        handle = persistent_build_handle(payload, "attempt-12345678", config)
+
+        start_persistent_build_install(payload, handle, config)
+
+        command = run_remote.call_args.args[1]
+        self.assertIn("&& { setsid nohup", command)
+        self.assertIn("starter=$!", command)
+        self.assertTrue(command.endswith("; }"))
 
     @patch("backend.perf_runner._run_remote_checked")
     def test_activated_build_is_resolved_for_later_profile(self, run_remote):
@@ -645,8 +744,7 @@ __END_NPU__
         )
 
     @patch("backend.runner_agent.JobHeartbeat")
-    @patch("backend.runner_agent.execute")
-    def test_runner_agent_completes_build_without_prof_artifacts(self, execute, heartbeat_class):
+    def test_runner_agent_completes_build_without_prof_artifacts(self, heartbeat_class):
         agent = RunnerAgent.__new__(RunnerAgent)
         agent.config = SimpleNamespace(runner_id="relay-test")
         agent.api = Mock()
@@ -655,12 +753,12 @@ __END_NPU__
         agent.environment_summary = Mock(return_value={})
         agent.send_runner_heartbeat = Mock()
         agent.health = Mock(return_value={})
-        heartbeat_class.return_value.cancel_requested.is_set.return_value = False
-        execute.return_value = {
+        agent.run_persistent_build_job = Mock(return_value={
             "task_type": "build_install",
             "message": "源码分支 main 编译安装完成",
             "execution_environment": {"branch": "main", "commit": "c" * 40},
-        }
+        })
+        heartbeat_class.return_value.cancel_requested.is_set.return_value = False
         job = {
             "id": "job-build",
             "attempt_id": "attempt-build",
@@ -670,6 +768,7 @@ __END_NPU__
 
         agent.run_job(job)
 
+        agent.run_persistent_build_job.assert_called_once()
         complete_payload = next(
             call.args[1]
             for call in agent.api.post.call_args_list
@@ -678,6 +777,71 @@ __END_NPU__
         self.assertEqual(complete_payload["task_type"], "build_install")
         self.assertEqual(complete_payload["artifacts"], [])
         self.assertEqual(complete_payload["snapshot"], {})
+
+    def test_runner_agent_recovers_persisted_build_job(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            state_dir = Path(temporary)
+            jobs_dir = state_dir / "jobs"
+            jobs_dir.mkdir()
+            record = {
+                "job_id": "perf-job-recover",
+                "attempt_id": "attempt-recover",
+                "lease_token": "lease-recover",
+                "state": "running",
+                "request": {"task_type": "build_install", "chip": "A5"},
+                "remote_build": {"worktree": "/tmp/build-recover"},
+            }
+            (jobs_dir / "perf-job-recover.json").write_text(json.dumps(record), encoding="utf-8")
+            agent = RunnerAgent.__new__(RunnerAgent)
+            agent.config = SimpleNamespace(state_dir=state_dir)
+            agent.run_job = Mock()
+
+            recovered = agent.recover_build_jobs()
+
+            self.assertEqual(recovered, 1)
+            recovered_job = agent.run_job.call_args.args[0]
+            self.assertEqual(recovered_job["lease_token"], "lease-recover")
+            self.assertEqual(recovered_job["remote_build"]["worktree"], "/tmp/build-recover")
+            self.assertTrue(agent.run_job.call_args.kwargs["resume"])
+
+    @patch("backend.runner_agent.JobHeartbeat")
+    def test_build_completion_api_failure_stays_reporting_without_marking_failed(self, heartbeat_class):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.config = SimpleNamespace(runner_id="relay-test")
+        agent.api = Mock()
+        agent.save_job_state = Mock()
+        agent.build_artifacts = Mock(return_value=([], []))
+        agent.environment_summary = Mock(return_value={})
+        agent.send_runner_heartbeat = Mock()
+        agent.health = Mock(return_value={})
+        agent.run_persistent_build_job = Mock(return_value={
+            "task_type": "build_install",
+            "message": "编译安装完成",
+            "execution_environment": {"branch": "main", "commit": "c" * 40},
+        })
+        heartbeat_class.return_value.cancel_requested.is_set.return_value = False
+
+        def post(path, _payload):
+            if path.endswith("/complete"):
+                raise RuntimeError("Worker temporarily unavailable")
+            return {}
+
+        agent.api.post.side_effect = post
+        job = {
+            "id": "job-report-retry",
+            "attempt_id": "attempt-report-retry",
+            "lease_token": "lease-report-retry",
+            "request": {"task_type": "build_install"},
+        }
+
+        agent.run_job(job)
+
+        states = [call.args[1] for call in agent.save_job_state.call_args_list]
+        self.assertIn("reporting", states)
+        self.assertNotIn("failed", states)
+        self.assertNotIn("completed", states)
+        posted_paths = [call.args[0] for call in agent.api.post.call_args_list]
+        self.assertFalse(any(path.endswith("/fail") for path in posted_paths))
 
     def test_runner_agent_archives_prof_directory_with_root_folder(self):
         with tempfile.TemporaryDirectory() as temporary:
