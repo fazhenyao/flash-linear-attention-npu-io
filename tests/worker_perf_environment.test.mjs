@@ -5,6 +5,7 @@ import {
   normalizePerfExecutionEnvironment,
   normalizePerfJobRequest,
   normalizeSourceBranchesRefreshRequest,
+  perfJobCancelTransition,
   runnerCanExecute,
 } from "../cloudflare/worker.js";
 
@@ -197,4 +198,42 @@ test("normalizes controlled source branch refresh requests", () => {
     runner_id: "runner-a5",
     source_repo: "/home/user/../private",
   }), /invalid source_repo/);
+});
+
+test("cancels queued performance jobs immediately", () => {
+  assert.deepEqual(perfJobCancelTransition({ status: "queued" }), {
+    status: "canceled",
+    message: "任务已取消",
+    event_type: "canceled",
+    level: "info",
+  });
+});
+
+test("requests cancellation while a runner lease is active", () => {
+  const transition = perfJobCancelTransition({
+    status: "running",
+    lease_expires_at: "2026-08-11T12:01:00.000Z",
+  }, Date.parse("2026-08-11T12:00:00.000Z"));
+  assert.equal(transition.status, "cancel_requested");
+  assert.equal(transition.event_type, "cancel_requested");
+});
+
+test("marks unconfirmed cancellation as orphaned after its lease expires", () => {
+  for (const leaseExpiresAt of [null, "2026-08-11T11:59:00.000Z"]) {
+    const transition = perfJobCancelTransition({
+      status: "cancel_requested",
+      lease_expires_at: leaseExpiresAt,
+    }, Date.parse("2026-08-11T12:00:00.000Z"));
+    assert.equal(transition.status, "orphaned");
+    assert.equal(transition.event_type, "cancel_unconfirmed");
+    assert.equal(transition.level, "warning");
+  }
+});
+
+test("marks a disconnected expired job as orphaned when cancellation is requested", () => {
+  const transition = perfJobCancelTransition({
+    status: "disconnected",
+    lease_expires_at: "2026-08-11T11:59:00.000Z",
+  }, Date.parse("2026-08-11T12:00:00.000Z"));
+  assert.equal(transition.status, "orphaned");
 });

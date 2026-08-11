@@ -2559,15 +2559,49 @@ async function cancelPerfJob(env, jobId, user) {
   const job = await getPerfJob(env, jobId);
   assertPerfJobAccess(job, user);
   if (PERF_JOB_FINAL_STATES.has(job.status)) return { ok: true, job };
-  const immediate = ["queued", "waiting_runner", "waiting_vpn"].includes(job.status);
-  const nextStatus = immediate ? "canceled" : "cancel_requested";
-  const message = immediate ? "任务已取消" : "已请求 Runner 取消任务";
+  const lease = await env.DB.prepare(
+    "SELECT lease_expires_at FROM perf_jobs WHERE id = ?",
+  ).bind(jobId).first();
+  const transition = perfJobCancelTransition({ ...job, lease_expires_at: lease?.lease_expires_at });
+  const final = PERF_JOB_FINAL_STATES.has(transition.status);
+  const timestamp = nowIso();
   await env.DB.prepare(
-    "UPDATE perf_jobs SET status = ?, status_message = ?, cancel_requested = 1, finished_at = ?, updated_at = ? WHERE id = ?",
-  ).bind(nextStatus, message, immediate ? nowIso() : null, nowIso(), jobId).run();
-  await appendPerfJobEvent(env, jobId, job.attempt_id, nextStatus, "info", message, { requested_by: user.username });
+    `UPDATE perf_jobs SET status = ?, status_message = ?, cancel_requested = 1, finished_at = ?,
+      lease_token_hash = CASE WHEN ? = 1 THEN NULL ELSE lease_token_hash END,
+      lease_expires_at = CASE WHEN ? = 1 THEN NULL ELSE lease_expires_at END,
+      updated_at = ? WHERE id = ?`,
+  ).bind(
+    transition.status, transition.message, final ? timestamp : null,
+    final ? 1 : 0, final ? 1 : 0, timestamp, jobId,
+  ).run();
+  await appendPerfJobEvent(
+    env, jobId, job.attempt_id, transition.event_type, transition.level, transition.message,
+    { requested_by: user.username },
+  );
   await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first());
   return { ok: true, job: await getPerfJob(env, jobId) };
+}
+
+function perfJobCancelTransition(job, nowMs = Date.now()) {
+  if (["queued", "waiting_runner", "waiting_vpn"].includes(job.status)) {
+    return { status: "canceled", message: "任务已取消", event_type: "canceled", level: "info" };
+  }
+  const leaseExpiresAt = Date.parse(String(job.lease_expires_at || ""));
+  const leaseExpired = !Number.isFinite(leaseExpiresAt) || leaseExpiresAt <= nowMs;
+  if (["disconnected", "cancel_requested"].includes(job.status) && leaseExpired) {
+    return {
+      status: "orphaned",
+      message: "取消请求未收到 Runner 确认，远端状态需要人工核对",
+      event_type: "cancel_unconfirmed",
+      level: "warning",
+    };
+  }
+  return {
+    status: "cancel_requested",
+    message: "已请求 Runner 取消任务",
+    event_type: "cancel_requested",
+    level: "info",
+  };
 }
 
 async function retryPerfJob(env, jobId, user) {
@@ -2883,10 +2917,28 @@ async function claimPerfJob(env, payload) {
 async function sweepExpiredPerfLeases(env) {
   const timestamp = nowIso();
   const expired = await selectAll(env,
-    "SELECT id, attempt_id, status, remote_execution_id FROM perf_jobs WHERE lease_expires_at IS NOT NULL AND lease_expires_at < ? AND status IN ('claimed', 'running')",
-    timestamp,
+    `SELECT id, attempt_id, status, remote_execution_id FROM perf_jobs
+      WHERE (status IN ('claimed', 'running') AND lease_expires_at IS NOT NULL AND lease_expires_at < ?)
+        OR (status = 'cancel_requested' AND (lease_expires_at IS NULL OR lease_expires_at < ?))`,
+    timestamp, timestamp,
   );
   for (const job of expired) {
+    if (job.status === "cancel_requested") {
+      await env.DB.prepare(
+        `UPDATE perf_jobs SET status = 'orphaned', status_message = ?, lease_token_hash = NULL,
+          lease_expires_at = NULL, finished_at = ?, updated_at = ?
+        WHERE id = ? AND status = 'cancel_requested'`,
+      ).bind(
+        "取消请求未收到 Runner 确认，远端状态需要人工核对",
+        timestamp, timestamp, job.id,
+      ).run();
+      await appendPerfJobEvent(
+        env, job.id, job.attempt_id, "cancel_unconfirmed", "warning",
+        "取消确认租约已过期，远端状态需要人工核对",
+      );
+      await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(job.id).first());
+      continue;
+    }
     if (job.status === "claimed" && !job.remote_execution_id) {
       await env.DB.prepare(
         `UPDATE perf_jobs SET status = 'queued', status_message = '领取租约过期，已安全重新排队', runner_id = NULL,
@@ -3537,4 +3589,10 @@ function withStatus(status, message) {
   return error;
 }
 
-export { normalizePerfExecutionEnvironment, normalizePerfJobRequest, normalizeSourceBranchesRefreshRequest, runnerCanExecute };
+export {
+  normalizePerfExecutionEnvironment,
+  normalizePerfJobRequest,
+  normalizeSourceBranchesRefreshRequest,
+  perfJobCancelTransition,
+  runnerCanExecute,
+};
