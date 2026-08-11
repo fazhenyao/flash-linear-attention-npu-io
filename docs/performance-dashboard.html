@@ -328,6 +328,7 @@
                   <th>状态</th>
                   <th>总耗时</th>
                   <th>结果</th>
+                  <th>操作</th>
                   <th>命令</th>
                   <th>操作人</th>
                 </tr>
@@ -3076,24 +3077,44 @@
 
     function runResultCell(run, snap) {
       const rawStatus = run.raw_job_status || run.status;
+      if (run.cloud_job) {
+        const pendingResults = {
+          queued: "尚未执行",
+          waiting_runner: "尚未执行",
+          waiting_vpn: "尚未执行",
+          claimed: "等待完成",
+          running: "等待完成",
+          disconnected: "结果待确认",
+          cancel_requested: "等待取消确认",
+          failed: "未完成",
+          canceled: "已取消",
+          orphaned: "结果无法确认",
+        };
+        if (pendingResults[rawStatus]) return pendingResults[rawStatus];
+        if (rawStatus === "succeeded") {
+          if (run.task_type === "build_install") return "安装完成";
+          if (canDownloadRunResult(run, snap)) return "Prof ZIP 已就绪";
+          return Number(run.artifact_count || 0) > 0 || (run.artifacts || []).length
+            ? "Prof ZIP 仅存 Relay"
+            : "未生成 Prof ZIP";
+        }
+      }
+
+      return canDownloadRunResult(run, snap) ? "Prof ZIP 已就绪" : "—";
+    }
+
+    function runActionCell(run, snap) {
+      const rawStatus = run.raw_job_status || run.status;
       if (run.cloud_job && ["queued", "waiting_runner", "waiting_vpn", "claimed", "running", "disconnected", "cancel_requested"].includes(rawStatus)) {
         return `<button type="button" class="perf-download-btn" data-job-action="cancel" data-job-id="${escapeHtml(run.id)}">取消</button>`;
       }
       if (run.cloud_job && ["failed", "canceled", "orphaned"].includes(rawStatus)) {
         return `<button type="button" class="perf-download-btn" data-job-action="retry" data-job-id="${escapeHtml(run.id)}">重试</button>`;
       }
-      if (run.cloud_job && rawStatus === "succeeded") {
-        if (run.task_type === "build_install") return "安装完成";
-        if (canDownloadRunResult(run, snap)) {
-          return `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载 profiling 原始结果">下载</button>`;
-        }
-        return Number(run.artifact_count || 0) > 0 || (run.artifacts || []).length
-          ? "仅 Relay 本地"
-          : "无原始制品";
+      if (run.task_type !== "build_install" && canDownloadRunResult(run, snap)) {
+        return `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载完整 Prof ZIP">下载</button>`;
       }
-      return canDownloadRunResult(run, snap)
-        ? `<button type="button" class="perf-download-btn" data-run-download="${escapeHtml(run.id)}" title="下载 profiling 原始结果">下载</button>`
-        : "—";
+      return "—";
     }
 
     function runStatusLabel(status) {
@@ -3108,7 +3129,7 @@
       const tbody = document.querySelector("#runRows");
       const runs = displayRuns().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
       if (!runs.length) {
-        tbody.innerHTML = '<tr><td colspan="10" class="empty">暂无执行记录，可在左侧提交编译安装或测试任务。</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="empty">暂无执行记录，可在左侧提交编译安装或测试任务。</td></tr>';
         return;
       }
       tbody.innerHTML = runs.map((run) => {
@@ -3122,6 +3143,7 @@
           ? `<button type="button" class="perf-command-cell-btn" data-run-command="${escapeHtml(run.id)}" title="点击查看完整命令">${escapeHtml(shortCommand)}</button>`
           : escapeHtml(shortCommand);
         const resultCell = runResultCell(run, snap);
+        const actionCell = runActionCell(run, snap);
         const elapsed = Date.parse(run.finished_at || "") - Date.parse(run.started_at || "");
         const totalTime = Number.isFinite(Number(snap?.total_time_ms)) ? Number(snap.total_time_ms) : (isBuild && elapsed >= 0 ? elapsed : NaN);
         const statusClass = run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral";
@@ -3134,6 +3156,7 @@
           <td><span class="stat-pill ${statusClass}" title="${escapeHtml(run.message || "")}">${escapeHtml(runStatusLabel(run.raw_job_status || run.status))}</span></td>
           <td>${Number.isFinite(totalTime) ? `${totalTime.toFixed(1)} ms` : "—"}</td>
           <td>${resultCell}</td>
+          <td>${actionCell}</td>
           <td>${commandCell}</td>
           <td>${escapeHtml(run.created_by || "—")}</td>
         </tr>`;
