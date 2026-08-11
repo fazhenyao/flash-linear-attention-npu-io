@@ -886,6 +886,49 @@ __END_NPU__
             self.assertTrue(agent.run_job.call_args.kwargs["resume"])
 
     @patch("backend.runner_agent.JobHeartbeat")
+    def test_recovered_final_job_never_restarts_remote_build(self, heartbeat_class):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.config = SimpleNamespace(runner_id="relay-test")
+        agent.api = Mock()
+        agent.api.post.return_value = {"final": True, "final_status": "canceled"}
+        agent.save_job_state = Mock()
+        agent.run_persistent_build_job = Mock()
+        job = {
+            "id": "job-stale",
+            "attempt_id": "attempt-stale",
+            "lease_token": "lease-stale",
+            "request": {"task_type": "build_install"},
+            "recovery_state": {"state": "running", "remote_status": {"state": "building"}},
+        }
+
+        agent.run_job(job, resume=True)
+
+        agent.run_persistent_build_job.assert_not_called()
+        heartbeat_class.assert_not_called()
+        self.assertEqual(agent.save_job_state.call_args.args[1], "canceled")
+
+    @patch("backend.runner_agent.JobHeartbeat")
+    def test_recovery_handshake_failure_never_restarts_remote_build(self, heartbeat_class):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.config = SimpleNamespace(runner_id="relay-test")
+        agent.api = Mock()
+        agent.api.post.side_effect = RuntimeError("lease expired")
+        agent.save_job_state = Mock()
+        agent.run_persistent_build_job = Mock()
+        job = {
+            "id": "job-stale",
+            "attempt_id": "attempt-stale",
+            "lease_token": "lease-stale",
+            "request": {"task_type": "build_install"},
+            "recovery_state": {"state": "running"},
+        }
+
+        agent.run_job(job, resume=True)
+
+        agent.run_persistent_build_job.assert_not_called()
+        heartbeat_class.assert_not_called()
+
+    @patch("backend.runner_agent.JobHeartbeat")
     def test_build_completion_api_failure_stays_reporting_without_marking_failed(self, heartbeat_class):
         agent = RunnerAgent.__new__(RunnerAgent)
         agent.config = SimpleNamespace(runner_id="relay-test")

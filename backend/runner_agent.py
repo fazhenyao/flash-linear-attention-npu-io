@@ -773,6 +773,24 @@ class RunnerAgent:
             return True
         return False
 
+    def finish_recovered_final_job(self, job: dict[str, Any], response: dict[str, Any]) -> bool:
+        final_status = str(response.get("final_status") or (response.get("job") or {}).get("status") or "")
+        local_state = {
+            "succeeded": "completed",
+            "failed": "failed",
+            "canceled": "canceled",
+            "orphaned": "orphaned",
+        }.get(final_status)
+        if not local_state:
+            return False
+        self.save_job_state(
+            job,
+            local_state,
+            request=dict(job.get("request") or {}),
+            message=f"Worker 已将任务标记为 {final_status}，停止恢复旧尝试",
+        )
+        return True
+
     def run_job(self, job: dict[str, Any], *, resume: bool = False) -> None:
         request = dict(job.get("request") or {})
         task_type = str(request.get("task_type") or "profile")
@@ -780,9 +798,24 @@ class RunnerAgent:
         recovery_state = dict(job.get("recovery_state") or {})
         if not resume:
             self.save_job_state(job, "claimed", request=request)
+        if resume and recovery_state.get("state") in {"claimed", "running"}:
+            try:
+                response = self.api.post(
+                    f"/api/runner/jobs/{job['id']}/heartbeat",
+                    self.job_auth(job, {
+                        "state": "running",
+                        "remote_state": (recovery_state.get("remote_status") or {}).get("state") or "recovering",
+                        "message": "Relay 重启后正在确认原编译尝试",
+                    }),
+                )
+            except Exception as exc:
+                print(f"[runner] 任务 {job['id']} 恢复握手失败，未启动远端命令：{exc}", flush=True)
+                return
+            if response.get("final") and self.finish_recovered_final_job(job, response):
+                return
         if not resume or recovery_state.get("state") == "claimed":
             try:
-                self.api.post(
+                response = self.api.post(
                     f"/api/runner/jobs/{job['id']}/started",
                     self.job_auth(job, {
                         "remote_execution_id": f"{self.config.runner_id}:{job['id']}:{job.get('attempt_id')}",
@@ -791,6 +824,8 @@ class RunnerAgent:
                 )
             except Exception as exc:
                 print(f"[runner] 任务 {job['id']} 启动确认失败，将继续重试：{exc}", flush=True)
+                return
+            if response.get("final") and self.finish_recovered_final_job(job, response):
                 return
         heartbeat = JobHeartbeat(self, job)
         heartbeat.start()

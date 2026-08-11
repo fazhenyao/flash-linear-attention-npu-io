@@ -337,7 +337,7 @@ stateDiagram-v2
 - 领取后尚未远端启动：安全释放任务并重新排队。
 - 编译远端启动后 VPN 断开：构建进程继续运行，Worker 可暂时标记 disconnected；Relay 保留同一 attempt_id 和远端句柄，连接恢复后继续轮询。
 - 测试远端启动后 VPN 断开：当前同步 SSH 实现通常会因 SSH 失败而结束本次尝试，仍需人工核对。
-- Relay 重启后先扫描本地活跃编译记录；活跃构建阶段继续查询远端状态，`reporting` / `reporting_failure` / `reporting_orphaned` 只重发已持久化的原结果，不重新执行编译。
+- Relay 重启后先扫描本地活跃编译记录；`claimed` / `running` 记录必须先通过 Worker heartbeat 确认 attempt 和租约仍有效，Worker 已终态或握手失败时绝不启动远端命令。确认有效后才继续查询远端状态；`reporting` / `reporting_failure` / `reporting_orphaned` 只重发已持久化的原结果，不重新执行编译。
 - 控制目录缺失时，Relay 会核对 active marker 的 attempt_id；匹配则恢复为成功，不匹配或也缺失才进入 `orphaned`。
 - `orphaned` 禁止自动重跑；只有管理员核对并在看板明确确认旧进程已停止后，Worker 才接受重试，并记录确认人、旧状态和旧 attempt_id。
 
