@@ -1,17 +1,29 @@
 {
-  "generatedAt": "2026-08-11T14:43:49+08:00",
+  "generatedAt": "2026-08-12T08:56:38+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 205,
+  "total": 207,
   "items": [
     {
+      "number": 299,
+      "title": "docs: organize operator optimization guidance",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/299",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-11T19:05:33Z",
+      "createdAt": "2026-08-11T17:19:24Z",
+      "headRef": "20260812_000618_operator-optimization-docs",
+      "labels": []
+    },
+    {
       "number": 297,
-      "title": "fix(kda): 修复 A5 前向同步与 varlen workspace 越界",
+      "title": "test(kda): 补充 ATK 精度诊断与 NPU 稳定性测试",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/297",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-11T06:04:56Z",
+      "updatedAt": "2026-08-11T18:53:00Z",
       "createdAt": "2026-08-11T03:33:34Z",
       "headRef": "codex/chunk-kda-fwd-atk",
       "labels": []
@@ -23,21 +35,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-11T03:15:33Z",
+      "updatedAt": "2026-08-11T09:00:37Z",
       "createdAt": "2026-08-10T09:26:49Z",
       "headRef": "codex/benchmark-kda-main",
-      "labels": []
-    },
-    {
-      "number": 295,
-      "title": "fix: remove stale *.egg-info after wheel build",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/295",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-11T03:57:53Z",
-      "createdAt": "2026-08-10T08:43:11Z",
-      "headRef": "fix/cleanup-egg-info-residual",
       "labels": []
     },
     {
@@ -71,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-10T03:39:06Z",
+      "updatedAt": "2026-08-11T16:23:24Z",
       "createdAt": "2026-08-08T09:29:05Z",
       "headRef": "recurrent_kda_perf",
       "labels": []
@@ -83,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-10T14:13:10Z",
+      "updatedAt": "2026-08-11T09:12:28Z",
       "createdAt": "2026-08-07T02:37:41Z",
       "headRef": "perf",
       "labels": []
@@ -107,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-11T03:12:42Z",
+      "updatedAt": "2026-08-11T13:21:28Z",
       "createdAt": "2026-08-06T13:02:19Z",
       "headRef": "20260806_204500_docs-README-usability",
       "labels": []
@@ -143,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-11T03:45:58Z",
+      "updatedAt": "2026-08-11T09:19:55Z",
       "createdAt": "2026-08-04T06:38:29Z",
       "headRef": "adapt",
       "labels": []
@@ -371,7 +371,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-25T21:50:28Z",
+      "updatedAt": "2026-08-11T13:59:39Z",
       "createdAt": "2026-07-11T03:36:48Z",
       "headRef": "codex/prepare-wy-repr-bwd-fused",
       "labels": []
@@ -566,6 +566,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 300,
+      "title": "fix(kda): 修复 A5 chunk_kda_fwd 前向精度不稳定",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/300",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-11T17:53:56Z",
+      "updatedAt": "2026-08-11T17:53:56Z",
+      "createdAt": "2026-08-11T17:50:02Z",
+      "headRef": "codex/chunk-kda-a5-accuracy-fix",
+      "labels": []
+    },
+    {
+      "number": 295,
+      "title": "fix: remove stale *.egg-info after wheel build",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/295",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-11T08:29:46Z",
+      "updatedAt": "2026-08-11T08:29:46Z",
+      "createdAt": "2026-08-10T08:43:11Z",
+      "headRef": "fix/cleanup-egg-info-residual",
       "labels": []
     },
     {
