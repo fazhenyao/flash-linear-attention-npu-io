@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-13T08:58:17+08:00",
+  "generatedAt": "2026-08-13T15:08:42+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 210,
@@ -11,7 +11,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-12T17:22:50Z",
+      "updatedAt": "2026-08-13T01:40:12Z",
       "createdAt": "2026-08-12T12:53:10Z",
       "headRef": "codex/kda-varlen-fast-path",
       "labels": []
@@ -23,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-12T08:55:56Z",
+      "updatedAt": "2026-08-13T06:08:06Z",
       "createdAt": "2026-08-12T08:39:16Z",
       "headRef": "main",
       "labels": []
@@ -54,12 +54,12 @@
     },
     {
       "number": 297,
-      "title": "test(kda): 补充 ATK 精度诊断与 NPU 稳定性测试",
+      "title": "test(kda): 增加 CPU 双标杆精度测试",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/297",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-12T17:22:46Z",
+      "updatedAt": "2026-08-13T05:21:25Z",
       "createdAt": "2026-08-11T03:33:34Z",
       "headRef": "codex/chunk-kda-fwd-atk",
       "labels": []
@@ -107,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-12T15:59:56Z",
+      "updatedAt": "2026-08-13T06:47:10Z",
       "createdAt": "2026-08-07T02:37:41Z",
       "headRef": "perf",
       "labels": []
