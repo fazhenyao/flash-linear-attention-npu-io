@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-12T15:05:06+08:00",
+  "generatedAt": "2026-08-13T08:58:17+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 207,
+  "total": 210,
   "items": [
+    {
+      "number": 306,
+      "title": "perf(kda): 优化 A5 packed varlen 前向流程",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/306",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-12T17:22:50Z",
+      "createdAt": "2026-08-12T12:53:10Z",
+      "headRef": "codex/kda-varlen-fast-path",
+      "labels": []
+    },
+    {
+      "number": 302,
+      "title": "adapt recurrent_gated_delta_rule to fla_npu calling",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/302",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-12T08:55:56Z",
+      "createdAt": "2026-08-12T08:39:16Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 301,
+      "title": "add atk test",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/301",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-12T07:29:07Z",
+      "createdAt": "2026-08-12T07:28:43Z",
+      "headRef": "0812-test-atk",
+      "labels": []
+    },
     {
       "number": 299,
       "title": "docs: organize operator optimization guidance",
@@ -11,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-11T19:05:33Z",
+      "updatedAt": "2026-08-12T16:14:55Z",
       "createdAt": "2026-08-11T17:19:24Z",
       "headRef": "20260812_000618_operator-optimization-docs",
       "labels": []
@@ -23,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-12T04:51:12Z",
+      "updatedAt": "2026-08-12T17:22:46Z",
       "createdAt": "2026-08-11T03:33:34Z",
       "headRef": "codex/chunk-kda-fwd-atk",
       "labels": []
@@ -35,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-11T09:00:37Z",
+      "updatedAt": "2026-08-12T14:37:19Z",
       "createdAt": "2026-08-10T09:26:49Z",
       "headRef": "codex/benchmark-kda-main",
       "labels": []
@@ -71,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-12T01:29:59Z",
+      "updatedAt": "2026-08-12T15:59:56Z",
       "createdAt": "2026-08-07T02:37:41Z",
       "headRef": "perf",
       "labels": []
@@ -107,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-06T06:17:44Z",
+      "updatedAt": "2026-08-12T08:15:52Z",
       "createdAt": "2026-08-06T02:49:52Z",
       "headRef": "codex/add-kda-forward-benchmark",
       "labels": []
@@ -131,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-11T09:19:55Z",
+      "updatedAt": "2026-08-12T08:06:54Z",
       "createdAt": "2026-08-04T06:38:29Z",
       "headRef": "adapt",
       "labels": []
