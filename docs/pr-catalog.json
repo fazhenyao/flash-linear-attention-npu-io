@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-15T08:33:29+08:00",
+  "generatedAt": "2026-08-15T14:18:08+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 216,
+  "total": 217,
   "items": [
+    {
+      "number": 320,
+      "title": "Chw",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/320",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-15T06:07:07Z",
+      "createdAt": "2026-08-15T02:18:59Z",
+      "headRef": "chw",
+      "labels": []
+    },
     {
       "number": 319,
       "title": "fix(gdn): KKT tail precision + fixed BT128 crash on top of PR #283",
@@ -11,21 +23,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-14T09:35:59Z",
+      "updatedAt": "2026-08-15T04:01:01Z",
       "createdAt": "2026-08-14T09:35:58Z",
       "headRef": "pr283-kkt-fixes",
-      "labels": []
-    },
-    {
-      "number": 318,
-      "title": "fix: allocate fwd_h final_state as fp32 when initial_state is absent (v26.6.0)",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/318",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-14T09:25:51Z",
-      "createdAt": "2026-08-14T09:18:54Z",
-      "headRef": "fix/fwd-h-nan-legal-g",
       "labels": []
     },
     {
@@ -47,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-14T03:44:15Z",
+      "updatedAt": "2026-08-15T01:55:44Z",
       "createdAt": "2026-08-14T03:37:14Z",
       "headRef": "yjbb0814",
       "labels": []
@@ -638,6 +638,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 318,
+      "title": "fix: allocate fwd_h final_state as fp32 when initial_state is absent (v26.6.0)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/318",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-15T03:51:47Z",
+      "updatedAt": "2026-08-15T03:51:48Z",
+      "createdAt": "2026-08-14T09:18:54Z",
+      "headRef": "fix/fwd-h-nan-legal-g",
       "labels": []
     },
     {
