@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-14T15:05:20+08:00",
+  "generatedAt": "2026-08-15T08:33:29+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 213,
+  "total": 216,
   "items": [
+    {
+      "number": 319,
+      "title": "fix(gdn): KKT tail precision + fixed BT128 crash on top of PR #283",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/319",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-14T09:35:59Z",
+      "createdAt": "2026-08-14T09:35:58Z",
+      "headRef": "pr283-kkt-fixes",
+      "labels": []
+    },
+    {
+      "number": 318,
+      "title": "fix: allocate fwd_h final_state as fp32 when initial_state is absent (v26.6.0)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/318",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-14T09:25:51Z",
+      "createdAt": "2026-08-14T09:18:54Z",
+      "headRef": "fix/fwd-h-nan-legal-g",
+      "labels": []
+    },
+    {
+      "number": 317,
+      "title": "fix(fast-launch): correct non-contiguous state handling in recurrent …",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/317",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-14T09:42:46Z",
+      "createdAt": "2026-08-14T09:18:15Z",
+      "headRef": "fast_launch",
+      "labels": []
+    },
     {
       "number": 316,
       "title": "fix: package Triton sources in root wheel",
@@ -23,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-14T03:02:30Z",
+      "updatedAt": "2026-08-14T09:43:04Z",
       "createdAt": "2026-08-14T03:00:00Z",
       "headRef": "single_fix",
       "labels": []
@@ -131,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-13T12:32:38Z",
+      "updatedAt": "2026-08-14T09:15:18Z",
       "createdAt": "2026-08-07T02:37:41Z",
       "headRef": "perf",
       "labels": []
