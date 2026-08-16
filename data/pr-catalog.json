@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-16T08:34:11+08:00",
+  "generatedAt": "2026-08-16T14:19:48+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 218,
