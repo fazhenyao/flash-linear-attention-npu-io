@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-17T08:33:01+08:00",
+  "generatedAt": "2026-08-17T14:29:52+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 218,
+  "total": 219,
   "items": [
+    {
+      "number": 324,
+      "title": "fix(gdn): bound KKT B-matrix tile by valid rows to fix varlen tail OOB",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/324",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-17T01:29:01Z",
+      "createdAt": "2026-08-17T01:28:59Z",
+      "headRef": "fix/kkt-varlen-tail-oob",
+      "labels": []
+    },
     {
       "number": 322,
       "title": "fix(v26.6.0): 隔离 FLA 与 CANN opapi 动态符号",
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-15T06:07:07Z",
+      "updatedAt": "2026-08-17T01:24:56Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
       "labels": []
@@ -66,12 +78,12 @@
     },
     {
       "number": 306,
-      "title": "perf(kda): 优化 A5 packed varlen 前向流程",
+      "title": "fix(kda): 稳定 chunk_kda_fwd 跨平台流水与边界精度",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/306",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-13T10:53:25Z",
+      "updatedAt": "2026-08-17T05:10:50Z",
       "createdAt": "2026-08-12T12:53:10Z",
       "headRef": "codex/kda-varlen-fast-path",
       "labels": []
