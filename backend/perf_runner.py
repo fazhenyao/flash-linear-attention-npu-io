@@ -48,6 +48,7 @@ ATTR_DEFAULTS = {
     "mean_len": 1024,
     "dtype": "bf16",
     "varlen": True,
+    "demo_model": False,
 }
 
 DEFAULT_TRIGGER_SCRIPT = "scripts/flash_gated_delta_rule.py"
@@ -514,6 +515,14 @@ def normalize_attributes(attributes: dict[str, Any] | None) -> dict[str, Any]:
             if value is None:
                 attrs[key] = default
             continue
+        if key == "demo_model":
+            if value is None:
+                attrs[key] = default
+            elif isinstance(value, str):
+                attrs[key] = value.strip().lower() not in {"", "0", "false", "no", "off"}
+            else:
+                attrs[key] = bool(value)
+            continue
         if value is None or value == "":
             attrs[key] = default
             continue
@@ -556,6 +565,10 @@ def attributes_to_cli_args(attributes: dict[str, Any], npu_device: int) -> list[
         args.append("--varlen")
     else:
         args.append("--no-varlen")
+    if attrs.get("demo_model", False):
+        if int(attrs.get("batch") or 1) != 1:
+            raise ValueError("--demo-model requires batch=1")
+        args.append("--demo-model")
     return args
 
 

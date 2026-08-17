@@ -510,6 +510,23 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertIn("--device 2", command)
         self.assertNotIn("data\\\\prof_gdr", command)
 
+    def test_demo_model_attribute_adds_cli_flag(self):
+        with patch.dict(os.environ, self.environment, clear=False):
+            command = build_command({
+                "prof_tool": "msprof",
+                "attributes": {"batch": 1, "demo_model": True},
+            })
+
+        self.assertIn("--demo-model", command)
+
+    def test_demo_model_rejects_batch_greater_than_one(self):
+        with patch.dict(os.environ, self.environment, clear=False):
+            with self.assertRaisesRegex(ValueError, "--demo-model requires batch=1"):
+                build_command({
+                    "prof_tool": "msprof",
+                    "attributes": {"batch": 2, "demo_model": True},
+                })
+
     def test_remote_script_can_be_mapped_by_trusted_runner_config(self):
         remote_script = (
             "/home/npu_user7/fazhenyao/flash-linear-attention-npu/"

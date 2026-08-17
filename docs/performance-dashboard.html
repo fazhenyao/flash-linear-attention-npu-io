@@ -311,6 +311,14 @@
                 </label>
               </div>
             </fieldset>
+            <fieldset class="perf-attr-fieldset">
+              <legend>测试链路</legend>
+              <label class="perf-form-fieldwide">完整模型链路（--demo-model）
+                <span class="perf-check-field perf-check-field-compact">
+                  <input id="attrDemoModel" type="checkbox">
+                </span>
+              </label>
+            </fieldset>
             <label>备注 <input id="triggerNotes" placeholder="可选说明"></label>
             <button type="submit" class="primary">执行测试</button>
           </form>
@@ -525,6 +533,7 @@
       document.querySelector("#refreshSourceBranchesBtn").addEventListener("click", () => refreshTriggerSourceBranches(true));
       document.querySelector("#triggerBuildInstallBtn").addEventListener("click", onBuildInstallSubmit);
       document.querySelector("#attrVarlen").addEventListener("change", updateVarlenFieldsUI);
+      document.querySelector("#attrDemoModel").addEventListener("change", updateDemoModelUI);
       bindBuildInstallDialogEvents();
       bindCommandDialogEvents();
       document.querySelector("#netCaseDownloadBtn").addEventListener("click", downloadNetworkProfArchive);
@@ -1568,6 +1577,13 @@
       document.querySelector("#attrCuSeqlens").disabled = !enabled;
     }
 
+    function updateDemoModelUI() {
+      const enabled = document.querySelector("#attrDemoModel").checked;
+      const batchInput = document.querySelector("#attrBatch");
+      if (enabled) batchInput.value = "1";
+      batchInput.disabled = enabled;
+    }
+
     async function loadData() {
       const stamp = Date.now();
       let source = "local";
@@ -1817,6 +1833,10 @@
         alert("mean-len 必须为正整数。");
         return;
       }
+      if (attributes.demo_model && Number(attributes.batch) !== 1) {
+        alert("完整模型链路测试要求 batch=1。");
+        return;
+      }
       if (document.querySelector("#triggerNotes").value.trim()) {
         attributes.notes = document.querySelector("#triggerNotes").value.trim();
       }
@@ -2037,6 +2057,7 @@
       mean_len: 1024,
       cu_seqlens: "",
       varlen: true,
+      demo_model: false,
     };
 
     function buildTriggerAttributes() {
@@ -2057,6 +2078,7 @@
         mean_len: numberOr(document.querySelector("#attrMeanLen").value, defaults.mean_len),
         cu_seqlens: document.querySelector("#attrCuSeqlens").value.trim() || defaults.cu_seqlens,
         varlen: document.querySelector("#attrVarlen").checked,
+        demo_model: document.querySelector("#attrDemoModel").checked,
         layout: document.querySelector("#attrVarlen").checked ? "TND" : "BSND",
       };
     }
@@ -2077,7 +2099,8 @@
     function formatTriggerAttrLabel(attrs) {
       if (!attrs) return "—";
       const layout = caseLayoutValue(attrs);
-      return `B=${attrs.batch ?? "?"} QH=${attrs.query_heads ?? "?"} VH=${attrs.value_heads ?? "?"} T=${attrs.tokens ?? "?"} K=${attrs.key_dim ?? "?"} V=${attrs.value_dim ?? "?"} chunk=${attrs.chunk_size ?? "?"} ${layout}`;
+      const mode = attrs.demo_model ? " DemoModel" : "";
+      return `B=${attrs.batch ?? "?"} QH=${attrs.query_heads ?? "?"} VH=${attrs.value_heads ?? "?"} T=${attrs.tokens ?? "?"} K=${attrs.key_dim ?? "?"} V=${attrs.value_dim ?? "?"} chunk=${attrs.chunk_size ?? "?"} ${layout}${mode}`;
     }
 
     function normalizeAttrStoreValue(key, value) {
@@ -2632,6 +2655,7 @@
       syncTriggerRunnerOptions();
       syncTriggerOpDefaultsFromRunner();
       updateVarlenFieldsUI();
+      updateDemoModelUI();
       syncTriggerDeviceFromRunner();
       updateTriggerEnvFromRunner();
       fillSelect("#caseOperator", operatorOptions());

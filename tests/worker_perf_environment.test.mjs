@@ -123,6 +123,18 @@ test("normalizes admin build-install tasks and rejects ordinary users", () => {
   assert.throws(() => normalizePerfJobRequest(payload, { role: "user" }), /requires admin role/);
 });
 
+test("normalizes demo-model profile tasks and requires batch one", () => {
+  const request = normalizePerfJobRequest({
+    task_type: "profile",
+    attributes: { batch: 1, demo_model: true },
+  }, { role: "user" });
+  assert.equal(request.attributes.demo_model, true);
+  assert.throws(() => normalizePerfJobRequest({
+    task_type: "profile",
+    attributes: { batch: 2, demo_model: true },
+  }, { role: "user" }), /demo_model requires batch=1/);
+});
+
 test("routes custom environments only to capable runners", () => {
   const request = {
     target_runner_id: "runner-a5",

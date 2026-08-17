@@ -2354,7 +2354,7 @@ function normalizePerfAttributes(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw withStatus(400, "attributes must be an object");
   const allowed = new Set([
     "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size",
-    "mean_len", "dtype", "varlen", "scale", "cu_seqlens", "layout", "notes",
+    "mean_len", "dtype", "varlen", "demo_model", "scale", "cu_seqlens", "layout", "notes",
   ]);
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) throw withStatus(400, `unsupported performance attribute: ${key}`);
@@ -2379,6 +2379,12 @@ function normalizePerfAttributes(value) {
     : ![false, 0, "0", "false", "no", "off"].includes(
       typeof value.varlen === "string" ? value.varlen.trim().toLowerCase() : value.varlen,
     );
+  result.demo_model = value.demo_model === undefined
+    ? false
+    : ![false, 0, "0", "false", "no", "off"].includes(
+      typeof value.demo_model === "string" ? value.demo_model.trim().toLowerCase() : value.demo_model,
+    );
+  if (result.demo_model && result.batch !== 1) throw withStatus(400, "demo_model requires batch=1");
   const scale = value.scale === undefined || value.scale === null || value.scale === ""
     ? result.key_dim ** -0.5
     : Number(value.scale);
