@@ -2928,7 +2928,8 @@ async function claimPerfJob(env, payload) {
   );
   for (const candidate of candidates) {
     const request = parseJson(candidate.request_json, {});
-    if (!runnerCanExecute(runner.id, runner.capabilities, request)) continue;
+    const explicitlyTargeted = request.target_runner_id === runner.id;
+    if (!explicitlyTargeted && !runnerCanExecute(runner.id, runner.capabilities, request)) continue;
     const attemptId = `attempt-${crypto.randomUUID()}`;
     const leaseToken = randomToken(32);
     const leaseHash = await sha256Text(leaseToken);
