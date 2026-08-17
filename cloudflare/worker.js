@@ -2920,7 +2920,11 @@ async function claimPerfJob(env, payload) {
   const capacity = Math.max(0, numberOr(runner.capabilities.max_concurrency, 1) - runner.current_jobs);
   if (capacity < 1) return { ok: true, job: null, reason: "runner_at_capacity", retry_after_seconds: 15 };
   const candidates = await selectAll(env,
-    "SELECT * FROM perf_jobs WHERE status IN ('queued', 'waiting_runner', 'waiting_vpn') AND cancel_requested = 0 ORDER BY created_at LIMIT 20",
+    `SELECT * FROM perf_jobs
+      WHERE status IN ('queued', 'waiting_runner', 'waiting_vpn') AND cancel_requested = 0
+      ORDER BY CASE WHEN json_extract(request_json, '$.target_runner_id') = ? THEN 0 ELSE 1 END, created_at
+      LIMIT 100`,
+    runner.id,
   );
   for (const candidate of candidates) {
     const request = parseJson(candidate.request_json, {});
