@@ -294,9 +294,8 @@
             <table class="stats-table perf-table">
               <thead>
                 <tr>
-                  <th>时间</th>
-                  <th>用例</th>
-                  <th>脚本</th>
+                  <th>时间（北京时间）</th>
+                  <th>用例 / 脚本</th>
                   <th>芯片</th>
                   <th>测试</th>
                   <th>状态</th>
@@ -3423,7 +3422,7 @@
       const tbody = document.querySelector("#runRows");
       const runs = displayRuns().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
       if (!runs.length) {
-        tbody.innerHTML = '<tr><td colspan="11" class="empty">暂无执行记录，可在左侧提交编译安装或测试任务。</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="empty">暂无执行记录，可在左侧提交编译安装或测试任务。</td></tr>';
         return;
       }
       tbody.innerHTML = runs.map((run) => {
@@ -3434,6 +3433,9 @@
         const command = displayRunCommand(run) || "—";
         const shortCommand = command.length > 48 ? `${command.slice(0, 48)}…` : command;
         const scriptPath = isBuild ? (run.execution_environment?.source_repo || run.script_path || "—") : (runExample?.script || run.script_path || "—");
+        const caseLabel = isBuild
+          ? `编译 ${run.execution_environment?.branch_source === "remote" ? "origin/" : ""}${run.execution_environment?.branch || "源码"}`
+          : (testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—");
         const commandCell = command !== "—"
           ? `<button type="button" class="perf-command-cell-btn" data-run-command="${escapeHtml(run.id)}" title="点击查看完整命令">${escapeHtml(shortCommand)}</button>`
           : escapeHtml(shortCommand);
@@ -3443,9 +3445,8 @@
         const totalTime = Number.isFinite(Number(snap?.total_time_ms)) ? Number(snap.total_time_ms) : (isBuild && elapsed >= 0 ? elapsed : NaN);
         const statusClass = run.status === "done" ? "positive" : run.status === "failed" ? "negative" : "neutral";
         return `<tr>
-          <td>${escapeHtml((run.created_at || "").replace("T", " ").slice(0, 19))}</td>
-          <td>${escapeHtml(isBuild ? `编译 ${run.execution_environment?.branch_source === "remote" ? "origin/" : ""}${run.execution_environment?.branch || "源码"}` : (testCase?.label || formatTriggerAttrLabel(run.attributes) || run.case_id || "—"))}</td>
-          <td>${escapeHtml(scriptPath)}</td>
+          <td><time datetime="${escapeHtml(run.created_at || "")}">${escapeHtml(formatExecutionTime(run.created_at))}</time></td>
+          <td><div class="perf-run-case-cell"><strong title="${escapeHtml(caseLabel)}">${escapeHtml(caseLabel)}</strong><small title="${escapeHtml(scriptPath)}">${escapeHtml(scriptPath)}</small></div></td>
           <td>${escapeHtml(run.chip || "")}</td>
           <td>${escapeHtml(isBuild ? "编译安装" : profToolLabel(run.prof_tool || snap?.prof_tool || "msprof"))}</td>
           <td><span class="stat-pill ${statusClass}" title="${escapeHtml(run.message || "")}">${escapeHtml(runStatusLabel(run.raw_job_status || run.status))}</span></td>
@@ -3495,6 +3496,26 @@
       const now = new Date();
       const offset = now.getTimezoneOffset();
       return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
+    }
+
+    function formatExecutionTime(value) {
+      const raw = String(value || "").trim();
+      const date = new Date(raw);
+      if (!raw || Number.isNaN(date.getTime())) return raw || "—";
+      const parts = new Intl.DateTimeFormat("en", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).formatToParts(date).reduce((result, part) => {
+        result[part.type] = part.value;
+        return result;
+      }, {});
+      return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
     }
 
     function escapeHtml(value) {
