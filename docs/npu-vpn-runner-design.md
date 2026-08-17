@@ -298,9 +298,38 @@ Worker 先执行角色、任务类型、字段白名单、路径格式和分支�
 4. 构建目标由 Relay 芯片固定映射，用户不能覆盖：A2 为 `ascend910b`、A3 为 `ascend910_93`、A5 为 `ascend950`。
 5. 构建成功后先写入包含 branch、commit、SoC、attempt_id 和环境部署标识的 marker，再通过临时链接和 `mv -T` 原子更新 `active/<environment_id>`；激活后再次校验链接目标和 marker。
 6. Worker 确认成功结果已持久化后，Relay 写入 acknowledged 标记，并只清理同一环境更旧的成功 worktree；当前版本保留当前版本及前两个成功版本，以便核对和回退。控制目录和日志不随 worktree 清理。
-7. 后续测试选择分支时，Relay 必须确认部署标记中的分支和 SoC 匹配，再从已激活 worktree 的 `examples/flash_gated_delta_rule.py` 执行 profiling；不匹配则要求先执行编译安装。
+7. 后续测试选择分支时，Relay 必须确认部署标记中的分支和 SoC 匹配，再从已激活 worktree 执行 manifest 中所选示例的相对路径；不匹配则要求先执行编译安装。
 
 当前 A5 主机不能稳定访问 GitHub，因此要在 A5 上编译的远程分支应预先存在于 `refs/remotes/origin/*` 缓存中，或者直接使用本地分支。本地分支不会触发网络 fetch；远程分支即使刷新失败也可使用已有缓存。任务记录保存实际 CANN、Conda、源码仓库、分支来源、分支、commit 和 SoC。编译任务记录显示“编译安装”及结果，不展示构建 Shell；测试任务的命令字段仍只展示对应的 `msprof` 或 `msopprof` profiler 命令。
+
+### 7.4 多测试示例与动态参数
+
+测试示例采用显式 manifest 管理，不通过运行脚本或解析 `--help` 自动发现参数。当前权威清单位于 IO 仓库的 `docs/perf-examples.json`，由 GitHub Pages 与 Relay 共同读取；后续 `flash-linear-attention-npu` 分支提供 `examples/dashboard_examples.json` 时，Relay 可按已激活部署的 commit 读取并校验该清单。manifest 为每个示例保存稳定 ID、展示名称、源码相对路径、模型类型及参数 schema。
+
+首批接入四个示例：
+
+| 示例 ID | 脚本 | 参数类别 |
+| --- | --- | --- |
+| `flash_gated_delta_rule` | `examples/flash_gated_delta_rule.py` | 长序列形状、varlen、DemoModel |
+| `flash_kda` | `examples/flash_kda.py` | 长序列形状、状态、safe gate、重计算、短卷积、DemoModel |
+| `recurrent_gated_delta_rule` | `examples/recurrent_gated_delta_rule.py` | decode/MTP 形状、卷积缓存、Delta state、accepted tokens |
+| `recurrent_kda_layer` | `examples/recurrent_kda_layer.py` | decode/MTP 形状、短卷积、KDA state、safe gate、accepted tokens |
+
+看板从所选 Relay 的 capabilities 读取 `test_examples`，选择示例后按 schema 动态生成分组表单；布尔值使用复选框，枚举使用下拉框，数值使用带范围的输入框，整数列表使用逗号分隔的结构化输入。`visible_when` 控制 varlen、safe gate 和短卷积从属字段。设备、profiler、CANN、Conda 和源码分支仍为示例外的通用执行设置。
+
+任务只提交 `example_id`、`example_schema_version` 和结构化 `attributes`。Worker 执行示例 ID、属性名称、类型、长度和总请求大小的控制面校验；Relay 从本地 manifest 重新解析示例，执行精确范围、枚举、条件和跨字段约束校验，再使用 `shlex` 生成参数。浏览器不能提交脚本绝对路径、Shell 或未登记 CLI 参数。旧任务中的 `scripts/flash_gated_delta_rule.py` 继续映射到 `flash_gated_delta_rule`。
+
+跨字段约束由 Relay 最终执行：Flash KDA 要求 query heads 等于 value heads，varlen 要求 batch 为 1；两个 recurrent 示例要求 value heads 可被 query heads 整除，MTP 范围为 1 至 8，启用短卷积且 MTP 大于 1 时 conv kernel 必须为 4；Recurrent KDA 固定 key dim 为 128。任务与结果保存示例 ID 和完整结构化属性，recurrent 用例保留 `mtp`，不伪装成长序列 `tokens`。
+
+当前实现落点如下：
+
+- `docs/perf-examples.json`：四个示例及其参数 schema，供 GitHub Pages 表单和 Relay 使用。
+- `docs/performance-dashboard.html`：按 Runner 能力过滤示例，动态生成参数表单，并为每个示例分别保留尚未提交的输入值。
+- `cloudflare/worker.js`：接受 `example_id`，拒绝未登记示例和属性，并按 `test_examples` 将任务路由到兼容 Runner。
+- `backend/perf_examples.py`、`backend/perf_runner.py`：执行最终类型、范围及跨字段校验，解析目标脚本并生成受控 profiler 命令。
+- `scripts/import_prof_gdr.py`、`scripts/import_msprof_op.py`：将示例 ID 和原始参数写入用例、快照及执行结果，训练与 recurrent 示例使用各自的标签格式。
+
+部署要求：Pages、Worker 和 Relay 应使用同一版本的 schema。新示例上线时先部署 Worker 和 Relay，再发布 Pages；目标源码分支必须实际包含对应脚本。当前 schema 版本为 `1`，Worker 接受并保存版本号，Relay 始终以本机清单进行最终校验。
 
 ## 8. 任务状态机
 
@@ -1029,7 +1058,7 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 
 ## 26. 实施状态
 
-截至 2026-08-10，阶段一任务闭环和阶段三 R2 制品闭环均已部署，并通过真实 A2/A5 NPU 任务验证：
+截至 2026-08-17，阶段一任务闭环和阶段三 R2 制品闭环均已部署，并通过真实 A2/A5 NPU 任务验证；多示例动态参数功能已在仓库实现并完成本地自动化与浏览器验证，待随本次代码发布到 Worker、Pages 和 Relay：
 
 - D1 migration 已加入 `perf_jobs`、`perf_job_events`、`perf_results`、`perf_artifacts` 和 `runner_agents`，并为 Runner 增加强制 NPU 状态刷新请求字段。
 - Worker 已实现用户任务 API、Runner API、幂等提交、原子领取、租约、heartbeat、取消、重试和结果/制品清单回传；自定义执行环境仅允许管理员提交并执行字段白名单校验。
@@ -1038,6 +1067,7 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - 持久编译采用 `controls/`、`worktrees/`、`locks/`、`active/` 分离布局；控制日志不会因 worktree 清理丢失。远端脚本在环境锁内只构建安装一次，原子激活并校验 marker；Worker 确认结果后保留最近三个成功 worktree。
 - 编译 heartbeat 展示远端真实阶段；控制记录缺失时可从 active marker 恢复成功，否则通过 reconcile 标记 `orphaned`。`orphaned` 重试要求管理员显式确认远端进程已停止。
 - 性能看板已改为向 Worker 分别提交编译安装与测试任务，并提供 A2/A5 执行服务器选择、管理员执行环境与源码分支设置、分卡占用自动更新、强制重新采样和点击展开完整进程明细；Runner 或 VPN 离线时任务继续排队。
+- 用例触发已接入 Flash GDR、Flash KDA、Recurrent GDR 和 Recurrent KDA 四个示例；看板按 manifest 动态生成参数，Worker 按示例与 schema 版本路由，Relay 进行最终校验并从所选源码部署执行对应脚本。
 - 源码分支已从自由文本改为动态分组下拉框；分支查询请求经 D1 和 Relay 出站 heartbeat 传递，Relay 返回所选源码仓库中通过格式校验的本地分支和 `origin` 远程跟踪分支，源码路径变化时会重新查询。远程刷新失败时继续使用先读取的引用；完整查询失败时保留并持久化最近一次成功列表，看板不会清空仍可用的缓存选项。
 - NPU 状态自动采样间隔已从 30 秒调整为 30 分钟；看板仍每 10 秒读取 D1 缓存，点击刷新会通过 Worker 持久化请求并强制 Relay 立即重新执行 `npu-smi`。
 - 编译任务在执行记录中独立显示“编译安装”和安装结果，不生成 Prof/R2 制品；测试任务的命令字段只展示 `msprof` 或 `msopprof` profiler 命令，环境加载、Git worktree 和构建 Shell 不在看板暴露。

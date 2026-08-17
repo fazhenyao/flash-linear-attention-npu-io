@@ -791,22 +791,26 @@ def add_perf_model(conn: sqlite3.Connection, model: dict[str, Any]) -> dict[str,
 
 def trigger_perf_run(conn: sqlite3.Connection, payload: dict[str, Any], created_by: str = "backend") -> dict[str, Any]:
     try:
-        from .perf_runner import TRIGGER_SCRIPTS, build_command, ensure_runner_configured, load_config, resolve_npu_device
+        from .perf_examples import normalize_example_attributes, resolve_example
+        from .perf_runner import build_command, ensure_runner_configured
     except ImportError:
-        from perf_runner import TRIGGER_SCRIPTS, build_command, ensure_runner_configured, load_config, resolve_npu_device  # type: ignore
+        from perf_examples import normalize_example_attributes, resolve_example  # type: ignore
+        from perf_runner import build_command, ensure_runner_configured  # type: ignore
 
     ensure_runner_configured()
-    try:
-        from .perf_runner import normalize_attributes
-    except ImportError:
-        from perf_runner import normalize_attributes  # type: ignore
-    payload = {**payload, "attributes": normalize_attributes(payload.get("attributes"))}
+    example = resolve_example(payload)
+    payload = {
+        **payload,
+        "example_id": example["id"],
+        "model_id": payload.get("model_id") or example.get("model_id"),
+        "attributes": normalize_example_attributes(example, payload.get("attributes")),
+    }
     return create_queued_perf_run(
         conn,
         payload,
         created_by,
         build_command(payload),
-        default_script_path=TRIGGER_SCRIPTS[0]["id"],
+        default_script_path=example["script"],
     )
 
 
@@ -860,6 +864,7 @@ def create_queued_perf_run(
         "id": make_id("run"),
         "case_id": case_id,
         "model_id": model_id,
+        "example_id": payload.get("example_id") or payload.get("script_id") or "flash_gated_delta_rule",
         "chip": chip,
         "device": resolve_run_device(payload),
         "attributes": payload.get("attributes") or {},

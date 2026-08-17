@@ -18,6 +18,27 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+try:
+    from .perf_examples import (
+        DEFAULT_EXAMPLE_ID,
+        example_catalog,
+        example_cli_args,
+        example_manifest_hash,
+        example_schema_version,
+        normalize_example_attributes,
+        resolve_example,
+    )
+except ImportError:
+    from perf_examples import (  # type: ignore
+        DEFAULT_EXAMPLE_ID,
+        example_catalog,
+        example_cli_args,
+        example_manifest_hash,
+        example_schema_version,
+        normalize_example_attributes,
+        resolve_example,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 PROF_APP_ROOT = ROOT / "data" / "prof_gdr"
 PROF_OP_ROOT = ROOT / "data" / "prof_op"
@@ -54,22 +75,6 @@ ATTR_DEFAULTS = {
 DEFAULT_TRIGGER_SCRIPT = "scripts/flash_gated_delta_rule.py"
 LOCAL_PROF_OUTPUT_APP = "data/prof_gdr"
 LOCAL_PROF_OUTPUT_OP = "data/prof_op"
-
-TRIGGER_SCRIPTS = [
-    {
-        "id": DEFAULT_TRIGGER_SCRIPT,
-        "label": DEFAULT_TRIGGER_SCRIPT,
-        "remote": DEFAULT_TRIGGER_SCRIPT,
-        "local": DEFAULT_TRIGGER_SCRIPT,
-    },
-]
-
-LEGACY_TRIGGER_SCRIPT_IDS = {
-    "flash-linear-attention-npu/examples/flash_gated_delta_rule.py": DEFAULT_TRIGGER_SCRIPT,
-    "ref/flash_gated_delta_rule.py": DEFAULT_TRIGGER_SCRIPT,
-    "examples/flash_gated_delta_rule.py": DEFAULT_TRIGGER_SCRIPT,
-}
-
 
 @dataclass
 class PerfRunnerConfig:
@@ -343,27 +348,25 @@ def local_prof_output_path(prof_tool: str, config: PerfRunnerConfig | None = Non
 
 
 def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> tuple[str, str]:
-    script_path = str(payload.get("script_path") or "").strip() or TRIGGER_SCRIPTS[0]["id"]
-    script_path = LEGACY_TRIGGER_SCRIPT_IDS.get(script_path, script_path)
-    entry = next(
-        (item for item in TRIGGER_SCRIPTS if item["id"] == script_path or item["label"] == script_path),
-        None,
-    )
-    if entry is None:
-        allowed = ", ".join(item["label"] for item in TRIGGER_SCRIPTS)
-        raise ValueError(f"未知脚本路径：{script_path}（可选：{allowed}）")
-    configured = config.local_script or Path(entry["local"])
+    example = resolve_example(payload)
+    local_raw = str(example.get("local_script") or example["script"])
+    configured = config.local_script if example["id"] == DEFAULT_EXAMPLE_ID else Path(local_raw)
     local_abs = configured if configured.is_absolute() else ROOT / configured
-    if not local_abs.exists():
+    if config.mode == "local" and not local_abs.exists():
         raise FileNotFoundError(f"本地脚本不存在：{local_abs}")
-    # The task selects a whitelisted script ID; the trusted Relay config may map
-    # that ID to a different path on its NPU host.
-    remote_script = config.remote_script or entry["remote"]
+    if example["id"] == DEFAULT_EXAMPLE_ID and config.remote_script:
+        remote_script = config.remote_script
+    elif config.remote_source_repo:
+        remote_script = f"{config.remote_source_repo}/{example['script']}"
+    elif config.remote_script:
+        remote_script = str(PurePosixPath(config.remote_script).parent / PurePosixPath(example["script"]).name)
+    else:
+        remote_script = example["script"]
     return remote_script, to_repo_relative_path(local_abs)
 
 
-def script_options() -> list[dict[str, str]]:
-    return [{"id": item["id"], "label": item["label"]} for item in TRIGGER_SCRIPTS]
+def script_options() -> list[dict[str, Any]]:
+    return example_catalog()
 
 
 def normalize_prof_tool(payload: dict[str, Any]) -> str:
@@ -499,77 +502,24 @@ def runner_status() -> dict[str, Any]:
         "example_command_msprof": build_command(payload) if enabled else None,
         "example_command_msprof_op": build_command(payload_op) if enabled else None,
         "script_options": script_options(),
-        "default_script_path": TRIGGER_SCRIPTS[0]["id"],
+        "test_examples": script_options(),
+        "default_example_id": DEFAULT_EXAMPLE_ID,
+        "example_schema_version": example_schema_version(),
+        "example_manifest_hash": example_manifest_hash(),
+        "default_script_path": DEFAULT_TRIGGER_SCRIPT,
     }
 
 
 def normalize_attributes(attributes: dict[str, Any] | None) -> dict[str, Any]:
-    attrs = dict(attributes or {})
-    for key, default in ATTR_DEFAULTS.items():
-        value = attrs.get(key)
-        if key == "dtype":
-            if not value:
-                attrs[key] = default
-            continue
-        if key == "varlen":
-            if value is None:
-                attrs[key] = default
-            continue
-        if key == "demo_model":
-            if value is None:
-                attrs[key] = default
-            elif isinstance(value, str):
-                attrs[key] = value.strip().lower() not in {"", "0", "false", "no", "off"}
-            else:
-                attrs[key] = bool(value)
-            continue
-        if value is None or value == "":
-            attrs[key] = default
-            continue
-        try:
-            numeric = int(value)
-        except (TypeError, ValueError):
-            attrs[key] = default
-            continue
-        if numeric <= 0:
-            attrs[key] = default
-    if attrs.get("scale") in (None, "", 0):
-        key_dim = int(attrs.get("key_dim") or ATTR_DEFAULTS["key_dim"])
-        attrs["scale"] = key_dim ** -0.5
-    return attrs
+    return normalize_example_attributes(resolve_example(DEFAULT_EXAMPLE_ID), attributes)
 
 
-def attributes_to_cli_args(attributes: dict[str, Any], npu_device: int) -> list[str]:
-    attrs = normalize_attributes(attributes)
-    args = ["--device", str(npu_device)]
-    int_fields = {
-        "batch": "--batch",
-        "query_heads": "--query-heads",
-        "value_heads": "--value-heads",
-        "tokens": "--tokens",
-        "key_dim": "--key-dim",
-        "value_dim": "--value-dim",
-        "chunk_size": "--chunk-size",
-        "mean_len": "--mean-len",
-    }
-    for key, flag in int_fields.items():
-        if attrs.get(key) is not None:
-            args.extend([flag, str(attrs[key])])
-    if attrs.get("scale") is not None:
-        args.extend(["--scale", str(attrs["scale"])])
-    if attrs.get("dtype"):
-        args.extend(["--dtype", str(attrs["dtype"])])
-    if attrs.get("cu_seqlens"):
-        args.extend(["--cu-seqlens", str(attrs["cu_seqlens"])])
-    if attrs.get("varlen", True):
-        args.append("--varlen")
-    else:
-        args.append("--no-varlen")
-    if attrs.get("demo_model", False):
-        if int(attrs.get("batch") or 1) != 1:
-            raise ValueError("--demo-model requires batch=1")
-        args.append("--demo-model")
-    return args
+def attributes_to_cli_args(
+    attributes: dict[str, Any],
+    npu_device: int,
+    example: dict[str, Any] | None = None,
+) -> list[str]:
+    return example_cli_args(example or resolve_example(DEFAULT_EXAMPLE_ID), attributes, npu_device)
 
 
 def split_kernel_names(kernel_name: str | None) -> list[str]:
@@ -645,11 +595,12 @@ def build_prof_invocation(
 def build_profiler_command(payload: dict[str, Any], config: PerfRunnerConfig | None = None) -> str:
     config = config or load_config()
     prof_tool = normalize_prof_tool(payload)
-    attrs = payload.get("attributes") or {}
+    example = resolve_example(payload)
+    attrs = normalize_example_attributes(example, payload.get("attributes") or {})
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
     warm_up = resolve_op_warm_up(payload)
     launch_count = resolve_op_launch_count(payload)
-    py_args = attributes_to_cli_args(attrs, resolve_npu_device(payload, config))
+    py_args = attributes_to_cli_args(attrs, resolve_npu_device(payload, config), example)
     if config.mode == "ssh":
         output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
     else:
@@ -657,7 +608,7 @@ def build_profiler_command(payload: dict[str, Any], config: PerfRunnerConfig | N
     remote_script, local_script = resolve_script_paths(payload, config)
     if config.mode == "ssh" and payload.get("execution_environment") is not None:
         execution = resolve_execution_environment(payload, config)
-        remote_script = f"{execution.source_repo}/examples/flash_gated_delta_rule.py"
+        remote_script = f"{execution.source_repo}/{example['script']}"
     invocation = build_prof_invocation(
         config,
         prof_tool=prof_tool,
@@ -1569,15 +1520,16 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
             "execution_environment": execution_environment_summary(execution) if execution else {},
         }
 
-    model_id = payload.get("model_id") or "gdn"
-    attrs = payload.get("attributes") or {}
+    example = resolve_example(payload)
+    model_id = payload.get("model_id") or example.get("model_id") or "gdn"
+    attrs = normalize_example_attributes(example, payload.get("attributes") or {})
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
     operator_id = str(payload.get("operator_id") or "").strip() or None
     warm_up = resolve_op_warm_up(payload)
     launch_count = resolve_op_launch_count(payload)
     npu_device = resolve_npu_device(payload, config)
     remote_script, local_script = resolve_script_paths(payload, config)
-    py_args = attributes_to_cli_args(attrs, npu_device)
+    py_args = attributes_to_cli_args(attrs, npu_device, example)
     local_root = prof_output_root(prof_tool, local=True)
     remote_output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
 
@@ -1589,15 +1541,15 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
         build_worktree = ""
         if execution.customized:
             _validate_remote_execution_environment(config, execution)
-            remote_script = f"{execution.source_repo}/examples/flash_gated_delta_rule.py"
+            remote_script = f"{execution.source_repo}/{example['script']}"
             if execution.branch and not execution.rebuild:
                 deployed_source = _resolve_remote_deployed_source(config, execution, chip)
-                remote_script = f"{deployed_source}/examples/flash_gated_delta_rule.py"
+                remote_script = f"{deployed_source}/{example['script']}"
         try:
             if execution.rebuild:
                 build_info = _prepare_remote_source_build(config, execution, chip)
                 build_worktree = build_info["worktree"]
-                remote_script = f"{build_worktree}/examples/flash_gated_delta_rule.py"
+                remote_script = f"{build_worktree}/{example['script']}"
             before = _list_remote_prof_dirs(config, prof_tool)
             invocation = build_prof_invocation(
                 config,
@@ -1663,6 +1615,8 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
             replace_mock=False,
             device_id=npu_device,
             persist=persist_local_data,
+            attributes=attrs,
+            example_id=example["id"],
         )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
         snapshot["prof_tool"] = prof_tool
@@ -1678,6 +1632,7 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
             prof_tool=prof_tool,
             device_id=npu_device,
             persist=persist_local_data,
+            example_id=example["id"],
         )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
 
@@ -1698,6 +1653,8 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
         "command": command,
         "profiler_command": profiler_command,
         "prof_tool": prof_tool,
+        "example_id": example["id"],
+        "attributes": attrs,
         "prof_dir": str(prof_dir),
         "prof_source": prof_dir.name,
         "execution_environment": {

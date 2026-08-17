@@ -57,7 +57,16 @@ const PASSWORD_HASH_ITERATIONS = 100000;
 const PERF_TOOLS = new Set(["msprof", "msprof_op", "msprof_op_sim"]);
 const PERF_TASK_TYPES = new Set(["profile", "build_install"]);
 const PERF_CHIPS = new Set(["A2", "A3", "A5"]);
-const PERF_SCRIPT_IDS = new Set(["scripts/flash_gated_delta_rule.py"]);
+const PERF_EXAMPLE_IDS = new Set([
+  "flash_gated_delta_rule",
+  "flash_kda",
+  "recurrent_gated_delta_rule",
+  "recurrent_kda_layer",
+]);
+const PERF_EXAMPLE_ALIASES = new Map([
+  ["scripts/flash_gated_delta_rule.py", "flash_gated_delta_rule"],
+  ["examples/flash_gated_delta_rule.py", "flash_gated_delta_rule"],
+]);
 const PERF_JOB_FINAL_STATES = new Set(["succeeded", "failed", "canceled", "orphaned"]);
 const PERF_JOB_ACTIVE_STATES = new Set(["claimed", "running", "disconnected", "cancel_requested"]);
 const PERF_LEASE_SECONDS = 90;
@@ -2254,27 +2263,35 @@ function normalizePerfJobRequest(payload, user) {
     ? "build_install"
     : String(payload.prof_tool || payload.tool || "msprof").trim();
   if (taskType === "profile" && !PERF_TOOLS.has(profTool)) throw withStatus(400, "unsupported profiler tool");
-  const scriptId = taskType === "build_install"
+  const requestedExampleId = taskType === "build_install"
     ? "source-build"
-    : String(payload.script_id || payload.script_path || "scripts/flash_gated_delta_rule.py").trim();
-  if (taskType === "profile" && !PERF_SCRIPT_IDS.has(scriptId)) throw withStatus(400, "unsupported script_id");
+    : String(payload.example_id || payload.script_id || payload.script_path || "flash_gated_delta_rule").trim();
+  const exampleId = taskType === "build_install"
+    ? "source-build"
+    : (PERF_EXAMPLE_ALIASES.get(requestedExampleId) || requestedExampleId);
+  if (taskType === "profile" && !PERF_EXAMPLE_IDS.has(exampleId)) throw withStatus(400, "unsupported example_id");
   const chip = String(payload.chip || "A2").trim().toUpperCase();
   if (!PERF_CHIPS.has(chip)) throw withStatus(400, "chip must be A2, A3 or A5");
   const device = boundedInteger(payload.device ?? 2, "device", 0, 63);
-  const modelId = safeIdentifier(payload.model_id || "gdn", "model_id", 64);
+  const defaultModelId = ["flash_kda", "recurrent_kda_layer"].includes(exampleId) ? "kda" : "gdn";
+  const modelId = safeIdentifier(payload.model_id || defaultModelId, "model_id", 64);
   const kernelName = String(payload.kernel_name || "").trim();
   if (kernelName && !/^[A-Za-z0-9_.:|*-]{1,256}$/.test(kernelName)) {
     throw withStatus(400, "kernel_name contains unsupported characters");
   }
-  const attributes = normalizePerfAttributes(payload.attributes || payload.parameters || {});
+  const attributes = normalizePerfAttributes(payload.attributes || payload.parameters || {}, exampleId);
+  const exampleSchemaVersion = boundedInteger(payload.example_schema_version ?? 1, "example_schema_version", 1, 1000);
+  if (exampleSchemaVersion !== 1) throw withStatus(400, "unsupported example_schema_version");
   const request = {
     task_type: taskType,
     model_id: modelId,
     chip,
     device,
     prof_tool: profTool,
-    script_id: scriptId,
-    script_path: scriptId,
+    example_id: exampleId,
+    example_schema_version: exampleSchemaVersion,
+    script_id: exampleId,
+    script_path: exampleId,
     attributes,
   };
   if (payload.target_runner_id) {
@@ -2350,8 +2367,9 @@ function normalizeRemoteAbsolutePath(value, field) {
   return text.replace(/\/+$/, "");
 }
 
-function normalizePerfAttributes(value) {
+function normalizePerfAttributes(value, exampleId = "flash_gated_delta_rule") {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw withStatus(400, "attributes must be an object");
+  if (exampleId !== "flash_gated_delta_rule") return normalizeDynamicPerfAttributes(value, exampleId);
   const allowed = new Set([
     "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size",
     "mean_len", "dtype", "varlen", "demo_model", "scale", "cu_seqlens", "layout", "notes",
@@ -2397,6 +2415,59 @@ function normalizePerfAttributes(value) {
   if (cuSeqlens && !/^\d+(?:,\d+)*$/.test(cuSeqlens)) throw withStatus(400, "cu_seqlens must be comma-separated integers");
   result.cu_seqlens = cuSeqlens;
   if (value.notes) result.notes = String(value.notes).slice(0, 500);
+  return result;
+}
+
+function normalizeDynamicPerfAttributes(value, exampleId) {
+  const common = ["batch", "query_heads", "value_heads", "key_dim", "value_dim", "hidden_size", "seed", "notes", "layout"];
+  const byExample = {
+    flash_kda: [
+      "case_name", "tokens", "chunk_size", "scale", "dtype", "varlen", "mean_len", "cu_seqlens",
+      "initial_state", "output_final_state", "safe_gate", "lower_bound", "allow_neg_eigval",
+      "disable_recompute", "forward_only", "demo_model", "use_short_conv", "conv_kernel", "conv_bias",
+    ],
+    recurrent_gated_delta_rule: [
+      "mtp", "conv_kernel", "state_dtype", "conv_state_capacity", "delta_state_capacity",
+      "cache_indices", "ssm_state_indices", "num_accepted_tokens", "steps",
+    ],
+    recurrent_kda_layer: [
+      "mtp", "use_short_conv", "conv_kernel", "conv_bias", "conv_state_capacity", "cache_indices",
+      "state_dtype", "state_capacity", "ssm_state_indices", "num_accepted_tokens", "safe_gate",
+      "lower_bound", "allow_neg_eigval", "steps",
+    ],
+  };
+  const allowed = new Set([...common, ...(byExample[exampleId] || [])]);
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) throw withStatus(400, `unsupported ${exampleId} attribute: ${key}`);
+  }
+  const booleans = new Set([
+    "varlen", "output_final_state", "safe_gate", "allow_neg_eigval", "disable_recompute",
+    "forward_only", "demo_model", "use_short_conv", "conv_bias",
+  ]);
+  const lists = new Set(["cu_seqlens", "cache_indices", "ssm_state_indices", "num_accepted_tokens"]);
+  const strings = new Set(["case_name", "dtype", "initial_state", "state_dtype", "notes", "layout"]);
+  const result = {};
+  for (const [key, raw] of Object.entries(value)) {
+    if (booleans.has(key)) {
+      if (typeof raw !== "boolean") throw withStatus(400, `${key} must be a boolean`);
+      result[key] = raw;
+    } else if (lists.has(key)) {
+      if (!Array.isArray(raw) || raw.length > 4096 || raw.some((item) => !Number.isInteger(Number(item)))) {
+        throw withStatus(400, `${key} must be an integer array`);
+      }
+      result[key] = raw.map(Number);
+    } else if (strings.has(key)) {
+      const text = String(raw ?? "");
+      if (text.length > 500 || /[\u0000-\u001f]/.test(text)) throw withStatus(400, `${key} is invalid`);
+      result[key] = text;
+    } else if (raw === null || raw === "") {
+      result[key] = null;
+    } else {
+      const number = Number(raw);
+      if (!Number.isFinite(number) || Math.abs(number) > 10000000) throw withStatus(400, `${key} is out of range`);
+      result[key] = number;
+    }
+  }
   return result;
 }
 
@@ -3007,6 +3078,14 @@ function runnerCanExecute(runnerId, capabilities, request) {
   if (taskType === "build_install") return true;
   const tools = Array.isArray(capabilities.prof_tools) ? capabilities.prof_tools : [];
   if (tools.length && !tools.includes(request.prof_tool)) return false;
+  const examples = Array.isArray(capabilities.test_examples) ? capabilities.test_examples : [];
+  const exampleIds = examples.map((item) => typeof item === "string" ? item : item?.id).filter(Boolean);
+  if (exampleIds.length && !exampleIds.includes(request.example_id || request.script_id)) return false;
+  if (
+    request.example_schema_version != null
+    && capabilities.example_schema_version != null
+    && Number(request.example_schema_version) !== Number(capabilities.example_schema_version)
+  ) return false;
   const devices = Array.isArray(capabilities.devices) ? capabilities.devices.map(Number) : [];
   return !devices.length || devices.includes(Number(request.device));
 }
@@ -3500,6 +3579,7 @@ async function projectPerfJobRun(env, row) {
     chip: request.chip || "",
     device: request.device,
     prof_tool: request.prof_tool || row.tool,
+    example_id: request.example_id || request.script_id,
     script_path: request.script_id || row.script_id,
     attributes: request.attributes || {},
     execution_environment: request.execution_environment || {},
@@ -3542,6 +3622,7 @@ async function mergePerfJobCompletion(env, jobId, payload, resultDetail, snapsho
     chip: request.chip,
     device: request.device,
     prof_tool: request.prof_tool,
+    example_id: request.example_id || request.script_id,
     script_path: request.script_id,
     attributes: request.attributes || {},
     execution_environment: request.execution_environment || {},

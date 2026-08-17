@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>性能看板 - flash-linear-attention-npu</title>
-  <link rel="stylesheet" href="./styles.css?v=20260811-build-log-1">
+  <link rel="stylesheet" href="./styles.css?v=20260817-dynamic-examples-1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -212,6 +212,10 @@
             <label class="perf-form-fieldwide">执行服务器
               <select id="triggerRunner" aria-label="执行服务器"></select>
             </label>
+            <label class="perf-form-fieldwide">测试示例
+              <select id="triggerExample" aria-label="测试示例"></select>
+              <span id="triggerExampleHint" class="perf-field-hint">正在读取测试示例。</span>
+            </label>
             <section class="perf-npu-status perf-form-fieldwide" aria-labelledby="triggerNpuStatusTitle">
               <div class="perf-npu-status-header">
                 <strong id="triggerNpuStatusTitle">NPU 设备占用</strong>
@@ -279,46 +283,7 @@
               <input id="triggerDevice" type="number" min="0" step="1" placeholder="2">
               <span class="perf-field-hint">单次执行可覆盖默认卡号，下发为脚本 --device。</span>
             </label>
-            <fieldset class="perf-attr-fieldset">
-              <legend>形状/规模</legend>
-              <label>batch <input id="attrBatch" type="number" min="1" value="1"></label>
-              <label>query-heads <input id="attrQueryHeads" type="number" min="1" value="32"></label>
-              <label>value-heads <input id="attrValueHeads" type="number" min="1" value="32"></label>
-              <label>tokens <input id="attrTokens" type="number" min="1" value="4087"></label>
-              <label>key-dim <input id="attrKeyDim" type="number" min="1" value="128"></label>
-              <label>value-dim <input id="attrValueDim" type="number" min="1" value="128"></label>
-              <label>chunk-size <input id="attrChunkSize" type="number" min="1" value="64"></label>
-              <label>scale <input id="attrScale" type="number" min="0" step="0.000001" placeholder="自动 key-dim^-0.5"></label>
-              <label>dtype
-                <select id="attrDtype">
-                  <option value="bf16">bf16</option>
-                  <option value="fp16">fp16</option>
-                </select>
-              </label>
-            </fieldset>
-            <fieldset class="perf-attr-fieldset">
-              <legend>变长序列</legend>
-              <label class="perf-form-fieldwide">varlen
-                <span class="perf-check-field perf-check-field-compact">
-                  <input id="attrVarlen" type="checkbox" checked>
-                </span>
-              </label>
-              <div id="varlenFields" class="perf-varlen-fields">
-                <label>mean-len <input id="attrMeanLen" type="number" min="1" value="1024"></label>
-                <label class="perf-form-fieldwide">cu-seqlens
-                  <input id="attrCuSeqlens" placeholder="留空则自动生成">
-                  <span class="perf-field-hint">留空时：按 tokens ÷ mean-len 估算子序列条数，在均值附近生成高低交替长度，并微调使总和等于 tokens。手动填写：逗号分隔的严格递增整数，从 0 开始、以 tokens 结束，如 0,1024,2048,4087。</span>
-                </label>
-              </div>
-            </fieldset>
-            <fieldset class="perf-attr-fieldset">
-              <legend>测试链路</legend>
-              <label class="perf-form-fieldwide">完整模型链路（--demo-model）
-                <span class="perf-check-field perf-check-field-compact">
-                  <input id="attrDemoModel" type="checkbox">
-                </span>
-              </label>
-            </fieldset>
+            <div id="triggerExampleParameters" class="perf-example-parameters perf-form-fieldwide"></div>
             <label>备注 <input id="triggerNotes" placeholder="可选说明"></label>
             <button type="submit" class="primary">执行测试</button>
           </form>
@@ -479,6 +444,9 @@
       triggerExecutionEnvironmentSynced: "",
       pendingBuildInstall: null,
       buildInstallSubmitting: false,
+      exampleManifest: null,
+      selectedExampleId: localStorage.getItem("fla-perf-example-id") || "flash_gated_delta_rule",
+      triggerExampleValues: {},
     };
 
     init().catch((error) => {
@@ -488,7 +456,7 @@
     async function init() {
       bindEvents();
       if (WORKER_API_BASE && state.token) await refreshUser();
-      await loadData();
+      await Promise.all([loadData(), loadExampleManifest()]);
       await Promise.all([loadRunnerStatus(), loadPerfJobs()]);
       renderAll();
       maybeStartPerfPolling();
@@ -522,6 +490,9 @@
       document.querySelector("#caseCompareClearBtn").addEventListener("click", clearCompareCases);
       document.querySelector("#triggerForm").addEventListener("submit", onTriggerSubmit);
       document.querySelector("#triggerRunner").addEventListener("change", onTriggerRunnerChange);
+      document.querySelector("#triggerExample").addEventListener("change", onTriggerExampleChange);
+      document.querySelector("#triggerExampleParameters").addEventListener("input", onTriggerExampleParameterInput);
+      document.querySelector("#triggerExampleParameters").addEventListener("change", onTriggerExampleParameterInput);
       document.querySelector("#refreshNpuStatusBtn").addEventListener("click", refreshNpuDeviceStatus);
       document.querySelector("#triggerNpuStatusRows").addEventListener("click", onNpuProcessToggle);
       document.querySelector("#loginBtn").addEventListener("click", onLogin);
@@ -532,8 +503,6 @@
       document.querySelector("#triggerSourceBranch").addEventListener("change", updateTriggerBuildUI);
       document.querySelector("#refreshSourceBranchesBtn").addEventListener("click", () => refreshTriggerSourceBranches(true));
       document.querySelector("#triggerBuildInstallBtn").addEventListener("click", onBuildInstallSubmit);
-      document.querySelector("#attrVarlen").addEventListener("change", updateVarlenFieldsUI);
-      document.querySelector("#attrDemoModel").addEventListener("change", updateDemoModelUI);
       bindBuildInstallDialogEvents();
       bindCommandDialogEvents();
       document.querySelector("#netCaseDownloadBtn").addEventListener("click", downloadNetworkProfArchive);
@@ -1145,8 +1114,141 @@
       syncTriggerDeviceFromRunner(true);
       syncTriggerOpDefaultsFromRunner();
       syncTriggerExecutionEnvironment(true);
+      syncTriggerExampleOptions();
       updateTriggerEnvFromRunner();
       renderNpuDeviceStatus();
+    }
+
+    function exampleManifestEntries() {
+      return Array.isArray(state.exampleManifest?.examples) ? state.exampleManifest.examples : [];
+    }
+
+    function selectedTriggerExample() {
+      const selectedId = document.querySelector("#triggerExample")?.value || state.selectedExampleId;
+      return exampleManifestEntries().find((example) => example.id === selectedId) || null;
+    }
+
+    function runnerSupportedExampleIds() {
+      const capabilities = selectedTriggerRunner()?.capabilities || state.runner || {};
+      const entries = Array.isArray(capabilities.test_examples) ? capabilities.test_examples : [];
+      return new Set(entries.map((item) => typeof item === "string" ? item : item?.id).filter(Boolean));
+    }
+
+    function availableTriggerExamples() {
+      const examples = exampleManifestEntries();
+      const supported = runnerSupportedExampleIds();
+      return supported.size ? examples.filter((example) => supported.has(example.id)) : examples;
+    }
+
+    function syncTriggerExampleOptions() {
+      const select = document.querySelector("#triggerExample");
+      const hint = document.querySelector("#triggerExampleHint");
+      if (!select) return;
+      const examples = availableTriggerExamples();
+      const previous = select.value || state.selectedExampleId;
+      select.innerHTML = "";
+      if (!examples.length) {
+        select.add(new Option("当前 Runner 未提供测试示例", ""));
+        select.disabled = true;
+        document.querySelector("#triggerExampleParameters").innerHTML = "";
+        hint.textContent = "请确认 Runner 已更新并上报 test_examples 能力。";
+        return;
+      }
+      select.disabled = false;
+      examples.forEach((example) => select.add(new Option(example.label, example.id)));
+      const selected = examples.find((example) => example.id === previous)
+        || examples.find((example) => example.id === state.runner?.default_example_id)
+        || examples[0];
+      select.value = selected.id;
+      state.selectedExampleId = selected.id;
+      localStorage.setItem("fla-perf-example-id", selected.id);
+      renderTriggerExampleParameters();
+    }
+
+    function triggerExampleStoredValues(example) {
+      if (!state.triggerExampleValues[example.id]) {
+        state.triggerExampleValues[example.id] = Object.fromEntries(
+          (example.parameters || []).map((parameter) => [parameter.name, Array.isArray(parameter.default) ? parameter.default.join(",") : (parameter.default ?? "")]),
+        );
+      }
+      return state.triggerExampleValues[example.id];
+    }
+
+    function triggerExampleInputHtml(parameter, value) {
+      const common = `data-example-param="${escapeHtml(parameter.name)}"`;
+      if (parameter.type === "boolean") {
+        return `<span class="perf-check-field perf-check-field-compact"><input type="checkbox" ${common}${value === true || value === "true" ? " checked" : ""}></span>`;
+      }
+      if (parameter.type === "enum") {
+        const options = (parameter.choices || []).map((choice) => `<option value="${escapeHtml(choice)}"${String(choice) === String(value) ? " selected" : ""}>${escapeHtml(choice)}</option>`).join("");
+        return `<select ${common}>${options}</select>`;
+      }
+      const numeric = parameter.type === "integer" || parameter.type === "number";
+      const type = numeric ? "number" : "text";
+      const min = parameter.min != null ? ` min="${escapeHtml(parameter.min)}"` : "";
+      const max = parameter.max != null ? ` max="${escapeHtml(parameter.max)}"` : "";
+      const step = numeric ? ` step="${escapeHtml(parameter.step || (parameter.type === "integer" ? 1 : "any"))}"` : "";
+      const placeholder = parameter.placeholder ? ` placeholder="${escapeHtml(parameter.placeholder)}"` : "";
+      return `<input type="${type}" ${common} value="${escapeHtml(value)}"${min}${max}${step}${placeholder} autocomplete="off">`;
+    }
+
+    function renderTriggerExampleParameters() {
+      const host = document.querySelector("#triggerExampleParameters");
+      const hint = document.querySelector("#triggerExampleHint");
+      const example = selectedTriggerExample();
+      if (!host || !example) return;
+      const values = triggerExampleStoredValues(example);
+      const groups = new Map();
+      (example.parameters || []).forEach((parameter) => {
+        const group = parameter.group || "参数";
+        if (!groups.has(group)) groups.set(group, []);
+        groups.get(group).push(parameter);
+      });
+      host.innerHTML = [...groups.entries()].map(([group, parameters]) => {
+        const fields = parameters.map((parameter) => {
+          const wide = parameter.type === "integer_list" || parameter.type === "string" ? " perf-example-param-wide" : "";
+          return `<label class="perf-example-param${wide}" data-example-field="${escapeHtml(parameter.name)}">${escapeHtml(parameter.label || parameter.name)}${triggerExampleInputHtml(parameter, values[parameter.name])}</label>`;
+        }).join("");
+        return `<fieldset class="perf-attr-fieldset"><legend>${escapeHtml(group)}</legend>${fields}</fieldset>`;
+      }).join("");
+      hint.textContent = `${example.script} · 参数随所选示例切换`;
+      updateTriggerExampleVisibility();
+    }
+
+    function captureTriggerExampleValues(example = selectedTriggerExample()) {
+      if (!example) return;
+      const values = triggerExampleStoredValues(example);
+      (example.parameters || []).forEach((parameter) => {
+        const input = document.querySelector(`[data-example-param="${parameter.name}"]`);
+        if (input) values[parameter.name] = parameter.type === "boolean" ? input.checked : input.value;
+      });
+    }
+
+    function onTriggerExampleChange() {
+      const previous = exampleManifestEntries().find((example) => example.id === state.selectedExampleId);
+      captureTriggerExampleValues(previous);
+      state.selectedExampleId = document.querySelector("#triggerExample").value;
+      localStorage.setItem("fla-perf-example-id", state.selectedExampleId);
+      renderTriggerExampleParameters();
+    }
+
+    function onTriggerExampleParameterInput() {
+      captureTriggerExampleValues();
+      updateTriggerExampleVisibility();
+    }
+
+    function updateTriggerExampleVisibility() {
+      const example = selectedTriggerExample();
+      if (!example) return;
+      const values = triggerExampleStoredValues(example);
+      (example.parameters || []).forEach((parameter) => {
+        const field = document.querySelector(`[data-example-field="${parameter.name}"]`);
+        const visible = !parameter.visible_when || Object.entries(parameter.visible_when).every(([name, expected]) => {
+          const actual = values[name];
+          return typeof expected === "boolean" ? Boolean(actual) === expected : String(actual) === String(expected);
+        });
+        field?.classList.toggle("is-hidden", !visible);
+      });
     }
 
     function triggerRunnerNpuStatus(agent) {
@@ -1569,19 +1671,87 @@
       }
     }
 
-    function updateVarlenFieldsUI() {
-      const enabled = document.querySelector("#attrVarlen").checked;
-      const panel = document.querySelector("#varlenFields");
-      panel.classList.toggle("is-disabled", !enabled);
-      document.querySelector("#attrMeanLen").disabled = !enabled;
-      document.querySelector("#attrCuSeqlens").disabled = !enabled;
+    async function loadExampleManifest() {
+      const response = await fetch(`./perf-examples.json?v=${Date.now()}`);
+      if (!response.ok) throw new Error("未读取到 perf-examples.json");
+      const manifest = await response.json();
+      if (manifest.schema_version !== 1 || !Array.isArray(manifest.examples)) {
+        throw new Error("测试示例清单格式不正确");
+      }
+      state.exampleManifest = manifest;
+      syncTriggerExampleOptions();
     }
 
-    function updateDemoModelUI() {
-      const enabled = document.querySelector("#attrDemoModel").checked;
-      const batchInput = document.querySelector("#attrBatch");
-      if (enabled) batchInput.value = "1";
-      batchInput.disabled = enabled;
+    function parseTriggerExampleParameter(parameter, rawValue) {
+      const label = parameter.label || parameter.name;
+      if (parameter.type === "boolean") return Boolean(rawValue);
+      if (parameter.type === "integer_list") {
+        const text = String(rawValue || "").trim();
+        if (!text) return [];
+        const values = text.split(/[\s,]+/).map((item) => Number(item));
+        if (values.length > 4096 || values.some((item) => !Number.isInteger(item))) {
+          throw new Error(`${label} 必须是不超过 4096 项的整数列表。`);
+        }
+        return values;
+      }
+      if (parameter.type === "string") {
+        const value = String(rawValue || "");
+        if (value.length > Number(parameter.max_length || 500)) throw new Error(`${label} 长度超限。`);
+        return value;
+      }
+      if (parameter.type === "enum") {
+        const choice = (parameter.choices || []).find((item) => String(item) === String(rawValue));
+        if (choice == null) throw new Error(`${label} 的选项无效。`);
+        return choice;
+      }
+      if (rawValue === "" && parameter.default == null) return null;
+      const value = Number(rawValue);
+      if (!Number.isFinite(value) || (parameter.type === "integer" && !Number.isInteger(value))) {
+        throw new Error(`${label} 必须为${parameter.type === "integer" ? "整数" : "数字"}。`);
+      }
+      if (parameter.min != null && value < Number(parameter.min)) throw new Error(`${label} 不能小于 ${parameter.min}。`);
+      if (parameter.max != null && value > Number(parameter.max)) throw new Error(`${label} 不能大于 ${parameter.max}。`);
+      if (parameter.min_exclusive != null && value <= Number(parameter.min_exclusive)) throw new Error(`${label} 必须大于 ${parameter.min_exclusive}。`);
+      if (parameter.max_exclusive != null && value >= Number(parameter.max_exclusive)) throw new Error(`${label} 必须小于 ${parameter.max_exclusive}。`);
+      if (parameter.step && parameter.type === "integer" && value % Number(parameter.step) !== 0) {
+        throw new Error(`${label} 必须为 ${parameter.step} 的整数倍。`);
+      }
+      return value;
+    }
+
+    function validateTriggerExampleCrossFields(example, attrs) {
+      if (example.id === "flash_kda" && attrs.query_heads !== attrs.value_heads) {
+        throw new Error("Flash KDA 要求 query-heads 等于 value-heads。");
+      }
+      if (example.id === "flash_kda" && attrs.varlen && attrs.batch !== 1) {
+        throw new Error("Flash KDA 变长输入要求 batch=1。");
+      }
+      if (example.id === "flash_gated_delta_rule" && attrs.demo_model && attrs.batch !== 1) {
+        throw new Error("完整模型链路要求 batch=1。");
+      }
+      if (["recurrent_gated_delta_rule", "recurrent_kda_layer"].includes(example.id)) {
+        if (attrs.value_heads % attrs.query_heads !== 0) throw new Error("Recurrent 示例要求 value-heads 可被 query-heads 整除。");
+        if (attrs.mtp > 1 && attrs.use_short_conv !== false && attrs.conv_kernel !== 4) {
+          throw new Error("MTP 大于 1 且启用短卷积时 conv-kernel 必须为 4。");
+        }
+      }
+      if (attrs.safe_gate && !(attrs.lower_bound >= -5 && attrs.lower_bound < 0)) {
+        throw new Error("safe gate 要求 lower-bound 位于 [-5, 0)。");
+      }
+    }
+
+    function readTriggerExampleAttributes() {
+      const example = selectedTriggerExample();
+      if (!example) throw new Error("请选择当前 Runner 支持的测试示例。");
+      captureTriggerExampleValues(example);
+      const rawValues = triggerExampleStoredValues(example);
+      const attributes = {};
+      (example.parameters || []).forEach((parameter) => {
+        attributes[parameter.name] = parseTriggerExampleParameter(parameter, rawValues[parameter.name]);
+      });
+      validateTriggerExampleCrossFields(example, attributes);
+      attributes.layout = attributes.varlen ? "TND" : "BSND";
+      return { example, attributes };
     }
 
     async function loadData() {
@@ -1640,6 +1810,7 @@
           const response = await fetch(`${WORKER_API_BASE}/api/perf/runner`, { headers: authHeaders() });
           state.runner = response.ok ? await response.json() : null;
           syncTriggerRunnerOptions();
+          syncTriggerExampleOptions();
           syncTriggerDeviceFromRunner();
           syncTriggerOpDefaultsFromRunner();
           syncTriggerExecutionEnvironment();
@@ -1656,6 +1827,7 @@
         const response = await fetch(`${LOCAL_API_BASE}/api/perf/runner`);
         state.runner = response.ok ? await response.json() : null;
         syncTriggerRunnerOptions();
+        syncTriggerExampleOptions();
         syncTriggerDeviceFromRunner();
         syncTriggerOpDefaultsFromRunner();
         syncTriggerExecutionEnvironment();
@@ -1814,27 +1986,12 @@
         alert(error.message || String(error));
         return;
       }
-      const attributes = buildTriggerAttributes();
-      const requiredPositive = [
-        ["query_heads", "query-heads"],
-        ["value_heads", "value-heads"],
-        ["tokens", "tokens"],
-        ["key_dim", "key-dim"],
-        ["value_dim", "value-dim"],
-        ["chunk_size", "chunk-size"],
-      ];
-      for (const [key, label] of requiredPositive) {
-        if (!Number(attributes[key]) || Number(attributes[key]) <= 0) {
-          alert(`${label} 必须为正整数。`);
-          return;
-        }
-      }
-      if (attributes.varlen && (!Number(attributes.mean_len) || Number(attributes.mean_len) <= 0)) {
-        alert("mean-len 必须为正整数。");
-        return;
-      }
-      if (attributes.demo_model && Number(attributes.batch) !== 1) {
-        alert("完整模型链路测试要求 batch=1。");
+      let example;
+      let attributes;
+      try {
+        ({ example, attributes } = readTriggerExampleAttributes());
+      } catch (error) {
+        alert(error.message || String(error));
         return;
       }
       if (document.querySelector("#triggerNotes").value.trim()) {
@@ -1844,11 +2001,13 @@
       const kernelName = document.querySelector("#triggerKernel").value.trim();
       const payload = {
         task_type: "profile",
-        model_id: "gdn",
+        model_id: example.model_id,
         chip,
         device,
         prof_tool: profTool,
-        script_id: "scripts/flash_gated_delta_rule.py",
+        example_id: example.id,
+        example_schema_version: state.exampleManifest.schema_version,
+        script_id: example.id,
         idempotency_key: crypto.randomUUID(),
         attributes,
       };
@@ -1930,11 +2089,13 @@
     }
 
     const CASE_ATTR_ORDER = [
-      "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size", "scale", "dtype",
-      "mean_len", "cu_seqlens", "layout",
+      "batch", "mtp", "tokens", "hidden_size", "query_heads", "value_heads", "key_dim", "value_dim", "chunk_size",
+      "scale", "dtype", "state_dtype", "steps", "mean_len", "cu_seqlens", "layout",
     ];
     const CASE_ATTR_LABELS = {
       batch: "batch",
+      mtp: "mtp",
+      hidden_size: "hidden-size",
       query_heads: "query-heads",
       value_heads: "value-heads",
       tokens: "tokens",
@@ -1943,6 +2104,8 @@
       chunk_size: "chunk-size",
       scale: "scale",
       dtype: "dtype",
+      state_dtype: "state-dtype",
+      steps: "steps",
       mean_len: "mean-len",
       cu_seqlens: "cu-seqlens",
       layout: "layout",
@@ -2040,49 +2203,6 @@
       return lines;
     }
 
-    function defaultScale(keyDim) {
-      const dim = Number(keyDim) || 128;
-      return Math.round((dim ** -0.5) * 1e6) / 1e6;
-    }
-
-    const TRIGGER_ATTR_DEFAULTS = {
-      batch: 1,
-      query_heads: 32,
-      value_heads: 32,
-      tokens: 4087,
-      key_dim: 128,
-      value_dim: 128,
-      chunk_size: 64,
-      dtype: "bf16",
-      mean_len: 1024,
-      cu_seqlens: "",
-      varlen: true,
-      demo_model: false,
-    };
-
-    function buildTriggerAttributes() {
-      const defaults = TRIGGER_ATTR_DEFAULTS;
-      const keyDim = numberOr(document.querySelector("#attrKeyDim").value, defaults.key_dim);
-      const scaleRaw = document.querySelector("#attrScale").value.trim();
-      const scale = scaleRaw ? Number(scaleRaw) : defaultScale(keyDim);
-      return {
-        batch: numberOr(document.querySelector("#attrBatch").value, defaults.batch),
-        query_heads: numberOr(document.querySelector("#attrQueryHeads").value, defaults.query_heads),
-        value_heads: numberOr(document.querySelector("#attrValueHeads").value, defaults.value_heads),
-        tokens: numberOr(document.querySelector("#attrTokens").value, defaults.tokens),
-        key_dim: keyDim,
-        value_dim: numberOr(document.querySelector("#attrValueDim").value, defaults.value_dim),
-        chunk_size: numberOr(document.querySelector("#attrChunkSize").value, defaults.chunk_size),
-        scale,
-        dtype: document.querySelector("#attrDtype").value || defaults.dtype,
-        mean_len: numberOr(document.querySelector("#attrMeanLen").value, defaults.mean_len),
-        cu_seqlens: document.querySelector("#attrCuSeqlens").value.trim() || defaults.cu_seqlens,
-        varlen: document.querySelector("#attrVarlen").checked,
-        demo_model: document.querySelector("#attrDemoModel").checked,
-        layout: document.querySelector("#attrVarlen").checked ? "TND" : "BSND",
-      };
-    }
-
     function caseLayoutValue(attrs) {
       if (attrs?.layout) return String(attrs.layout).toUpperCase();
       if (attrs?.varlen === false) return "BSND";
@@ -2098,9 +2218,14 @@
 
     function formatTriggerAttrLabel(attrs) {
       if (!attrs) return "—";
+      if (attrs.mtp != null) {
+        return `B=${attrs.batch ?? "?"} MTP=${attrs.mtp} H=${attrs.hidden_size ?? "?"} QH=${attrs.query_heads ?? "?"} VH=${attrs.value_heads ?? "?"} K=${attrs.key_dim ?? "?"} V=${attrs.value_dim ?? "?"}`;
+      }
       const layout = caseLayoutValue(attrs);
       const mode = attrs.demo_model ? " DemoModel" : "";
-      return `B=${attrs.batch ?? "?"} QH=${attrs.query_heads ?? "?"} VH=${attrs.value_heads ?? "?"} T=${attrs.tokens ?? "?"} K=${attrs.key_dim ?? "?"} V=${attrs.value_dim ?? "?"} chunk=${attrs.chunk_size ?? "?"} ${layout}${mode}`;
+      const hidden = attrs.hidden_size != null ? ` H=${attrs.hidden_size}` : "";
+      const chunk = attrs.chunk_size != null ? ` chunk=${attrs.chunk_size}` : "";
+      return `B=${attrs.batch ?? "?"}${hidden} QH=${attrs.query_heads ?? "?"} VH=${attrs.value_heads ?? "?"} T=${attrs.tokens ?? "?"} K=${attrs.key_dim ?? "?"} V=${attrs.value_dim ?? "?"}${chunk} ${layout}${mode}`;
     }
 
     function normalizeAttrStoreValue(key, value) {
@@ -2130,7 +2255,7 @@
     }
 
     const CASE_ATTR_NUMERIC = new Set([
-      "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size", "scale", "mean_len",
+      "batch", "mtp", "hidden_size", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size", "scale", "steps", "mean_len",
     ]);
 
     function attrPickerIds(prefix) {
@@ -2653,9 +2778,8 @@
       updateRunContextDisplay("net");
       updateTriggerProfToolUI();
       syncTriggerRunnerOptions();
+      syncTriggerExampleOptions();
       syncTriggerOpDefaultsFromRunner();
-      updateVarlenFieldsUI();
-      updateDemoModelUI();
       syncTriggerDeviceFromRunner();
       updateTriggerEnvFromRunner();
       fillSelect("#caseOperator", operatorOptions());
@@ -3165,13 +3289,14 @@
       return {
         id: job.id,
         task_type: request.task_type || "profile",
+        example_id: request.example_id || request.script_id || "flash_gated_delta_rule",
         model_id: request.model_id || "gdn",
         case_id: job.result?.case_id || null,
         snapshot_id: snapshotId,
         chip: request.chip || "",
         device: request.device,
         prof_tool: request.prof_tool || job.tool,
-        script_path: request.script_id || job.script_id,
+        script_path: request.script_path || request.script_id || job.script_id,
         attributes: request.attributes || {},
         kernel_name: request.kernel_name || "",
         status,
@@ -3303,11 +3428,12 @@
       }
       tbody.innerHTML = runs.map((run) => {
         const isBuild = run.task_type === "build_install";
+        const runExample = exampleManifestEntries().find((example) => example.id === (run.example_id || run.script_path));
         const testCase = state.data.cases.find((item) => item.id === run.case_id);
         const snap = run.snapshot || state.data.snapshots.find((item) => item.id === run.snapshot_id);
         const command = displayRunCommand(run) || "—";
         const shortCommand = command.length > 48 ? `${command.slice(0, 48)}…` : command;
-        const scriptPath = isBuild ? (run.execution_environment?.source_repo || run.script_path || "—") : (run.script_path || "—");
+        const scriptPath = isBuild ? (run.execution_environment?.source_repo || run.script_path || "—") : (runExample?.script || run.script_path || "—");
         const commandCell = command !== "—"
           ? `<button type="button" class="perf-command-cell-btn" data-run-command="${escapeHtml(run.id)}" title="点击查看完整命令">${escapeHtml(shortCommand)}</button>`
           : escapeHtml(shortCommand);

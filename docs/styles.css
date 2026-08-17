@@ -425,6 +425,12 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-attr-fieldset { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fffdf8; }
 .perf-attr-fieldset legend { padding:0 6px; color:#87570a; font-size:12px; font-weight:950; }
 .perf-attr-fieldset .perf-check-field { width:100%; box-sizing:border-box; }
+.perf-example-parameters { display:grid; gap:10px; min-width:0; }
+.perf-example-parameters .perf-attr-fieldset { grid-column:1 / -1; }
+.perf-example-param.is-hidden { display:none; }
+.perf-example-param input[type="checkbox"] { min-width:0; width:18px; height:18px; padding:0; }
+.perf-example-param .perf-check-field { min-height:34px; display:flex; align-items:center; }
+.perf-example-param-wide { grid-column:1 / -1; }
 .perf-execution-environment { grid-column:1 / -1; }
 .perf-execution-environment input[readonly] { color:#6f665a; background:#f1ede5; }
 .perf-source-branch-control { display:grid; grid-template-columns:minmax(0,1fr) 34px; gap:6px; align-items:center; }

@@ -250,6 +250,10 @@ class RunnerAgent:
             "device": device,
             "devices": [device] if device is not None else [],
             "prof_tools": status.get("prof_tools") or [],
+            "test_examples": status.get("test_examples") or status.get("script_options") or [],
+            "default_example_id": status.get("default_example_id"),
+            "example_schema_version": status.get("example_schema_version"),
+            "example_manifest_hash": status.get("example_manifest_hash"),
             "job_types": ["profile", "build_install"] if perf_config.mode == "ssh" else ["profile"],
             "op_warm_up": status.get("op_warm_up"),
             "op_launch_count": status.get("op_launch_count"),
@@ -264,7 +268,7 @@ class RunnerAgent:
                 "source_remote_branch_query": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_branches": self.source_branches_status(),
             },
-            "agent_version": "1.7.0",
+            "agent_version": "1.8.0",
         }
 
     def source_branches_cache_path(self) -> Path:

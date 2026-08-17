@@ -631,6 +631,47 @@ def upsert_case(data: dict[str, Any], case: dict[str, Any]) -> None:
     cases.append(case)
 
 
+def build_trigger_case(
+    attributes: dict[str, Any],
+    prof_dir: Path,
+    *,
+    example_id: str,
+    created_at: str,
+    suffix: str = "",
+) -> dict[str, Any]:
+    attrs = dict(attributes or {})
+    attrs["example_id"] = example_id
+    time_slug = re.sub(r"[^a-z0-9]+", "", prof_dir.name.lower())[-24:]
+    aliases = {
+        "batch": "B",
+        "mtp": "MTP",
+        "tokens": "T",
+        "hidden_size": "hidden",
+        "query_heads": "QH",
+        "value_heads": "VH",
+        "key_dim": "K",
+        "value_dim": "V",
+        "chunk_size": "chunk",
+    }
+    label_parts = [
+        f"{label}={attrs[key]}"
+        for key, label in aliases.items()
+        if attrs.get(key) not in (None, "", [])
+    ]
+    layout = normalize_layout(attrs.get("layout"), varlen=attrs.get("varlen"))
+    if "mtp" not in attrs:
+        label_parts.append(layout)
+    time_label = str(created_at).replace("T", " ").replace("+08:00", "")[:16]
+    return {
+        "id": f"case-{example_id.replace('_', '-')}-{time_slug}",
+        "label": f"{' '.join(label_parts)} @ {time_label}{suffix}",
+        "category": "decode" if "mtp" in attrs else layout.lower(),
+        "attributes": attrs,
+        "position": 0,
+        "active": True,
+    }
+
+
 def build_snapshot(
     prof_dir: Path,
     model_id: str,
@@ -710,6 +751,8 @@ def import_prof(
     *,
     device_id: int = 2,
     persist: bool = True,
+    attributes: dict[str, Any] | None = None,
+    example_id: str = "flash_gated_delta_rule",
 ) -> dict[str, Any]:
     prof_dir = prof_dir.resolve()
     if not prof_dir.exists():
@@ -717,12 +760,17 @@ def import_prof(
 
     statistic_rows = read_csv_rows(find_output_file(prof_dir, "op_statistic"))
     summary_rows = read_csv_rows(find_output_file(prof_dir, "op_summary"))
-    case = infer_case_from_summary(summary_rows, prof_dir)
+    if attributes is None:
+        case = infer_case_from_summary(summary_rows, prof_dir)
+    else:
+        _, created_at = parse_prof_timestamp(prof_dir)
+        case = build_trigger_case(attributes, prof_dir, example_id=example_id, created_at=created_at)
     statistic_ops, total_ms = aggregate_statistic_rows(statistic_rows)
     summary_metrics = aggregate_summary_metrics(summary_rows)
     snapshot = build_snapshot(
         prof_dir, model_id, chip, case, statistic_ops, summary_metrics, total_ms, device_id=device_id,
     )
+    snapshot["example_id"] = example_id
     cube_mod = load_cube_theoretical_flops_module()
     hbm_mod = load_hbm_theoretical_bytes_module()
     attrs = case.get("attributes") or {}
@@ -766,6 +814,7 @@ def import_prof(
         "chip": chip,
         "device": str(snapshot.get("device_id", device_id)),
         "attributes": case.get("attributes", {}),
+        "example_id": example_id,
         "status": "done",
         "snapshot_id": snapshot["id"],
         "created_by": "import_prof_gdr",

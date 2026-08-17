@@ -815,6 +815,7 @@ def build_case_from_attributes(
     kernel_name: str | None = None,
     basic_rows: list[dict[str, Any]] | None = None,
     prof_tool: str = "msprof_op",
+    example_id: str = "flash_gated_delta_rule",
 ) -> dict[str, Any]:
     gdr = load_prof_gdr_module()
     attrs = attributes or {}
@@ -826,6 +827,16 @@ def build_case_from_attributes(
         else re.sub(r"[^a-z0-9]+", "", prof_dir.name.lower())[-16:]
     )
     time_label = str(created_at).replace("T", " ").replace("+08:00", "")[:16]
+    if example_id != "flash_gated_delta_rule" or "mtp" in attrs:
+        kernel_suffix = format_kernel_suffix(basic_rows or [], kernel_name)
+        tool_label = "msopprof" if prof_tool == "msprof_op" else "msopprof sim"
+        return gdr.build_trigger_case(
+            attrs,
+            prof_dir,
+            example_id=example_id,
+            created_at=created_at,
+            suffix=f"{kernel_suffix} [{tool_label}]",
+        )
     batch = int(attrs.get("batch") or 1)
     query_heads = int(attrs.get("query_heads") or 32)
     value_heads = int(attrs.get("value_heads") or query_heads)
@@ -875,6 +886,7 @@ def import_msprof_op(
     prof_tool: str = "msprof_op",
     device_id: int = 2,
     persist: bool = True,
+    example_id: str = "flash_gated_delta_rule",
 ) -> dict[str, Any]:
     prof_dir = prof_dir.resolve()
     if not prof_dir.exists():
@@ -919,6 +931,7 @@ def import_msprof_op(
         kernel_name=resolved_kernel or None,
         basic_rows=basic_rows,
         prof_tool=prof_tool,
+        example_id=example_id,
     )
     gdr = load_prof_gdr_module()
     data = gdr.load_perf_data()
@@ -947,6 +960,7 @@ def import_msprof_op(
         "prof_source": prof_dir.name,
         "prof_tool": prof_tool,
         "kernel_name": resolved_kernel,
+        "example_id": example_id,
         "device_id": device_id,
         "operators": operators,
     }

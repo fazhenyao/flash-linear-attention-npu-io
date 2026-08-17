@@ -135,6 +135,81 @@ test("normalizes demo-model profile tasks and requires batch one", () => {
   }, { role: "user" }), /demo_model requires batch=1/);
 });
 
+test("normalizes dynamic example parameters and preserves the example id", () => {
+  const request = normalizePerfJobRequest({
+    task_type: "profile",
+    example_id: "recurrent_kda_layer",
+    target_runner_id: "runner-a5",
+    chip: "A5",
+    device: 7,
+    attributes: {
+      batch: 2,
+      mtp: 2,
+      hidden_size: 1024,
+      query_heads: 4,
+      value_heads: 8,
+      key_dim: 128,
+      value_dim: 256,
+      use_short_conv: true,
+      conv_kernel: 4,
+      cache_indices: [0, 1],
+      state_dtype: "fp32",
+      steps: 2,
+      seed: 0,
+      layout: "BSND",
+    },
+  }, { role: "user" });
+
+  assert.equal(request.example_id, "recurrent_kda_layer");
+  assert.equal(request.script_id, "recurrent_kda_layer");
+  assert.deepEqual(request.attributes.cache_indices, [0, 1]);
+});
+
+test("routes examples only to runners that advertise them", () => {
+  const request = {
+    task_type: "profile",
+    target_runner_id: "runner-a5",
+    chip: "A5",
+    device: 7,
+    prof_tool: "msprof",
+    example_id: "flash_kda",
+  };
+  const capabilities = {
+    chip: "A5",
+    devices: [7],
+    prof_tools: ["msprof"],
+    job_types: ["profile"],
+    test_examples: [{ id: "flash_gated_delta_rule" }],
+  };
+  assert.equal(runnerCanExecute("runner-a5", capabilities, request), false);
+  assert.equal(runnerCanExecute("runner-a5", {
+    ...capabilities,
+    test_examples: [...capabilities.test_examples, { id: "flash_kda" }],
+  }, request), true);
+});
+
+test("rejects unsupported example schemas and incompatible runners", () => {
+  assert.throws(() => normalizePerfJobRequest({
+    example_id: "flash_kda",
+    example_schema_version: 2,
+  }, { role: "user" }), /unsupported example_schema_version/);
+  assert.equal(runnerCanExecute("runner-a5", {
+    chip: "A5",
+    devices: [7],
+    prof_tools: ["msprof"],
+    job_types: ["profile"],
+    test_examples: [{ id: "flash_kda" }],
+    example_schema_version: 1,
+  }, {
+    target_runner_id: "runner-a5",
+    chip: "A5",
+    device: 7,
+    prof_tool: "msprof",
+    example_id: "flash_kda",
+    example_schema_version: 2,
+  }), false);
+});
+
 test("routes custom environments only to capable runners", () => {
   const request = {
     target_runner_id: "runner-a5",
