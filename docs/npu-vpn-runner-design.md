@@ -241,9 +241,9 @@ sequenceDiagram
     W-->>UI: private, no-store ZIP
 ```
 
-### 7.1 自适应任务领取
+### 7.1 通知领取与自适应轮询回退
 
-当前 Relay 使用线性自适应轮询，配置为 `RUNNER_POLL_MIN_SECONDS=2`、`RUNNER_POLL_MAX_SECONDS=30`：
+当前 A5 Relay 已灰度启用 WebSocket 通知，收到 `job_available` 后立即领取，并每 5 分钟执行一次故障对账；A2 Relay 继续使用线性自适应轮询作为对照，配置为 `RUNNER_POLL_MIN_SECONDS=2`、`RUNNER_POLL_MAX_SECONDS=30`：
 
 ```text
 Relay 启动：注册后立即执行一次 heartbeat、健康检查和领取，不先等待
@@ -256,7 +256,7 @@ NPU 状态：独立后台线程最多每 30 分钟发起一次自动查询，完
 看板状态：登录后每 10 秒读取一次 Worker 中的最新状态，不触发 NPU 命令
 ```
 
-当前实现没有随机抖动，也没有采用 Worker 返回的 `retry_after_seconds`。部署多个 Relay 时，应增加抖动并尊重服务端建议间隔，避免同时集中请求。
+WebSocket 重连已使用随机抖动；轮询回退路径仍没有随机抖动，也没有采用 Worker 返回的 `retry_after_seconds`。部署更多 Relay 时，应为回退轮询增加抖动并尊重服务端建议间隔，避免同时集中请求。
 
 领取接口只返回 Relay 能力范围内的任务，并限制响应数量和响应体大小。没有可执行任务时返回正常空结果，不把空队列作为错误。
 
@@ -1010,14 +1010,14 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 
 ## 25. 当前部署决策
 
-当前采用“Worker/D1 队列 + VPN Runner Relay 主动拉取 + 编译持久执行/测试同步 SSH + Relay 本地副本 + 私有 R2 在线下载”。
+当前采用“Worker/D1 队列 + A5 WebSocket 通知后原子领取/A2 自适应轮询 + 编译持久执行/测试同步 SSH + Relay 本地副本 + 私有 R2 在线下载”。
 
 - Worker/D1 保存任务状态、结构化性能指标、审计信息和制品清单。
 - 看板允许显式选择 A2 或 A5 执行服务器，Worker 使用 `target_runner_id` 保证任务只被指定 Relay 领取。
 - 两个 Relay Agent 运行在同一台 Windows VPN 电脑上，各自连接一台 NPU 服务器，配置、状态、日志和本地制品目录互相隔离。
 - Relay 保存回收后的原始 Prof 和分析文件，默认保留 30 天；同时压缩并分片上传到 R2，NPU 服务器源目录当前需要单独清理。
 - 登录用户可从任意电脑通过看板下载自己提交任务的 R2 制品，管理员可下载全部任务制品。
-- Relay 仍只发起出站 HTTPS 请求，不开放公网入站端口。
+- Relay 仍只发起出站 WSS/HTTPS 请求，不开放公网入站端口。
 - R2 上传失败不影响结构化指标回传；原始制品退化为 Relay 本地保存。
 
 不允许把大型 Prof 压缩包、完整 stdout/stderr 或图片写入 D1。R2 Bucket 保持私有，下载必须经过 Worker 的任务权限校验；Relay 和浏览器均不持有 R2 凭据。
@@ -1029,9 +1029,9 @@ Relay 即使具备公网入站和出站能力，也不作为公网服务使用�
 - 不开放任务接收端口。
 - 不接受 Worker 主动连接。
 - 主机防火墙拒绝公网入站。
-- 通过自适应出站 HTTPS 请求领取任务并回传结果。
+- A5 通过主动建立的出站 WSS 接收唤醒，再通过 HTTPS 领取；A2 仍通过自适应出站 HTTPS 请求领取。
 
-该决策优先保证 Relay 和 VPN 内网不暴露给公网，接受空队列请求和任务启动延迟作为交换。Relay 长时间空闲时轮询间隔达到 30 秒，因此当前典型领取延迟为 `0～30 秒`。
+该决策优先保证 Relay 和 VPN 内网不暴露给公网。A5 正常连接时目标领取延迟为通知后 3 秒内，通知故障时最迟由 5 分钟对账发现；A2 长时间空闲时轮询间隔达到 30 秒，典型领取延迟为 `0～30 秒`。
 
 ### 25.1 未选择：公网 Webhook
 
@@ -1041,13 +1041,13 @@ Relay 即使具备公网入站和出站能力，也不作为公网服务使用�
 
 Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 Cloudflare 访问的 Relay 入站应用，并引入 Tunnel、Access、Webhook 重试和本地持久通知队列。当前没有必要为较低通知延迟承担这部分复杂度，因此不采用。
 
-### 25.3 下一阶段目标：出站 WebSocket 通知
+### 25.3 当前灰度：出站 WebSocket 通知
 
-下一阶段采用“出站 WebSocket 通知唤醒 + `/api/runner/jobs/claim` 原子领取 + 低频 HTTPS 对账”。Relay 主动建立到 Cloudflare Durable Object 的 WSS 连接，云端只沿已有连接发送 `job_available` 通知，不向 Relay 发起新连接，也不直接推送完整任务。Relay 收到通知后立即调用现有领取接口，直到填满本地执行槽或队列为空。
+当前已在 A5 启用“出站 WebSocket 通知唤醒 + `/api/runner/jobs/claim` 原子领取 + 低频 HTTPS 对账”。Relay 主动建立到 Cloudflare Durable Object 的 WSS 连接，云端只沿已有连接发送 `job_available` 通知，不向 Relay 发起新连接，也不直接推送完整任务。Relay 收到通知后立即调用现有领取接口，直到填满本地执行槽或队列为空。
 
 该方案不要求 Relay 开放公网端口。D1 继续作为任务事实来源，`/claim` 继续负责原子占有、容量检查、能力路由和租约签发；WebSocket 仅降低任务发现延迟。WebSocket 断开、通知丢失或 Cloudflare 通知组件暂时失败时，任务仍保存在 D1，并由启动对账、重连对账和每 5 分钟一次的低频对账补领。
 
-在第 29 节方案部署完成前，当前 2 至 30 秒自适应 HTTPS 领取仍是生产默认模式。
+第 29 节代码和 Cloudflare 部署已经完成。A5 进入真实任务灰度观察期；A2 暂时保留 2 至 30 秒自适应 HTTPS 领取，待 A5 连续运行和真实任务验收完成后再启用通知。
 
 第一阶段允许 Relay 运行在当前开启 VPN 的本机，以最小改造复用现有 `perf_runner.py`。生产阶段应迁移到长期在线的专用 VPN 网关或获得受控的站点到站点网络能力。
 
@@ -1445,11 +1445,11 @@ Worker/DO 指标至少记录：
 6. A2/A5 同时在线时，目标任务只通知并由指定 Runner 领取。
 7. 执行期间重启 Worker/部署 Durable Object，确认已领取任务的 heartbeat、结果和 R2 上传不受通知连接重建影响。
 
-达到以上验收条件后，才把第 25 节“当前部署决策”从自适应轮询更新为通知模式。未完成验收前，文档和看板应明确当前生产仍使用 Relay 主动轮询。
+达到以上验收条件后，才在 A2 打开通知模式。未完成验收前，文档和看板应明确当前是“A5 通知灰度、A2 主动轮询”的混合状态。
 
 ### 29.14 实施状态（2026-08-18）
 
-代码实现已完成，生产启用前状态如下：
+代码实现和 Cloudflare 部署已完成，当前处于 A5 灰度状态：
 
 - `cloudflare/worker.js` 已导出 `RunnerEventHub`，使用 Hibernation WebSocket API 接受连接，并提供只供 Worker binding 调用的内部 `/notify`。
 - Worker 已增加已鉴权的 `GET /api/runner/events` Upgrade 路由；任务创建和重试在 D1 更新完成后通过 `ctx.waitUntil()` 异步发送 `job_available`。
@@ -1459,5 +1459,7 @@ Worker/DO 指标至少记录：
 - `requirements.txt` 固定使用 `websocket-client==1.8.0`；示例配置已增加通知和重连参数。
 - `wrangler.toml` 已增加 `RUNNER_EVENTS` binding 和 `runner-events-v1` SQLite Durable Object migration。
 - Worker 通知测试和 Relay 通知测试已加入自动测试；本地 Wrangler 已验证真实 Python WebSocket Upgrade 返回 `101 Switching Protocols`。
+- GitHub Actions `Deploy Cloudflare Worker #26` 已成功部署 commit `b84ef8c`，Durable Object binding 和 migration 已上线。
+- 本机已安装 `websocket-client 1.8.0`；A5 配置已启用通知并加载 Agent `2.0.0`，线上 Runner Token 鉴权的 WSS 握手成功且连接保持；A2 配置和进程未修改。
 
-在 Worker/DO 完成远程部署且 A5 灰度验收前，本机 A2/A5 配置不应打开通知开关，生产仍使用原自适应轮询。
+A5 下一项验收是从看板提交真实任务，确认 `created_at -> claimed_at` 小于 3 秒。完成连续运行和真实任务验收前，A2 继续使用原自适应轮询。
