@@ -2988,7 +2988,16 @@ async function claimPerfJob(env, payload) {
   if (!runner.vpn_connected || !runner.npu_reachable) {
     return { ok: true, job: null, reason: "runner_not_ready", retry_after_seconds: 30 };
   }
-  const capacity = Math.max(0, numberOr(runner.capabilities.max_concurrency, 1) - runner.current_jobs);
+  const active = await env.DB.prepare(
+    `SELECT COUNT(*) AS job_count,
+      SUM(CASE WHEN json_extract(request_json, '$.task_type') = 'build_install' THEN 1 ELSE 0 END) AS build_count
+     FROM perf_jobs
+     WHERE runner_id = ? AND status IN ('claimed', 'running', 'disconnected', 'cancel_requested')`,
+  ).bind(runner.id).first();
+  const maxConcurrency = Math.max(1, Math.min(128, numberOr(runner.capabilities.max_concurrency, 1)));
+  const activeJobs = Math.max(numberOr(active?.job_count, 0), runner.current_jobs);
+  const activeBuilds = numberOr(active?.build_count, 0);
+  const capacity = Math.max(0, maxConcurrency - activeJobs);
   if (capacity < 1) return { ok: true, job: null, reason: "runner_at_capacity", retry_after_seconds: 15 };
   const candidates = await selectAll(env,
     `SELECT * FROM perf_jobs
@@ -2999,6 +3008,7 @@ async function claimPerfJob(env, payload) {
   );
   for (const candidate of candidates) {
     const request = parseJson(candidate.request_json, {});
+    if (request.task_type === "build_install" && activeBuilds > 0) continue;
     const explicitlyTargeted = request.target_runner_id === runner.id;
     if (!explicitlyTargeted && !runnerCanExecute(runner.id, runner.capabilities, request)) continue;
     const attemptId = `attempt-${crypto.randomUUID()}`;

@@ -1420,8 +1420,13 @@ def _remote_output_path(config: PerfRunnerConfig, output: str) -> str:
     return (PurePosixPath(config.remote_workdir) / path).as_posix()
 
 
-def _list_remote_prof_dirs(config: PerfRunnerConfig, prof_tool: str) -> set[str]:
-    output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
+def _list_remote_prof_dirs(
+    config: PerfRunnerConfig,
+    prof_tool: str,
+    output: str | None = None,
+) -> set[str]:
+    if output is None:
+        output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
     prefix = prof_dir_prefix(prof_tool)
     remote_output = _remote_output_path(config, output).rstrip("/")
     remote = f"ls -1d {shlex.quote(remote_output)}/{prefix}* 2>/dev/null || true"
@@ -1435,8 +1440,8 @@ def _list_remote_prof_dirs(config: PerfRunnerConfig, prof_tool: str) -> set[str]
     return names
 
 
-def _list_local_prof_dirs(prof_tool: str) -> set[str]:
-    root = prof_output_root(prof_tool, local=True)
+def _list_local_prof_dirs(prof_tool: str, root: Path | None = None) -> set[str]:
+    root = root or prof_output_root(prof_tool, local=True)
     prefix = prof_dir_prefix(prof_tool)
     if not root.exists():
         return set()
@@ -1449,6 +1454,15 @@ def _resolve_new_prof_dir(before: set[str], after: set[str], prof_tool: str) -> 
     if not created:
         raise RuntimeError(f"{prof_tool_label(prof_tool)} 执行完成，但未发现新的 {prefix}* 目录")
     return created[-1]
+
+
+def _run_output_namespace(run_id: str | None) -> str | None:
+    if run_id is None:
+        return None
+    value = str(run_id).strip()
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,240}", value):
+        raise ValueError("run_id contains unsupported characters")
+    return value
 
 
 def _import_module(script_name: str):
@@ -1499,7 +1513,12 @@ def _execute_build_install(payload: dict[str, Any], config: PerfRunnerConfig) ->
     }
 
 
-def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict[str, Any]:
+def execute(
+    payload: dict[str, Any],
+    *,
+    persist_local_data: bool = True,
+    run_id: str | None = None,
+) -> dict[str, Any]:
     config = ensure_runner_configured()
     task_type = normalize_task_type(payload)
     if task_type == "build_install":
@@ -1532,6 +1551,10 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
     py_args = attributes_to_cli_args(attrs, npu_device, example)
     local_root = prof_output_root(prof_tool, local=True)
     remote_output = config.prof_output_op if prof_tool in {"msprof_op", "msprof_op_sim"} else config.prof_output_app
+    output_namespace = _run_output_namespace(run_id)
+    if output_namespace:
+        local_root = local_root / "runner-jobs" / output_namespace
+        remote_output = f"{remote_output.rstrip('/')}/runner-jobs/{output_namespace}"
 
     if config.mode == "ssh":
         if not config.ssh_host:
@@ -1550,7 +1573,7 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
                 build_info = _prepare_remote_source_build(config, execution, chip)
                 build_worktree = build_info["worktree"]
                 remote_script = f"{build_worktree}/{example['script']}"
-            before = _list_remote_prof_dirs(config, prof_tool)
+            before = _list_remote_prof_dirs(config, prof_tool, remote_output)
             invocation = build_prof_invocation(
                 config,
                 prof_tool=prof_tool,
@@ -1562,10 +1585,12 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
                 launch_count=launch_count,
             )
             profiler_command = invocation
-            remote = _remote_execution_command(config, invocation, execution=execution)
+            remote_prof_root = _remote_output_path(config, remote_output).rstrip("/")
+            remote_invocation = f"mkdir -p {shlex.quote(remote_prof_root)} && {invocation}"
+            remote = _remote_execution_command(config, remote_invocation, execution=execution)
             command = " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
             _run_remote_checked(config, remote, prof_tool_label(prof_tool))
-            after = _list_remote_prof_dirs(config, prof_tool)
+            after = _list_remote_prof_dirs(config, prof_tool, remote_output)
         finally:
             if build_worktree:
                 _cleanup_remote_source_build(config, execution.source_repo, build_worktree)
@@ -1580,14 +1605,14 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
         _run_command(_scp_command(config, remote_prof, local_dir.parent))
         prof_dir = local_dir
     elif config.mode == "local":
-        before = _list_local_prof_dirs(prof_tool)
+        before = _list_local_prof_dirs(prof_tool, local_root)
         script = local_script
         local_root.mkdir(parents=True, exist_ok=True)
         invocation_parts = shlex.split(
             build_prof_invocation(
                 config,
                 prof_tool=prof_tool,
-                output=local_prof_output_path(prof_tool, config),
+                output=str(local_root),
                 script=script,
                 py_args=py_args,
                 kernel_name=kernel_name,
@@ -1600,7 +1625,7 @@ def execute(payload: dict[str, Any], *, persist_local_data: bool = True) -> dict
             _run_command(invocation_parts, cwd=ROOT)
         except FileNotFoundError as exc:
             raise RuntimeError("未找到 msopprof，请在 NPU 主机上执行，或配置 PERF_RUN_MODE=ssh") from exc
-        after = _list_local_prof_dirs(prof_tool)
+        after = _list_local_prof_dirs(prof_tool, local_root)
         prof_name = _resolve_new_prof_dir(before, after, prof_tool)
         prof_dir = local_root / prof_name
     else:

@@ -17,6 +17,7 @@ from backend.perf_runner import (
     _resolve_remote_deployed_source,
     _remote_execution_command,
     _remote_output_path,
+    _run_output_namespace,
     _list_remote_prof_dirs,
     _run_command,
     _scp_command,
@@ -830,6 +831,7 @@ __END_NPU__
         execute.assert_called_once_with(
             {"prof_tool": "msprof"},
             persist_local_data=False,
+            run_id="job-test-attempt-test",
         )
         complete_payload = next(
             call.args[1]
@@ -901,6 +903,53 @@ __END_NPU__
             self.assertEqual(recovered_job["lease_token"], "lease-recover")
             self.assertEqual(recovered_job["remote_build"]["worktree"], "/tmp/build-recover")
             self.assertTrue(agent.run_job.call_args.kwargs["resume"])
+
+    def test_runner_agent_limits_concurrent_execution_threads(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = SimpleNamespace(
+                runner_id="relay-test",
+                max_concurrency=3,
+                upload_concurrency=1,
+                state_dir=Path(temporary),
+            )
+            agent = RunnerAgent(config)
+            release = threading.Event()
+            all_started = threading.Event()
+            started: list[str] = []
+            started_lock = threading.Lock()
+
+            def execute_job(job, *, resume=False):
+                del resume
+                with started_lock:
+                    started.append(job["id"])
+                    if len(started) == 3:
+                        all_started.set()
+                release.wait(5)
+
+            agent._run_job = execute_job
+            agent.health = Mock(return_value={"vpn_connected": True, "npu_reachable": True})
+            agent.send_runner_heartbeat = Mock()
+            try:
+                self.assertTrue(agent.submit_job({"id": "job-1"}))
+                self.assertTrue(agent.submit_job({"id": "job-2"}))
+                self.assertTrue(agent.submit_job({"id": "job-3"}))
+                self.assertTrue(all_started.wait(2))
+                self.assertEqual(agent.active_job_count(), 3)
+                self.assertEqual(agent.available_slots(), 0)
+                self.assertFalse(agent.submit_job({"id": "job-4"}))
+            finally:
+                release.set()
+                agent._executor.shutdown(wait=True)
+
+            self.assertEqual(agent.active_job_count(), 0)
+
+    def test_runner_run_id_is_safe_for_isolated_prof_directories(self):
+        self.assertEqual(
+            _run_output_namespace("perf-job-1-attempt-2"),
+            "perf-job-1-attempt-2",
+        )
+        with self.assertRaisesRegex(ValueError, "unsupported characters"):
+            _run_output_namespace("../shared-output")
 
     @patch("backend.runner_agent.JobHeartbeat")
     def test_recovered_final_job_never_restarts_remote_build(self, heartbeat_class):

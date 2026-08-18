@@ -16,7 +16,7 @@
 
 最终安全决策为：即使 Relay 具备公网可达条件，也不把 Relay 建设为公网服务。Relay 不提供 Webhook、不运行公网 HTTP API、不开放公网监听端口；任务领取、状态回传和制品上传全部由 Relay 主动发起出站连接。
 
-### 1.1 当前实现摘要（2026-08-11）
+### 1.1 当前实现摘要（2026-08-18）
 
 | 层级 | 当前实现 | 关键边界 |
 | --- | --- | --- |
@@ -33,7 +33,7 @@
 
 NPU 状态链路与任务领取解耦：每个 Relay 默认每 30 分钟在后台分卡执行 `npu-smi info -t usages` 和 `npu-smi info -t proc-mem`，通过 heartbeat 把利用率、HBM 和完整进程明细写入 D1；看板每 10 秒只读取最近缓存。用户点击“刷新”时，Worker 将强制刷新请求持久化，Relay 在下一次出站 heartbeat 收到请求后立即重新采样，因此不需要向 Relay 开放入站端口。
 
-当前已完成队列、双 Relay、A2/A5 精确路由、管理员自定义执行环境、编译任务持久执行与重启恢复、编译进程组取消、编译日志查看、NPU 占用查询与强制刷新、R2 上传、9 GB 容量保护和看板下载闭环。尚未完成的是 Device 锁和 profile 任务的远端持久执行；因此性能测试期间 VPN 中断仍需人工核对远端进程和 Prof 目录。
+当前已完成队列、双 Relay、A2/A5 精确路由、单 Agent 三执行线程、管理员自定义执行环境、编译任务持久执行与重启恢复、编译进程组取消、编译日志查看、NPU 占用查询与强制刷新、R2 上传、9 GB 容量保护和看板下载闭环。当前按阶段决策不实现 Device 锁，允许相同 Device 上的测试并发；profile 任务仍未实现远端持久执行，因此性能测试期间 VPN 中断仍需人工核对远端进程和 Prof 目录。
 
 ## 2. 当前条件
 
@@ -250,7 +250,7 @@ Relay 启动：注册后立即执行一次 heartbeat、健康检查和领取，�
 连续未领取到任务：等待时间按 4、6、8……30 秒递增
 VPN 或 SSH 不可用：本轮不领取，沿用相同线性退避，最大 30 秒
 成功领取并完成任务：下一轮等待重置为 2 秒
-任务执行中：单并发，不领取新任务；独立线程每 15 秒发送 job heartbeat
+任务执行中：Dispatcher 在活动任务少于 `RUNNER_MAX_CONCURRENCY` 时继续领取；每个任务由通用执行线程处理并独立发送 job heartbeat
 Worker 请求异常：至少等待 5 秒并指数退避，最大 120 秒
 NPU 状态：独立后台线程最多每 30 分钟发起一次自动查询，完成后立即补发 Runner heartbeat
 看板状态：登录后每 10 秒读取一次 Worker 中的最新状态，不触发 NPU 命令
@@ -683,7 +683,7 @@ Relay 重启或 VPN 恢复后，应先读取该文件和 systemd unit 状态，�
 
 ## 14. Device 并发控制
 
-当前 Worker 和 Agent 均配置 `max_concurrency=1`，可避免同一个 Relay 自身并发领取多个任务，但 NPU 服务器端尚无 Device 锁；多个 Relay 或人工任务仍可能使用同一 Device。以下为阶段二要求：
+当前 A2/A5 Agent 均配置 `max_concurrency=3`，执行线程不绑定固定 Device，任务继续使用请求中的 `device`。按当前阶段决策不实现 Device 锁，也不因 `npu-smi` 显示占用而拒绝任务，因此同一个 Device 可以同时执行多个测试。需要明确接受性能竞争、显存不足和 profiler 失败的风险。Device 锁保留为后续可选能力；如后续启用，应满足：
 
 - 一个 Device 默认只运行一个采集任务。
 - 锁应在 NPU 服务器端实现，不能只依赖 Relay 内存。
@@ -886,7 +886,8 @@ RUNNER_HEARTBEAT_SECONDS=15
 RUNNER_NPU_STATUS_INTERVAL_SECONDS=1800
 RUNNER_NPU_STATUS_TIMEOUT_SECONDS=60
 RUNNER_NPU_DEVICE_COUNT=8
-RUNNER_MAX_CONCURRENCY=1
+RUNNER_MAX_CONCURRENCY=3
+RUNNER_UPLOAD_CONCURRENCY=1
 RUNNER_ARTIFACT_RETENTION_DAYS=30
 RUNNER_ARTIFACT_ROOTS=data/prof_gdr;data/prof_op
 RUNNER_R2_PART_MIB=32
@@ -1093,14 +1094,14 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - 管理员使用 `scripts/start_runners_windows.ps1` 和 `scripts/stop_runners_windows.ps1` 同时启动或停止 A2/A5，也可通过 `-TaskName` 只控制指定计划任务。
 - A2/A5 Relay 日志分别写入 `.local-secrets/runner.log` 和 `.local-secrets/runner-a5.log`；状态分别写入 `data/runner-state` 和 `data/runner-state/a5`。
 - A2 原始性能制品保存在既有 `data/prof_gdr` / `data/prof_op`，A5 制品保存在 `data/runner-artifacts/a5/prof_gdr` / `data/runner-artifacts/a5/prof_op`，并执行 30 天保留期清理。
-- 两个 Agent 均为单并发。A2 默认 NPU 2、SoC `Ascend910B`；A5 默认 NPU 7、SoC `Ascend950PR`。
+- 两个 Agent 均使用一个 Dispatcher 和最多三个通用执行线程，线程不固定绑定 Device。A2 默认 NPU 2、SoC `Ascend910B`；A5 默认 NPU 7、SoC `Ascend950PR`。相同 Device 并发当前不受阻止。
 - 两个 Agent 均配置 `RUNNER_NPU_STATUS_INTERVAL_SECONDS=1800`、状态查询总超时 60 秒和 8 张卡扫描范围；Agent 启动后先采样一次，此后每 30 分钟自动采样，强制刷新不受该间隔限制。
 
 ### 26.2 当前已知限制
 
 - profile 同步 SSH 执行依赖连接持续存在；执行期 VPN/SSH 中断后尚不能通过远端状态文件自动恢复。
 - build_install 取消会向远端进程组发送 TERM；profile 取消仍只能设置本地标记，尚不能实时终止远端 profiler 进程。
-- 服务器端尚未实现 Device 锁，多 Relay 或人工任务需要运维协调。
+- 服务器端未实现 Device 锁，并且当前明确允许相同 Device 上的看板任务并发；性能数据竞争、OOM 或 profiler 冲突需要由提交者结合执行记录中的 Device 信息判断。
 - 看板自动更新来自 Relay 最近一次采样，不是实时锁状态；自动缓存最多可能已有约 30 分钟，需要立即确认时应点击刷新强制重新采样，但网络、`npu-smi` 和 heartbeat 仍会带来数秒至数十秒延迟。
 - 领取前只检查 SSH TCP 端口，SSH 认证、CANN/Conda、profiler、Device 和磁盘空间在执行阶段才暴露错误。
 - A2 当前使用 `root` SSH 账号；A2/A5 均使用 `StrictHostKeyChecking=accept-new`。A2 应迁移到低权限账号，两台服务器都应预置固定主机密钥。
@@ -1115,7 +1116,7 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 ### 26.3 下一阶段优先级
 
 1. 建立低权限 NPU 服务账号和固定 `known_hosts`，并为每个 Relay 签发可独立轮换的 Runner Token。
-2. 将 build_install 已有的远端任务目录、进程组、状态文件和 Agent 重启恢复模式扩展到 profile，并增加 Device 锁。
+2. 将 build_install 已有的远端任务目录、进程组、状态文件和 Agent 重启恢复模式扩展到 profile；Device 锁暂不实施，后续按需要作为可选调度策略增加。
 3. 为 profile 实现进程组取消和结果 reconcile。
 4. 增加领取前 profiler/Device/磁盘预检、轮询抖动和服务端退避提示支持。
 5. 增加 R2 上传失败的独立重试、过期 D1 元数据清理和制品下载审计。
@@ -1135,3 +1136,26 @@ Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 
 - Relay 分片：`RUNNER_R2_PART_MIB=32`，不得低于 5 MiB。
 - 下载授权：普通用户只能访问本人创建的任务，管理员可访问全部任务；Worker 返回 `private, no-store`。
 - 完整性：Relay 对最终 ZIP 计算 SHA-256，D1 保存摘要，下载响应返回 `X-Content-SHA256`。
+
+## 28. 单 Agent 三执行线程方案
+
+截至 2026-08-18，并发模型调整为“每台 NPU 服务器一个 Agent、一个 Dispatcher、最多三个通用执行线程”，不通过复制计划任务制造多个逻辑 Runner：
+
+1. Dispatcher 仅在本地线程池存在空闲槽位时调用领取接口，不在 Relay 本地提前囤积已领取任务。
+2. 每个任务提交到 `ThreadPoolExecutor(max_workers=3)`；执行线程不绑定固定 Device，直接使用任务请求中的 `device` 参数。
+3. Agent 使用线程安全的活动任务集合计算 `current_jobs`。每个 job heartbeat 和 Runner heartbeat 都上报同一个实时总数，不再固定写入 `0` 或 `1`。
+4. Worker 在领取前同时检查 Runner 上报值和 D1 中该 Runner 的 `claimed`、`running`、`disconnected`、`cancel_requested` 任务数，避免客户端状态延迟导致超领。
+5. `build_install` 在每个 Agent 内最多同时执行一个，并继续使用 NPU 服务器上的环境 `flock`；不同性能测试可以占用另外两个执行槽。
+6. R2 上传使用独立信号量，默认 `RUNNER_UPLOAD_CONCURRENCY=1`，避免多个大型 ZIP 同时占用 Relay 内存和上行带宽。
+7. 每个性能任务使用 `data/prof_gdr/runner-jobs/<job-attempt>/` 或 `data/prof_op/runner-jobs/<job-attempt>/` 独立输出根目录，远端和 Relay 本地均按任务隔离，避免并发任务通过目录差集识别到彼此的 Prof 结果。
+8. 任务线程退出后立即释放执行槽并唤醒 Dispatcher；空队列时仍使用 2 至 30 秒线性退避。
+9. 本阶段不实现 Device 锁、不自动分配 Device，也不根据 `npu-smi` 占用状态阻止执行。相同 Device 的任务允许并发，`npu-smi` 仅作为观察信息。
+
+本机 A2/A5 配置均为：
+
+```text
+RUNNER_MAX_CONCURRENCY=3
+RUNNER_UPLOAD_CONCURRENCY=1
+```
+
+并发改造不改变安全边界：Relay 仍仅发起出站 HTTPS 和 VPN 内 SSH，不增加监听端口，也不把 Relay 建设为公网服务。

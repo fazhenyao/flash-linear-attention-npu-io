@@ -16,6 +16,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+from concurrent.futures import Future, ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -83,6 +85,7 @@ class AgentConfig:
     state_dir: Path
     retention_days: int
     upload_part_bytes: int
+    upload_concurrency: int
     npu_status_interval_seconds: int
     npu_status_timeout_seconds: int
     npu_device_count: int
@@ -111,6 +114,7 @@ class AgentConfig:
             state_dir=state_dir,
             retention_days=env_int("RUNNER_ARTIFACT_RETENTION_DAYS", 30, 1),
             upload_part_bytes=env_int("RUNNER_R2_PART_MIB", 32, 5) * 1024 * 1024,
+            upload_concurrency=env_int("RUNNER_UPLOAD_CONCURRENCY", 1, 1),
             npu_status_interval_seconds=env_int("RUNNER_NPU_STATUS_INTERVAL_SECONDS", 1800, 10),
             npu_status_timeout_seconds=env_int("RUNNER_NPU_STATUS_TIMEOUT_SECONDS", 60, 10),
             npu_device_count=env_int("RUNNER_NPU_DEVICE_COUNT", 8, 1),
@@ -185,7 +189,7 @@ class JobHeartbeat(threading.Thread):
         while not self.stop_event.wait(self.agent.config.heartbeat_seconds):
             try:
                 health = self.agent.health()
-                self.agent.send_runner_heartbeat(health, current_jobs=1)
+                self.agent.send_runner_heartbeat(health)
                 task_type = str((self.job.get("request") or {}).get("task_type") or "profile")
                 if task_type == "build_install" and self.remote_state:
                     heartbeat_state = "disconnected" if not health["npu_reachable"] else "running"
@@ -216,7 +220,20 @@ class RunnerAgent:
         self.config = config
         self.api = RunnerApi(config)
         self.stop_event = threading.Event()
+        self._dispatch_event = threading.Event()
+        self._active_jobs_lock = threading.Lock()
+        self._active_job_ids: set[str] = set()
         self.current_jobs = 0
+        self._futures_lock = threading.Lock()
+        self._futures: dict[Future[None], str] = {}
+        max_concurrency = max(1, int(getattr(config, "max_concurrency", 1)))
+        upload_concurrency = max(1, int(getattr(config, "upload_concurrency", 1)))
+        self._executor = ThreadPoolExecutor(
+            max_workers=max_concurrency,
+            thread_name_prefix=f"runner-{config.runner_id}",
+        )
+        self._build_slot = threading.Lock()
+        self._upload_slots = threading.BoundedSemaphore(upload_concurrency)
         self.config.state_dir.mkdir(parents=True, exist_ok=True)
         (self.config.state_dir / "jobs").mkdir(parents=True, exist_ok=True)
         self._npu_status_lock = threading.Lock()
@@ -236,6 +253,59 @@ class RunnerAgent:
 
     def stop(self, *_args: object) -> None:
         self.stop_event.set()
+        self._dispatch_event.set()
+
+    def active_job_count(self) -> int:
+        lock = getattr(self, "_active_jobs_lock", None)
+        if lock is None:
+            return int(getattr(self, "current_jobs", 0))
+        with lock:
+            return len(self._active_job_ids)
+
+    def _mark_job_active(self, job_id: str) -> None:
+        lock = getattr(self, "_active_jobs_lock", None)
+        if lock is None:
+            self.current_jobs = int(getattr(self, "current_jobs", 0)) + 1
+            return
+        with lock:
+            self._active_job_ids.add(job_id)
+            self.current_jobs = len(self._active_job_ids)
+
+    def _mark_job_inactive(self, job_id: str) -> None:
+        lock = getattr(self, "_active_jobs_lock", None)
+        if lock is None:
+            self.current_jobs = max(0, int(getattr(self, "current_jobs", 1)) - 1)
+            return
+        with lock:
+            self._active_job_ids.discard(job_id)
+            self.current_jobs = len(self._active_job_ids)
+
+    def available_slots(self) -> int:
+        lock = getattr(self, "_futures_lock", None)
+        if lock is None:
+            return max(0, self.config.max_concurrency - self.active_job_count())
+        with lock:
+            return max(0, self.config.max_concurrency - len(self._futures))
+
+    def submit_job(self, job: dict[str, Any], *, resume: bool = False) -> bool:
+        if self.stop_event.is_set():
+            return False
+        with self._futures_lock:
+            if len(self._futures) >= self.config.max_concurrency:
+                return False
+            future = self._executor.submit(self.run_job, job, resume=resume)
+            self._futures[future] = str(job["id"])
+        future.add_done_callback(self._job_finished)
+        return True
+
+    def _job_finished(self, future: Future[None]) -> None:
+        with self._futures_lock:
+            job_id = self._futures.pop(future, "unknown")
+        try:
+            future.result()
+        except Exception as exc:
+            print(f"[runner] 任务线程 {job_id} 异常退出：{exc}", flush=True)
+        self._dispatch_event.set()
 
     def capabilities(self, *, refresh_npu: bool = True) -> dict[str, Any]:
         status = runner_status()
@@ -268,7 +338,7 @@ class RunnerAgent:
                 "source_remote_branch_query": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_branches": self.source_branches_status(),
             },
-            "agent_version": "1.8.0",
+            "agent_version": "1.9.0",
         }
 
     def source_branches_cache_path(self) -> Path:
@@ -449,7 +519,7 @@ class RunnerAgent:
                     daemon=True,
                 ).start()
         try:
-            self.send_runner_heartbeat(self.health(), current_jobs=self.current_jobs)
+            self.send_runner_heartbeat(self.health())
         except Exception:
             pass
 
@@ -498,7 +568,7 @@ class RunnerAgent:
                 ).start()
         try:
             health = self.health()
-            self.send_runner_heartbeat(health, current_jobs=self.current_jobs)
+            self.send_runner_heartbeat(health)
         except Exception:
             pass
 
@@ -524,7 +594,9 @@ class RunnerAgent:
                 "last_error": f"NPU SSH 不可达：{exc}",
             }
 
-    def runner_payload(self, health: dict[str, Any], current_jobs: int = 0) -> dict[str, Any]:
+    def runner_payload(self, health: dict[str, Any], current_jobs: int | None = None) -> dict[str, Any]:
+        if current_jobs is None:
+            current_jobs = self.active_job_count()
         return {
             "runner_id": self.config.runner_id,
             "name": self.config.runner_name,
@@ -535,7 +607,7 @@ class RunnerAgent:
             "last_error": str(health.get("last_error") or "")[:1000],
         }
 
-    def send_runner_heartbeat(self, health: dict[str, Any], current_jobs: int = 0) -> dict[str, Any]:
+    def send_runner_heartbeat(self, health: dict[str, Any], current_jobs: int | None = None) -> dict[str, Any]:
         response = self.api.post("/api/runner/heartbeat", self.runner_payload(health, current_jobs))
         self._handle_runner_control(response)
         return response
@@ -588,8 +660,8 @@ class RunnerAgent:
         temporary.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         temporary.replace(path)
 
-    def recover_build_jobs(self) -> int:
-        recovered = 0
+    def recoverable_build_jobs(self) -> list[dict[str, Any]]:
+        jobs = []
         for path in sorted((self.config.state_dir / "jobs").glob("*.json")):
             try:
                 record = json.loads(path.read_text(encoding="utf-8"))
@@ -612,12 +684,26 @@ class RunnerAgent:
                 "remote_build": record.get("remote_build") or {},
                 "recovery_state": record,
             }
+            jobs.append(job)
+        return jobs
+
+    def recover_build_jobs(self) -> int:
+        recovered = 0
+        for job in self.recoverable_build_jobs():
             try:
                 self.run_job(job, resume=True)
                 recovered += 1
             except Exception as exc:
                 print(f"[runner] 恢复编译任务 {job['id']} 失败：{exc}", flush=True)
         return recovered
+
+    def schedule_recovered_build_jobs(self) -> int:
+        scheduled = 0
+        for job in self.recoverable_build_jobs():
+            if not self.submit_job(job, resume=True):
+                break
+            scheduled += 1
+        return scheduled
 
     def run_persistent_build_job(
         self,
@@ -796,6 +882,18 @@ class RunnerAgent:
         return True
 
     def run_job(self, job: dict[str, Any], *, resume: bool = False) -> None:
+        job_id = str(job["id"])
+        self._mark_job_active(job_id)
+        try:
+            self._run_job(job, resume=resume)
+        finally:
+            self._mark_job_inactive(job_id)
+            try:
+                self.send_runner_heartbeat(self.health())
+            except Exception:
+                pass
+
+    def _run_job(self, job: dict[str, Any], *, resume: bool = False) -> None:
         request = dict(job.get("request") or {})
         task_type = str(request.get("task_type") or "profile")
         task_label = "编译安装" if task_type == "build_install" else "测试"
@@ -833,26 +931,29 @@ class RunnerAgent:
                 return
         heartbeat = JobHeartbeat(self, job)
         heartbeat.start()
-        self.current_jobs = 1
         try:
             if resume and recovery_state.get("state") in {"reporting", "reporting_failure", "reporting_orphaned"}:
                 self.report_persisted_outcome(job, recovery_state)
                 return
             self.save_job_state(job, "running", request=request)
             try:
-                result = (
-                    self.run_persistent_build_job(job, heartbeat, resume=resume)
-                    if task_type == "build_install"
-                    else execute(request, persist_local_data=False)
-                )
+                if task_type == "build_install":
+                    build_slot = getattr(self, "_build_slot", None) or nullcontext()
+                    with build_slot:
+                        result = self.run_persistent_build_job(job, heartbeat, resume=resume)
+                else:
+                    run_id = f"{job['id']}-{job.get('attempt_id') or 'attempt'}"
+                    result = execute(request, persist_local_data=False, run_id=run_id)
                 artifacts, local_artifacts = self.build_artifacts(job, result)
                 upload_errors: list[str] = []
                 if artifacts:
-                    artifacts, local_artifacts, upload_errors = self.upload_artifacts(
-                        job,
-                        artifacts,
-                        local_artifacts,
-                    )
+                    upload_slot = getattr(self, "_upload_slots", None) or nullcontext()
+                    with upload_slot:
+                        artifacts, local_artifacts, upload_errors = self.upload_artifacts(
+                            job,
+                            artifacts,
+                            local_artifacts,
+                        )
                 if upload_errors:
                     try:
                         self.api.post(
@@ -948,18 +1049,13 @@ class RunnerAgent:
                 )
                 self.report_persisted_outcome(job, outcome_record)
         finally:
-            self.current_jobs = 0
             heartbeat.stop()
             heartbeat.join(timeout=2)
-            try:
-                self.send_runner_heartbeat(self.health(), current_jobs=0)
-            except Exception:
-                pass
 
     def environment_summary(self) -> dict[str, Any]:
         status = runner_status()
         return {
-            "agent_version": "1.7.0",
+            "agent_version": "1.9.0",
             "runner_id": self.config.runner_id,
             "mode": status.get("mode"),
             "chip": status.get("chip"),
@@ -1138,16 +1234,32 @@ class RunnerAgent:
 
     def run_forever(self) -> None:
         self.register()
+        self.schedule_recovered_build_jobs()
         delay = self.config.poll_min_seconds
-        while not self.stop_event.is_set():
-            try:
-                recovered = self.recover_build_jobs()
-                worked = bool(recovered) or self.run_once()
-                delay = self.config.poll_min_seconds if worked else min(self.config.poll_max_seconds, delay + 2)
-            except Exception as exc:
-                print(f"[runner] {exc}", flush=True)
-                delay = min(self.config.error_backoff_max_seconds, max(delay * 2, 5))
-            self.stop_event.wait(delay)
+        try:
+            while not self.stop_event.is_set():
+                try:
+                    worked = False
+                    self.cleanup_expired_artifacts()
+                    while self.available_slots() > 0 and not self.stop_event.is_set():
+                        health = self.health()
+                        self.send_runner_heartbeat(health)
+                        if not health["vpn_connected"] or not health["npu_reachable"]:
+                            break
+                        job = self.claim(health)
+                        if not job:
+                            break
+                        if not self.submit_job(job):
+                            break
+                        worked = True
+                    delay = self.config.poll_min_seconds if worked else min(self.config.poll_max_seconds, delay + 2)
+                except Exception as exc:
+                    print(f"[runner] {exc}", flush=True)
+                    delay = min(self.config.error_backoff_max_seconds, max(delay * 2, 5))
+                self._dispatch_event.wait(delay)
+                self._dispatch_event.clear()
+        finally:
+            self._executor.shutdown(wait=True, cancel_futures=False)
 
 
 def utc_now() -> str:

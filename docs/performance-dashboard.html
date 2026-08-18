@@ -1089,7 +1089,11 @@
       agents.forEach((agent) => {
         const chip = triggerRunnerChip(agent);
         const device = triggerRunnerDevice(agent);
-        const status = triggerRunnerReady(agent) ? "在线" : "离线，任务将排队";
+        const currentJobs = Math.max(0, Number(agent.current_jobs) || 0);
+        const maxConcurrency = Math.max(1, Number(agent.capabilities?.max_concurrency) || 1);
+        const status = triggerRunnerReady(agent)
+          ? `在线 · 任务 ${currentJobs}/${maxConcurrency}`
+          : "离线，任务将排队";
         select.add(new Option(`${agent.name || agent.id} · ${chip} · NPU ${device} · ${status}`, agent.id));
       });
       const selected = agents.find((agent) => agent.id === previous)
