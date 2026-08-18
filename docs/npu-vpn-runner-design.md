@@ -243,7 +243,7 @@ sequenceDiagram
 
 ### 7.1 通知领取与自适应轮询回退
 
-当前 A5 Relay 已灰度启用 WebSocket 通知，收到 `job_available` 后立即领取，并每 5 分钟执行一次故障对账；A2 Relay 继续使用线性自适应轮询作为对照，配置为 `RUNNER_POLL_MIN_SECONDS=2`、`RUNNER_POLL_MAX_SECONDS=30`：
+当前 A2/A5 Relay 均已启用 WebSocket 通知，收到 `job_available` 后立即领取，并每 5 分钟执行一次故障对账。关闭通知开关或缺少 WebSocket 依赖时，仍使用线性自适应轮询回退，配置为 `RUNNER_POLL_MIN_SECONDS=2`、`RUNNER_POLL_MAX_SECONDS=30`：
 
 ```text
 Relay 启动：注册后立即执行一次 heartbeat、健康检查和领取，不先等待
@@ -1010,7 +1010,7 @@ Windows Relay 将 A2/A5 非口令配置分别保存在 Git 忽略的 `.local-sec
 
 ## 25. 当前部署决策
 
-当前采用“Worker/D1 队列 + A5 WebSocket 通知后原子领取/A2 自适应轮询 + 编译持久执行/测试同步 SSH + Relay 本地副本 + 私有 R2 在线下载”。
+当前采用“Worker/D1 队列 + A2/A5 WebSocket 通知后原子领取 + 5 分钟对账 + 编译持久执行/测试同步 SSH + Relay 本地副本 + 私有 R2 在线下载”。
 
 - Worker/D1 保存任务状态、结构化性能指标、审计信息和制品清单。
 - 看板允许显式选择 A2 或 A5 执行服务器，Worker 使用 `target_runner_id` 保证任务只被指定 Relay 领取。
@@ -1029,9 +1029,9 @@ Relay 即使具备公网入站和出站能力，也不作为公网服务使用�
 - 不开放任务接收端口。
 - 不接受 Worker 主动连接。
 - 主机防火墙拒绝公网入站。
-- A5 通过主动建立的出站 WSS 接收唤醒，再通过 HTTPS 领取；A2 仍通过自适应出站 HTTPS 请求领取。
+- A2/A5 均通过主动建立的出站 WSS 接收唤醒，再通过 HTTPS 领取；通知不可用时退化为低频 HTTPS 对账。
 
-该决策优先保证 Relay 和 VPN 内网不暴露给公网。A5 正常连接时目标领取延迟为通知后 3 秒内，通知故障时最迟由 5 分钟对账发现；A2 长时间空闲时轮询间隔达到 30 秒，典型领取延迟为 `0～30 秒`。
+该决策优先保证 Relay 和 VPN 内网不暴露给公网。A2/A5 正常连接时目标领取延迟为通知后 3 秒内，通知故障时最迟由 5 分钟对账发现；关闭通知功能时完整回退到 2 至 30 秒自适应轮询。
 
 ### 25.1 未选择：公网 Webhook
 
@@ -1041,13 +1041,13 @@ Relay 即使具备公网入站和出站能力，也不作为公网服务使用�
 
 Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 Cloudflare 访问的 Relay 入站应用，并引入 Tunnel、Access、Webhook 重试和本地持久通知队列。当前没有必要为较低通知延迟承担这部分复杂度，因此不采用。
 
-### 25.3 当前灰度：出站 WebSocket 通知
+### 25.3 当前部署：出站 WebSocket 通知
 
-当前已在 A5 启用“出站 WebSocket 通知唤醒 + `/api/runner/jobs/claim` 原子领取 + 低频 HTTPS 对账”。Relay 主动建立到 Cloudflare Durable Object 的 WSS 连接，云端只沿已有连接发送 `job_available` 通知，不向 Relay 发起新连接，也不直接推送完整任务。Relay 收到通知后立即调用现有领取接口，直到填满本地执行槽或队列为空。
+当前已在 A2/A5 启用“出站 WebSocket 通知唤醒 + `/api/runner/jobs/claim` 原子领取 + 低频 HTTPS 对账”。Relay 主动建立到 Cloudflare Durable Object 的 WSS 连接，云端只沿已有连接发送 `job_available` 通知，不向 Relay 发起新连接，也不直接推送完整任务。Relay 收到通知后立即调用现有领取接口，直到填满本地执行槽或队列为空。
 
 该方案不要求 Relay 开放公网端口。D1 继续作为任务事实来源，`/claim` 继续负责原子占有、容量检查、能力路由和租约签发；WebSocket 仅降低任务发现延迟。WebSocket 断开、通知丢失或 Cloudflare 通知组件暂时失败时，任务仍保存在 D1，并由启动对账、重连对账和每 5 分钟一次的低频对账补领。
 
-第 29 节代码和 Cloudflare 部署已经完成。A5 进入真实任务灰度观察期；A2 暂时保留 2 至 30 秒自适应 HTTPS 领取，待 A5 连续运行和真实任务验收完成后再启用通知。
+第 29 节代码和 Cloudflare 部署已经完成。A2/A5 均已建立并保持线上 WSS 连接；真实任务的 `created_at -> claimed_at` 延迟仍需在后续提交中持续验收。
 
 第一阶段允许 Relay 运行在当前开启 VPN 的本机，以最小改造复用现有 `perf_runner.py`。生产阶段应迁移到长期在线的专用 VPN 网关或获得受控的站点到站点网络能力。
 
@@ -1413,8 +1413,8 @@ Worker/DO 指标至少记录：
 
 1. 为 Worker 增加 Durable Object、WebSocket 路由、通知函数和自动测试，但保持通知功能关闭。
 2. 为 Relay 增加通知客户端、重连、启动/重连对账和 5 分钟定时对账；保留原轮询代码路径。
-3. 先在 A5 Agent 设置 `RUNNER_NOTIFICATION_ENABLED=true`，A2 继续轮询，验证任务提交、断线和回退。
-4. A5 连续运行至少一个工作日且无任务遗漏后启用 A2。
+3. 先在 A5 Agent 设置 `RUNNER_NOTIFICATION_ENABLED=true`，验证线上鉴权、连接和回退。
+4. A5 连接验证通过后，经用户确认在 A2 启用相同通知配置；两台 Agent 的真实任务延迟继续观察。
 5. 两个 Agent 稳定后，把通知模式设为默认，同时保留配置开关。
 6. 出现 Durable Object、代理或 WebSocket 兼容问题时，将开关改为 `false` 并重启 Agent，即刻恢复当前 2 至 30 秒轮询，不需要迁移或修改 D1 任务。
 
@@ -1445,11 +1445,11 @@ Worker/DO 指标至少记录：
 6. A2/A5 同时在线时，目标任务只通知并由指定 Runner 领取。
 7. 执行期间重启 Worker/部署 Durable Object，确认已领取任务的 heartbeat、结果和 R2 上传不受通知连接重建影响。
 
-达到以上验收条件后，才在 A2 打开通知模式。未完成验收前，文档和看板应明确当前是“A5 通知灰度、A2 主动轮询”的混合状态。
+当前 A2/A5 均已打开通知模式。未完成全部真实任务验收前，必须保留 5 分钟对账和关闭开关后恢复自适应轮询的回退路径。
 
 ### 29.14 实施状态（2026-08-18）
 
-代码实现和 Cloudflare 部署已完成，当前处于 A5 灰度状态：
+代码实现和 Cloudflare 部署已完成，当前 A2/A5 均运行通知模式：
 
 - `cloudflare/worker.js` 已导出 `RunnerEventHub`，使用 Hibernation WebSocket API 接受连接，并提供只供 Worker binding 调用的内部 `/notify`。
 - Worker 已增加已鉴权的 `GET /api/runner/events` Upgrade 路由；任务创建和重试在 D1 更新完成后通过 `ctx.waitUntil()` 异步发送 `job_available`。
@@ -1460,6 +1460,6 @@ Worker/DO 指标至少记录：
 - `wrangler.toml` 已增加 `RUNNER_EVENTS` binding 和 `runner-events-v1` SQLite Durable Object migration。
 - Worker 通知测试和 Relay 通知测试已加入自动测试；本地 Wrangler 已验证真实 Python WebSocket Upgrade 返回 `101 Switching Protocols`。
 - GitHub Actions `Deploy Cloudflare Worker #26` 已成功部署 commit `b84ef8c`，Durable Object binding 和 migration 已上线。
-- 本机已安装 `websocket-client 1.8.0`；A5 配置已启用通知并加载 Agent `2.0.0`，线上 Runner Token 鉴权的 WSS 握手成功且连接保持；A2 配置和进程未修改。
+- 本机已安装 `websocket-client 1.8.0`；A2/A5 配置均已启用通知并加载 Agent `2.0.0`，线上 Runner Token 鉴权的 WSS 握手成功且连接保持。
 
-A5 下一项验收是从看板提交真实任务，确认 `created_at -> claimed_at` 小于 3 秒。完成连续运行和真实任务验收前，A2 继续使用原自适应轮询。
+A2/A5 下一项验收是从看板提交真实任务，确认 `created_at -> claimed_at` 小于 3 秒，并继续观察长连接重连与 5 分钟对账路径。
