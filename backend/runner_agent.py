@@ -546,7 +546,7 @@ class RunnerAgent:
                 "source_remote_branch_query": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_branches": self.source_branches_status(),
             },
-            "agent_version": "2.0.0",
+            "agent_version": "2.0.1",
         }
 
     def source_branches_cache_path(self) -> Path:
@@ -828,6 +828,7 @@ class RunnerAgent:
 
     def claim(self, health: dict[str, Any]) -> dict[str, Any] | None:
         response = self.api.post("/api/runner/jobs/claim", self.runner_payload(health))
+        self._handle_runner_control(response)
         return response.get("job")
 
     def job_auth(self, job: dict[str, Any], payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -1431,8 +1432,8 @@ class RunnerAgent:
     def run_once(self) -> bool:
         self.cleanup_expired_artifacts()
         health = self.health()
-        self.send_runner_heartbeat(health)
         if not health["vpn_connected"] or not health["npu_reachable"]:
+            self.send_runner_heartbeat(health)
             return False
         job = self.claim(health)
         if not job:
@@ -1451,11 +1452,15 @@ class RunnerAgent:
                 try:
                     worked = False
                     self.cleanup_expired_artifacts()
-                    while self.available_slots() > 0 and not self.stop_event.is_set():
-                        health = self.health()
+                    health = self.health()
+                    if not health["vpn_connected"] or not health["npu_reachable"]:
                         self.send_runner_heartbeat(health)
-                        if not health["vpn_connected"] or not health["npu_reachable"]:
-                            break
+                    while (
+                        health["vpn_connected"]
+                        and health["npu_reachable"]
+                        and self.available_slots() > 0
+                        and not self.stop_event.is_set()
+                    ):
                         job = self.claim(health)
                         if not job:
                             break

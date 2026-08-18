@@ -451,6 +451,9 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-source-branch-refresh.is-refreshing span { animation:perf-npu-spin .8s linear infinite; }
 .perf-build-install-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .perf-build-install-actions button { min-width:112px; }
+.perf-trigger-submit-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.perf-trigger-submit-actions button { min-width:112px; }
+.perf-trigger-submit-actions .perf-build-install-status { flex:1 1 220px; }
 .perf-build-install-status {
   flex-basis:100%;
   min-height:18px;

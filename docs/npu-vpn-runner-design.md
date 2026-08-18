@@ -718,7 +718,7 @@ Relay 重启或 VPN 恢复后，应先读取该文件和 systemd unit 状态，�
 
 ## 16. 日志和进度
 
-当前空闲时，Runner heartbeat 随每次轮询发送；执行任务时，独立线程每 15 秒发送 job heartbeat。编译任务上报远端真实阶段：`starting`、`waiting_lock`、`preparing`、`checking`、`building`、`installing`、`validating` 和 `activating`，SSH 不可达时上报 disconnected 并保留最后阶段。profile 尚未实现以下细粒度阶段事件：
+当前空闲且执行环境可用时，`/claim` 同时完成 Runner 注册和 heartbeat，不再在领取前重复发送一次 heartbeat；执行环境不可用时仍单独 heartbeat 上报故障。执行任务时，独立线程每 15 秒发送 job heartbeat。编译任务上报远端真实阶段：`starting`、`waiting_lock`、`preparing`、`checking`、`building`、`installing`、`validating` 和 `activating`，SSH 不可达时上报 disconnected 并保留最后阶段。profile 尚未实现以下细粒度阶段事件：
 
 ```text
 checking_vpn
@@ -1454,12 +1454,14 @@ Worker/DO 指标至少记录：
 - `cloudflare/worker.js` 已导出 `RunnerEventHub`，使用 Hibernation WebSocket API 接受连接，并提供只供 Worker binding 调用的内部 `/notify`。
 - Worker 已增加已鉴权的 `GET /api/runner/events` Upgrade 路由；任务创建和重试在 D1 更新完成后通过 `ctx.waitUntil()` 异步发送 `job_available`。
 - 通知失败不会回滚任务；未指定目标 Runner 时通知当前注册的活跃 Runner，指定 `target_runner_id` 时只通知对应 Durable Object。
-- `backend/runner_agent.py` 已增加独立通知线程、协议校验、指数退避、Ping、启动/重连唤醒、5 分钟对账和缺依赖回退；Agent 版本更新为 `2.0.0`。
+- `backend/runner_agent.py` 已增加独立通知线程、协议校验、指数退避、Ping、启动/重连唤醒、5 分钟对账和缺依赖回退；Agent 版本更新为 `2.0.1`。
 - Relay heartbeat capabilities 已包含通知模式、连接状态、最近事件、最近错误、重连次数、通知唤醒次数和最近对账时间。
 - `requirements.txt` 固定使用 `websocket-client==1.8.0`；示例配置已增加通知和重连参数。
 - `wrangler.toml` 已增加 `RUNNER_EVENTS` binding 和 `runner-events-v1` SQLite Durable Object migration。
 - Worker 通知测试和 Relay 通知测试已加入自动测试；本地 Wrangler 已验证真实 Python WebSocket Upgrade 返回 `101 Switching Protocols`。
 - GitHub Actions `Deploy Cloudflare Worker #26` 已成功部署 commit `b84ef8c`，Durable Object binding 和 migration 已上线。
-- 本机已安装 `websocket-client 1.8.0`；A2/A5 配置均已启用通知并加载 Agent `2.0.0`，线上 Runner Token 鉴权的 WSS 握手成功且连接保持。
+- 本机已安装 `websocket-client 1.8.0`；A2/A5 配置均已启用通知并加载 Agent `2.0.1`，线上 Runner Token 鉴权的 WSS 握手成功且连接保持。
 
 A2/A5 下一项验收是从看板提交真实任务，确认 `created_at -> claimed_at` 小于 3 秒，并继续观察长连接重连与 5 分钟对账路径。
+
+看板提交任务后不再等待数据、任务和 Runner 三组刷新完成才反馈。Worker 创建响应返回后，页面立即显示持久状态、把新任务插入执行记录，并在前 9 秒按短间隔刷新领取状态；后台常规执行记录仍按 5 秒刷新。Relay 的正常领取路径由两次 Worker 请求缩减为一次 `/claim`，该接口在原子领取的同时更新 Runner 注册状态并返回待处理控制请求。

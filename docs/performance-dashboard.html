@@ -285,7 +285,10 @@
             </label>
             <div id="triggerExampleParameters" class="perf-example-parameters perf-form-fieldwide"></div>
             <label>备注 <input id="triggerNotes" placeholder="可选说明"></label>
-            <button type="submit" class="primary">执行测试</button>
+            <div class="perf-trigger-submit-actions perf-form-fieldwide">
+              <button id="triggerSubmitBtn" type="submit" class="primary">执行测试</button>
+              <span id="triggerSubmitStatus" class="perf-build-install-status" role="status" aria-live="polite"></span>
+            </div>
           </form>
         </div>
         <div class="perf-chart-card">
@@ -443,6 +446,8 @@
       triggerExecutionEnvironmentSynced: "",
       pendingBuildInstall: null,
       buildInstallSubmitting: false,
+      triggerSubmitting: false,
+      lastSubmittedJobId: "",
       exampleManifest: null,
       selectedExampleId: localStorage.getItem("fla-perf-example-id") || "flash_gated_delta_rule",
       triggerExampleValues: {},
@@ -711,6 +716,45 @@
       node.className = `perf-build-install-status${tone ? ` is-${tone}` : ""}`;
     }
 
+    function setTriggerSubmitStatus(message, tone = "") {
+      const node = document.querySelector("#triggerSubmitStatus");
+      node.textContent = message || "";
+      node.className = `perf-build-install-status${tone ? ` is-${tone}` : ""}`;
+    }
+
+    function upsertPerfJob(job) {
+      if (!job?.id) return;
+      state.jobs = [job, ...state.jobs.filter((item) => item.id !== job.id)];
+    }
+
+    async function watchPerfJobStart(jobId, taskLabel, statusCallback) {
+      const waitingStatuses = new Set(["queued", "waiting_runner", "waiting_vpn"]);
+      const delays = [250, 500, 750, 1000, 1500, 2000, 3000];
+      for (const delay of delays) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        if (!state.token) return;
+        await loadPerfJobs();
+        renderRuns();
+        renderMeta();
+        const job = state.jobs.find((item) => item.id === jobId);
+        if (!job || waitingStatuses.has(job.status)) continue;
+        if (statusCallback && state.lastSubmittedJobId === jobId) {
+          const runnerName = job.runner_id || "Runner";
+          const message = ["claimed", "running"].includes(job.status)
+            ? `${runnerName} 已领取${taskLabel}。`
+            : (job.status_message || `${taskLabel}状态已更新。`);
+          statusCallback(message, ["failed", "orphaned"].includes(job.status) ? "negative" : "positive");
+        }
+        return;
+      }
+    }
+
+    function refreshPerfDashboardInBackground() {
+      Promise.all([loadData(), loadPerfJobs(), loadRunnerStatus()])
+        .then(() => renderAll())
+        .catch(() => {});
+    }
+
     function showBuildInstallDialog(runner, executionEnvironment) {
       const branchLabel = executionEnvironment.branch_source === "remote"
         ? `origin/${executionEnvironment.branch}`
@@ -769,16 +813,20 @@
           execution_environment: pending.executionEnvironment,
           idempotency_key: pending.idempotencyKey,
         });
-        await Promise.all([loadData(), loadPerfJobs(), loadRunnerStatus()]);
-        renderAll();
-        maybeStartPerfPolling();
         const job = result.job || {};
+        upsertPerfJob(job);
+        state.lastSubmittedJobId = job.id || "";
+        renderRuns();
+        renderMeta();
+        maybeStartPerfPolling();
         const message = job.status === "queued"
-          ? "编译安装任务已提交，等待 VPN Runner 领取。"
+          ? "编译安装任务已提交，正在通知 Runner。"
           : (job.status_message || "编译安装任务已提交");
         document.querySelector("#buildInstallDialog").classList.add("hidden");
         state.pendingBuildInstall = null;
         setBuildInstallStatus(message, "positive");
+        void watchPerfJobStart(job.id, "编译安装任务", setBuildInstallStatus);
+        refreshPerfDashboardInBackground();
       } catch (error) {
         const message = error.message || String(error);
         errorNode.textContent = `提交失败：${message}`;
@@ -2032,15 +2080,35 @@
         }
         if (kernelName) payload.kernel_name = kernelName;
       }
+      if (state.triggerSubmitting) return;
+      const submitButton = document.querySelector("#triggerSubmitBtn");
+      state.triggerSubmitting = true;
+      submitButton.disabled = true;
+      submitButton.textContent = "提交中…";
+      setTriggerSubmitStatus("正在提交测试任务…", "pending");
       try {
         const result = await workerPost("/api/perf/jobs", payload);
-        await Promise.all([loadData(), loadPerfJobs(), loadRunnerStatus()]);
-        renderAll();
-        maybeStartPerfPolling();
         const job = result.job || {};
-        alert(job.status === "queued" ? "测试任务已提交，等待 VPN Runner 领取。" : (job.status_message || "任务已提交"));
+        upsertPerfJob(job);
+        state.lastSubmittedJobId = job.id || "";
+        renderRuns();
+        renderMeta();
+        maybeStartPerfPolling();
+        const runnerName = runner?.name || runner?.id || "Runner";
+        setTriggerSubmitStatus(
+          job.status === "queued"
+            ? `测试任务已提交，正在通知 ${runnerName}。`
+            : (job.status_message || "测试任务已提交"),
+          "positive",
+        );
+        void watchPerfJobStart(job.id, "测试任务", setTriggerSubmitStatus);
+        refreshPerfDashboardInBackground();
       } catch (error) {
-        alert(error.message || String(error));
+        setTriggerSubmitStatus(`提交失败：${error.message || String(error)}`, "negative");
+      } finally {
+        state.triggerSubmitting = false;
+        submitButton.disabled = false;
+        submitButton.textContent = "执行测试";
       }
     }
 

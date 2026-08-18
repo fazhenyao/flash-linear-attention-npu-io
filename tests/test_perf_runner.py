@@ -848,6 +848,49 @@ __END_NPU__
             "msprof --output=data/prof_gdr python3 test.py",
         )
 
+    def test_claim_uses_registration_response_for_runner_controls(self):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.api = Mock()
+        agent.runner_payload = Mock(return_value={"runner_id": "relay-test"})
+        agent._handle_runner_control = Mock()
+        response = {
+            "ok": True,
+            "runner": {"npu_status_refresh_id": "refresh-test"},
+            "job": {"id": "job-test"},
+        }
+        agent.api.post.return_value = response
+
+        job = agent.claim({"vpn_connected": True, "npu_reachable": True})
+
+        self.assertEqual(job, {"id": "job-test"})
+        agent._handle_runner_control.assert_called_once_with(response)
+
+    def test_run_once_does_not_send_redundant_heartbeat_when_ready(self):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.cleanup_expired_artifacts = Mock()
+        health = {"vpn_connected": True, "npu_reachable": True}
+        agent.health = Mock(return_value=health)
+        agent.send_runner_heartbeat = Mock()
+        agent.claim = Mock(return_value=None)
+
+        self.assertFalse(agent.run_once())
+
+        agent.claim.assert_called_once_with(health)
+        agent.send_runner_heartbeat.assert_not_called()
+
+    def test_run_once_reports_unavailable_runner_without_claiming(self):
+        agent = RunnerAgent.__new__(RunnerAgent)
+        agent.cleanup_expired_artifacts = Mock()
+        health = {"vpn_connected": False, "npu_reachable": False}
+        agent.health = Mock(return_value=health)
+        agent.send_runner_heartbeat = Mock()
+        agent.claim = Mock()
+
+        self.assertFalse(agent.run_once())
+
+        agent.send_runner_heartbeat.assert_called_once_with(health)
+        agent.claim.assert_not_called()
+
     @patch("backend.runner_agent.JobHeartbeat")
     def test_runner_agent_completes_build_without_prof_artifacts(self, heartbeat_class):
         agent = RunnerAgent.__new__(RunnerAgent)

@@ -3102,10 +3102,10 @@ async function getPerfRunnerStatus(env) {
 
 async function claimPerfJob(env, payload) {
   const runner = normalizeRunnerPayload(payload);
-  await registerRunner(env, payload);
+  const registration = await registerRunner(env, payload);
   await sweepExpiredPerfLeases(env);
   if (!runner.vpn_connected || !runner.npu_reachable) {
-    return { ok: true, job: null, reason: "runner_not_ready", retry_after_seconds: 30 };
+    return { ...registration, job: null, reason: "runner_not_ready", retry_after_seconds: 30 };
   }
   const active = await env.DB.prepare(
     `SELECT COUNT(*) AS job_count,
@@ -3117,7 +3117,7 @@ async function claimPerfJob(env, payload) {
   const activeJobs = Math.max(numberOr(active?.job_count, 0), runner.current_jobs);
   const activeBuilds = numberOr(active?.build_count, 0);
   const capacity = Math.max(0, maxConcurrency - activeJobs);
-  if (capacity < 1) return { ok: true, job: null, reason: "runner_at_capacity", retry_after_seconds: 15 };
+  if (capacity < 1) return { ...registration, job: null, reason: "runner_at_capacity", retry_after_seconds: 15 };
   const candidates = await selectAll(env,
     `SELECT * FROM perf_jobs
       WHERE status IN ('queued', 'waiting_runner', 'waiting_vpn') AND cancel_requested = 0
@@ -3144,9 +3144,9 @@ async function claimPerfJob(env, payload) {
     await appendPerfJobEvent(env, candidate.id, attemptId, "claimed", "info", `任务由 ${runner.id} 领取`, { runner_id: runner.id });
     await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(candidate.id).first());
     const job = await getPerfJob(env, candidate.id);
-    return { ok: true, job: { ...job, lease_token: leaseToken }, lease_seconds: PERF_LEASE_SECONDS };
+    return { ...registration, job: { ...job, lease_token: leaseToken }, lease_seconds: PERF_LEASE_SECONDS };
   }
-  return { ok: true, job: null, reason: "empty_queue", retry_after_seconds: 5 };
+  return { ...registration, job: null, reason: "empty_queue", retry_after_seconds: 5 };
 }
 
 async function sweepExpiredPerfLeases(env) {
