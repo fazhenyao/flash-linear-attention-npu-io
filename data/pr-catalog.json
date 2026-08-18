@@ -1,21 +1,9 @@
 {
-  "generatedAt": "2026-08-18T08:32:41+08:00",
+  "generatedAt": "2026-08-18T14:22:15+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 225,
+  "total": 224,
   "items": [
-    {
-      "number": 332,
-      "title": "Conditionally add config for ascend950 version",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/332",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-17T12:59:36Z",
-      "createdAt": "2026-08-17T12:58:12Z",
-      "headRef": "fix_compile",
-      "labels": []
-    },
     {
       "number": 331,
       "title": "blank",
