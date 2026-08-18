@@ -1,9 +1,69 @@
 {
-  "generatedAt": "2026-08-17T14:29:52+08:00",
+  "generatedAt": "2026-08-18T08:32:41+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 219,
+  "total": 225,
   "items": [
+    {
+      "number": 332,
+      "title": "Conditionally add config for ascend950 version",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/332",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-17T12:59:36Z",
+      "createdAt": "2026-08-17T12:58:12Z",
+      "headRef": "fix_compile",
+      "labels": []
+    },
+    {
+      "number": 331,
+      "title": "blank",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/331",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-17T12:37:36Z",
+      "createdAt": "2026-08-17T12:36:56Z",
+      "headRef": "0817-blank",
+      "labels": []
+    },
+    {
+      "number": 330,
+      "title": "GDN训练示例支持GVA",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/330",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-17T09:30:14Z",
+      "createdAt": "2026-08-17T09:30:05Z",
+      "headRef": "8_17",
+      "labels": []
+    },
+    {
+      "number": 329,
+      "title": "fix: probe legacy build capabilities by import",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/329",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-17T08:52:12Z",
+      "createdAt": "2026-08-17T08:52:11Z",
+      "headRef": "fix/issue-326-capability-probe",
+      "labels": []
+    },
+    {
+      "number": 327,
+      "title": "fix(v26.6.0): 排除 torchnpugen 聚合生成源码",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/327",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-17T09:27:38Z",
+      "createdAt": "2026-08-17T07:00:28Z",
+      "headRef": "fix/v26.6.0-generated-source-duplicates",
+      "labels": []
+    },
     {
       "number": 324,
       "title": "fix(gdn): bound KKT B-matrix tile by valid rows to fix varlen tail OOB",
@@ -35,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-17T01:24:56Z",
+      "updatedAt": "2026-08-17T07:46:49Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
       "labels": []
@@ -155,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-12T03:43:52Z",
+      "updatedAt": "2026-08-17T07:25:30Z",
       "createdAt": "2026-08-08T09:29:05Z",
       "headRef": "recurrent_kda_perf",
       "labels": []
@@ -638,6 +698,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 328,
+      "title": "ATK",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/328",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-17T12:51:36Z",
+      "updatedAt": "2026-08-17T12:51:36Z",
+      "createdAt": "2026-08-17T07:24:58Z",
+      "headRef": "0814-atk",
       "labels": []
     },
     {
