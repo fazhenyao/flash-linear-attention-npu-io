@@ -1041,17 +1041,13 @@ Relay 即使具备公网入站和出站能力，也不作为公网服务使用�
 
 Tunnel 可以避免直接开放源站端口，但逻辑上仍提供一个可被 Cloudflare 访问的 Relay 入站应用，并引入 Tunnel、Access、Webhook 重试和本地持久通知队列。当前没有必要为较低通知延迟承担这部分复杂度，因此不采用。
 
-### 25.3 可选演进：出站持久连接
+### 25.3 下一阶段目标：出站 WebSocket 通知
 
-如果未来对秒级通知有明确需求，可以让 Relay 主动建立到 Cloudflare Durable Object 或受控消息代理的出站 WebSocket，由云端沿已有连接发送通知。该方案不要求 Relay 开放公网端口，但必须实现：
+下一阶段采用“出站 WebSocket 通知唤醒 + `/api/runner/jobs/claim` 原子领取 + 低频 HTTPS 对账”。Relay 主动建立到 Cloudflare Durable Object 的 WSS 连接，云端只沿已有连接发送 `job_available` 通知，不向 Relay 发起新连接，也不直接推送完整任务。Relay 收到通知后立即调用现有领取接口，直到填满本地执行槽或队列为空。
 
-- 自动重连和心跳。
-- 消息序号与游标。
-- 重连后的漏消息对账。
-- D1 任务事实来源和原子接受。
-- 连接服务的鉴权、容量和故障恢复。
+该方案不要求 Relay 开放公网端口。D1 继续作为任务事实来源，`/claim` 继续负责原子占有、容量检查、能力路由和租约签发；WebSocket 仅降低任务发现延迟。WebSocket 断开、通知丢失或 Cloudflare 通知组件暂时失败时，任务仍保存在 D1，并由启动对账、重连对账和每 5 分钟一次的低频对账补领。
 
-在这些能力实现前，自适应 HTTPS 领取是默认方案。
+在第 29 节方案部署完成前，当前 2 至 30 秒自适应 HTTPS 领取仍是生产默认模式。
 
 第一阶段允许 Relay 运行在当前开启 VPN 的本机，以最小改造复用现有 `perf_runner.py`。生产阶段应迁移到长期在线的专用 VPN 网关或获得受控的站点到站点网络能力。
 
@@ -1159,3 +1155,309 @@ RUNNER_UPLOAD_CONCURRENCY=1
 ```
 
 并发改造不改变安全边界：Relay 仍仅发起出站 HTTPS 和 VPN 内 SSH，不增加监听端口，也不把 Relay 建设为公网服务。
+
+## 29. WebSocket 通知唤醒与原子领取方案
+
+### 29.1 决策与适用范围
+
+下一阶段推荐方案为：
+
+> Cloudflare Durable Object 维护 Relay 主动建立的 WebSocket；任务提交成功后只发送“队列有变化”通知；Relay 收到通知后继续通过 `/api/runner/jobs/claim` 原子领取；断线时依靠 D1、重连对账和 5 分钟低频对账恢复。
+
+选择该方案是因为通知与领取承担不同职责：
+
+- WebSocket 通知解决“Relay 何时知道有新任务”，目标是把最长 30 秒的空闲轮询延迟降低到秒级。
+- `/claim` 解决“哪个 Relay 独占哪个任务”，继续承担容量检查、能力匹配、条件更新、`attempt_id`、租约和防重复执行。
+- D1 解决“任务是否真实存在以及当前处于什么状态”，是唯一任务事实来源。
+
+不采用“WebSocket 直接推送完整任务并立即执行”。纯推送仍然需要在服务端实现等价的占有语义，还要额外处理容量同步、ACK/NACK、消息重放、D1 与 Durable Object 的跨组件一致性，稳定性收益不足以覆盖复杂度。
+
+### 29.2 目标与非目标
+
+目标：
+
+1. 在线 Relay 在任务提交后尽快开始领取，目标为通知发出后 3 秒内进入 `claimed`。
+2. Relay 和 NPU 服务器不开放任何公网入站端口，只使用 Relay 发起的 WSS/HTTPS 出站连接。
+3. 通知丢失、重复、乱序或 WebSocket 断开均不得造成任务丢失或重复执行。
+4. 保留当前每个 Agent 最多三个执行线程、单编译任务和单 R2 上传并发约束。
+5. Worker、Durable Object 或 WebSocket 故障时自动退化为低频 HTTPS 对账，不阻断任务提交。
+6. 可以通过配置逐台启用，并能无数据迁移地回退到当前自适应轮询。
+
+非目标：
+
+- WebSocket 消息不承载完整任务参数、SSH 凭据、Runner Token 或 R2 凭据。
+- 不追求通知消息恰好一次；通知允许重复，领取必须保持原子和幂等。
+- 不通过 WebSocket 传输 Prof ZIP、完整日志或任务执行输出。
+- 本阶段不改变 profile 的同步 SSH 机制，也不增加 Device 锁。
+
+### 29.3 目标架构
+
+```mermaid
+flowchart LR
+    U[性能看板] -->|POST 创建任务| W[Cloudflare Worker]
+    W -->|提交任务事务| D[(Cloudflare D1)]
+    W -->|内部 notify runner_id| H[RunnerEventHub Durable Object]
+    R[VPN Runner Relay] -->|主动建立 WSS /api/runner/events| H
+    H -->|job_available| R
+    R -->|POST /api/runner/jobs/claim| W
+    W -->|条件更新 queued -> claimed| D
+    W -->|任务 + attempt_id + lease_token| R
+    R -->|SSH / SCP| N[NPU 服务器]
+    R -->|heartbeat / result / artifact| W
+```
+
+每个 `runner_id` 使用独立的 Durable Object 实例，例如：
+
+```text
+RUNNER_EVENTS.idFromName("vpn-runner-windows-01")
+RUNNER_EVENTS.idFromName("vpn-runner-windows-a5-01")
+```
+
+这样 A2 和 A5 的连接、通知和故障彼此隔离，也避免把所有 Runner 放入一个全局单例。当前任务已经显式包含 `target_runner_id`，提交成功后 Worker 可以直接通知目标实例。
+
+### 29.4 核心时序
+
+#### Relay 启动
+
+1. Agent 注册并发送 Runner heartbeat。
+2. Agent 立即执行一次 `/claim` 对账，处理停机期间已经排队的任务。
+3. 通知线程使用 Runner Token 建立 `wss://<worker-host>/api/runner/events?runner_id=<id>`。
+4. Worker 在 WebSocket Upgrade 前执行 Runner 鉴权；Token 只放在 `Authorization` 请求头，不放在 URL 查询参数。
+5. Durable Object 接受连接并保存 `runner_id` 附件，进入可休眠的 WebSocket 状态。
+6. 连接成功事件唤醒 Dispatcher，再执行一次 `/claim`，覆盖“首次对账结束到连接建立之间”提交任务的竞态窗口。
+
+#### 用户提交任务
+
+1. Worker 完成用户鉴权、参数校验和幂等检查。
+2. Worker 先把任务写入 D1，状态为 `queued`；只有数据库写入成功才发送通知。
+3. Worker 使用 `ctx.waitUntil()` 调用目标 `RunnerEventHub` 的内部通知方法。
+4. Durable Object 向目标 Runner 的所有有效连接发送一条 `job_available`。
+5. 若通知调用失败，用户的任务提交仍然成功；D1 中的任务由重连或低频对账补领。
+
+#### Relay 收到通知
+
+1. WebSocket 接收线程只校验消息并设置本地 `dispatch_event`，不直接执行任务，也不直接修改活动任务集合。
+2. Dispatcher 被唤醒后检查 `available_slots()`。
+3. 只要还有空闲槽位，就调用 `/claim`；领取成功后提交到现有 `ThreadPoolExecutor(max_workers=3)`。
+4. Dispatcher 继续领取，直到三个槽位已满、队列为空、VPN/NPU 不可达或 Worker 返回无可执行任务。
+5. 执行线程结束时继续设置同一个 `dispatch_event`，即使没有新通知也会立即尝试填补空闲槽位。
+
+```mermaid
+sequenceDiagram
+    participant U as 看板
+    participant W as Worker
+    participant D as D1
+    participant H as Durable Object
+    participant R as Relay Dispatcher
+    participant E as 执行线程池
+
+    R->>H: 主动建立已鉴权 WSS
+    R->>W: 启动/连接成功对账 claim
+    U->>W: 提交任务 target_runner_id
+    W->>D: INSERT queued
+    D-->>W: commit
+    W-->>U: 201 Created
+    W->>H: notify(job_available)
+    H-->>R: job_available
+    loop available_slots > 0
+        R->>W: POST /api/runner/jobs/claim
+        W->>D: 条件更新 queued -> claimed
+        W-->>R: job + lease_token 或 empty_queue
+        R->>E: submit(job)
+    end
+```
+
+### 29.5 通知协议
+
+协议只需要表达“队列可能有任务”，不需要保证每个任务对应一条消息。建议第一版使用：
+
+```json
+{
+  "version": 1,
+  "type": "job_available",
+  "event_id": "evt-uuid",
+  "runner_id": "vpn-runner-windows-a5-01",
+  "created_at": "2026-08-18T08:00:00.000Z"
+}
+```
+
+约束：
+
+- Relay 只接受 `version=1`、已知 `type` 且 `runner_id` 与本机一致的消息。
+- `event_id` 仅用于日志和诊断，不作为任务游标；重复事件只会重复触发一次安全的 `/claim`。
+- Durable Object 可以合并短时间内连续的通知。三个任务同时提交时只发送一条通知也不会影响领取，因为 Dispatcher 会连续 `/claim` 到容量上限。
+- 通知不包含 `job_id`，防止 Relay 把通知误当作已分配任务；真正的任务和租约只能由 `/claim` 返回。
+- WebSocket Ping/Pong 只用于连接保活，不替代 Runner heartbeat 和 job heartbeat。
+
+### 29.6 `/claim` 在通知模式中的职责
+
+保留现有 `POST /api/runner/jobs/claim`，其行为不因通知模式而改变：
+
+1. 校验 Runner Token 并刷新 Agent 注册信息。
+2. 清理过期租约。
+3. 检查 VPN、NPU 可达性、Agent 最大并发数和当前活动任务数。
+4. 限制同一 Agent 最多一个 `build_install`。
+5. 按 `target_runner_id`、能力和创建时间筛选任务。
+6. 使用带旧状态条件的 D1 `UPDATE` 原子执行 `queued -> claimed`。
+7. 签发新的 `attempt_id`、`lease_token` 和租约过期时间。
+8. 每次调用最多返回一个任务；Relay 根据本地剩余容量决定是否继续领取。
+
+通知不能替代这些步骤。即使多个连接收到重复通知，只有一个条件更新能够成功，其他请求会继续寻找下一条任务或返回空队列。
+
+### 29.7 断线、漏通知和竞态处理
+
+| 场景 | 处理方式 | 最坏恢复时间 |
+| --- | --- | --- |
+| 任务在 Relay 建立 WSS 前提交 | Agent 启动和连接成功各执行一次 `/claim` | 连接恢复后立即 |
+| D1 写入成功但通知失败 | 任务保留为 `queued`，由重连或低频对账发现 | 在线稳定时最多 5 分钟 |
+| WebSocket 短暂断开 | 按 `1、2、5、10、30` 秒并加入随机抖动重连 | 通常 30 秒内 |
+| WebSocket 长时间断开但 HTTPS 正常 | 每 5 分钟调用一次 `/claim` | 最多 5 分钟 |
+| 收到重复或乱序通知 | 多次设置同一 `dispatch_event`，`/claim` 条件更新防重复 | 无额外任务执行 |
+| Relay 执行槽已满 | 不提前领取；任务留在 D1，线程结束后立即重新 `/claim` | 一个槽位释放后立即 |
+| Relay 重启 | 本地恢复编译任务后执行启动对账，再建立 WSS | Agent 启动后立即 |
+| Worker/DO 部署或重启 | WebSocket 自动重连，D1 状态不受影响 | 重连或 5 分钟对账 |
+| Runner Token 轮换 | 连接鉴权失败，更新本地 DPAPI Token 后重连 | 运维完成后立即 |
+
+低频对账仍然属于主动查询，但它是故障恢复保险，不是正常任务发现路径。建议：
+
+```text
+RUNNER_NOTIFICATION_ENABLED=true
+RUNNER_RECONCILE_SECONDS=300
+RUNNER_WS_RECONNECT_MIN_SECONDS=1
+RUNNER_WS_RECONNECT_MAX_SECONDS=30
+RUNNER_WS_CONNECT_TIMEOUT_SECONDS=15
+```
+
+通知模式稳定运行后，原有 `RUNNER_POLL_MIN_SECONDS=2` 和 `RUNNER_POLL_MAX_SECONDS=30` 不再驱动空闲轮询；关闭通知功能时仍使用原自适应轮询作为完整回退模式。
+
+### 29.8 Cloudflare 侧改造
+
+#### Wrangler 配置
+
+新增 Durable Object binding 和迁移，名称示例：
+
+```toml
+[[durable_objects.bindings]]
+name = "RUNNER_EVENTS"
+class_name = "RunnerEventHub"
+
+[[migrations]]
+tag = "runner-events-v1"
+new_sqlite_classes = ["RunnerEventHub"]
+```
+
+正式部署前需要确认当前 Cloudflare 账号已启用 Durable Objects，并在预览环境先执行迁移。R2 Bucket 和 D1 binding 不需要改变。
+
+#### Worker 与 Durable Object
+
+需要增加：
+
+- `GET /api/runner/events`：要求 `Upgrade: websocket`，复用 Runner Token 鉴权，校验 `runner_id` 后转发到对应 Durable Object。
+- `RunnerEventHub`：使用 Hibernation WebSocket API 接受连接、保存连接附件、处理关闭和异常。
+- 内部 `notify`：只允许 Worker 调用，遍历当前连接并发送合并后的 `job_available`。
+- 任务创建后通知：D1 commit 后通过 `ctx.waitUntil()` 异步通知目标 Runner，通知失败只记录指标，不回滚已创建任务。
+- 可观测字段：连接数、最近连接时间、最近通知时间、通知成功/失败次数和最近错误。
+
+不新增公网通知写入接口；浏览器不能直接调用 Durable Object 的 `notify`。看板提交仍只访问现有用户任务 API。
+
+### 29.9 Relay 侧改造
+
+在 `backend/runner_agent.py` 中增加独立通知客户端，但不改变现有执行线程池：
+
+- Agent 启动一个 WebSocket 接收线程，与 Dispatcher、NPU 状态线程和任务执行线程分离。
+- 接收线程不运行 SSH、SCP、压缩或上传，只负责连接、协议校验和 `dispatch_event.set()`。
+- WebSocket 客户端需要支持自定义 `Authorization` 请求头、企业代理和 TLS 校验；依赖应固定版本并加入部署检查。
+- 读取当前 `HTTPS_PROXY` / `NO_PROXY` 约定，记录代理连接失败、TLS 失败、鉴权失败和服务端关闭码，但不得记录 Token。
+- 重连使用有上限的指数退避和随机抖动，避免 A2/A5 同时重连形成同步请求。
+- `run_forever()` 将等待条件改为：通知事件、任务线程完成、Agent 停止、5 分钟对账定时器或关闭通知时的轮询定时器。
+- `--once` 和测试环境不建立持久 WebSocket，继续执行一次 heartbeat/claim 后退出。
+
+本地配置继续分别存放在 A2/A5 `.local-secrets/runner-config*.json`，不把 Runner Token 写入配置文件或 URL。
+
+### 29.10 安全边界
+
+- Relay 只发起到 Cloudflare 的 WSS/HTTPS 出站连接，不监听端口、不部署 Webhook、不运行公网 Tunnel。
+- WebSocket Upgrade 必须先验证 Runner Token；无效 Token 在进入 Durable Object 前拒绝。
+- 建议从当前共享 Token 演进为每个 `runner_id` 独立 Token，并在服务端绑定允许的 Runner ID。
+- Token 继续由 Windows DPAPI 保存，日志、异常和 WebSocket URL 均不得包含 Token。
+- Worker 对连接建立和失败鉴权增加速率限制，避免 WebSocket 握手被滥用。
+- 通知消息不可信地触发命令；所有命令和参数仍以 `/claim` 返回且经过 Worker/Relay 双重白名单校验的任务为准。
+- Durable Object 不能访问 SSH、VPN 或 NPU，只承担连接协调和无状态通知。
+
+### 29.11 可观测性
+
+每个 Agent 建议增加以下状态，并通过 Runner heartbeat 上报：
+
+```text
+notification_mode=websocket
+notification_connected=true|false
+notification_connected_at=<UTC>
+notification_last_event_at=<UTC>
+notification_last_error=<截断且脱敏>
+notification_reconnect_count=<number>
+notification_claim_wakeups=<number>
+reconcile_last_at=<UTC>
+```
+
+Worker/DO 指标至少记录：
+
+- 当前 WebSocket 连接数。
+- 按 `runner_id` 的最近连接和断开时间。
+- `job_available` 尝试数、成功数和失败数。
+- 任务从 `created_at` 到 `claimed_at` 的延迟分布。
+- 通知触发领取与低频对账触发领取的数量。
+
+看板可以继续以“在线/离线”和 `current_jobs/max_concurrency` 为主，不需要把 WebSocket 细节暴露给普通用户；管理员诊断界面可展示通知连接状态和最近错误。
+
+### 29.12 实施顺序与回退
+
+1. 为 Worker 增加 Durable Object、WebSocket 路由、通知函数和自动测试，但保持通知功能关闭。
+2. 为 Relay 增加通知客户端、重连、启动/重连对账和 5 分钟定时对账；保留原轮询代码路径。
+3. 先在 A5 Agent 设置 `RUNNER_NOTIFICATION_ENABLED=true`，A2 继续轮询，验证任务提交、断线和回退。
+4. A5 连续运行至少一个工作日且无任务遗漏后启用 A2。
+5. 两个 Agent 稳定后，把通知模式设为默认，同时保留配置开关。
+6. 出现 Durable Object、代理或 WebSocket 兼容问题时，将开关改为 `false` 并重启 Agent，即刻恢复当前 2 至 30 秒轮询，不需要迁移或修改 D1 任务。
+
+部署顺序必须先 Worker/DO、后 Relay；旧 Relay 不会访问新 WebSocket 接口，因此 Worker 可以向后兼容发布。回滚顺序优先关闭 Relay 通知功能，再决定是否回滚 Worker，避免旧 Worker 不认识新连接路由。
+
+### 29.13 测试与验收
+
+自动测试：
+
+1. WebSocket Upgrade 缺少或使用错误 Runner Token 时返回 401。
+2. Runner ID 不合法或与 Token 权限不符时拒绝连接。
+3. D1 创建任务成功后调用对应 Runner 的通知对象。
+4. 通知失败不影响已创建任务，任务保持 `queued`。
+5. 重复 `job_available` 只会导致安全的重复 claim，不会重复领取同一任务。
+6. 三个空闲槽位时 Dispatcher 可连续领取三个任务；第四个任务保留排队。
+7. 已有一个编译任务时不会领取第二个编译任务，但可以领取性能测试。
+8. WebSocket 断开后按退避重连；重连成功立即对账。
+9. 5 分钟对账能够补领未收到通知的任务。
+10. 关闭通知开关后恢复原自适应轮询。
+
+真实环境验收：
+
+1. A5 在线且空闲时提交一条测试，连续多次验证 `created_at -> claimed_at` 小于 3 秒。
+2. 同时提交四条 A5 测试，前三条进入执行槽，第四条保持排队并在线程释放后立即领取。
+3. 手动断开 WebSocket但保持 HTTPS/VPN 可用，确认任务最迟在 5 分钟对账时被领取。
+4. WebSocket 重连后提交任务，确认无需等待低频对账。
+5. 停止 Agent后提交任务，确认任务保留；启动 Agent后由启动对账立即领取。
+6. A2/A5 同时在线时，目标任务只通知并由指定 Runner 领取。
+7. 执行期间重启 Worker/部署 Durable Object，确认已领取任务的 heartbeat、结果和 R2 上传不受通知连接重建影响。
+
+达到以上验收条件后，才把第 25 节“当前部署决策”从自适应轮询更新为通知模式。未完成验收前，文档和看板应明确当前生产仍使用 Relay 主动轮询。
+
+### 29.14 实施状态（2026-08-18）
+
+代码实现已完成，生产启用前状态如下：
+
+- `cloudflare/worker.js` 已导出 `RunnerEventHub`，使用 Hibernation WebSocket API 接受连接，并提供只供 Worker binding 调用的内部 `/notify`。
+- Worker 已增加已鉴权的 `GET /api/runner/events` Upgrade 路由；任务创建和重试在 D1 更新完成后通过 `ctx.waitUntil()` 异步发送 `job_available`。
+- 通知失败不会回滚任务；未指定目标 Runner 时通知当前注册的活跃 Runner，指定 `target_runner_id` 时只通知对应 Durable Object。
+- `backend/runner_agent.py` 已增加独立通知线程、协议校验、指数退避、Ping、启动/重连唤醒、5 分钟对账和缺依赖回退；Agent 版本更新为 `2.0.0`。
+- Relay heartbeat capabilities 已包含通知模式、连接状态、最近事件、最近错误、重连次数、通知唤醒次数和最近对账时间。
+- `requirements.txt` 固定使用 `websocket-client==1.8.0`；示例配置已增加通知和重连参数。
+- `wrangler.toml` 已增加 `RUNNER_EVENTS` binding 和 `runner-events-v1` SQLite Durable Object migration。
+- Worker 通知测试和 Relay 通知测试已加入自动测试；本地 Wrangler 已验证真实 Python WebSocket Upgrade 返回 `101 Switching Protocols`。
+
+在 Worker/DO 完成远程部署且 A5 灰度验收前，本机 A2/A5 配置不应打开通知开关，生产仍使用原自适应轮询。

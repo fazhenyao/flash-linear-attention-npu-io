@@ -38,7 +38,12 @@ from backend.perf_runner import (
     soc_build_target,
     start_persistent_build_install,
 )
-from backend.runner_agent import AgentConfig, RunnerAgent
+from backend.runner_agent import (
+    AgentConfig,
+    RunnerAgent,
+    RunnerNotificationClient,
+    runner_events_url,
+)
 from scripts.cube_theoretical_flops import compute_mfu
 from scripts.hbm_theoretical_bytes import compute_mbu
 
@@ -942,6 +947,58 @@ __END_NPU__
                 agent._executor.shutdown(wait=True)
 
             self.assertEqual(agent.active_job_count(), 0)
+
+    def test_runner_notification_url_never_contains_the_token(self):
+        url = runner_events_url("https://worker.example/base", "runner a5")
+
+        self.assertEqual(
+            url,
+            "wss://worker.example/base/api/runner/events?runner_id=runner+a5",
+        )
+        self.assertNotIn("token", url.lower())
+
+    def test_runner_notification_wakes_dispatcher_for_matching_events(self):
+        config = SimpleNamespace(runner_id="runner-a5", notification_enabled=True)
+        agent = SimpleNamespace(config=config, _dispatch_event=threading.Event())
+        client = RunnerNotificationClient(agent, connector=Mock())
+
+        client._handle_message(json.dumps({
+            "version": 1,
+            "type": "job_available",
+            "event_id": "evt-test",
+            "runner_id": "runner-a5",
+        }))
+
+        self.assertTrue(agent._dispatch_event.is_set())
+        self.assertEqual(client.status()["claim_wakeups"], 1)
+
+    def test_runner_notification_ignores_other_runners_and_unknown_versions(self):
+        config = SimpleNamespace(runner_id="runner-a5", notification_enabled=True)
+        agent = SimpleNamespace(config=config, _dispatch_event=threading.Event())
+        client = RunnerNotificationClient(agent, connector=Mock())
+
+        client._handle_message(json.dumps({
+            "version": 1,
+            "type": "job_available",
+            "runner_id": "runner-a2",
+        }))
+        client._handle_message(json.dumps({
+            "version": 2,
+            "type": "job_available",
+            "runner_id": "runner-a5",
+        }))
+
+        self.assertFalse(agent._dispatch_event.is_set())
+        self.assertEqual(client.status()["claim_wakeups"], 0)
+
+    def test_runner_notification_falls_back_when_transport_is_missing(self):
+        config = SimpleNamespace(runner_id="runner-a5", notification_enabled=True)
+        agent = SimpleNamespace(config=config, _dispatch_event=threading.Event())
+        client = RunnerNotificationClient(agent, connector=Mock())
+        client._connector = None
+
+        self.assertFalse(client.start())
+        self.assertEqual(client.status()["mode"], "polling_fallback")
 
     def test_runner_run_id_is_safe_for_isolated_prof_directories(self):
         self.assertEqual(

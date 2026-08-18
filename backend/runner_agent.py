@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import random
 import shutil
 import signal
 import socket
@@ -22,6 +23,11 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+
+try:
+    import websocket as websocket_client
+except ImportError:  # The feature flag falls back to HTTPS polling until installed.
+    websocket_client = None
 
 try:
     from .perf_runner import (
@@ -71,6 +77,13 @@ def env_int(name: str, default: int, minimum: int = 0) -> int:
         return default
 
 
+def env_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 @dataclass(frozen=True)
 class AgentConfig:
     api_base: str
@@ -81,6 +94,11 @@ class AgentConfig:
     poll_max_seconds: int
     error_backoff_max_seconds: int
     heartbeat_seconds: int
+    notification_enabled: bool
+    reconcile_seconds: int
+    ws_reconnect_min_seconds: int
+    ws_reconnect_max_seconds: int
+    ws_connect_timeout_seconds: int
     max_concurrency: int
     state_dir: Path
     retention_days: int
@@ -98,6 +116,7 @@ class AgentConfig:
         runner_id = os.environ.get("RUNNER_ID", "vpn-runner-01").strip()
         if not runner_id:
             raise ValueError("RUNNER_ID 未配置")
+        ws_reconnect_min_seconds = env_int("RUNNER_WS_RECONNECT_MIN_SECONDS", 1, 1)
         state_dir = Path(os.environ.get("RUNNER_STATE_DIR", ROOT / "data" / "runner-state"))
         if not state_dir.is_absolute():
             state_dir = ROOT / state_dir
@@ -110,6 +129,14 @@ class AgentConfig:
             poll_max_seconds=env_int("RUNNER_POLL_MAX_SECONDS", 30, 2),
             error_backoff_max_seconds=env_int("RUNNER_ERROR_BACKOFF_MAX_SECONDS", 120, 5),
             heartbeat_seconds=env_int("RUNNER_HEARTBEAT_SECONDS", 15, 5),
+            notification_enabled=env_bool("RUNNER_NOTIFICATION_ENABLED", False),
+            reconcile_seconds=env_int("RUNNER_RECONCILE_SECONDS", 300, 30),
+            ws_reconnect_min_seconds=ws_reconnect_min_seconds,
+            ws_reconnect_max_seconds=max(
+                ws_reconnect_min_seconds,
+                env_int("RUNNER_WS_RECONNECT_MAX_SECONDS", 30, 1),
+            ),
+            ws_connect_timeout_seconds=env_int("RUNNER_WS_CONNECT_TIMEOUT_SECONDS", 15, 5),
             max_concurrency=env_int("RUNNER_MAX_CONCURRENCY", 1, 1),
             state_dir=state_dir,
             retention_days=env_int("RUNNER_ARTIFACT_RETENTION_DAYS", 30, 1),
@@ -167,6 +194,182 @@ class RunnerApi:
             raise RuntimeError(f"Runner upload API HTTP {exc.code}: {detail[:1000]}") from exc
         except urllib.error.URLError as exc:
             raise RuntimeError(f"Runner upload API 不可达：{exc.reason}") from exc
+
+
+def runner_events_url(api_base: str, runner_id: str) -> str:
+    parsed = urllib.parse.urlsplit(api_base)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("RUNNER_API_BASE 必须是 HTTP(S) URL")
+    scheme = "wss" if parsed.scheme == "https" else "ws"
+    path = f"{parsed.path.rstrip('/')}/api/runner/events"
+    query = urllib.parse.urlencode({"runner_id": runner_id})
+    return urllib.parse.urlunsplit((scheme, parsed.netloc, path, query, ""))
+
+
+class RunnerNotificationClient:
+    def __init__(self, agent: "RunnerAgent", connector: Any = None):
+        self.agent = agent
+        self.config = agent.config
+        self._connector = connector or (
+            websocket_client.create_connection if websocket_client is not None else None
+        )
+        self._stop_event = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._socket: Any = None
+        self._socket_lock = threading.Lock()
+        self._status_lock = threading.Lock()
+        self._status: dict[str, Any] = {
+            "mode": "websocket" if getattr(self.config, "notification_enabled", False) else "polling",
+            "enabled": bool(getattr(self.config, "notification_enabled", False)),
+            "available": self._connector is not None,
+            "connected": False,
+            "connected_at": None,
+            "last_event_at": None,
+            "last_error": "",
+            "reconnect_count": 0,
+            "claim_wakeups": 0,
+            "reconcile_last_at": None,
+        }
+
+    @property
+    def active(self) -> bool:
+        return bool(getattr(self.config, "notification_enabled", False) and self._connector)
+
+    def status(self) -> dict[str, Any]:
+        with self._status_lock:
+            return dict(self._status)
+
+    def _update_status(self, **values: Any) -> None:
+        with self._status_lock:
+            self._status.update(values)
+
+    def mark_reconcile(self) -> None:
+        self._update_status(reconcile_last_at=utc_now())
+
+    def start(self) -> bool:
+        if not getattr(self.config, "notification_enabled", False):
+            return False
+        if self._connector is None:
+            message = "websocket-client 未安装，已回退到 HTTPS 轮询"
+            self._update_status(mode="polling_fallback", available=False, last_error=message)
+            print(f"[runner] {message}", flush=True)
+            return False
+        if self._thread and self._thread.is_alive():
+            return True
+        self._thread = threading.Thread(
+            target=self._run,
+            name=f"runner-events-{self.config.runner_id}",
+            daemon=True,
+        )
+        self._thread.start()
+        return True
+
+    def stop(self, *, wait: bool = True) -> None:
+        self._stop_event.set()
+        with self._socket_lock:
+            active_socket = self._socket
+        if active_socket is not None:
+            try:
+                active_socket.close()
+            except Exception:
+                pass
+        if wait and self._thread and self._thread.is_alive():
+            self._thread.join(timeout=5)
+
+    def _connect(self) -> Any:
+        return self._connector(
+            runner_events_url(self.config.api_base, self.config.runner_id),
+            header={
+                "Authorization": f"Bearer {self.config.token}",
+                "User-Agent": f"fla-vpn-runner/{self.config.runner_id}",
+            },
+            timeout=self.config.ws_connect_timeout_seconds,
+            enable_multithread=True,
+        )
+
+    def _handle_message(self, raw_message: Any) -> None:
+        if isinstance(raw_message, bytes):
+            raw_message = raw_message.decode("utf-8", errors="replace")
+        try:
+            message = json.loads(str(raw_message))
+        except (TypeError, ValueError):
+            return
+        if (
+            message.get("version") != 1
+            or message.get("type") != "job_available"
+            or message.get("runner_id") != self.config.runner_id
+        ):
+            return
+        with self._status_lock:
+            self._status["last_event_at"] = utc_now()
+            self._status["claim_wakeups"] += 1
+            self._status["last_error"] = ""
+        self.agent._dispatch_event.set()
+
+    @staticmethod
+    def _is_timeout(error: Exception) -> bool:
+        return isinstance(error, socket.timeout) or error.__class__.__name__ == "WebSocketTimeoutException"
+
+    def _run(self) -> None:
+        reconnect_delay = self.config.ws_reconnect_min_seconds
+        connected_once = False
+        while not self._stop_event.is_set() and not self.agent.stop_event.is_set():
+            active_socket = None
+            try:
+                active_socket = self._connect()
+                with self._socket_lock:
+                    self._socket = active_socket
+                if hasattr(active_socket, "settimeout"):
+                    active_socket.settimeout(30)
+                if connected_once:
+                    with self._status_lock:
+                        self._status["reconnect_count"] += 1
+                connected_once = True
+                reconnect_delay = self.config.ws_reconnect_min_seconds
+                self._update_status(
+                    mode="websocket",
+                    available=True,
+                    connected=True,
+                    connected_at=utc_now(),
+                    last_error="",
+                )
+                self.agent._dispatch_event.set()
+                while not self._stop_event.is_set() and not self.agent.stop_event.is_set():
+                    try:
+                        message = active_socket.recv()
+                        if message is None or message == "":
+                            raise ConnectionError("WebSocket 已关闭")
+                        self._handle_message(message)
+                    except Exception as exc:
+                        if self._is_timeout(exc):
+                            try:
+                                active_socket.ping()
+                                continue
+                            except Exception as ping_error:
+                                raise ConnectionError(f"WebSocket Ping 失败：{ping_error}") from ping_error
+                        raise
+            except Exception as exc:
+                if not self._stop_event.is_set() and not self.agent.stop_event.is_set():
+                    self._update_status(
+                        connected=False,
+                        last_error=str(exc)[:1000],
+                    )
+            finally:
+                with self._socket_lock:
+                    if self._socket is active_socket:
+                        self._socket = None
+                if active_socket is not None:
+                    try:
+                        active_socket.close()
+                    except Exception:
+                        pass
+                self._update_status(connected=False)
+            if self._stop_event.is_set() or self.agent.stop_event.is_set():
+                break
+            jitter = random.uniform(0, min(1.0, reconnect_delay * 0.2))
+            if self._stop_event.wait(reconnect_delay + jitter):
+                break
+            reconnect_delay = min(self.config.ws_reconnect_max_seconds, reconnect_delay * 2)
 
 
 class JobHeartbeat(threading.Thread):
@@ -234,6 +437,7 @@ class RunnerAgent:
         )
         self._build_slot = threading.Lock()
         self._upload_slots = threading.BoundedSemaphore(upload_concurrency)
+        self.notification = RunnerNotificationClient(self)
         self.config.state_dir.mkdir(parents=True, exist_ok=True)
         (self.config.state_dir / "jobs").mkdir(parents=True, exist_ok=True)
         self._npu_status_lock = threading.Lock()
@@ -254,6 +458,9 @@ class RunnerAgent:
     def stop(self, *_args: object) -> None:
         self.stop_event.set()
         self._dispatch_event.set()
+        notification = getattr(self, "notification", None)
+        if notification is not None:
+            notification.stop(wait=False)
 
     def active_job_count(self) -> int:
         lock = getattr(self, "_active_jobs_lock", None)
@@ -328,6 +535,7 @@ class RunnerAgent:
             "op_warm_up": status.get("op_warm_up"),
             "op_launch_count": status.get("op_launch_count"),
             "max_concurrency": self.config.max_concurrency,
+            "notification": self.notification.status(),
             "npu_status": npu_status,
             "execution_environment": {
                 "defaults": execution_environment_defaults(perf_config),
@@ -338,7 +546,7 @@ class RunnerAgent:
                 "source_remote_branch_query": perf_config.mode == "ssh" and bool(perf_config.remote_source_repo),
                 "source_branches": self.source_branches_status(),
             },
-            "agent_version": "1.9.0",
+            "agent_version": "2.0.0",
         }
 
     def source_branches_cache_path(self) -> Path:
@@ -1235,7 +1443,9 @@ class RunnerAgent:
     def run_forever(self) -> None:
         self.register()
         self.schedule_recovered_build_jobs()
+        notification_active = self.notification.start()
         delay = self.config.poll_min_seconds
+        next_reconcile_at = time.monotonic() + self.config.reconcile_seconds
         try:
             while not self.stop_event.is_set():
                 try:
@@ -1252,13 +1462,20 @@ class RunnerAgent:
                         if not self.submit_job(job):
                             break
                         worked = True
-                    delay = self.config.poll_min_seconds if worked else min(self.config.poll_max_seconds, delay + 2)
+                    if notification_active:
+                        delay = max(0.1, next_reconcile_at - time.monotonic())
+                    else:
+                        delay = self.config.poll_min_seconds if worked else min(self.config.poll_max_seconds, delay + 2)
                 except Exception as exc:
                     print(f"[runner] {exc}", flush=True)
                     delay = min(self.config.error_backoff_max_seconds, max(delay * 2, 5))
-                self._dispatch_event.wait(delay)
+                event_received = self._dispatch_event.wait(delay)
                 self._dispatch_event.clear()
+                if notification_active and not event_received:
+                    self.notification.mark_reconcile()
+                    next_reconcile_at = time.monotonic() + self.config.reconcile_seconds
         finally:
+            self.notification.stop()
             self._executor.shutdown(wait=True, cancel_futures=False)
 
 

@@ -77,9 +77,63 @@ const PERF_NPU_REFRESH_REUSE_MILLISECONDS = 180000;
 const PERF_ARTIFACT_MAX_PARTS = 10000;
 const PERF_ARTIFACT_KEY_PREFIX = "perf-artifacts";
 const PERF_ARTIFACT_STORAGE_LIMIT_BYTES = 9_000_000_000;
+const RUNNER_EVENT_PROTOCOL_VERSION = 1;
+
+export class RunnerEventHub {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === "/api/runner/events" && request.method === "GET") {
+      if (String(request.headers.get("Upgrade") || "").toLowerCase() !== "websocket") {
+        return new Response("websocket upgrade required", { status: 426 });
+      }
+      const runnerId = safeIdentifier(url.searchParams.get("runner_id"), "runner_id", 96);
+      const pair = new WebSocketPair();
+      const [client, server] = Object.values(pair);
+      server.serializeAttachment({ runner_id: runnerId, connected_at: nowIso() });
+      this.state.acceptWebSocket(server);
+      return new Response(null, { status: 101, webSocket: client });
+    }
+    if (url.pathname === "/notify" && request.method === "POST") {
+      const payload = await readJson(request);
+      const message = runnerEventMessage(payload.runner_id, payload.event_id, payload.created_at);
+      let delivered = 0;
+      for (const socket of this.state.getWebSockets()) {
+        try {
+          socket.send(JSON.stringify(message));
+          delivered += 1;
+        } catch {
+          // The hibernation API removes closed sockets; a concurrent close is harmless.
+        }
+      }
+      return Response.json({ ok: true, delivered });
+    }
+    return new Response("not found", { status: 404 });
+  }
+
+  webSocketClose(socket, code, reason) {
+    try {
+      socket.close(code, reason);
+    } catch {
+      // The peer may already have completed the close handshake.
+    }
+  }
+
+  webSocketError(socket) {
+    try {
+      socket.close(1011, "websocket error");
+    } catch {
+      // Nothing remains to clean up when the socket is already closed.
+    }
+  }
+}
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return emptyResponse(request, env);
     try {
@@ -145,12 +199,12 @@ export default {
       if (url.pathname === "/api/perf/jobs" && request.method === "POST") {
         const user = await requireUser(request, env);
         const payload = await readJson(request);
-        return jsonResponse(request, env, await createPerfJob(env, payload, user), 201);
+        return jsonResponse(request, env, await createPerfJob(env, payload, user, ctx), 201);
       }
       if (url.pathname === "/api/perf/runs" && request.method === "POST") {
         const user = await requireUser(request, env);
         const payload = await readJson(request);
-        return jsonResponse(request, env, await createPerfJob(env, payload, user), 201);
+        return jsonResponse(request, env, await createPerfJob(env, payload, user, ctx), 201);
       }
       const perfArtifactDownloadMatch = url.pathname.match(
         /^\/api\/perf\/jobs\/([^/]+)\/artifacts\/([^/]+)\/download$/,
@@ -183,8 +237,18 @@ export default {
           return jsonResponse(request, env, await cancelPerfJob(env, jobId, user));
         }
         if (action === "retry" && request.method === "POST") {
-          return jsonResponse(request, env, await retryPerfJob(env, jobId, user, await readOptionalJson(request)));
+          return jsonResponse(request, env, await retryPerfJob(env, jobId, user, await readOptionalJson(request), ctx));
         }
+      }
+      if (url.pathname === "/api/runner/events" && request.method === "GET") {
+        await requireRunner(request, env);
+        if (!env.RUNNER_EVENTS) throw withStatus(503, "RUNNER_EVENTS is not configured");
+        if (String(request.headers.get("Upgrade") || "").toLowerCase() !== "websocket") {
+          throw withStatus(426, "websocket upgrade required");
+        }
+        const runnerId = safeIdentifier(url.searchParams.get("runner_id"), "runner_id", 96);
+        const objectId = env.RUNNER_EVENTS.idFromName(runnerId);
+        return env.RUNNER_EVENTS.get(objectId).fetch(request);
       }
       if (url.pathname === "/api/runner/register" && request.method === "POST") {
         await requireRunner(request, env);
@@ -2187,7 +2251,7 @@ async function addPerfModel(env, model) {
   return { ok: true, data: saved };
 }
 
-async function createPerfJob(env, payload, user) {
+async function createPerfJob(env, payload, user, ctx) {
   const request = normalizePerfJobRequest(payload, user);
   const idempotencyKey = normalizeIdempotencyKey(payload.idempotency_key || payload.idempotencyKey);
   const existing = await env.DB.prepare(
@@ -2246,7 +2310,61 @@ async function createPerfJob(env, payload, user) {
     },
     source: user.username || "cloudflare-d1",
   });
+  scheduleRunnerJobNotification(env, ctx, request, job.id);
   return { ok: true, duplicate: false, job: await getPerfJob(env, job.id) };
+}
+
+function runnerEventMessage(runnerId, eventId = "", createdAt = "") {
+  return {
+    version: RUNNER_EVENT_PROTOCOL_VERSION,
+    type: "job_available",
+    event_id: String(eventId || `evt-${crypto.randomUUID()}`),
+    runner_id: safeIdentifier(runnerId, "runner_id", 96),
+    created_at: String(createdAt || nowIso()),
+  };
+}
+
+async function notifyRunnerJobAvailable(env, request, jobId = "") {
+  if (!env.RUNNER_EVENTS) return { ok: true, enabled: false, delivered: 0, runners: [] };
+  const targetedRunnerId = String(request?.target_runner_id || "").trim();
+  const runnerIds = targetedRunnerId
+    ? [safeIdentifier(targetedRunnerId, "target_runner_id", 96)]
+    : (await selectAll(env, "SELECT id FROM runner_agents WHERE active = 1 ORDER BY id"))
+      .map((row) => safeIdentifier(row.id, "runner_id", 96));
+  const eventId = `evt-${crypto.randomUUID()}`;
+  const createdAt = nowIso();
+  const results = await Promise.allSettled(runnerIds.map(async (runnerId) => {
+    const objectId = env.RUNNER_EVENTS.idFromName(runnerId);
+    const response = await env.RUNNER_EVENTS.get(objectId).fetch(new Request("https://runner-events.internal/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ runner_id: runnerId, event_id: eventId, created_at: createdAt, job_id: jobId || null }),
+    }));
+    if (!response.ok) throw new Error(`runner notification failed with HTTP ${response.status}`);
+    const result = await response.json();
+    return { runner_id: runnerId, delivered: numberOr(result.delivered, 0) };
+  }));
+  const successful = results.filter((result) => result.status === "fulfilled").map((result) => result.value);
+  const failed = results.filter((result) => result.status === "rejected");
+  if (failed.length) {
+    console.error(`Runner notification failed for ${failed.length}/${runnerIds.length} target(s), job=${jobId || "unknown"}`);
+  }
+  return {
+    ok: failed.length === 0,
+    enabled: true,
+    delivered: successful.reduce((sum, result) => sum + result.delivered, 0),
+    runners: successful,
+    failed: failed.length,
+  };
+}
+
+function scheduleRunnerJobNotification(env, ctx, request, jobId) {
+  const pending = notifyRunnerJobAvailable(env, request, jobId).catch((error) => {
+    console.error(`Runner notification error, job=${jobId}: ${String(error?.message || error)}`);
+    return { ok: false, enabled: Boolean(env.RUNNER_EVENTS), delivered: 0 };
+  });
+  if (ctx?.waitUntil) ctx.waitUntil(pending);
+  return pending;
 }
 
 function normalizePerfJobRequest(payload, user) {
@@ -2700,7 +2818,7 @@ async function readOptionalJson(request) {
   }
 }
 
-async function retryPerfJob(env, jobId, user, payload = {}) {
+async function retryPerfJob(env, jobId, user, payload = {}, ctx) {
   const job = await getPerfJob(env, jobId);
   assertPerfJobAccess(job, user);
   assertPerfJobRetryAllowed(job, payload, user);
@@ -2725,6 +2843,7 @@ async function retryPerfJob(env, jobId, user, payload = {}) {
     previous_attempt_id: job.attempt_id || null,
   });
   await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first());
+  scheduleRunnerJobNotification(env, ctx, job.request || {}, jobId);
   return { ok: true, job: await getPerfJob(env, jobId) };
 }
 
@@ -3717,9 +3836,11 @@ function withStatus(status, message) {
 
 export {
   assertPerfJobRetryAllowed,
+  notifyRunnerJobAvailable,
   normalizePerfExecutionEnvironment,
   normalizePerfJobRequest,
   normalizeSourceBranchesRefreshRequest,
   perfJobCancelTransition,
+  runnerEventMessage,
   runnerCanExecute,
 };
