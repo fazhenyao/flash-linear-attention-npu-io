@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-19T08:33:10+08:00",
+  "generatedAt": "2026-08-19T14:23:27+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 224,
+  "total": 226,
   "items": [
+    {
+      "number": 336,
+      "title": "Atk fix",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/336",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-19T06:21:50Z",
+      "createdAt": "2026-08-19T02:16:52Z",
+      "headRef": "atk_fix",
+      "labels": []
+    },
+    {
+      "number": 334,
+      "title": "[WIP][KDA] Add fused backward megakernel prototype",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/334",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-19T01:16:48Z",
+      "createdAt": "2026-08-19T01:16:48Z",
+      "headRef": "kda_bwd_v2",
+      "labels": []
+    },
     {
       "number": 331,
       "title": "blank",
@@ -71,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-17T07:46:49Z",
+      "updatedAt": "2026-08-19T01:08:46Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
       "labels": []
