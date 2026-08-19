@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-18T14:22:15+08:00",
+  "generatedAt": "2026-08-19T08:33:10+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 224,
@@ -11,7 +11,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-17T12:37:36Z",
+      "updatedAt": "2026-08-18T13:10:26Z",
       "createdAt": "2026-08-17T12:36:56Z",
       "headRef": "0817-blank",
       "labels": []
@@ -38,18 +38,6 @@
       "updatedAt": "2026-08-17T08:52:12Z",
       "createdAt": "2026-08-17T08:52:11Z",
       "headRef": "fix/issue-326-capability-probe",
-      "labels": []
-    },
-    {
-      "number": 327,
-      "title": "fix(v26.6.0): 排除 torchnpugen 聚合生成源码",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/327",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-17T09:27:38Z",
-      "createdAt": "2026-08-17T07:00:28Z",
-      "headRef": "fix/v26.6.0-generated-source-duplicates",
       "labels": []
     },
     {
@@ -203,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-17T07:25:30Z",
+      "updatedAt": "2026-08-18T07:19:52Z",
       "createdAt": "2026-08-08T09:29:05Z",
       "headRef": "recurrent_kda_perf",
       "labels": []
@@ -239,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-12T02:24:39Z",
+      "updatedAt": "2026-08-18T13:25:33Z",
       "createdAt": "2026-08-06T13:02:19Z",
       "headRef": "20260806_204500_docs-README-usability",
       "labels": []
@@ -698,6 +686,18 @@
       "updatedAt": "2026-08-17T12:51:36Z",
       "createdAt": "2026-08-17T07:24:58Z",
       "headRef": "0814-atk",
+      "labels": []
+    },
+    {
+      "number": 327,
+      "title": "fix(v26.6.0): 排除 torchnpugen 聚合生成源码",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/327",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-18T11:13:10Z",
+      "updatedAt": "2026-08-18T11:13:10Z",
+      "createdAt": "2026-08-17T07:00:28Z",
+      "headRef": "fix/v26.6.0-generated-source-duplicates",
       "labels": []
     },
     {
