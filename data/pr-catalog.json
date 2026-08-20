@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-20T08:33:09+08:00",
+  "generatedAt": "2026-08-20T14:24:12+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 228,
+  "total": 229,
   "items": [
+    {
+      "number": 340,
+      "title": "vcs_test",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/340",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-20T03:15:07Z",
+      "createdAt": "2026-08-20T03:14:57Z",
+      "headRef": "vcs_test",
+      "labels": []
+    },
     {
       "number": 339,
       "title": "mega kernel V2",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-19T10:27:22Z",
+      "updatedAt": "2026-08-20T01:18:09Z",
       "createdAt": "2026-08-19T09:16:40Z",
       "headRef": "chw_new_cumsum_kkt",
       "labels": []
