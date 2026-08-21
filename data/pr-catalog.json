@@ -1,9 +1,81 @@
 {
-  "generatedAt": "2026-08-20T14:24:12+08:00",
+  "generatedAt": "2026-08-21T08:35:22+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 229,
+  "total": 236,
   "items": [
+    {
+      "number": 350,
+      "title": "fix(kda): 修复 ChunkKdaFwd 尾块 bitwise determinism",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/350",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-20T18:24:14Z",
+      "createdAt": "2026-08-20T18:22:44Z",
+      "headRef": "codex/fix-kda-tail-determinism",
+      "labels": []
+    },
+    {
+      "number": 348,
+      "title": "docs: organize operator optimization guidance",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/348",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-20T16:01:43Z",
+      "createdAt": "2026-08-20T16:01:42Z",
+      "headRef": "20260812_000618_operator-optimization-docs",
+      "labels": []
+    },
+    {
+      "number": 347,
+      "title": "test(atk): GDN recompute_w_u_fwd、chunk_gated_delta_rule_bwd_dhu、chunk_gated_delta_rule_fwd_h 三算子双标杆 + cases ",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/347",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-20T15:14:39Z",
+      "createdAt": "2026-08-20T15:05:00Z",
+      "headRef": "test/atk-gdn-fwd-bwd-recompute-200",
+      "labels": []
+    },
+    {
+      "number": 346,
+      "title": "test(atk): add recurrent_kda and prepare_wy_repr_bwd cases",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/346",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-20T14:02:20Z",
+      "createdAt": "2026-08-20T13:57:13Z",
+      "headRef": "recurrent_kda_atk",
+      "labels": []
+    },
+    {
+      "number": 342,
+      "title": "feat(solve_tri): update solve_tri operator for v26.6",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/342",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-20T08:26:04Z",
+      "createdAt": "2026-08-20T08:25:54Z",
+      "headRef": "solve_tri_v26.6",
+      "labels": []
+    },
+    {
+      "number": 341,
+      "title": "Feature/solve tri update",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/341",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-20T08:25:27Z",
+      "createdAt": "2026-08-20T08:25:17Z",
+      "headRef": "feature/solve_tri_update",
+      "labels": []
+    },
     {
       "number": 340,
       "title": "vcs_test",
@@ -23,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T01:18:09Z",
+      "updatedAt": "2026-08-20T12:29:32Z",
       "createdAt": "2026-08-19T09:16:40Z",
       "headRef": "chw_new_cumsum_kkt",
       "labels": []
@@ -35,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-19T09:35:29Z",
+      "updatedAt": "2026-08-20T11:28:08Z",
       "createdAt": "2026-08-19T02:16:52Z",
       "headRef": "atk_fix",
       "labels": []
@@ -47,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-19T21:04:23Z",
+      "updatedAt": "2026-08-20T15:18:46Z",
       "createdAt": "2026-08-19T01:16:48Z",
       "headRef": "kda_bwd_v2",
       "labels": []
@@ -71,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-19T08:52:08Z",
+      "updatedAt": "2026-08-20T07:36:59Z",
       "createdAt": "2026-08-17T09:30:05Z",
       "headRef": "8_17",
       "labels": []
@@ -107,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-15T08:51:18Z",
+      "updatedAt": "2026-08-20T12:31:17Z",
       "createdAt": "2026-08-15T08:51:17Z",
       "headRef": "fix/v26.6.0-opapi-symbol-isolation",
       "labels": []
@@ -155,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-13T18:56:02Z",
+      "updatedAt": "2026-08-20T12:34:24Z",
       "createdAt": "2026-08-13T15:38:25Z",
       "headRef": "codex/fix-opapi-symbol-isolation",
       "labels": []
@@ -182,18 +254,6 @@
       "updatedAt": "2026-08-12T07:29:07Z",
       "createdAt": "2026-08-12T07:28:43Z",
       "headRef": "0812-test-atk",
-      "labels": []
-    },
-    {
-      "number": 299,
-      "title": "docs: organize operator optimization guidance",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/299",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-15T16:39:15Z",
-      "createdAt": "2026-08-11T17:19:24Z",
-      "headRef": "20260812_000618_operator-optimization-docs",
       "labels": []
     },
     {
@@ -239,7 +299,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-18T07:19:52Z",
+      "updatedAt": "2026-08-20T13:47:41Z",
       "createdAt": "2026-08-08T09:29:05Z",
       "headRef": "recurrent_kda_perf",
       "labels": []
@@ -725,13 +785,37 @@
       "labels": []
     },
     {
+      "number": 345,
+      "title": "增加atk dqkwg泛化用例",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/345",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-20T12:22:21Z",
+      "updatedAt": "2026-08-20T12:22:21Z",
+      "createdAt": "2026-08-20T12:11:38Z",
+      "headRef": "0820-atk-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 344,
+      "title": "feat: 为 ChunkGatedDeltaRuleBwdDhu 增加 use_exp2 参数",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/344",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-20T14:29:25Z",
+      "updatedAt": "2026-08-20T14:29:26Z",
+      "createdAt": "2026-08-20T11:37:03Z",
+      "headRef": "codex/use-exp2-bwd-dhu",
+      "labels": []
+    },
+    {
       "number": 338,
       "title": "fix(kda): 修复 A5 ChunkKdaFwd 多 chunk 执行超时",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/338",
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-08-19T15:49:32Z",
-      "updatedAt": "2026-08-19T15:49:33Z",
+      "updatedAt": "2026-08-20T12:22:45Z",
       "createdAt": "2026-08-19T07:19:53Z",
       "headRef": "codex/fix-a5-chunk-kda-staging",
       "labels": []
@@ -923,7 +1007,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-08-05T02:14:29Z",
-      "updatedAt": "2026-08-05T02:14:29Z",
+      "updatedAt": "2026-08-20T12:23:09Z",
       "createdAt": "2026-08-05T02:12:15Z",
       "headRef": "codex/backport-opbase-cann-compat-v26.1.0",
       "labels": []
@@ -935,7 +1019,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-08-05T02:14:26Z",
-      "updatedAt": "2026-08-05T02:14:26Z",
+      "updatedAt": "2026-08-20T12:29:48Z",
       "createdAt": "2026-08-05T02:12:12Z",
       "headRef": "codex/backport-opbase-cann-compat-v26.6.0",
       "labels": []
@@ -971,7 +1055,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-08-07T00:17:58Z",
-      "updatedAt": "2026-08-07T00:17:59Z",
+      "updatedAt": "2026-08-20T12:22:41Z",
       "createdAt": "2026-08-03T01:21:08Z",
       "headRef": "codex/kda-a5-bounded-pipeline",
       "labels": []
