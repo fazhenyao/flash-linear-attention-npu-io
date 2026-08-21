@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-21T08:35:22+08:00",
+  "generatedAt": "2026-08-21T14:24:22+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 236,
+  "total": 239,
   "items": [
+    {
+      "number": 354,
+      "title": "megakernel3 new cumsum kkt solve tri",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/354",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-21T06:14:51Z",
+      "createdAt": "2026-08-21T06:14:41Z",
+      "headRef": "chw_new_cumsum_kkt_solve_tri",
+      "labels": []
+    },
+    {
+      "number": 353,
+      "title": "fix(build): prefer vendored opbase inc/src in OP_TILING_INCLUDE",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/353",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-21T03:34:32Z",
+      "createdAt": "2026-08-21T03:34:31Z",
+      "headRef": "fix/opbase-own-inc-src",
+      "labels": []
+    },
     {
       "number": 350,
       "title": "fix(kda): 修复 ChunkKdaFwd 尾块 bitwise determinism",
@@ -11,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T18:24:14Z",
+      "updatedAt": "2026-08-21T04:43:11Z",
       "createdAt": "2026-08-20T18:22:44Z",
       "headRef": "codex/fix-kda-tail-determinism",
       "labels": []
@@ -71,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T08:25:27Z",
+      "updatedAt": "2026-08-21T02:25:58Z",
       "createdAt": "2026-08-20T08:25:17Z",
       "headRef": "feature/solve_tri_update",
       "labels": []
@@ -107,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T11:28:08Z",
+      "updatedAt": "2026-08-21T03:07:18Z",
       "createdAt": "2026-08-19T02:16:52Z",
       "headRef": "atk_fix",
       "labels": []
@@ -299,7 +323,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T13:47:41Z",
+      "updatedAt": "2026-08-21T01:47:24Z",
       "createdAt": "2026-08-08T09:29:05Z",
       "headRef": "recurrent_kda_perf",
       "labels": []
@@ -782,6 +806,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 352,
+      "title": "fix: 统一 bwd dhu 的 L0A ping-pong 流水",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/352",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-21T02:47:45Z",
+      "updatedAt": "2026-08-21T02:47:45Z",
+      "createdAt": "2026-08-21T01:28:26Z",
+      "headRef": "codex/fix-bwd-dhu-head-group",
       "labels": []
     },
     {
