@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-21T14:24:22+08:00",
+  "generatedAt": "2026-08-22T08:32:45+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 239,
+  "total": 240,
   "items": [
     {
       "number": 354,
@@ -53,18 +53,6 @@
       "labels": []
     },
     {
-      "number": 347,
-      "title": "test(atk): GDN recompute_w_u_fwd、chunk_gated_delta_rule_bwd_dhu、chunk_gated_delta_rule_fwd_h 三算子双标杆 + cases ",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/347",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-20T15:14:39Z",
-      "createdAt": "2026-08-20T15:05:00Z",
-      "headRef": "test/atk-gdn-fwd-bwd-recompute-200",
-      "labels": []
-    },
-    {
       "number": 346,
       "title": "test(atk): add recurrent_kda and prepare_wy_repr_bwd cases",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/346",
@@ -83,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T08:26:04Z",
+      "updatedAt": "2026-08-21T12:15:43Z",
       "createdAt": "2026-08-20T08:25:54Z",
       "headRef": "solve_tri_v26.6",
       "labels": []
@@ -95,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-21T02:25:58Z",
+      "updatedAt": "2026-08-21T12:15:40Z",
       "createdAt": "2026-08-20T08:25:17Z",
       "headRef": "feature/solve_tri_update",
       "labels": []
@@ -809,6 +797,18 @@
       "labels": []
     },
     {
+      "number": 355,
+      "title": "fix(build): explicitly include soc_spec.h in tiling sources",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/355",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-21T10:45:26Z",
+      "updatedAt": "2026-08-21T10:45:27Z",
+      "createdAt": "2026-08-21T10:31:02Z",
+      "headRef": "20260821_182700_fix-tiling-soc-spec-include",
+      "labels": []
+    },
+    {
       "number": 352,
       "title": "fix: 统一 bwd dhu 的 L0A ping-pong 流水",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/352",
@@ -818,6 +818,18 @@
       "updatedAt": "2026-08-21T02:47:45Z",
       "createdAt": "2026-08-21T01:28:26Z",
       "headRef": "codex/fix-bwd-dhu-head-group",
+      "labels": []
+    },
+    {
+      "number": 347,
+      "title": "test(atk): GDN recompute_w_u_fwd、chunk_gated_delta_rule_bwd_dhu、chunk_gated_delta_rule_fwd_h 三算子双标杆 + cases ",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/347",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-21T10:44:53Z",
+      "updatedAt": "2026-08-21T10:44:53Z",
+      "createdAt": "2026-08-20T15:05:00Z",
+      "headRef": "test/atk-gdn-fwd-bwd-recompute-200",
       "labels": []
     },
     {
