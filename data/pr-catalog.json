@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-22T08:32:45+08:00",
+  "generatedAt": "2026-08-22T14:18:56+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 240,
+  "total": 242,
   "items": [
+    {
+      "number": 357,
+      "title": "feat: 一键编包原生支持 -g / --sanitizer 选项",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/357",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-22T06:05:57Z",
+      "createdAt": "2026-08-22T05:33:16Z",
+      "headRef": "feat/build-option-passthrough",
+      "labels": []
+    },
+    {
+      "number": 356,
+      "title": "add atk json",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/356",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-22T02:44:10Z",
+      "createdAt": "2026-08-22T02:44:01Z",
+      "headRef": "atk",
+      "labels": []
+    },
     {
       "number": 354,
       "title": "megakernel3 new cumsum kkt solve tri",
