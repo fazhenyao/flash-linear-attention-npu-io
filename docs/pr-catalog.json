@@ -1,19 +1,31 @@
 {
-  "generatedAt": "2026-08-22T14:18:56+08:00",
+  "generatedAt": "2026-08-23T08:35:28+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 242,
+  "total": 244,
   "items": [
     {
-      "number": 357,
-      "title": "feat: 一键编包原生支持 -g / --sanitizer 选项",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/357",
+      "number": 359,
+      "title": "test(atk): chunk_fwd_o atk适配",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/359",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-22T06:05:57Z",
-      "createdAt": "2026-08-22T05:33:16Z",
-      "headRef": "feat/build-option-passthrough",
+      "updatedAt": "2026-08-22T13:32:16Z",
+      "createdAt": "2026-08-22T08:48:53Z",
+      "headRef": "test/atk-chunk-fwd-o-l2-dual-benchmark",
+      "labels": []
+    },
+    {
+      "number": 358,
+      "title": "test(atk): chunk_fwd_o atk适配",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/358",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-22T08:49:01Z",
+      "createdAt": "2026-08-22T08:37:35Z",
+      "headRef": "test/atk-chunk-fwd-o-l2-dual-benchmark",
       "labels": []
     },
     {
@@ -227,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-19T08:50:29Z",
+      "updatedAt": "2026-08-22T09:06:26Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
       "labels": []
@@ -335,7 +347,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-21T01:47:24Z",
+      "updatedAt": "2026-08-22T10:09:46Z",
       "createdAt": "2026-08-08T09:29:05Z",
       "headRef": "recurrent_kda_perf",
       "labels": []
@@ -818,6 +830,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 357,
+      "title": "feat: 一键编包原生支持 -g / --sanitizer 选项",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/357",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-22T11:02:24Z",
+      "updatedAt": "2026-08-22T11:02:25Z",
+      "createdAt": "2026-08-22T05:33:16Z",
+      "headRef": "feat/build-option-passthrough",
       "labels": []
     },
     {
