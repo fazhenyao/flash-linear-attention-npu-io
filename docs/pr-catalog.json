@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-24T08:35:01+08:00",
+  "generatedAt": "2026-08-24T14:33:33+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 247,
+  "total": 250,
   "items": [
+    {
+      "number": 372,
+      "title": "feat(offline): bundle third-party sources into wheel for offline rebuild",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/372",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-24T06:03:57Z",
+      "createdAt": "2026-08-24T03:06:04Z",
+      "headRef": "20260822_0030_offline-bundle-multi-cann",
+      "labels": []
+    },
+    {
+      "number": 370,
+      "title": "refactor: FwdH 优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/370",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-24T04:25:34Z",
+      "createdAt": "2026-08-24T01:21:30Z",
+      "headRef": "codex/fwdh-stage0-replacement",
+      "labels": []
+    },
     {
       "number": 366,
       "title": "fix: 完善 ATK 公共 runner 四 scope 验证",
@@ -59,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-22T02:44:10Z",
+      "updatedAt": "2026-08-24T06:22:15Z",
       "createdAt": "2026-08-22T02:44:01Z",
       "headRef": "atk",
       "labels": []
@@ -113,42 +137,6 @@
       "labels": []
     },
     {
-      "number": 346,
-      "title": "test(atk): add recurrent_kda and prepare_wy_repr_bwd cases",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/346",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-20T14:02:20Z",
-      "createdAt": "2026-08-20T13:57:13Z",
-      "headRef": "recurrent_kda_atk",
-      "labels": []
-    },
-    {
-      "number": 342,
-      "title": "feat(solve_tri): update solve_tri operator for v26.6",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/342",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-21T12:15:43Z",
-      "createdAt": "2026-08-20T08:25:54Z",
-      "headRef": "solve_tri_v26.6",
-      "labels": []
-    },
-    {
-      "number": 341,
-      "title": "Feature/solve tri update",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/341",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-21T12:15:40Z",
-      "createdAt": "2026-08-20T08:25:17Z",
-      "headRef": "feature/solve_tri_update",
-      "labels": []
-    },
-    {
       "number": 340,
       "title": "vcs_test",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/340",
@@ -194,6 +182,18 @@
       "updatedAt": "2026-08-20T15:18:46Z",
       "createdAt": "2026-08-19T01:16:48Z",
       "headRef": "kda_bwd_v2",
+      "labels": []
+    },
+    {
+      "number": 332,
+      "title": "Conditionally add config for ascend950 version",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/332",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-24T03:43:21Z",
+      "createdAt": "2026-08-17T12:58:12Z",
+      "headRef": "fix_compile",
       "labels": []
     },
     {
@@ -338,18 +338,6 @@
       "updatedAt": "2026-08-10T02:42:48Z",
       "createdAt": "2026-08-10T02:42:48Z",
       "headRef": "perf/kda-a5-pack-upper-pair",
-      "labels": []
-    },
-    {
-      "number": 288,
-      "title": "improve recurrent_kda performance",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/288",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-22T10:09:46Z",
-      "createdAt": "2026-08-08T09:29:05Z",
-      "headRef": "recurrent_kda_perf",
       "labels": []
     },
     {
@@ -917,6 +905,18 @@
       "labels": []
     },
     {
+      "number": 346,
+      "title": "test(atk): add recurrent_kda and prepare_wy_repr_bwd cases",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/346",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-24T04:02:44Z",
+      "updatedAt": "2026-08-24T04:02:44Z",
+      "createdAt": "2026-08-20T13:57:13Z",
+      "headRef": "recurrent_kda_atk",
+      "labels": []
+    },
+    {
       "number": 345,
       "title": "增加atk dqkwg泛化用例",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/345",
@@ -938,6 +938,30 @@
       "updatedAt": "2026-08-20T14:29:26Z",
       "createdAt": "2026-08-20T11:37:03Z",
       "headRef": "codex/use-exp2-bwd-dhu",
+      "labels": []
+    },
+    {
+      "number": 342,
+      "title": "feat(solve_tri): update solve_tri operator for v26.6",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/342",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-24T01:49:42Z",
+      "updatedAt": "2026-08-24T01:49:43Z",
+      "createdAt": "2026-08-20T08:25:54Z",
+      "headRef": "solve_tri_v26.6",
+      "labels": []
+    },
+    {
+      "number": 341,
+      "title": "Feature/solve tri update",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/341",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-24T02:20:35Z",
+      "updatedAt": "2026-08-24T02:20:35Z",
+      "createdAt": "2026-08-20T08:25:17Z",
+      "headRef": "feature/solve_tri_update",
       "labels": []
     },
     {
@@ -1070,6 +1094,18 @@
       "updatedAt": "2026-08-12T03:28:52Z",
       "createdAt": "2026-08-08T10:08:46Z",
       "headRef": "dhu-final-main",
+      "labels": []
+    },
+    {
+      "number": 288,
+      "title": "improve recurrent_kda performance",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/288",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-24T04:02:28Z",
+      "updatedAt": "2026-08-24T04:02:28Z",
+      "createdAt": "2026-08-08T09:29:05Z",
+      "headRef": "recurrent_kda_perf",
       "labels": []
     },
     {
