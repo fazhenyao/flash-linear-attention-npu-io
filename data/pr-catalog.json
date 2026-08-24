@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-23T14:20:30+08:00",
+  "generatedAt": "2026-08-24T08:35:01+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 244,
+  "total": 247,
   "items": [
+    {
+      "number": 366,
+      "title": "fix: 完善 ATK 公共 runner 四 scope 验证",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/366",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-23T17:19:40Z",
+      "createdAt": "2026-08-23T17:17:36Z",
+      "headRef": "codex/atk-runner-four-scopes",
+      "labels": []
+    },
+    {
+      "number": 361,
+      "title": "fix(gdn): 修复 KKT MMAD 同步事件重复复用",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/361",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-23T08:33:19Z",
+      "createdAt": "2026-08-23T07:02:01Z",
+      "headRef": "codex/fix-kkt-event-lifecycle",
+      "labels": []
+    },
     {
       "number": 359,
       "title": "test(atk): chunk_fwd_o atk适配",
@@ -242,30 +266,6 @@
       "updatedAt": "2026-08-22T09:06:26Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
-      "labels": []
-    },
-    {
-      "number": 317,
-      "title": "fix(fast-launch): correct non-contiguous state handling in recurrent …",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/317",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-14T09:42:46Z",
-      "createdAt": "2026-08-14T09:18:15Z",
-      "headRef": "fast_launch",
-      "labels": []
-    },
-    {
-      "number": 314,
-      "title": "fix(gdn): stabilize recurrent gated delta rule on A5",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/314",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-14T09:43:04Z",
-      "createdAt": "2026-08-14T03:00:00Z",
-      "headRef": "single_fix",
       "labels": []
     },
     {
@@ -830,6 +830,42 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 368,
+      "title": "fix: 修复 A2 变长场景 fwd_h v_new 精度回归",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/368",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-23T18:23:14Z",
+      "updatedAt": "2026-08-23T18:23:14Z",
+      "createdAt": "2026-08-23T18:15:00Z",
+      "headRef": "codex/fix-gdn-fwdh-vnew-regression",
+      "labels": []
+    },
+    {
+      "number": 364,
+      "title": "fix(test): 修复 chunk_bwd_dv_local GQA Golden 头映射",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/364",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-23T13:59:35Z",
+      "updatedAt": "2026-08-23T13:59:35Z",
+      "createdAt": "2026-08-23T11:55:23Z",
+      "headRef": "20260823_181458_fix-chunk-bwd-dv-gqa-golden",
+      "labels": []
+    },
+    {
+      "number": 363,
+      "title": "fix: 整合 recurrent gated delta rule 稳定入口、fast-launch 与 ATK",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/363",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-23T18:18:51Z",
+      "updatedAt": "2026-08-23T18:18:51Z",
+      "createdAt": "2026-08-23T10:29:22Z",
+      "headRef": "codex/recurrent-gdr-atk",
       "labels": []
     },
     {
