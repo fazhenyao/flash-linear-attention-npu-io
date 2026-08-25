@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-25T08:33:57+08:00",
+  "generatedAt": "2026-08-25T14:25:05+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 257,
+  "total": 258,
   "items": [
+    {
+      "number": 380,
+      "title": "newest",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/380",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-25T05:09:15Z",
+      "createdAt": "2026-08-25T03:45:42Z",
+      "headRef": "chw_new_cumsum_kkt_solve_tri_newest",
+      "labels": []
+    },
     {
       "number": 379,
       "title": "docs: clarify ChunkGatedDeltaRuleBwdDhu K/V limits",
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-24T14:59:23Z",
+      "updatedAt": "2026-08-25T02:56:28Z",
       "createdAt": "2026-08-24T14:59:12Z",
       "headRef": "chw_new_cumsum_kkt_solve_tri_simple",
       "labels": []
@@ -35,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-24T12:32:15Z",
+      "updatedAt": "2026-08-25T03:28:08Z",
       "createdAt": "2026-08-24T12:30:45Z",
       "headRef": "0824-atk",
       "labels": []
@@ -95,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-24T18:01:08Z",
+      "updatedAt": "2026-08-25T06:22:17Z",
       "createdAt": "2026-08-24T01:21:30Z",
       "headRef": "codex/fwdh-stage0-replacement",
       "labels": []
@@ -263,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-24T12:05:06Z",
+      "updatedAt": "2026-08-25T03:01:25Z",
       "createdAt": "2026-08-17T12:58:12Z",
       "headRef": "fix_compile",
       "labels": []
@@ -323,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T12:31:17Z",
+      "updatedAt": "2026-08-25T01:16:43Z",
       "createdAt": "2026-08-15T08:51:17Z",
       "headRef": "fix/v26.6.0-opapi-symbol-isolation",
       "labels": []
