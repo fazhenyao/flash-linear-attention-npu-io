@@ -1,9 +1,81 @@
 {
-  "generatedAt": "2026-08-24T14:33:33+08:00",
+  "generatedAt": "2026-08-25T08:33:57+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 250,
+  "total": 257,
   "items": [
+    {
+      "number": 379,
+      "title": "docs: clarify ChunkGatedDeltaRuleBwdDhu K/V limits",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/379",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-24T16:30:27Z",
+      "createdAt": "2026-08-24T16:30:26Z",
+      "headRef": "codex/fix-issue313-docs",
+      "labels": []
+    },
+    {
+      "number": 378,
+      "title": "new cumsum kkt solve tri simple",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/378",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-24T14:59:23Z",
+      "createdAt": "2026-08-24T14:59:12Z",
+      "headRef": "chw_new_cumsum_kkt_solve_tri_simple",
+      "labels": []
+    },
+    {
+      "number": 376,
+      "title": "0824 atk检查版本号、汇总测试结果、修改backend为npu、readme更新",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/376",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-24T12:32:15Z",
+      "createdAt": "2026-08-24T12:30:45Z",
+      "headRef": "0824-atk",
+      "labels": []
+    },
+    {
+      "number": 375,
+      "title": "test new catlass commit",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/375",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-24T11:49:33Z",
+      "createdAt": "2026-08-24T11:49:16Z",
+      "headRef": "test_catlass_new_tag",
+      "labels": []
+    },
+    {
+      "number": 374,
+      "title": "[Fix] fix executor script of causal_conv1d_bwd atk tests",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/374",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-24T07:33:26Z",
+      "createdAt": "2026-08-24T07:32:22Z",
+      "headRef": "test",
+      "labels": []
+    },
+    {
+      "number": 373,
+      "title": "atk修改",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/373",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-24T06:42:30Z",
+      "createdAt": "2026-08-24T06:41:47Z",
+      "headRef": "rwkv_v8",
+      "labels": []
+    },
     {
       "number": 372,
       "title": "feat(offline): bundle third-party sources into wheel for offline rebuild",
@@ -23,19 +95,19 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-24T04:25:34Z",
+      "updatedAt": "2026-08-24T18:01:08Z",
       "createdAt": "2026-08-24T01:21:30Z",
       "headRef": "codex/fwdh-stage0-replacement",
       "labels": []
     },
     {
       "number": 366,
-      "title": "fix: 完善 ATK 公共 runner 四 scope 验证",
+      "title": "test: 增加 chunk_kda_fwd A5 dense 性能一键测试",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/366",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-23T17:19:40Z",
+      "updatedAt": "2026-08-24T11:18:48Z",
       "createdAt": "2026-08-23T17:17:36Z",
       "headRef": "codex/atk-runner-four-scopes",
       "labels": []
@@ -131,7 +203,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T16:01:43Z",
+      "updatedAt": "2026-08-24T17:22:00Z",
       "createdAt": "2026-08-20T16:01:42Z",
       "headRef": "20260812_000618_operator-optimization-docs",
       "labels": []
@@ -179,7 +251,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T15:18:46Z",
+      "updatedAt": "2026-08-24T12:15:10Z",
       "createdAt": "2026-08-19T01:16:48Z",
       "headRef": "kda_bwd_v2",
       "labels": []
@@ -191,7 +263,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-24T03:43:21Z",
+      "updatedAt": "2026-08-24T12:05:06Z",
       "createdAt": "2026-08-17T12:58:12Z",
       "headRef": "fix_compile",
       "labels": []
@@ -203,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-19T07:19:19Z",
+      "updatedAt": "2026-08-24T09:15:14Z",
       "createdAt": "2026-08-17T12:36:56Z",
       "headRef": "0817-blank",
       "labels": []
@@ -263,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-22T09:06:26Z",
+      "updatedAt": "2026-08-24T09:12:12Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
       "labels": []
@@ -818,6 +890,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 377,
+      "title": "Update atk_solve_tri.json",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/377",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-24T12:48:20Z",
+      "updatedAt": "2026-08-24T12:48:20Z",
+      "createdAt": "2026-08-24T12:37:55Z",
+      "headRef": "main",
       "labels": []
     },
     {
