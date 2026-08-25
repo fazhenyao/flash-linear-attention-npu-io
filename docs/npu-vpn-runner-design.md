@@ -46,7 +46,7 @@ NPU 状态链路与任务领取解耦：每个 Relay 默认每 30 分钟在后�
 - Profiling 原始目录可能很大，不适合直接存入 D1。
 - 当前 Relay 是用户开启 VPN 的 Windows 电脑，通过两个登录触发的计划任务分别运行 A2 和 A5 Agent。
 - A2 SSH 目标为 `root@192.168.9.221:22`，项目目录为 `/workspace/fazhenyao/flash-linear-attention-npu-io`；CANN 环境脚本为 `/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh`，Conda 环境为 `fla_dump`。
-- A5 SSH 目标为 `npu_user7@192.168.13.241:22`，采集输出工作目录为 `/home/npu_user7/fazhenyao/flash-linear-attention-npu-io`，执行脚本为 `/home/npu_user7/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py`；CANN 环境脚本为 `/home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh`，Conda 环境为 `f30077529`。
+- A5 SSH 目标为 `fazhenyao@192.168.13.241:22`，Relay 使用 `C:/Users/Administrator/.ssh/id_ed25519` 密钥；采集输出工作目录为 `/home/fazhenyao/flash-linear-attention-npu-io`，执行脚本为 `/home/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py`；CANN 环境脚本为 `/home/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh`，Conda 环境为 `fla`。
 
 ## 3. 设计目标
 
@@ -126,7 +126,7 @@ flowchart LR
 #### 当前 NPU 服务器执行方式
 
 - Relay 进入固定项目目录并执行服务端白名单生成的命令，不接收用户提供的任意 Shell。
-- 每次命令先加载目标服务器的 CANN `set_env.sh`，再加载 Conda 初始化脚本；A2 激活 `fla_dump`，A5 激活 `f30077529`。
+- 每次命令先加载目标服务器的 CANN `set_env.sh`，再加载 Conda 初始化脚本；A2 激活 `fla_dump`，A5 激活 `fla`。
 - 管理员可以按任务选择 Relay 允许根目录内的 CANN、Conda 和源码仓库；普通用户继续使用 Relay 默认环境。
 - 独立编译任务可明确选择本地分支或 `origin` 远程跟踪分支；远程分支构建会尝试刷新 `origin`，失败时回退到服务器已有的缓存引用。随后在 detached worktree 中解析准确 commit，按芯片固定 SoC 构建并安装 wheel，不切换或修改主源码工作区。成功版本通过环境专属链接保留，供后续测试使用。
 - `msprof` 输出到 `data/prof_gdr`，`msopprof` 输出到 `data/prof_op`。
@@ -436,9 +436,9 @@ Runner 接口使用独立的服务凭据，不能复用浏览器用户 Token。
     "dtype": "bf16"
   },
   "execution_environment": {
-    "cann_path": "/home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit",
-    "conda_env": "f30077529",
-    "source_repo": "/home/npu_user7/fazhenyao/flash-linear-attention-npu",
+    "cann_path": "/home/fazhenyao/cann/7_20/ascend-toolkit",
+    "conda_env": "fla",
+    "source_repo": "/home/fazhenyao/flash-linear-attention-npu",
     "rebuild": true,
     "branch": "8_7",
     "branch_source": "remote"
@@ -465,9 +465,9 @@ Runner 接口使用独立的服务凭据，不能复用浏览器用户 Token。
     "chip": "A5",
     "device": 7,
     "soc_version": "Ascend950PR",
-    "cann_path": "/home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit",
-    "conda_env": "f30077529",
-    "source_repo": "/home/npu_user7/fazhenyao/flash-linear-attention-npu",
+    "cann_path": "/home/fazhenyao/cann/7_20/ascend-toolkit",
+    "conda_env": "fla",
+    "source_repo": "/home/fazhenyao/flash-linear-attention-npu",
     "rebuild": true,
     "branch": "8_7",
     "branch_source": "remote",
@@ -922,17 +922,17 @@ RUNNER_STATE_DIR=data/runner-state/a5
 RUNNER_ARTIFACT_ROOTS=data/runner-artifacts/a5/prof_gdr;data/runner-artifacts/a5/prof_op
 
 PERF_SSH_HOST=192.168.13.241
-PERF_SSH_USER=npu_user7
+PERF_SSH_USER=fazhenyao
 PERF_SSH_PORT=22
-PERF_SSH_IDENTITY_FILE=C:/Users/Administrator/.ssh/id_rsa
-PERF_REMOTE_WORKDIR=/home/npu_user7/fazhenyao/flash-linear-attention-npu-io
-PERF_REMOTE_SCRIPT=/home/npu_user7/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py
-PERF_REMOTE_ENV_SCRIPT=/home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh
-PERF_REMOTE_CONDA_SH=/home/npu_user7/jianshuqiang/miniconda3/etc/profile.d/conda.sh
-PERF_REMOTE_CONDA_ENV=f30077529
-PERF_REMOTE_SOURCE_REPO=/home/npu_user7/fazhenyao/flash-linear-attention-npu
-PERF_ALLOWED_CANN_ROOTS=/home/npu_user7/fazhenyao/cann
-PERF_ALLOWED_SOURCE_ROOTS=/home/npu_user7/fazhenyao
+PERF_SSH_IDENTITY_FILE=C:/Users/Administrator/.ssh/id_ed25519
+PERF_REMOTE_WORKDIR=/home/fazhenyao/flash-linear-attention-npu-io
+PERF_REMOTE_SCRIPT=/home/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py
+PERF_REMOTE_ENV_SCRIPT=/home/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh
+PERF_REMOTE_CONDA_SH=/home/fazhenyao/miniconda3/etc/profile.d/conda.sh
+PERF_REMOTE_CONDA_ENV=fla
+PERF_REMOTE_SOURCE_REPO=/home/fazhenyao/flash-linear-attention-npu
+PERF_ALLOWED_CANN_ROOTS=/home/fazhenyao/cann
+PERF_ALLOWED_SOURCE_ROOTS=/home/fazhenyao
 PERF_REMOTE_BUILD_ROOT=/tmp/fla-runner-builds
 PERF_PROF_OUTPUT=data/prof_gdr
 PERF_OP_OUTPUT=data/prof_op
