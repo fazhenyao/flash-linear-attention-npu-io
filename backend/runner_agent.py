@@ -1447,6 +1447,7 @@ class RunnerAgent:
         notification_active = self.notification.start()
         delay = self.config.poll_min_seconds
         next_reconcile_at = time.monotonic() + self.config.reconcile_seconds
+        last_runner_heartbeat_at = time.monotonic()
         try:
             while not self.stop_event.is_set():
                 try:
@@ -1455,6 +1456,7 @@ class RunnerAgent:
                     health = self.health()
                     if not health["vpn_connected"] or not health["npu_reachable"]:
                         self.send_runner_heartbeat(health)
+                        last_runner_heartbeat_at = time.monotonic()
                     while (
                         health["vpn_connected"]
                         and health["npu_reachable"]
@@ -1467,10 +1469,19 @@ class RunnerAgent:
                         if not self.submit_job(job):
                             break
                         worked = True
+                    now = time.monotonic()
+                    if now - last_runner_heartbeat_at >= self.config.heartbeat_seconds:
+                        self.send_runner_heartbeat(health)
+                        last_runner_heartbeat_at = time.monotonic()
+                    heartbeat_delay = max(
+                        0.1,
+                        self.config.heartbeat_seconds - (time.monotonic() - last_runner_heartbeat_at),
+                    )
                     if notification_active:
-                        delay = max(0.1, next_reconcile_at - time.monotonic())
+                        delay = min(max(0.1, next_reconcile_at - time.monotonic()), heartbeat_delay)
                     else:
-                        delay = self.config.poll_min_seconds if worked else min(self.config.poll_max_seconds, delay + 2)
+                        poll_delay = self.config.poll_min_seconds if worked else min(self.config.poll_max_seconds, delay + 2)
+                        delay = min(poll_delay, heartbeat_delay)
                 except Exception as exc:
                     print(f"[runner] {exc}", flush=True)
                     delay = min(self.config.error_backoff_max_seconds, max(delay * 2, 5))
