@@ -1,5 +1,5 @@
 {
-  "version": "2026-08-18T09:21:53.415Z",
+  "version": "2026-08-25T07:47:37.668Z",
   "models": [
     {
       "id": "gdn",
@@ -90092,6 +90092,47 @@
       },
       "command": "ssh -p 22 -i 'C:\\Users\\Administrator\\.ssh\\id_rsa' -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 npu_user7@192.168.13.241 '. /home/npu_user7/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh && . /home/npu_user7/jianshuqiang/miniconda3/etc/profile.d/conda.sh && conda activate f30077529 && cd /home/npu_user7/fazhenyao/flash-linear-attention-npu-io && mkdir -p /home/npu_user7/fazhenyao/flash-linear-attention-npu-io/data/prof_gdr/runner-jobs/perf-job-804d9a99-c8cf-4d60-a6ad-daf8bbccbac8-attempt-78989b22-b363-4302-8db1-e5ac3ae77fe2 && msprof --output=data/prof_gdr/runner-jobs/perf-job-804d9a99-c8cf-4d60-a6ad-daf8bbccbac8-attempt-78989b22-b363-4302-8db1-e5ac3ae77fe2 python3 /home/npu_user7/fazhenyao/flash-linear-attention-npu/examples/recurrent_kda_layer.py --device 7 --batch 2 --mtp 1 --hidden-size 1024 --query-heads 4 --value-heads 8 --key-dim 128 --value-dim 128 --use-short-conv --conv-kernel 4 --state-dtype fp32 --steps 2 --seed 0'",
       "profiler_command": "msprof --output=data/prof_gdr/runner-jobs/perf-job-804d9a99-c8cf-4d60-a6ad-daf8bbccbac8-attempt-78989b22-b363-4302-8db1-e5ac3ae77fe2 python3 /home/npu_user7/fazhenyao/flash-linear-attention-npu/examples/recurrent_kda_layer.py --device 7 --batch 2 --mtp 1 --hidden-size 1024 --query-heads 4 --value-heads 8 --key-dim 128 --value-dim 128 --use-short-conv --conv-kernel 4 --state-dtype fp32 --steps 2 --seed 0"
+    },
+    {
+      "id": "perf-job-f77d4004-706f-4c60-a1fe-7a70b8153c27",
+      "task_type": "profile",
+      "model_id": "gdn",
+      "chip": "A5",
+      "device": 7,
+      "prof_tool": "msprof",
+      "example_id": "flash_gated_delta_rule",
+      "script_path": "flash_gated_delta_rule",
+      "attributes": {
+        "batch": 1,
+        "query_heads": 32,
+        "value_heads": 32,
+        "tokens": 4087,
+        "key_dim": 128,
+        "value_dim": 128,
+        "chunk_size": 64,
+        "mean_len": 1024,
+        "dtype": "bf16",
+        "varlen": true,
+        "demo_model": true,
+        "scale": 0.08838834764831845,
+        "layout": "TND",
+        "cu_seqlens": ""
+      },
+      "execution_environment": {
+        "cann_path": "/home/fazhenyao/cann/7_20/ascend-toolkit",
+        "conda_env": "fla",
+        "source_repo": "/home/fazhenyao/flash-linear-attention-npu",
+        "rebuild": false,
+        "branch": "main",
+        "branch_source": "local"
+      },
+      "kernel_name": "",
+      "status": "failed",
+      "message": "源码分支 local:main 尚未在当前 CANN/Conda 环境编译安装，请先执行编译安装任务",
+      "created_by": "法振尧",
+      "created_at": "2026-08-25T07:46:30.757Z",
+      "started_at": "2026-08-25T07:47:25.141Z",
+      "finished_at": "2026-08-25T07:47:37.421Z"
     }
   ]
 }
