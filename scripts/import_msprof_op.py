@@ -460,6 +460,7 @@ def compute_mfu(
     block_dim: int | None,
     freq_mhz: float | None,
     chip: str | None = None,
+    soc_version: str | None = None,
 ) -> float | None:
     return load_cube_theoretical_flops_module().compute_mfu(
         operator_id,
@@ -468,6 +469,7 @@ def compute_mfu(
         block_dim=block_dim,
         freq_mhz=freq_mhz,
         chip=chip,
+        soc_version=soc_version,
     )
 
 
@@ -524,6 +526,7 @@ def apply_operators_mfu(
     attributes: dict[str, Any] | None,
     *,
     chip: str | None = None,
+    soc_version: str | None = None,
 ) -> None:
     for operator in operators:
         operator_id = str(operator.get("operator_id") or "")
@@ -535,15 +538,10 @@ def apply_operators_mfu(
             block_dim=operator.get("block_dim"),
             freq_mhz=operator.get("rated_freq_mhz"),
             chip=chip,
+            soc_version=soc_version,
         )
-        mbu = compute_mbu(
-            operator_id,
-            attributes,
-            task_duration_us=task_duration_us,
-            chip=chip,
-        )
-        operator["mbu"] = mbu
-        operator["mem_util"] = mbu
+        operator["mbu"] = None
+        operator["mem_util"] = None
 
 
 def _parse_op_basic_row(row: dict[str, str]) -> dict[str, Any]:
@@ -887,6 +885,7 @@ def import_msprof_op(
     device_id: int = 2,
     persist: bool = True,
     example_id: str = "flash_gated_delta_rule",
+    soc_version: str | None = None,
 ) -> dict[str, Any]:
     prof_dir = prof_dir.resolve()
     if not prof_dir.exists():
@@ -937,7 +936,7 @@ def import_msprof_op(
     data = gdr.load_perf_data()
     case_attrs = merge_case_attributes(data, case["id"], case.get("attributes"))
     case["attributes"] = case_attrs
-    apply_operators_mfu(operators, case_attrs, chip=chip)
+    apply_operators_mfu(operators, case_attrs, chip=chip, soc_version=soc_version)
     snapshot_date, created_at = parse_opprof_timestamp(prof_dir)
     if len(operators) > 1:
         snapshot_label = f"{snapshot_date} {len(operators)} kernels"
@@ -954,6 +953,7 @@ def import_msprof_op(
         "model_id": model_id,
         "case_id": case["id"],
         "chip": chip,
+        "soc_version": soc_version or "",
         "total_time_ms": total_time_ms,
         "status": "done",
         "created_at": created_at,
@@ -985,6 +985,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--all", action="store_true", help="Import every OPPROF_* under prof_dir (default: data/prof_op)")
     parser.add_argument("--model", default="gdn")
     parser.add_argument("--chip", default="A2", choices=["A2", "A3", "A5"])
+    parser.add_argument("--soc-version", default="", help="Device SoC version, e.g. Ascend950PR")
     parser.add_argument("--kernel-name", default="")
     parser.add_argument("--operator-id", default="")
     parser.add_argument("--prof-tool", default="msprof_op", choices=["msprof_op", "msprof_op_sim"])
@@ -1018,6 +1019,7 @@ def main() -> int:
             kernel_name=args.kernel_name or None,
             operator_id=args.operator_id or None,
             prof_tool=args.prof_tool,
+            soc_version=args.soc_version or None,
         )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
         print(f"Imported {prof_dir.name}")

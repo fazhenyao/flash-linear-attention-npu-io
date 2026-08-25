@@ -102,14 +102,5 @@ def compute_mbu(
     task_duration_us: float | None,
     chip: str | None = None,
 ) -> float | None:
-    """MBU = 理论访存耗时 / Task Duration(us)。"""
-    if task_duration_us is None or task_duration_us <= 0:
-        return None
-    bytes_total = theoretical_memory_bytes(operator_id, attributes)
-    if bytes_total is None or bytes_total <= 0:
-        return None
-    bandwidth = hbm_bytes_per_us(chip)
-    if bandwidth is None:
-        return None
-    theoretical_memory_time_us = bytes_total / bandwidth
-    return round_ratio(theoretical_memory_time_us / task_duration_us)
+    """MBU is intentionally unsupported until the memory model is validated."""
+    return None

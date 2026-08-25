@@ -597,6 +597,134 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             )
         )
 
+    def test_fused_mfu_uses_950dt_forward_formula_by_default(self):
+        attributes = {
+            "batch": 2,
+            "query_heads": 8,
+            "tokens": 4096,
+            "key_dim": 128,
+            "value_dim": 128,
+            "chunk_size": 64,
+        }
+        expected_work = (
+            2 * 2 * 8 * 4096 * (3 * 128 * 128 + 3 * 64 * 128 + 2 * 64 * 128)
+            / 1024 / 1024
+        )
+        expected = round(expected_work / 100 / 432, 4)
+        self.assertEqual(
+            compute_mfu(
+                "chunk_gdr_fwd",
+                attributes,
+                task_duration_us=100,
+                block_dim=None,
+                chip="A5",
+            ),
+            expected,
+        )
+
+    def test_fused_mfu_uses_950pr_device_formula(self):
+        attributes = {
+            "batch": 2,
+            "query_heads": 8,
+            "tokens": 4096,
+            "key_dim": 128,
+            "value_dim": 128,
+            "chunk_size": 64,
+        }
+        raw_work = 2 * 2 * 8 * 4096 * (
+            3 * 128 * 128 + 3 * 64 * 128 + 2 * 64 * 128
+        )
+        expected_forward = round((raw_work / 1000 / 1000) / 100 / 378, 4)
+        expected_backward = round((raw_work / 1000 / 1000) * 2 / 100 / 378, 4)
+
+        self.assertEqual(
+            compute_mfu(
+                "chunk_gdr_fwd",
+                attributes,
+                task_duration_us=100,
+                soc_version="Ascend950PR",
+            ),
+            expected_forward,
+        )
+        self.assertEqual(
+            compute_mfu(
+                "chunk_gdr_bwd",
+                attributes,
+                task_duration_us=100,
+                chip="950PR",
+            ),
+            expected_backward,
+        )
+
+    def test_fused_mfu_uses_a2_a3_device_formula(self):
+        attributes = {
+            "batch": 2,
+            "query_heads": 8,
+            "tokens": 4096,
+            "key_dim": 128,
+            "value_dim": 128,
+            "chunk_size": 64,
+        }
+        raw_work = 2 * 2 * 8 * 4096 * (
+            3 * 128 * 128 + 3 * 64 * 128 + 2 * 64 * 128
+        )
+        expected_forward = round((raw_work / 1024 / 1024) / 100 / 384, 4)
+        expected_backward = round((raw_work / 1024 / 1024) * 2 / 100 / 384, 4)
+
+        for chip, soc_version in (("A2", "Ascend910B"), ("A3", "Ascend910_93")):
+            with self.subTest(chip=chip):
+                self.assertEqual(
+                    compute_mfu(
+                        "chunk_kda_fwd",
+                        attributes,
+                        task_duration_us=100,
+                        chip=chip,
+                        soc_version=soc_version,
+                    ),
+                    expected_forward,
+                )
+                self.assertEqual(
+                    compute_mfu(
+                        "chunk_kda_bwd",
+                        attributes,
+                        task_duration_us=100,
+                        chip=chip,
+                        soc_version=soc_version,
+                    ),
+                    expected_backward,
+                )
+
+    def test_fused_backward_mfu_is_twice_forward_work(self):
+        attributes = {
+            "batch": 1,
+            "query_heads": 4,
+            "tokens": 1024,
+            "key_dim": 64,
+            "value_dim": 128,
+            "chunk_size": 32,
+        }
+        expected_work = (
+            2 * 1 * 4 * 1024 * (3 * 64 * 128 + 3 * 32 * 64 + 2 * 32 * 128)
+            / 1024 / 1024
+        )
+        forward = compute_mfu(
+            "chunk_kda_fwd", attributes, task_duration_us=50, block_dim=1,
+        )
+        backward = compute_mfu(
+            "chunk_kda_bwd", attributes, task_duration_us=50, block_dim=1,
+        )
+        self.assertEqual(forward, round(expected_work / 50 / 432, 4))
+        self.assertEqual(backward, round(expected_work * 2 / 50 / 432, 4))
+
+    def test_mfu_is_empty_for_non_fused_operators(self):
+        attributes = {"batch": 1, "query_heads": 1, "tokens": 64, "key_dim": 64, "value_dim": 64, "chunk_size": 64}
+        self.assertIsNone(
+            compute_mfu("chunk_gated_delta_rule_fwd_h", attributes, task_duration_us=10, block_dim=1)
+        )
+        self.assertIsNone(
+            compute_mbu("chunk_gdr_fwd", attributes, task_duration_us=10, chip="A2")
+        )
+
     def test_ssh_and_scp_have_connection_timeouts(self):
         with patch.dict(os.environ, self.environment, clear=False):
             config = load_config()

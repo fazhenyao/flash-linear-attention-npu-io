@@ -48,6 +48,14 @@ def round_ratio(value: float | None) -> float:
 
 # OP Type / kernel name -> project operator id
 OP_TYPE_MAP = {
+    "ChunkGdrFwd": "chunk_gdr_fwd",
+    "ChunkGdrBwd": "chunk_gdr_bwd",
+    "ChunkKdaFwd": "chunk_kda_fwd",
+    "ChunkKdaBwd": "chunk_kda_bwd",
+    "chunk_gdr_fwd": "chunk_gdr_fwd",
+    "chunk_gdr_bwd": "chunk_gdr_bwd",
+    "chunk_kda_fwd": "chunk_kda_fwd",
+    "chunk_kda_bwd": "chunk_kda_bwd",
     "ChunkGatedDeltaRuleFwdH": "chunk_gated_delta_rule_fwd_h",
     "ChunkFwdO": "chunk_fwd_o",
     "RecomputeWUFwd": "recompute_wu_fwd",
@@ -116,15 +124,19 @@ def infer_operator_backend(*, op_type: str = "", kernel_name: str = "") -> str |
     if lowered.startswith("aclnn") or " aclnn" in lowered:
         return "ascendc"
     if re.search(
-        r"(?:chunkgateddeltarule|chunkfwdo|recomputewu|chunkbwddvlocal|"
+        r"(?:chunkgdr|chunkkda|chunkgateddeltarule|chunkfwdo|recomputewu|chunkbwddvlocal|"
         r"chunkbwddqkwg|preparewyrepr|causalconv1d|chunklocalcumsum|"
-        r"chunkscaleddotkkt|solvetri|chunkkda|kdagatecumsum)",
+        r"chunkscaleddotkkt|solvetri|kdagatecumsum)",
         lowered,
     ):
         return "ascendc"
     return None
 
 CORE_GDN_OPS = {
+    "chunk_gdr_fwd",
+    "chunk_gdr_bwd",
+    "chunk_kda_fwd",
+    "chunk_kda_bwd",
     "chunk_gated_delta_rule_fwd_h",
     "chunk_fwd_o",
     "recompute_wu_fwd",
@@ -143,6 +155,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--all", action="store_true", help="Import every PROF_* directory under prof_dir (default: data/prof_gdr)")
     parser.add_argument("--model", default="gdn", help="Model id, default gdn")
     parser.add_argument("--chip", default="A2", choices=["A2", "A3", "A5"], help="Chip type")
+    parser.add_argument("--soc-version", default="", help="Device SoC version, e.g. Ascend950PR")
     parser.add_argument("--replace-mock", action="store_true", help="Remove previous prof snapshots before import")
     return parser.parse_args()
 
@@ -753,6 +766,7 @@ def import_prof(
     persist: bool = True,
     attributes: dict[str, Any] | None = None,
     example_id: str = "flash_gated_delta_rule",
+    soc_version: str | None = None,
 ) -> dict[str, Any]:
     prof_dir = prof_dir.resolve()
     if not prof_dir.exists():
@@ -771,8 +785,8 @@ def import_prof(
         prof_dir, model_id, chip, case, statistic_ops, summary_metrics, total_ms, device_id=device_id,
     )
     snapshot["example_id"] = example_id
+    snapshot["soc_version"] = soc_version or ""
     cube_mod = load_cube_theoretical_flops_module()
-    hbm_mod = load_hbm_theoretical_bytes_module()
     attrs = case.get("attributes") or {}
     for operator in snapshot.get("operators", []):
         operator_id = str(operator.get("operator_id") or "")
@@ -783,18 +797,11 @@ def import_prof(
             task_duration_us=task_duration_us,
             block_dim=operator.get("block_dim"),
             chip=chip,
+            soc_version=soc_version,
         )
-        if analytical_mfu is not None:
-            operator["mfu"] = analytical_mfu
-        analytical_mbu = hbm_mod.compute_mbu(
-            operator_id,
-            attrs,
-            task_duration_us=task_duration_us,
-            chip=chip,
-        )
-        if analytical_mbu is not None:
-            operator["mbu"] = analytical_mbu
-            operator["mem_util"] = analytical_mbu
+        operator["mfu"] = analytical_mfu
+        operator["mbu"] = None
+        operator["mem_util"] = None
 
     data = load_perf_data()
     upsert_case(data, case)
@@ -812,6 +819,7 @@ def import_prof(
         "case_id": case["id"],
         "model_id": model_id,
         "chip": chip,
+        "soc_version": soc_version or "",
         "device": str(snapshot.get("device_id", device_id)),
         "attributes": case.get("attributes", {}),
         "example_id": example_id,
@@ -852,7 +860,13 @@ def main() -> int:
 
     data = None
     for index, prof_dir in enumerate(prof_dirs):
-        data = import_prof(prof_dir, args.model, args.chip, replace_mock=args.replace_mock and index == 0)
+        data = import_prof(
+            prof_dir,
+            args.model,
+            args.chip,
+            replace_mock=args.replace_mock and index == 0,
+            soc_version=args.soc_version or None,
+        )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
         case = next(c for c in data["cases"] if c["id"] == snapshot["case_id"])
         print(f"Imported {prof_dir.name}")

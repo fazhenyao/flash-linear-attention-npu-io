@@ -1642,6 +1642,7 @@ def execute(
             persist=persist_local_data,
             attributes=attrs,
             example_id=example["id"],
+            soc_version=config.soc_version,
         )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
         snapshot["prof_tool"] = prof_tool
@@ -1658,6 +1659,7 @@ def execute(
             device_id=npu_device,
             persist=persist_local_data,
             example_id=example["id"],
+            soc_version=config.soc_version,
         )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
 
@@ -1733,6 +1735,7 @@ def import_prof_directory(payload: dict[str, Any]) -> dict[str, Any]:
     prof_tool = infer_prof_tool_from_dir(prof_dir, payload.get("prof_tool"))
     config = load_config()
     chip = resolve_chip(payload, config)
+    soc_version = str(payload.get("soc_version") or config.soc_version).strip()
     model_id = str(payload.get("model_id") or "gdn").strip() or "gdn"
     attrs = payload.get("attributes") or {}
     kernel_name = str(payload.get("kernel_name") or "").strip() or None
@@ -1741,7 +1744,14 @@ def import_prof_directory(payload: dict[str, Any]) -> dict[str, Any]:
 
     if prof_tool == "msprof":
         import_module = _import_module("import_prof_gdr.py")
-        data = import_module.import_prof(prof_dir, model_id, chip, replace_mock=False, device_id=npu_device)
+        data = import_module.import_prof(
+            prof_dir,
+            model_id,
+            chip,
+            replace_mock=False,
+            device_id=npu_device,
+            soc_version=soc_version,
+        )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
         snapshot["prof_tool"] = prof_tool
     else:
@@ -1755,6 +1765,7 @@ def import_prof_directory(payload: dict[str, Any]) -> dict[str, Any]:
             operator_id=single_kernel_name_override(operator_id or kernel_name),
             prof_tool=prof_tool,
             device_id=npu_device,
+            soc_version=soc_version,
         )
         snapshot = next(item for item in data["snapshots"] if item.get("prof_source") == prof_dir.name)
 
