@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-08-25T14:25:05+08:00",
+  "generatedAt": "2026-08-26T08:35:05+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 258,
+  "total": 262,
   "items": [
+    {
+      "number": 387,
+      "title": "test: migrate ATK to mixed tolerance standard",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/387",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-25T18:37:21Z",
+      "createdAt": "2026-08-25T18:37:20Z",
+      "headRef": "codex/atk-mixed-tolerance",
+      "labels": []
+    },
+    {
+      "number": 386,
+      "title": "docs: align examples README with repository",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/386",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-25T18:30:06Z",
+      "createdAt": "2026-08-25T18:30:05Z",
+      "headRef": "codex/fix-examples-readme",
+      "labels": []
+    },
+    {
+      "number": 383,
+      "title": "test(atk): expand atk cases",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/383",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-25T13:26:09Z",
+      "createdAt": "2026-08-25T09:52:19Z",
+      "headRef": "recurrent_kda_atk",
+      "labels": []
+    },
+    {
+      "number": 382,
+      "title": "blank2",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/382",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-25T08:01:22Z",
+      "createdAt": "2026-08-25T08:01:04Z",
+      "headRef": "0825-blank2",
+      "labels": []
+    },
     {
       "number": 380,
       "title": "newest",
@@ -17,39 +65,15 @@
       "labels": []
     },
     {
-      "number": 379,
-      "title": "docs: clarify ChunkGatedDeltaRuleBwdDhu K/V limits",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/379",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-24T16:30:27Z",
-      "createdAt": "2026-08-24T16:30:26Z",
-      "headRef": "codex/fix-issue313-docs",
-      "labels": []
-    },
-    {
       "number": 378,
       "title": "new cumsum kkt solve tri simple",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/378",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-25T02:56:28Z",
+      "updatedAt": "2026-08-25T08:55:39Z",
       "createdAt": "2026-08-24T14:59:12Z",
       "headRef": "chw_new_cumsum_kkt_solve_tri_simple",
-      "labels": []
-    },
-    {
-      "number": 376,
-      "title": "0824 atk检查版本号、汇总测试结果、修改backend为npu、readme更新",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/376",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-25T03:28:08Z",
-      "createdAt": "2026-08-24T12:30:45Z",
-      "headRef": "0824-atk",
       "labels": []
     },
     {
@@ -66,12 +90,12 @@
     },
     {
       "number": 374,
-      "title": "[Fix] fix executor script of causal_conv1d_bwd atk tests",
+      "title": "[Fix] fix causal_conv1d_bwd atk tests",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/374",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-24T07:33:26Z",
+      "updatedAt": "2026-08-25T07:47:10Z",
       "createdAt": "2026-08-24T07:32:22Z",
       "headRef": "test",
       "labels": []
@@ -107,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-25T06:22:17Z",
+      "updatedAt": "2026-08-25T14:08:20Z",
       "createdAt": "2026-08-24T01:21:30Z",
       "headRef": "codex/fwdh-stage0-replacement",
       "labels": []
@@ -145,18 +169,6 @@
       "mergedAt": null,
       "updatedAt": "2026-08-22T13:32:16Z",
       "createdAt": "2026-08-22T08:48:53Z",
-      "headRef": "test/atk-chunk-fwd-o-l2-dual-benchmark",
-      "labels": []
-    },
-    {
-      "number": 358,
-      "title": "test(atk): chunk_fwd_o atk适配",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/358",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-22T08:49:01Z",
-      "createdAt": "2026-08-22T08:37:35Z",
       "headRef": "test/atk-chunk-fwd-o-l2-dual-benchmark",
       "labels": []
     },
@@ -263,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-24T12:15:10Z",
+      "updatedAt": "2026-08-25T13:05:11Z",
       "createdAt": "2026-08-19T01:16:48Z",
       "headRef": "kda_bwd_v2",
       "labels": []
@@ -287,7 +299,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-24T09:15:14Z",
+      "updatedAt": "2026-08-25T07:25:59Z",
       "createdAt": "2026-08-17T12:36:56Z",
       "headRef": "0817-blank",
       "labels": []
@@ -335,7 +347,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-25T01:16:43Z",
+      "updatedAt": "2026-08-25T08:23:50Z",
       "createdAt": "2026-08-15T08:51:17Z",
       "headRef": "fix/v26.6.0-opapi-symbol-isolation",
       "labels": []
@@ -359,7 +371,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T12:34:24Z",
+      "updatedAt": "2026-08-25T08:24:52Z",
       "createdAt": "2026-08-13T15:38:25Z",
       "headRef": "codex/fix-opapi-symbol-isolation",
       "labels": []
@@ -455,7 +467,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-18T13:25:33Z",
+      "updatedAt": "2026-08-25T15:13:25Z",
       "createdAt": "2026-08-06T13:02:19Z",
       "headRef": "20260806_204500_docs-README-usability",
       "labels": []
@@ -905,6 +917,30 @@
       "labels": []
     },
     {
+      "number": 381,
+      "title": "fix ci image",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/381",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-25T07:58:21Z",
+      "updatedAt": "2026-08-25T07:58:21Z",
+      "createdAt": "2026-08-25T07:31:02Z",
+      "headRef": "0825-blank",
+      "labels": []
+    },
+    {
+      "number": 379,
+      "title": "docs: clarify ChunkGatedDeltaRuleBwdDhu K/V limits",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/379",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-25T13:25:37Z",
+      "updatedAt": "2026-08-25T13:25:37Z",
+      "createdAt": "2026-08-24T16:30:26Z",
+      "headRef": "codex/fix-issue313-docs",
+      "labels": []
+    },
+    {
       "number": 377,
       "title": "Update atk_solve_tri.json",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/377",
@@ -914,6 +950,18 @@
       "updatedAt": "2026-08-24T12:48:20Z",
       "createdAt": "2026-08-24T12:37:55Z",
       "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 376,
+      "title": "0824 atk检查版本号、汇总测试结果、修改backend为npu、readme更新",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/376",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-25T07:06:09Z",
+      "updatedAt": "2026-08-25T07:06:09Z",
+      "createdAt": "2026-08-24T12:30:45Z",
+      "headRef": "0824-atk",
       "labels": []
     },
     {
