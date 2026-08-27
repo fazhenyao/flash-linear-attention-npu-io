@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-27T13:28:54+08:00",
+  "generatedAt": "2026-08-28T00:59:22+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 266,
+  "total": 269,
   "items": [
+    {
+      "number": 395,
+      "title": "feat(recurrent-kda): support non-contiguous qkv views",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/395",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-27T13:35:07Z",
+      "createdAt": "2026-08-27T13:34:57Z",
+      "headRef": "recurrent_kda_slice",
+      "labels": []
+    },
+    {
+      "number": 394,
+      "title": "docs: add FwdH A5 stage pseudocode blueprint",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/394",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-27T13:06:38Z",
+      "createdAt": "2026-08-27T08:28:55Z",
+      "headRef": "codex/fwd-h-pseudocode-pr",
+      "labels": []
+    },
+    {
+      "number": 393,
+      "title": "fix: align bwd dhu state shapes with FLA semantics",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/393",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-27T08:07:18Z",
+      "createdAt": "2026-08-27T08:03:58Z",
+      "headRef": "codex/fix-issue312-state-shapes",
+      "labels": []
+    },
     {
       "number": 390,
       "title": "feat(causal_conv1d): add fn/update APIs and device metadata. And performance improvement on 950.",
@@ -47,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-26T07:22:53Z",
+      "updatedAt": "2026-08-27T08:35:35Z",
       "createdAt": "2026-08-25T09:52:19Z",
       "headRef": "recurrent_kda_atk",
       "labels": []
@@ -83,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-26T09:42:52Z",
+      "updatedAt": "2026-08-27T08:29:13Z",
       "createdAt": "2026-08-24T14:59:12Z",
       "headRef": "chw_new_cumsum_kkt_solve_tri_simple",
       "labels": []
@@ -131,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-27T02:24:12Z",
+      "updatedAt": "2026-08-27T07:35:20Z",
       "createdAt": "2026-08-24T03:06:04Z",
       "headRef": "20260822_0030_offline-bundle-multi-cann",
       "labels": []
@@ -222,12 +258,12 @@
     },
     {
       "number": 340,
-      "title": "vcs_test",
+      "title": "solve-tri ascend950 vcs+mbh",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/340",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T03:15:07Z",
+      "updatedAt": "2026-08-27T08:33:22Z",
       "createdAt": "2026-08-20T03:14:57Z",
       "headRef": "vcs_test",
       "labels": []
@@ -251,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-21T03:07:18Z",
+      "updatedAt": "2026-08-27T09:13:05Z",
       "createdAt": "2026-08-19T02:16:52Z",
       "headRef": "atk_fix",
       "labels": []
@@ -263,7 +299,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-26T09:19:23Z",
+      "updatedAt": "2026-08-27T13:54:32Z",
       "createdAt": "2026-08-19T01:16:48Z",
       "headRef": "kda_bwd_v2",
       "labels": []
