@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-08-28T00:59:22+08:00",
+  "generatedAt": "2026-08-28T15:25:03+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 269,
+  "total": 272,
   "items": [
+    {
+      "number": 399,
+      "title": "fix(chunk_fwd_o): include attrs in L2 DFX",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/399",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-28T07:02:01Z",
+      "createdAt": "2026-08-28T07:02:01Z",
+      "headRef": "fix/chunk-fwd-o-dfx-attrs",
+      "labels": []
+    },
+    {
+      "number": 398,
+      "title": "solve-tri Vcs+Mbh ",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/398",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-28T06:43:05Z",
+      "createdAt": "2026-08-28T06:39:27Z",
+      "headRef": "vcs_test",
+      "labels": []
+    },
+    {
+      "number": 397,
+      "title": "fix(v26.6.0): build one-click wheel errors (gen.sh python resolution + duplicate op_api symbols)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/397",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-28T06:48:47Z",
+      "createdAt": "2026-08-28T03:52:51Z",
+      "headRef": "fix/v26.6.0-build-dup-and-py-path",
+      "labels": []
+    },
+    {
+      "number": 396,
+      "title": "Gpu test",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/396",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-28T06:13:49Z",
+      "createdAt": "2026-08-28T01:36:08Z",
+      "headRef": "gpu_test",
+      "labels": []
+    },
     {
       "number": 395,
       "title": "feat(recurrent-kda): support non-contiguous qkv views",
@@ -23,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-27T13:06:38Z",
+      "updatedAt": "2026-08-28T03:52:12Z",
       "createdAt": "2026-08-27T08:28:55Z",
       "headRef": "codex/fwd-h-pseudocode-pr",
       "labels": []
@@ -257,18 +305,6 @@
       "labels": []
     },
     {
-      "number": 340,
-      "title": "solve-tri ascend950 vcs+mbh",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/340",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-27T08:33:22Z",
-      "createdAt": "2026-08-20T03:14:57Z",
-      "headRef": "vcs_test",
-      "labels": []
-    },
-    {
       "number": 339,
       "title": "mega kernel V2",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/339",
@@ -287,7 +323,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-27T09:13:05Z",
+      "updatedAt": "2026-08-28T06:44:42Z",
       "createdAt": "2026-08-19T02:16:52Z",
       "headRef": "atk_fix",
       "labels": []
@@ -299,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-27T13:54:32Z",
+      "updatedAt": "2026-08-27T21:32:15Z",
       "createdAt": "2026-08-19T01:16:48Z",
       "headRef": "kda_bwd_v2",
       "labels": []
