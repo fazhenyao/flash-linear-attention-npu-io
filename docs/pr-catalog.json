@@ -1,31 +1,55 @@
 {
-  "generatedAt": "2026-08-28T15:25:03+08:00",
+  "generatedAt": "2026-08-29T12:35:27+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 272,
+  "total": 275,
   "items": [
     {
-      "number": 399,
-      "title": "fix(chunk_fwd_o): include attrs in L2 DFX",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/399",
+      "number": 404,
+      "title": "feat(gdn): 新增反向 finalize Ascend 950 算子",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/404",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T07:02:01Z",
-      "createdAt": "2026-08-28T07:02:01Z",
-      "headRef": "fix/chunk-fwd-o-dfx-attrs",
+      "updatedAt": "2026-08-29T03:56:38Z",
+      "createdAt": "2026-08-29T03:56:28Z",
+      "headRef": "feat/chunk-gdn-bwd-finalize",
       "labels": []
     },
     {
-      "number": 398,
-      "title": "solve-tri Vcs+Mbh ",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/398",
+      "number": 402,
+      "title": "fix(dqkwg): stabilize A5 RegBase precision",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/402",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T06:43:05Z",
-      "createdAt": "2026-08-28T06:39:27Z",
-      "headRef": "vcs_test",
+      "updatedAt": "2026-08-29T01:33:13Z",
+      "createdAt": "2026-08-29T00:06:41Z",
+      "headRef": "fix/dqkwg-a5-regbase-precision",
+      "labels": []
+    },
+    {
+      "number": 401,
+      "title": "fix(dv_local): include attrs in L2 DFX",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/401",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-29T03:03:37Z",
+      "createdAt": "2026-08-28T09:22:15Z",
+      "headRef": "fix0828",
+      "labels": []
+    },
+    {
+      "number": 400,
+      "title": "Supplement the DFX information for da and full",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/400",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-28T09:32:55Z",
+      "createdAt": "2026-08-28T08:10:30Z",
+      "headRef": "da_full",
       "labels": []
     },
     {
@@ -35,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T06:48:47Z",
+      "updatedAt": "2026-08-29T03:14:39Z",
       "createdAt": "2026-08-28T03:52:51Z",
       "headRef": "fix/v26.6.0-build-dup-and-py-path",
       "labels": []
@@ -47,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T06:13:49Z",
+      "updatedAt": "2026-08-28T07:45:40Z",
       "createdAt": "2026-08-28T01:36:08Z",
       "headRef": "gpu_test",
       "labels": []
@@ -59,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-27T13:35:07Z",
+      "updatedAt": "2026-08-28T10:04:17Z",
       "createdAt": "2026-08-27T13:34:57Z",
       "headRef": "recurrent_kda_slice",
       "labels": []
@@ -71,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T03:52:12Z",
+      "updatedAt": "2026-08-28T08:34:38Z",
       "createdAt": "2026-08-27T08:28:55Z",
       "headRef": "codex/fwd-h-pseudocode-pr",
       "labels": []
@@ -95,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-26T09:06:39Z",
+      "updatedAt": "2026-08-29T01:38:44Z",
       "createdAt": "2026-08-26T09:02:48Z",
       "headRef": "causal-conv1d",
       "labels": []
@@ -155,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-25T05:09:15Z",
+      "updatedAt": "2026-08-28T07:36:41Z",
       "createdAt": "2026-08-25T03:45:42Z",
       "headRef": "chw_new_cumsum_kkt_solve_tri_newest",
       "labels": []
@@ -167,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-27T08:29:13Z",
+      "updatedAt": "2026-08-29T04:01:32Z",
       "createdAt": "2026-08-24T14:59:12Z",
       "headRef": "chw_new_cumsum_kkt_solve_tri_simple",
       "labels": []
@@ -251,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-23T08:33:19Z",
+      "updatedAt": "2026-08-28T08:23:46Z",
       "createdAt": "2026-08-23T07:02:01Z",
       "headRef": "codex/fix-kkt-event-lifecycle",
       "labels": []
@@ -323,7 +347,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T06:44:42Z",
+      "updatedAt": "2026-08-28T08:16:24Z",
       "createdAt": "2026-08-19T02:16:52Z",
       "headRef": "atk_fix",
       "labels": []
@@ -335,7 +359,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-27T21:32:15Z",
+      "updatedAt": "2026-08-28T23:26:27Z",
       "createdAt": "2026-08-19T01:16:48Z",
       "headRef": "kda_bwd_v2",
       "labels": []
@@ -419,21 +443,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-24T09:12:12Z",
+      "updatedAt": "2026-08-28T09:08:12Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
-      "labels": []
-    },
-    {
-      "number": 311,
-      "title": "fix(runtime): 隔离 FLA 与 CANN opapi 动态符号",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/311",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-26T08:06:24Z",
-      "createdAt": "2026-08-13T15:38:25Z",
-      "headRef": "codex/fix-opapi-symbol-isolation",
       "labels": []
     },
     {
@@ -962,6 +974,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 399,
+      "title": "fix(chunk_fwd_o): include attrs in L2 DFX",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/399",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-28T09:13:21Z",
+      "updatedAt": "2026-08-28T09:13:21Z",
+      "createdAt": "2026-08-28T07:02:01Z",
+      "headRef": "fix/chunk-fwd-o-dfx-attrs",
+      "labels": []
+    },
+    {
+      "number": 398,
+      "title": "solve-tri Vcs+Mbh ",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/398",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-29T01:48:43Z",
+      "updatedAt": "2026-08-29T01:48:43Z",
+      "createdAt": "2026-08-28T06:39:27Z",
+      "headRef": "vcs_test",
       "labels": []
     },
     {
