@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-08-29T12:35:27+08:00",
+  "generatedAt": "2026-08-29T19:53:28+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 275,
+  "total": 277,
   "items": [
+    {
+      "number": 409,
+      "title": "feat: ChunkBwdDqkwg性能优化、解决精度问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/409",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-29T08:34:31Z",
+      "createdAt": "2026-08-29T08:34:23Z",
+      "headRef": "ChunkBwdDqkwg",
+      "labels": []
+    },
+    {
+      "number": 406,
+      "title": "feat(chunk_fwd_h): 新增独立入口并按有效 head task 动态分核",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/406",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-29T10:31:30Z",
+      "createdAt": "2026-08-29T05:56:12Z",
+      "headRef": "codex/fwd-h-core-partition",
+      "labels": []
+    },
     {
       "number": 404,
       "title": "feat(gdn): 新增反向 finalize Ascend 950 算子",
@@ -11,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-29T03:56:38Z",
+      "updatedAt": "2026-08-29T06:09:40Z",
       "createdAt": "2026-08-29T03:56:28Z",
       "headRef": "feat/chunk-gdn-bwd-finalize",
       "labels": []
@@ -47,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T09:32:55Z",
+      "updatedAt": "2026-08-29T11:05:21Z",
       "createdAt": "2026-08-28T08:10:30Z",
       "headRef": "da_full",
       "labels": []
@@ -83,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T10:04:17Z",
+      "updatedAt": "2026-08-29T10:43:25Z",
       "createdAt": "2026-08-27T13:34:57Z",
       "headRef": "recurrent_kda_slice",
       "labels": []
@@ -95,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T08:34:38Z",
+      "updatedAt": "2026-08-29T05:34:51Z",
       "createdAt": "2026-08-27T08:28:55Z",
       "headRef": "codex/fwd-h-pseudocode-pr",
       "labels": []
@@ -230,18 +254,6 @@
       "updatedAt": "2026-08-24T06:42:30Z",
       "createdAt": "2026-08-24T06:41:47Z",
       "headRef": "rwkv_v8",
-      "labels": []
-    },
-    {
-      "number": 372,
-      "title": "feat(offline): bundle third-party sources into wheel for offline rebuild",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/372",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-27T07:35:20Z",
-      "createdAt": "2026-08-24T03:06:04Z",
-      "headRef": "20260822_0030_offline-bundle-multi-cann",
       "labels": []
     },
     {
@@ -383,7 +395,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-25T07:25:59Z",
+      "updatedAt": "2026-08-29T07:58:16Z",
       "createdAt": "2026-08-17T12:36:56Z",
       "headRef": "0817-blank",
       "labels": []
@@ -1082,6 +1094,18 @@
       "updatedAt": "2026-08-25T07:06:09Z",
       "createdAt": "2026-08-24T12:30:45Z",
       "headRef": "0824-atk",
+      "labels": []
+    },
+    {
+      "number": 372,
+      "title": "feat(offline): bundle third-party sources into wheel for offline rebuild",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/372",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-29T10:36:18Z",
+      "updatedAt": "2026-08-29T10:36:18Z",
+      "createdAt": "2026-08-24T03:06:04Z",
+      "headRef": "20260822_0030_offline-bundle-multi-cann",
       "labels": []
     },
     {
