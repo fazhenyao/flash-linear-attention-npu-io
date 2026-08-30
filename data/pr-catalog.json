@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-08-29T19:53:28+08:00",
+  "generatedAt": "2026-08-30T10:06:53+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 277,
+  "total": 280,
   "items": [
+    {
+      "number": 414,
+      "title": "docs: separate output and workspace capacity planning",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/414",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-29T21:59:02Z",
+      "createdAt": "2026-08-29T21:58:32Z",
+      "headRef": "docs/separate-output-workspace-stage-design",
+      "labels": []
+    },
     {
       "number": 409,
       "title": "feat: ChunkBwdDqkwg性能优化、解决精度问题",
@@ -14,18 +26,6 @@
       "updatedAt": "2026-08-29T08:34:31Z",
       "createdAt": "2026-08-29T08:34:23Z",
       "headRef": "ChunkBwdDqkwg",
-      "labels": []
-    },
-    {
-      "number": 406,
-      "title": "feat(chunk_fwd_h): 新增独立入口并按有效 head task 动态分核",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/406",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-29T10:31:30Z",
-      "createdAt": "2026-08-29T05:56:12Z",
-      "headRef": "codex/fwd-h-core-partition",
       "labels": []
     },
     {
@@ -335,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-26T17:25:07Z",
+      "updatedAt": "2026-08-29T16:38:29Z",
       "createdAt": "2026-08-20T16:01:42Z",
       "headRef": "20260812_000618_operator-optimization-docs",
       "labels": []
@@ -455,7 +455,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T09:08:12Z",
+      "updatedAt": "2026-08-29T13:22:15Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
       "labels": []
@@ -986,6 +986,42 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 413,
+      "title": "docs: 限定 Agent 流程来源并隔离新算子设计",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/413",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-29T20:57:37Z",
+      "updatedAt": "2026-08-29T20:57:38Z",
+      "createdAt": "2026-08-29T20:55:34Z",
+      "headRef": "codex/restrict-agent-workflow-sources",
+      "labels": []
+    },
+    {
+      "number": 411,
+      "title": "docs: 精简算子开发 Agent 文档结构",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/411",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-29T20:36:01Z",
+      "updatedAt": "2026-08-29T20:36:02Z",
+      "createdAt": "2026-08-29T18:11:26Z",
+      "headRef": "codex/restructure-agent-docs-20260830",
+      "labels": []
+    },
+    {
+      "number": 406,
+      "title": "feat(chunk_fwd_h): 新增独立入口并按有效 head task 动态分核",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/406",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-29T16:07:57Z",
+      "updatedAt": "2026-08-29T16:07:57Z",
+      "createdAt": "2026-08-29T05:56:12Z",
+      "headRef": "codex/fwd-h-core-partition",
       "labels": []
     },
     {
