@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-08-30T10:06:53+08:00",
+  "generatedAt": "2026-08-30T18:50:53+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 280,
+  "total": 282,
   "items": [
     {
       "number": 414,
@@ -986,6 +986,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 416,
+      "title": "docs: move offline guide from doc/ to docs/",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/416",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-30T07:44:31Z",
+      "updatedAt": "2026-08-30T07:44:31Z",
+      "createdAt": "2026-08-30T07:41:56Z",
+      "headRef": "fix/move-offline-guide-to-docs",
+      "labels": []
+    },
+    {
+      "number": 415,
+      "title": "docs: 精简仓库 Agent 开发流程说明",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/415",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-30T10:46:22Z",
+      "updatedAt": "2026-08-30T10:46:22Z",
+      "createdAt": "2026-08-30T04:24:44Z",
+      "headRef": "codex/rewrite-agent-rules-positive",
       "labels": []
     },
     {
