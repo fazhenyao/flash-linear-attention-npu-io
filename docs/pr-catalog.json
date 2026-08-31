@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-30T18:50:53+08:00",
+  "generatedAt": "2026-08-31T10:02:08+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 282,
+  "total": 286,
   "items": [
+    {
+      "number": 421,
+      "title": "[Performance][KDA] Add A5 RegBase chunk backward prepare KernelA",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/421",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-31T02:02:05Z",
+      "createdAt": "2026-08-31T02:02:05Z",
+      "headRef": "feat/chunk-kda-bwd-prepare-a5-regbase",
+      "labels": []
+    },
+    {
+      "number": 420,
+      "title": "feat: ChunkBwdDqkwg性能优化、解决精度问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/420",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-31T01:35:12Z",
+      "createdAt": "2026-08-31T01:35:02Z",
+      "headRef": "ChunkBwdDqkwg",
+      "labels": []
+    },
+    {
+      "number": 419,
+      "title": "docs: 新增 ChunkGdnBwdIntra 融合算子方案设计",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/419",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-31T01:21:47Z",
+      "createdAt": "2026-08-30T19:19:10Z",
+      "headRef": "codex/restrict-agent-workflow-sources",
+      "labels": []
+    },
     {
       "number": 414,
       "title": "docs: separate output and workspace capacity planning",
@@ -23,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-29T08:34:31Z",
+      "updatedAt": "2026-08-31T01:25:29Z",
       "createdAt": "2026-08-29T08:34:23Z",
       "headRef": "ChunkBwdDqkwg",
       "labels": []
@@ -986,6 +1022,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 417,
+      "title": "docs: consolidate ATK testing guidance",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/417",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-30T16:16:02Z",
+      "updatedAt": "2026-08-30T16:16:02Z",
+      "createdAt": "2026-08-30T14:54:09Z",
+      "headRef": "codex/consolidate-atk-testing-docs-20260830",
       "labels": []
     },
     {
