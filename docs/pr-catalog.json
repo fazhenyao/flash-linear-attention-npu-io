@@ -1,9 +1,69 @@
 {
-  "generatedAt": "2026-08-31T10:02:08+08:00",
+  "generatedAt": "2026-08-31T20:00:55+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 286,
+  "total": 291,
   "items": [
+    {
+      "number": 426,
+      "title": "gdn fwd_h ascendc optim",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/426",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-31T11:47:04Z",
+      "createdAt": "2026-08-31T11:45:55Z",
+      "headRef": "gdn_fwd_h_optim",
+      "labels": []
+    },
+    {
+      "number": 425,
+      "title": "feat(pypi): support publishing v26.9.0 wheels to PyPI",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/425",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-31T08:58:22Z",
+      "createdAt": "2026-08-31T08:58:19Z",
+      "headRef": "feat/pypi-publish",
+      "labels": []
+    },
+    {
+      "number": 424,
+      "title": "fix(v26.1.0): backport v26.6.0 build fixes (gen.sh python/PATH + duplicate op_api symbols)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/424",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-31T11:53:18Z",
+      "createdAt": "2026-08-31T08:19:08Z",
+      "headRef": "fix/v26.1.0-build-dup-and-py-path",
+      "labels": []
+    },
+    {
+      "number": 423,
+      "title": "A2、A5 GDNFwd算子",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/423",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-31T08:12:07Z",
+      "createdAt": "2026-08-31T08:11:59Z",
+      "headRef": "chw_a2_a5",
+      "labels": []
+    },
+    {
+      "number": 422,
+      "title": "fix(chunk_fwd_h): 模板化 V 维度并补齐 ATK 交付",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/422",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-31T09:45:07Z",
+      "createdAt": "2026-08-31T06:12:19Z",
+      "headRef": "codex/fwd-h-tiling-atk",
+      "labels": []
+    },
     {
       "number": 421,
       "title": "[Performance][KDA] Add A5 RegBase chunk backward prepare KernelA",
@@ -11,21 +71,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T02:02:05Z",
+      "updatedAt": "2026-08-31T09:31:32Z",
       "createdAt": "2026-08-31T02:02:05Z",
       "headRef": "feat/chunk-kda-bwd-prepare-a5-regbase",
-      "labels": []
-    },
-    {
-      "number": 420,
-      "title": "feat: ChunkBwdDqkwg性能优化、解决精度问题",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/420",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-31T01:35:12Z",
-      "createdAt": "2026-08-31T01:35:02Z",
-      "headRef": "ChunkBwdDqkwg",
       "labels": []
     },
     {
@@ -35,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T01:21:47Z",
+      "updatedAt": "2026-08-31T06:50:02Z",
       "createdAt": "2026-08-30T19:19:10Z",
       "headRef": "codex/restrict-agent-workflow-sources",
       "labels": []
@@ -50,18 +98,6 @@
       "updatedAt": "2026-08-29T21:59:02Z",
       "createdAt": "2026-08-29T21:58:32Z",
       "headRef": "docs/separate-output-workspace-stage-design",
-      "labels": []
-    },
-    {
-      "number": 409,
-      "title": "feat: ChunkBwdDqkwg性能优化、解决精度问题",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/409",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-31T01:25:29Z",
-      "createdAt": "2026-08-29T08:34:23Z",
-      "headRef": "ChunkBwdDqkwg",
       "labels": []
     },
     {
@@ -89,37 +125,13 @@
       "labels": []
     },
     {
-      "number": 401,
-      "title": "fix(dv_local): include attrs in L2 DFX",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/401",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-29T03:03:37Z",
-      "createdAt": "2026-08-28T09:22:15Z",
-      "headRef": "fix0828",
-      "labels": []
-    },
-    {
-      "number": 400,
-      "title": "Supplement the DFX information for da and full",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/400",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-29T11:05:21Z",
-      "createdAt": "2026-08-28T08:10:30Z",
-      "headRef": "da_full",
-      "labels": []
-    },
-    {
       "number": 397,
       "title": "fix(v26.6.0): build one-click wheel errors (gen.sh python resolution + duplicate op_api symbols)",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/397",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-29T03:14:39Z",
+      "updatedAt": "2026-08-31T08:45:02Z",
       "createdAt": "2026-08-28T03:52:51Z",
       "headRef": "fix/v26.6.0-build-dup-and-py-path",
       "labels": []
@@ -134,18 +146,6 @@
       "updatedAt": "2026-08-28T07:45:40Z",
       "createdAt": "2026-08-28T01:36:08Z",
       "headRef": "gpu_test",
-      "labels": []
-    },
-    {
-      "number": 395,
-      "title": "feat(recurrent-kda): support non-contiguous qkv views",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/395",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-29T10:43:25Z",
-      "createdAt": "2026-08-27T13:34:57Z",
-      "headRef": "recurrent_kda_slice",
       "labels": []
     },
     {
@@ -179,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-29T01:38:44Z",
+      "updatedAt": "2026-08-31T07:04:24Z",
       "createdAt": "2026-08-26T09:02:48Z",
       "headRef": "causal-conv1d",
       "labels": []
@@ -191,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-26T06:46:30Z",
+      "updatedAt": "2026-08-31T11:15:25Z",
       "createdAt": "2026-08-26T06:13:07Z",
       "headRef": "codex/rgdr-atk-positive-cases",
       "labels": []
@@ -407,7 +407,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T23:26:27Z",
+      "updatedAt": "2026-08-31T06:24:13Z",
       "createdAt": "2026-08-19T01:16:48Z",
       "headRef": "kda_bwd_v2",
       "labels": []
@@ -491,7 +491,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-29T13:22:15Z",
+      "updatedAt": "2026-08-31T10:07:39Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
       "labels": []
@@ -1025,6 +1025,18 @@
       "labels": []
     },
     {
+      "number": 420,
+      "title": "feat: ChunkBwdDqkwg性能优化、解决精度问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/420",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-31T06:21:44Z",
+      "updatedAt": "2026-08-31T06:21:44Z",
+      "createdAt": "2026-08-31T01:35:02Z",
+      "headRef": "ChunkBwdDqkwg",
+      "labels": []
+    },
+    {
       "number": 417,
       "title": "docs: consolidate ATK testing guidance",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/417",
@@ -1085,6 +1097,18 @@
       "labels": []
     },
     {
+      "number": 409,
+      "title": "feat: ChunkBwdDqkwg性能优化、解决精度问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/409",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-31T06:22:01Z",
+      "updatedAt": "2026-08-31T06:22:02Z",
+      "createdAt": "2026-08-29T08:34:23Z",
+      "headRef": "ChunkBwdDqkwg",
+      "labels": []
+    },
+    {
       "number": 406,
       "title": "feat(chunk_fwd_h): 新增独立入口并按有效 head task 动态分核",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/406",
@@ -1094,6 +1118,30 @@
       "updatedAt": "2026-08-29T16:07:57Z",
       "createdAt": "2026-08-29T05:56:12Z",
       "headRef": "codex/fwd-h-core-partition",
+      "labels": []
+    },
+    {
+      "number": 401,
+      "title": "fix(dv_local): include attrs in L2 DFX",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/401",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-31T08:36:27Z",
+      "updatedAt": "2026-08-31T08:36:27Z",
+      "createdAt": "2026-08-28T09:22:15Z",
+      "headRef": "fix0828",
+      "labels": []
+    },
+    {
+      "number": 400,
+      "title": "Supplement the DFX information for da and full",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/400",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-31T09:11:23Z",
+      "updatedAt": "2026-08-31T09:11:23Z",
+      "createdAt": "2026-08-28T08:10:30Z",
+      "headRef": "da_full",
       "labels": []
     },
     {
@@ -1118,6 +1166,18 @@
       "updatedAt": "2026-08-29T01:48:43Z",
       "createdAt": "2026-08-28T06:39:27Z",
       "headRef": "vcs_test",
+      "labels": []
+    },
+    {
+      "number": 395,
+      "title": "feat(recurrent-kda): support non-contiguous qkv views",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/395",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-31T08:32:36Z",
+      "updatedAt": "2026-08-31T08:32:36Z",
+      "createdAt": "2026-08-27T13:34:57Z",
+      "headRef": "recurrent_kda_slice",
       "labels": []
     },
     {
