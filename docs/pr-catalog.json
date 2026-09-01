@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-09-01T10:23:17+08:00",
+  "generatedAt": "2026-09-01T18:39:59+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 294,
+  "total": 295,
   "items": [
+    {
+      "number": 433,
+      "title": "fix(v26.9.0): backport #429 OPP env hints from main",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/433",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-01T10:11:07Z",
+      "createdAt": "2026-09-01T04:10:54Z",
+      "headRef": "fix/v26.9.0-opp-env-hints",
+      "labels": []
+    },
     {
       "number": 432,
       "title": "recompute_w_u_fwd算子A5性能优化",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T02:22:44Z",
+      "updatedAt": "2026-09-01T03:22:42Z",
       "createdAt": "2026-09-01T02:21:11Z",
       "headRef": "main",
       "labels": []
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T02:17:26Z",
+      "updatedAt": "2026-09-01T10:11:11Z",
       "createdAt": "2026-09-01T02:12:46Z",
       "headRef": "fix/issue-429-opp-env-warning",
       "labels": []
@@ -59,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T08:58:22Z",
+      "updatedAt": "2026-09-01T06:04:22Z",
       "createdAt": "2026-08-31T08:58:19Z",
       "headRef": "feat/pypi-publish",
       "labels": []
@@ -71,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T02:17:19Z",
+      "updatedAt": "2026-09-01T04:10:47Z",
       "createdAt": "2026-08-31T08:19:08Z",
       "headRef": "fix/v26.1.0-build-dup-and-py-path",
       "labels": []
@@ -83,21 +95,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T01:30:45Z",
+      "updatedAt": "2026-09-01T07:33:11Z",
       "createdAt": "2026-08-31T08:11:59Z",
       "headRef": "chw_a2_a5",
-      "labels": []
-    },
-    {
-      "number": 422,
-      "title": "fix(chunk_fwd_h): 模板化 V 维度并补齐 ATK 交付",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/422",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-31T18:34:23Z",
-      "createdAt": "2026-08-31T06:12:19Z",
-      "headRef": "codex/fwd-h-tiling-atk",
       "labels": []
     },
     {
@@ -143,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T18:36:45Z",
+      "updatedAt": "2026-09-01T04:41:43Z",
       "createdAt": "2026-08-29T03:56:28Z",
       "headRef": "feat/chunk-gdn-bwd-finalize",
       "labels": []
@@ -167,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T02:17:15Z",
+      "updatedAt": "2026-09-01T10:11:00Z",
       "createdAt": "2026-08-28T03:52:51Z",
       "headRef": "fix/v26.6.0-build-dup-and-py-path",
       "labels": []
@@ -419,7 +419,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-28T08:16:24Z",
+      "updatedAt": "2026-09-01T06:54:21Z",
       "createdAt": "2026-08-19T02:16:52Z",
       "headRef": "atk_fix",
       "labels": []
@@ -431,7 +431,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T06:24:13Z",
+      "updatedAt": "2026-09-01T08:34:53Z",
       "createdAt": "2026-08-19T01:16:48Z",
       "headRef": "kda_bwd_v2",
       "labels": []
@@ -467,7 +467,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-20T07:36:59Z",
+      "updatedAt": "2026-09-01T08:57:42Z",
       "createdAt": "2026-08-17T09:30:05Z",
       "headRef": "8_17",
       "labels": []
@@ -515,7 +515,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T10:07:39Z",
+      "updatedAt": "2026-09-01T03:58:24Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
       "labels": []
@@ -1046,6 +1046,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 422,
+      "title": "fix(chunk_fwd_h): 模板化 V 维度并补齐 ATK 交付",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/422",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-01T03:16:25Z",
+      "updatedAt": "2026-09-01T03:16:26Z",
+      "createdAt": "2026-08-31T06:12:19Z",
+      "headRef": "codex/fwd-h-tiling-atk",
       "labels": []
     },
     {
