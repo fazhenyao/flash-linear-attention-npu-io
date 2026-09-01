@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-08-31T20:00:55+08:00",
+  "generatedAt": "2026-09-01T10:23:17+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 291,
+  "total": 294,
   "items": [
+    {
+      "number": 432,
+      "title": "recompute_w_u_fwd算子A5性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/432",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-01T02:22:44Z",
+      "createdAt": "2026-09-01T02:21:11Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 431,
+      "title": "fix: warn when ASCEND_CUSTOM_OPP_PATH misses the embedded OPP (#429)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/431",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-01T02:17:26Z",
+      "createdAt": "2026-09-01T02:12:46Z",
+      "headRef": "fix/issue-429-opp-env-warning",
+      "labels": []
+    },
+    {
+      "number": 430,
+      "title": "fix(chunk_kda_fwd): 修复 A5 Prepare 卡死并补齐 ATK 覆盖",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/430",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-08-31T21:18:36Z",
+      "createdAt": "2026-08-31T20:46:12Z",
+      "headRef": "codex/chunk-kda-fwd-atk-modern-200",
+      "labels": []
+    },
     {
       "number": 426,
       "title": "gdn fwd_h ascendc optim",
@@ -35,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T11:53:18Z",
+      "updatedAt": "2026-09-01T02:17:19Z",
       "createdAt": "2026-08-31T08:19:08Z",
       "headRef": "fix/v26.1.0-build-dup-and-py-path",
       "labels": []
@@ -47,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T08:12:07Z",
+      "updatedAt": "2026-09-01T01:30:45Z",
       "createdAt": "2026-08-31T08:11:59Z",
       "headRef": "chw_a2_a5",
       "labels": []
@@ -59,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T09:45:07Z",
+      "updatedAt": "2026-08-31T18:34:23Z",
       "createdAt": "2026-08-31T06:12:19Z",
       "headRef": "codex/fwd-h-tiling-atk",
       "labels": []
@@ -83,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T06:50:02Z",
+      "updatedAt": "2026-08-31T18:40:57Z",
       "createdAt": "2026-08-30T19:19:10Z",
       "headRef": "codex/restrict-agent-workflow-sources",
       "labels": []
@@ -107,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-29T06:09:40Z",
+      "updatedAt": "2026-08-31T18:36:45Z",
       "createdAt": "2026-08-29T03:56:28Z",
       "headRef": "feat/chunk-gdn-bwd-finalize",
       "labels": []
@@ -131,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T08:45:02Z",
+      "updatedAt": "2026-09-01T02:17:15Z",
       "createdAt": "2026-08-28T03:52:51Z",
       "headRef": "fix/v26.6.0-build-dup-and-py-path",
       "labels": []
@@ -182,18 +218,6 @@
       "updatedAt": "2026-08-31T07:04:24Z",
       "createdAt": "2026-08-26T09:02:48Z",
       "headRef": "causal-conv1d",
-      "labels": []
-    },
-    {
-      "number": 389,
-      "title": "test: 补齐 recurrent_gated_delta_rule ATK 测试矩阵",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/389",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-31T11:15:25Z",
-      "createdAt": "2026-08-26T06:13:07Z",
-      "headRef": "codex/rgdr-atk-positive-cases",
       "labels": []
     },
     {
@@ -1202,6 +1226,18 @@
       "updatedAt": "2026-08-26T12:37:07Z",
       "createdAt": "2026-08-26T09:32:09Z",
       "headRef": "fix/pr311-embed-opp",
+      "labels": []
+    },
+    {
+      "number": 389,
+      "title": "test: 补齐 recurrent_gated_delta_rule ATK 测试矩阵",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/389",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-08-31T17:39:29Z",
+      "updatedAt": "2026-08-31T17:39:29Z",
+      "createdAt": "2026-08-26T06:13:07Z",
+      "headRef": "codex/rgdr-atk-positive-cases",
       "labels": []
     },
     {
