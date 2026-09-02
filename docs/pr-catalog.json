@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-09-02T09:44:53+08:00",
+  "generatedAt": "2026-09-02T18:05:45+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 297,
+  "total": 301,
   "items": [
+    {
+      "number": 442,
+      "title": "fix(kda): 回合 v26.9.0 的 ChunkKdaFwd 变长尾块确定性修复",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/442",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-02T08:45:56Z",
+      "createdAt": "2026-09-02T08:44:57Z",
+      "headRef": "codex/fix-kda-varlen-determinism-v269",
+      "labels": []
+    },
+    {
+      "number": 441,
+      "title": "fix(kda): 修复 ChunkKdaFwd 变长尾块输出不确定",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/441",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-02T08:45:56Z",
+      "createdAt": "2026-09-02T08:43:02Z",
+      "headRef": "codex/fix-kda-varlen-determinism-main",
+      "labels": []
+    },
+    {
+      "number": 439,
+      "title": "perf: optimize recurrent gated delta rule on A5",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/439",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-02T03:11:45Z",
+      "createdAt": "2026-09-02T03:07:53Z",
+      "headRef": "A5_perf",
+      "labels": []
+    },
+    {
+      "number": 438,
+      "title": "feat(causal_conv1d): add fn/update APIs and device metadata. And performance improvement on 950 for v26.9.0.",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/438",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-02T03:17:43Z",
+      "createdAt": "2026-09-02T02:58:49Z",
+      "headRef": "causal-conv1d-v26.9.0",
+      "labels": []
+    },
     {
       "number": 436,
       "title": "新增chunk_kda_bwd_recompute算子",
@@ -11,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T13:15:58Z",
+      "updatedAt": "2026-09-02T08:55:37Z",
       "createdAt": "2026-09-01T13:15:47Z",
       "headRef": "main",
       "labels": []
@@ -23,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T12:25:28Z",
+      "updatedAt": "2026-09-02T03:55:38Z",
       "createdAt": "2026-09-01T12:25:16Z",
       "headRef": "chunk-fwd-o-a5",
       "labels": []
@@ -35,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T12:41:38Z",
+      "updatedAt": "2026-09-02T02:09:08Z",
       "createdAt": "2026-09-01T12:21:21Z",
       "headRef": "zdy_fwd_o_pr",
       "labels": []
@@ -47,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T14:23:00Z",
+      "updatedAt": "2026-09-02T03:31:44Z",
       "createdAt": "2026-09-01T04:10:54Z",
       "headRef": "fix/v26.9.0-opp-env-hints",
       "labels": []
@@ -59,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T03:22:42Z",
+      "updatedAt": "2026-09-02T08:52:54Z",
       "createdAt": "2026-09-01T02:21:11Z",
       "headRef": "main",
       "labels": []
@@ -71,19 +119,19 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T14:22:19Z",
+      "updatedAt": "2026-09-02T03:31:49Z",
       "createdAt": "2026-09-01T02:12:46Z",
       "headRef": "fix/issue-429-opp-env-warning",
       "labels": []
     },
     {
       "number": 430,
-      "title": "fix(chunk_kda_fwd): 修复 A5 Prepare 卡死并补齐 ATK 覆盖",
+      "title": "fix(chunk_kda_fwd): 稳定 A5 尾块同步并补齐现代精度验证",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/430",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T21:18:36Z",
+      "updatedAt": "2026-09-02T08:18:31Z",
       "createdAt": "2026-08-31T20:46:12Z",
       "headRef": "codex/chunk-kda-fwd-atk-modern-200",
       "labels": []
@@ -95,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T11:47:04Z",
+      "updatedAt": "2026-09-02T02:09:20Z",
       "createdAt": "2026-08-31T11:45:55Z",
       "headRef": "gdn_fwd_h_optim",
       "labels": []
@@ -131,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T14:09:13Z",
+      "updatedAt": "2026-09-02T09:00:36Z",
       "createdAt": "2026-08-31T08:11:59Z",
       "headRef": "chw_a2_a5",
       "labels": []
@@ -179,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T14:50:41Z",
+      "updatedAt": "2026-09-02T04:21:08Z",
       "createdAt": "2026-08-29T03:56:28Z",
       "headRef": "feat/chunk-gdn-bwd-finalize",
       "labels": []
@@ -194,18 +242,6 @@
       "updatedAt": "2026-08-29T01:33:13Z",
       "createdAt": "2026-08-29T00:06:41Z",
       "headRef": "fix/dqkwg-a5-regbase-precision",
-      "labels": []
-    },
-    {
-      "number": 397,
-      "title": "fix(v26.6.0): build one-click wheel errors (gen.sh python resolution + duplicate op_api symbols)",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/397",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-01T14:38:26Z",
-      "createdAt": "2026-08-28T03:52:51Z",
-      "headRef": "fix/v26.6.0-build-dup-and-py-path",
       "labels": []
     },
     {
@@ -251,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T00:53:56Z",
+      "updatedAt": "2026-09-02T06:43:53Z",
       "createdAt": "2026-08-26T09:02:48Z",
       "headRef": "causal-conv1d",
       "labels": []
@@ -467,7 +503,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T00:20:49Z",
+      "updatedAt": "2026-09-02T09:10:38Z",
       "createdAt": "2026-08-19T01:16:48Z",
       "headRef": "kda_bwd_v2",
       "labels": []
@@ -1226,6 +1262,18 @@
       "updatedAt": "2026-08-29T01:48:43Z",
       "createdAt": "2026-08-28T06:39:27Z",
       "headRef": "vcs_test",
+      "labels": []
+    },
+    {
+      "number": 397,
+      "title": "fix(v26.6.0): build one-click wheel errors (gen.sh python resolution + duplicate op_api symbols)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/397",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-02T06:11:27Z",
+      "updatedAt": "2026-09-02T06:11:27Z",
+      "createdAt": "2026-08-28T03:52:51Z",
+      "headRef": "fix/v26.6.0-build-dup-and-py-path",
       "labels": []
     },
     {
