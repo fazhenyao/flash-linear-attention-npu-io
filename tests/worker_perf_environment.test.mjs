@@ -135,6 +135,22 @@ test("normalizes demo-model profile tasks and requires batch one", () => {
   }, { role: "user" }), /demo_model requires batch=1/);
 });
 
+test("normalizes the GDR composite-core option", () => {
+  const defaultRequest = normalizePerfJobRequest({
+    task_type: "profile",
+    example_id: "flash_gated_delta_rule",
+    attributes: {},
+  }, { role: "user" });
+  assert.equal(defaultRequest.attributes.use_composite_core, true);
+
+  const legacyRequest = normalizePerfJobRequest({
+    task_type: "profile",
+    example_id: "flash_gated_delta_rule",
+    attributes: { use_composite_core: "false" },
+  }, { role: "user" });
+  assert.equal(legacyRequest.attributes.use_composite_core, false);
+});
+
 test("normalizes dynamic example parameters and preserves the example id", () => {
   const request = normalizePerfJobRequest({
     task_type: "profile",

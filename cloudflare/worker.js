@@ -2490,7 +2490,7 @@ function normalizePerfAttributes(value, exampleId = "flash_gated_delta_rule") {
   if (exampleId !== "flash_gated_delta_rule") return normalizeDynamicPerfAttributes(value, exampleId);
   const allowed = new Set([
     "batch", "query_heads", "value_heads", "tokens", "key_dim", "value_dim", "chunk_size",
-    "mean_len", "dtype", "varlen", "demo_model", "scale", "cu_seqlens", "layout", "notes",
+    "mean_len", "dtype", "varlen", "demo_model", "use_composite_core", "scale", "cu_seqlens", "layout", "notes",
   ]);
   for (const key of Object.keys(value)) {
     if (!allowed.has(key)) throw withStatus(400, `unsupported performance attribute: ${key}`);
@@ -2519,6 +2519,13 @@ function normalizePerfAttributes(value, exampleId = "flash_gated_delta_rule") {
     ? false
     : ![false, 0, "0", "false", "no", "off"].includes(
       typeof value.demo_model === "string" ? value.demo_model.trim().toLowerCase() : value.demo_model,
+    );
+  result.use_composite_core = value.use_composite_core === undefined
+    ? true
+    : ![false, 0, "0", "false", "no", "off"].includes(
+      typeof value.use_composite_core === "string"
+        ? value.use_composite_core.trim().toLowerCase()
+        : value.use_composite_core,
     );
   if (result.demo_model && result.batch !== 1) throw withStatus(400, "demo_model requires batch=1");
   const scale = value.scale === undefined || value.scale === null || value.scale === ""
