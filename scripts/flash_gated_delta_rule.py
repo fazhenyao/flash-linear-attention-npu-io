@@ -30,8 +30,11 @@ from fla_npu.ops.ascendc import (
     chunk_bwd_dqkwg as ascendc_chunk_bwd_dqkwg,
     chunk_bwd_dv_local as ascendc_chunk_bwd_dv_local,
     chunk_fwd_o as ascendc_chunk_fwd_o,
+    chunk_gated_delta_rule_fwd as ascendc_chunk_gated_delta_rule_fwd,
     chunk_gated_delta_rule_bwd_dhu as ascendc_chunk_gated_delta_rule_bwd_dhu,
     chunk_gated_delta_rule_fwd_h as ascendc_chunk_gated_delta_rule_fwd_h,
+    chunk_local_cumsum as ascendc_chunk_local_cumsum,
+    chunk_scaled_dot_kkt as ascendc_chunk_scaled_dot_kkt,
     prepare_wy_repr_bwd_da as ascendc_prepare_wy_repr_bwd_da,
     prepare_wy_repr_bwd_full as ascendc_prepare_wy_repr_bwd_full,
     recompute_w_u_fwd as ascendc_recompute_w_u_fwd,
@@ -807,7 +810,28 @@ def flash_chunk_gated_delta_rule_fwd(
     chunk_indices: Optional[Dict[str, Optional[torch.LongTensor]]] = None,
     chunk_indices_list: Optional[Dict[str, Optional[list[int]]]] = None,
     chunk_size: int = 64,
+    use_composite_core: bool = True,
 ):
+    cu_list = cu_seqlens_list
+    chunk_list = _chunk_list(chunk_indices_list, chunk_size)
+    if use_composite_core:
+        o, final_state, g, A = ascendc_chunk_gated_delta_rule_fwd(
+            q,
+            k,
+            v,
+            g,
+            beta,
+            initial_state=initial_state,
+            output_final_state=output_final_state,
+            chunk_size=chunk_size,
+            cu_seqlens=cu_list,
+            chunk_indices=chunk_list,
+            scale=scale,
+        )
+        if not output_final_state:
+            final_state = None
+        return g, o.transpose(1, 2).contiguous(), A, final_state
+
     g = chunk_local_cumsum_auto(
         g=g,
         cu_seqlens=cu_seqlens,
@@ -844,8 +868,8 @@ def flash_chunk_gated_delta_rule_fwd(
         A,
         g,
         chunk_size=chunk_size,
-        cu_seqlens=cu_seqlens_list,
-        chunk_indices=_chunk_list(chunk_indices_list, chunk_size),
+        cu_seqlens=cu_list,
+        chunk_indices=chunk_list,
     )
 
     h, v_new, final_state = ascendc_chunk_gated_delta_rule_fwd_h(
@@ -857,12 +881,9 @@ def flash_chunk_gated_delta_rule_fwd(
         initial_state=initial_state,
         output_final_state=output_final_state,
         chunk_size=chunk_size,
-        cu_seqlens=cu_seqlens_list,
-        chunk_indices=_chunk_list(chunk_indices_list, chunk_size),
+        cu_seqlens=cu_list,
+        chunk_indices=chunk_list,
     )
-    if not output_final_state:
-        final_state = None
-
     o = ascendc_chunk_fwd_o(
         q,
         k,
@@ -871,14 +892,15 @@ def flash_chunk_gated_delta_rule_fwd(
         scale,
         g=g,
         g_gamma=None,
-        cu_seqlens=cu_seqlens_list,
-        chunk_indices=_chunk_list(chunk_indices_list, chunk_size),
+        cu_seqlens=cu_list,
+        chunk_indices=chunk_list,
         chunk_size=chunk_size,
     )
 
-    g = g.transpose(1, 2).contiguous()
+    if not output_final_state:
+        final_state = None
     o = o.transpose(1, 2).contiguous()
-    return g, o, A, final_state
+    return g.transpose(1, 2).contiguous(), o, A, final_state
 
 
 def flash_chunk_gated_delta_rule_bwd(
@@ -1043,6 +1065,7 @@ class ChunkGatedDeltaRuleFunction(torch.autograd.Function):
         chunk_indices_list: Optional[Dict[str, Optional[list[int]]]] = None,
         use_qk_l2norm_in_kernel: bool = False,
         chunk_size: int = 64,
+        use_composite_core: bool = True,
     ):
         if use_qk_l2norm_in_kernel:
             q, q_rstd = l2norm_fwd(q)
@@ -1064,6 +1087,7 @@ class ChunkGatedDeltaRuleFunction(torch.autograd.Function):
             chunk_indices=chunk_indices,
             chunk_indices_list=chunk_indices_list,
             chunk_size=chunk_size,
+            use_composite_core=use_composite_core,
         )
 
         ctx.save_for_backward(q, k, v, g, beta, A)
@@ -1119,6 +1143,7 @@ class ChunkGatedDeltaRuleFunction(torch.autograd.Function):
             None,
             None,
             None,
+            None,
         )
 
 
@@ -1139,19 +1164,23 @@ def flash_gated_delta_rule(
     chunk_indices_list: Optional[Dict[str, Optional[list[int]]] | list[int] | torch.Tensor] = None,
     chunk_size: int = 64,
     head_first: bool = False,
+    use_composite_core: bool = True,
 ):
     r"""
     Flash-linear-attention NPU port of xtuner's GDN entry.
 
-    This port keeps the xtuner NPU layout:
-        q, k: [B, H, T, K]
-        v:    [B, H, T, V]
-        g:    [B, T, H]
-        beta: [B, T, H]
+    This port keeps the xtuner NPU layout and supports grouped value attention:
+        q, k: [B, Hk, T, K]
+        v:    [B, Hv, T, V]
+        g:    [B, T, Hv]
+        beta: [B, T, Hv]
+
+    Hv must be an integer multiple of Hk. Value head hv reuses query/key
+    head ``hk = hv // (Hv // Hk)``.
 
     It returns:
-        o: [B, T, H, V]
-        final_state: [N, H, K, V] when output_final_state=True, else None
+        o: [B, T, Hv, V]
+        final_state: [N, Hv, K, V] when output_final_state=True, else None
     """
     if q.dtype != k.dtype or k.dtype != v.dtype:
         raise ValueError(
@@ -1161,22 +1190,29 @@ def flash_gated_delta_rule(
     if q.dtype == torch.float32:
         raise ValueError("ChunkGatedDeltaRuleFunction does not support float32. Please use float16/bfloat16.")
     if beta.ndim != 3 or g.ndim != 3:
-        raise ValueError("g and beta must be rank-3 tensors with shape [B, T, H].")
+        raise ValueError("g and beta must be rank-3 tensors with shape [B, T, Hv].")
     if q.ndim != 4 or k.ndim != 4 or v.ndim != 4:
-        raise ValueError("q, k and v must be rank-4 tensors with shape [B, H, T, D].")
-    if q.shape[:3] != k.shape[:3] or q.shape[:3] != v.shape[:3]:
-        raise ValueError(f"q/k/v shape prefixes must match, got {q.shape}, {k.shape}, {v.shape}.")
+        raise ValueError("q/k and v must be rank-4 tensors with shapes [B, Hk, T, K] and [B, Hv, T, V].")
+    if q.shape != k.shape:
+        raise ValueError(f"q and k shapes must match, got q={q.shape}, k={k.shape}.")
+    if q.shape[0] != v.shape[0] or q.shape[2] != v.shape[2]:
+        raise ValueError(f"q/k/v batch and sequence dimensions must match, got q={q.shape}, v={v.shape}.")
+    if v.shape[1] % q.shape[1] != 0:
+        raise ValueError(
+            f"value heads must be a multiple of query heads, got q_heads={q.shape[1]}, v_heads={v.shape[1]}."
+        )
     if g.shape != beta.shape:
         raise ValueError(f"g and beta shapes must match, got {g.shape} and {beta.shape}.")
-    if g.shape[0] != q.shape[0] or g.shape[1] != q.shape[2] or g.shape[2] != q.shape[1]:
+    if g.shape[0] != q.shape[0] or g.shape[1] != q.shape[2] or g.shape[2] != v.shape[1]:
         raise ValueError(
-            "Expected q/k/v in [B, H, T, D] and g/beta in [B, T, H]; "
-            f"got q={tuple(q.shape)}, g={tuple(g.shape)}."
+            "Expected q/k in [B, Hk, T, K], v in [B, Hv, T, V], and g/beta in [B, T, Hv]; "
+            f"got q={tuple(q.shape)}, v={tuple(v.shape)}, g={tuple(g.shape)}."
         )
 
     if head_first:
         warnings.warn(
-            "head_first is kept only for API compatibility. This NPU port always expects q/k/v as [B, H, T, D].",
+            "head_first is kept only for API compatibility. This NPU port expects q/k as [B, Hk, T, K] "
+            "and v as [B, Hv, T, V].",
             stacklevel=2,
         )
     if chunk_size != 2 ** (chunk_size.bit_length() - 1):
@@ -1224,6 +1260,7 @@ def flash_gated_delta_rule(
         chunk_indices_list,
         use_qk_l2norm_in_kernel,
         chunk_size,
+        use_composite_core,
     )
     return o, final_state
 
@@ -1258,6 +1295,7 @@ class DemoGatedDeltaNet(nn.Module):
         hidden_act: str = "silu",
         rms_norm_eps: float = 1e-6,
         chunk_size: int = 64,
+        use_composite_core: bool = True,
     ):
         super().__init__()
         self.hidden_size = hidden_size
@@ -1265,8 +1303,8 @@ class DemoGatedDeltaNet(nn.Module):
         self.num_k_heads = num_key_heads
         if self.num_v_heads % self.num_k_heads != 0:
             raise ValueError(
-                "num_value_heads must be an integer multiple of num_key_heads "
-                f"for the current grouped-value smoke path, got {self.num_v_heads} and {self.num_k_heads}."
+                "DemoGatedDeltaNet requires num_value_heads to be a multiple of num_key_heads; "
+                f"got {self.num_v_heads} and {self.num_k_heads}."
             )
         if key_head_dim != value_head_dim:
             raise ValueError(
@@ -1280,6 +1318,7 @@ class DemoGatedDeltaNet(nn.Module):
         self.conv_kernel_size = conv_kernel_dim
         self.activation = hidden_act
         self.chunk_size_default = chunk_size
+        self.use_composite_core = use_composite_core
 
         conv_dim = self.key_dim * 2 + self.value_dim
         self.conv1d = nn.Conv1d(
@@ -1335,11 +1374,6 @@ class DemoGatedDeltaNet(nn.Module):
         beta = b.sigmoid()
         g = -self.A_log.float().exp() * torch.nn.functional.softplus(a.float() + self.dt_bias)
 
-        repeat = self.num_v_heads // self.num_k_heads
-        if repeat > 1:
-            query = query.repeat_interleave(repeat, dim=1)
-            key = key.repeat_interleave(repeat, dim=1)
-
         cu_list = cu_seqlens.detach().tolist() if cu_seqlens is not None else None
         cu_seqlens_list: Optional[list[int]] = cu_list if cu_list is not None else None
 
@@ -1356,6 +1390,7 @@ class DemoGatedDeltaNet(nn.Module):
             chunk_indices=None,
             chunk_indices_list=None,
             chunk_size=self.chunk_size_default,
+            use_composite_core=self.use_composite_core,
         )
 
         core_attn_out = core_attn_out.reshape(-1, self.head_v_dim)
@@ -1552,14 +1587,18 @@ def _naive_recurrent_gated_delta_rule_cpu(
     scale: float,
 ) -> torch.Tensor:
     q, k, v, beta, g = [x.transpose(1, 2).contiguous().float() for x in (q, k, v, beta, g)]
-    B, H, T, K = q.shape
+    B, Hk, T, K = q.shape
+    Hv = v.shape[1]
+    if Hv % Hk != 0:
+        raise ValueError(f"value heads must be a multiple of query heads, got Hk={Hk}, Hv={Hv}")
+    head_map = torch.arange(Hv, device=q.device) // (Hv // Hk)
     V = v.shape[-1]
-    state = q.new_zeros(B, H, K, V)
-    o = q.new_empty(B, H, T, V)
+    state = q.new_zeros(B, Hv, K, V)
+    o = q.new_empty(B, Hv, T, V)
     q = q * scale
     for idx in range(T):
-        q_i = q[:, :, idx]
-        k_i = k[:, :, idx]
+        q_i = q[:, head_map, idx]
+        k_i = k[:, head_map, idx]
         v_i = v[:, :, idx]
         beta_i = beta[:, :, idx]
         g_i = g[:, :, idx].exp()
@@ -1574,8 +1613,6 @@ def _naive_recurrent_gated_delta_rule_cpu(
 def _run_cpu_accuracy_reference(
     inputs: dict[str, torch.Tensor],
     *,
-    query_heads: int,
-    value_heads: int,
     scale: float,
     qk_l2norm: bool,
     cu_seqlens: Optional[list[int]],
@@ -1588,14 +1625,9 @@ def _run_cpu_accuracy_reference(
     g = inputs["g"].detach().float().requires_grad_("dg" in tensors)
     do = inputs["do"].detach().float()
 
-    repeat = value_heads // query_heads
-
     def run_slice(start: int, end: int) -> torch.Tensor:
         q_i = q[:, :, start:end, :].transpose(1, 2)
         k_i = k[:, :, start:end, :].transpose(1, 2)
-        if repeat != 1:
-            q_i = q_i.repeat_interleave(repeat, dim=2)
-            k_i = k_i.repeat_interleave(repeat, dim=2)
         if qk_l2norm:
             q_i = F.normalize(q_i, p=2, dim=-1)
             k_i = F.normalize(k_i, p=2, dim=-1)
@@ -1636,8 +1668,6 @@ def _load_or_create_accuracy_golden(
     path: Path,
     config: dict,
     inputs: dict[str, torch.Tensor],
-    query_heads: int,
-    value_heads: int,
     scale: float,
     qk_l2norm: bool,
     cu_seqlens: Optional[list[int]],
@@ -1653,8 +1683,6 @@ def _load_or_create_accuracy_golden(
     path.parent.mkdir(parents=True, exist_ok=True)
     tensors = _run_cpu_accuracy_reference(
         inputs,
-        query_heads=query_heads,
-        value_heads=value_heads,
         scale=scale,
         qk_l2norm=qk_l2norm,
         cu_seqlens=cu_seqlens,
@@ -1669,8 +1697,6 @@ def _run_npu_accuracy_candidate(
     inputs: dict[str, torch.Tensor],
     *,
     device: str,
-    query_heads: int,
-    value_heads: int,
     scale: float,
     qk_l2norm: bool,
     cu_seqlens: Optional[torch.LongTensor],
@@ -1686,11 +1712,6 @@ def _run_npu_accuracy_candidate(
 
     attn_q = q
     attn_k = k
-    if query_heads != value_heads:
-        repeat = value_heads // query_heads
-        attn_q = q.repeat_interleave(repeat, dim=1)
-        attn_k = k.repeat_interleave(repeat, dim=1)
-
     o, _ = flash_gated_delta_rule(
         attn_q,
         attn_k,
@@ -1808,8 +1829,6 @@ def _run_accuracy_check(
         path=golden_path,
         config=config,
         inputs=inputs,
-        query_heads=query_heads,
-        value_heads=value_heads,
         scale=scale,
         qk_l2norm=args.qk_l2norm,
         cu_seqlens=cu_list,
@@ -1818,8 +1837,6 @@ def _run_accuracy_check(
     candidate = _run_npu_accuracy_candidate(
         inputs,
         device=device,
-        query_heads=query_heads,
-        value_heads=value_heads,
         scale=scale,
         qk_l2norm=args.qk_l2norm,
         cu_seqlens=cu_seqlens,
@@ -1883,6 +1900,13 @@ def _main():
         action="store_true",
         help="运行 DemoGatedDeltaNet（从 cu_seqlens 迁移到 tensor 设备及 causal_conv 起始的完整链路）代替裸张量 attn 冒烟",
     )
+    parser.add_argument(
+        "--legacy-unfused-core",
+        dest="use_composite_core",
+        action="store_false",
+        default=True,
+        help="Use the legacy unfused Python path instead of aclnnChunkGatedDeltaRuleFwd.",
+    )
     parser.add_argument("--conv-kernel", type=int, default=4, help="depthwise causal conv kernel size")
     parser.add_argument("--accuracy-check", action="store_true")
     parser.add_argument(
@@ -1931,7 +1955,7 @@ def _main():
         raise ValueError("varlen smoke currently requires batch=1. Use --no-varlen for B > 1 cases.")
     if value_heads % query_heads != 0:
         raise ValueError(
-            "value_heads must be an integer multiple of query_heads for the current grouped-value smoke path, "
+            "value_heads must be a multiple of query_heads for GVA; "
             f"got query_heads={query_heads}, value_heads={value_heads}."
         )
     if args.gate_source != "g":
@@ -1974,6 +1998,7 @@ def _main():
             value_head_dim=value_dim,
             conv_kernel_dim=args.conv_kernel,
             chunk_size=args.chunk_size,
+            use_composite_core=args.use_composite_core,
         ).to(device=device, dtype=dtype)
         torch.npu.synchronize()
         out = net(x, cu_seqlens=cu_seqlens)
@@ -2060,11 +2085,9 @@ def _main():
     torch.npu.synchronize()
     attn_q = q
     attn_k = k
-    if query_heads != value_heads:
-        repeat = value_heads // query_heads
-        attn_q = q.repeat_interleave(repeat, dim=1)
-        attn_k = k.repeat_interleave(repeat, dim=1)
-        print("grouped value heads:", f"repeat={repeat}", f"attn_heads={attn_q.shape[1]}")
+    # Keep the original query/key head count. GVA maps each value head to its
+    # corresponding key head in the underlying operators.
+    print("actual operator heads:", f"q={attn_q.shape[1]}", f"k={attn_k.shape[1]}", f"v={v.shape[1]}")
     initial_state = None
     if args.initial_state != "none":
         state_count = len(cu_seqlens) - 1 if cu_seqlens is not None else batch
@@ -2086,6 +2109,7 @@ def _main():
         use_qk_l2norm_in_kernel=args.qk_l2norm,
         cu_seqlens=cu_seqlens,
         chunk_size=args.chunk_size,
+        use_composite_core=args.use_composite_core,
     )
     torch.npu.synchronize()
 

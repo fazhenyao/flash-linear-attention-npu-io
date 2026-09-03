@@ -552,6 +552,35 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertNotIn("ssh ", profiler_command)
         self.assertNotIn("conda activate", profiler_command)
 
+    def test_default_remote_script_survives_custom_environment_without_branch(self):
+        remote_script = (
+            "/workspace/fazhenyao/flash-linear-attention-npu_bak/"
+            "examples/flash_gated_delta_rule.py"
+        )
+        environment = {**self.environment, "PERF_REMOTE_SCRIPT": remote_script}
+        payload = {
+            "prof_tool": "msprof",
+            "attributes": {},
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": False,
+                "branch": "",
+            },
+        }
+
+        with patch.dict(os.environ, environment, clear=False):
+            command = build_command(payload)
+            profiler_command = build_profiler_command(payload)
+
+        self.assertIn(remote_script, command)
+        self.assertIn(remote_script, profiler_command)
+        self.assertNotIn(
+            "/workspace/user/flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
+            command,
+        )
+
     def test_a5_chip_and_instance_local_artifact_roots(self):
         environment = {
             **self.environment,

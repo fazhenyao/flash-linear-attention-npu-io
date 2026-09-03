@@ -365,6 +365,21 @@ def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> t
     return remote_script, to_repo_relative_path(local_abs)
 
 
+def remote_script_for_execution(
+    example: dict[str, Any],
+    config: PerfRunnerConfig,
+    execution: ExecutionEnvironment,
+) -> str:
+    if (
+        example["id"] == DEFAULT_EXAMPLE_ID
+        and config.remote_script
+        and not execution.branch
+        and not execution.rebuild
+    ):
+        return config.remote_script
+    return f"{execution.source_repo}/{example['script']}"
+
+
 def script_options() -> list[dict[str, Any]]:
     return example_catalog()
 
@@ -608,7 +623,7 @@ def build_profiler_command(payload: dict[str, Any], config: PerfRunnerConfig | N
     remote_script, local_script = resolve_script_paths(payload, config)
     if config.mode == "ssh" and payload.get("execution_environment") is not None:
         execution = resolve_execution_environment(payload, config)
-        remote_script = f"{execution.source_repo}/{example['script']}"
+        remote_script = remote_script_for_execution(example, config, execution)
     invocation = build_prof_invocation(
         config,
         prof_tool=prof_tool,
@@ -1564,7 +1579,7 @@ def execute(
         build_worktree = ""
         if execution.customized:
             _validate_remote_execution_environment(config, execution)
-            remote_script = f"{execution.source_repo}/{example['script']}"
+            remote_script = remote_script_for_execution(example, config, execution)
             if execution.branch and not execution.rebuild:
                 deployed_source = _resolve_remote_deployed_source(config, execution, chip)
                 remote_script = f"{deployed_source}/{example['script']}"
