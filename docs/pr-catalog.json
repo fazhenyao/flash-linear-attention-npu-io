@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-09-03T09:50:21+08:00",
+  "generatedAt": "2026-09-03T18:16:14+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 302,
+  "total": 304,
   "items": [
+    {
+      "number": 447,
+      "title": "Gdn fwd prepare",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/447",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-03T09:27:43Z",
+      "createdAt": "2026-09-03T09:27:33Z",
+      "headRef": "gdn_fwd_prepare",
+      "labels": []
+    },
+    {
+      "number": 446,
+      "title": "新增fused_recurrent_rwkv8算子",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/446",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-03T07:54:08Z",
+      "createdAt": "2026-09-03T07:53:01Z",
+      "headRef": "main",
+      "labels": []
+    },
     {
       "number": 444,
       "title": "docs: 增加算子方案数值稳定性门禁",
@@ -47,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T08:55:37Z",
+      "updatedAt": "2026-09-03T06:06:07Z",
       "createdAt": "2026-09-01T13:15:47Z",
       "headRef": "main",
       "labels": []
@@ -59,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T13:38:34Z",
+      "updatedAt": "2026-09-03T07:14:30Z",
       "createdAt": "2026-09-01T12:25:16Z",
       "headRef": "chunk-fwd-o-a5",
       "labels": []
@@ -83,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T03:31:44Z",
+      "updatedAt": "2026-09-03T07:40:33Z",
       "createdAt": "2026-09-01T04:10:54Z",
       "headRef": "fix/v26.9.0-opp-env-hints",
       "labels": []
@@ -107,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T03:31:49Z",
+      "updatedAt": "2026-09-03T07:41:09Z",
       "createdAt": "2026-09-01T02:12:46Z",
       "headRef": "fix/issue-429-opp-env-warning",
       "labels": []
@@ -203,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T22:18:35Z",
+      "updatedAt": "2026-09-03T09:14:13Z",
       "createdAt": "2026-08-29T03:56:28Z",
       "headRef": "feat/chunk-gdn-bwd-finalize",
       "labels": []
@@ -263,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T06:43:53Z",
+      "updatedAt": "2026-09-03T08:56:33Z",
       "createdAt": "2026-08-26T09:02:48Z",
       "headRef": "causal-conv1d",
       "labels": []
@@ -491,7 +515,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T08:57:42Z",
+      "updatedAt": "2026-09-03T08:24:29Z",
       "createdAt": "2026-08-17T09:30:05Z",
       "headRef": "8_17",
       "labels": []
