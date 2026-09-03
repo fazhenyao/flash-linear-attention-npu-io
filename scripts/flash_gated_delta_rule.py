@@ -1900,11 +1900,18 @@ def _main():
         action="store_true",
         help="运行 DemoGatedDeltaNet（从 cu_seqlens 迁移到 tensor 设备及 causal_conv 起始的完整链路）代替裸张量 attn 冒烟",
     )
-    parser.add_argument(
+    composite_core_group = parser.add_mutually_exclusive_group()
+    composite_core_group.add_argument(
+        "--use-composite-core",
+        dest="use_composite_core",
+        action="store_true",
+        default=True,
+        help="Use the aclnnChunkGatedDeltaRuleFwd composite core.",
+    )
+    composite_core_group.add_argument(
         "--legacy-unfused-core",
         dest="use_composite_core",
         action="store_false",
-        default=True,
         help="Use the legacy unfused Python path instead of aclnnChunkGatedDeltaRuleFwd.",
     )
     parser.add_argument("--conv-kernel", type=int, default=4, help="depthwise causal conv kernel size")

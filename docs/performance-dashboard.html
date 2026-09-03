@@ -1292,13 +1292,15 @@
       const example = selectedTriggerExample();
       if (!example) return;
       const values = triggerExampleStoredValues(example);
+      const chip = triggerRunnerChip(selectedTriggerRunner());
       (example.parameters || []).forEach((parameter) => {
         const field = document.querySelector(`[data-example-field="${parameter.name}"]`);
-        const visible = !parameter.visible_when || Object.entries(parameter.visible_when).every(([name, expected]) => {
+        const chipVisible = !parameter.chips || parameter.chips.includes(chip);
+        const conditionVisible = !parameter.visible_when || Object.entries(parameter.visible_when).every(([name, expected]) => {
           const actual = values[name];
           return typeof expected === "boolean" ? Boolean(actual) === expected : String(actual) === String(expected);
         });
-        field?.classList.toggle("is-hidden", !visible);
+        field?.classList.toggle("is-hidden", !(chipVisible && conditionVisible));
       });
     }
 

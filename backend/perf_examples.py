@@ -207,7 +207,8 @@ def example_cli_args(example: dict[str, Any], attributes: dict[str, Any], npu_de
                 continue
         if parameter["type"] == "boolean":
             if value:
-                args.append(parameter["flag"])
+                if not parameter.get("omit_true_flag"):
+                    args.append(parameter["flag"])
             elif parameter.get("false_flag"):
                 args.append(parameter["false_flag"])
             continue

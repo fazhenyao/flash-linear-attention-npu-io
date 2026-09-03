@@ -21,7 +21,8 @@
         {"name": "varlen", "flag": "--varlen", "false_flag": "--no-varlen", "label": "varlen", "type": "boolean", "default": true, "group": "变长序列"},
         {"name": "mean_len", "flag": "--mean-len", "label": "mean-len", "type": "integer", "default": 1024, "min": 1, "max": 10000000, "group": "变长序列", "visible_when": {"varlen": true}},
         {"name": "cu_seqlens", "flag": "--cu-seqlens", "label": "cu-seqlens", "type": "integer_list", "default": [], "separator": ",", "group": "变长序列", "visible_when": {"varlen": true}, "placeholder": "0,1024,2048,4087"},
-        {"name": "demo_model", "flag": "--demo-model", "label": "完整模型链路", "type": "boolean", "default": false, "group": "测试链路"}
+        {"name": "demo_model", "flag": "--demo-model", "label": "完整模型链路", "type": "boolean", "default": false, "group": "测试链路"},
+        {"name": "use_composite_core", "flag": "--use-composite-core", "false_flag": "--legacy-unfused-core", "omit_true_flag": true, "label": "use-composite-core", "type": "boolean", "default": true, "group": "测试链路", "chips": ["A2"]}
       ]
     },
     {

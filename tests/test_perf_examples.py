@@ -38,6 +38,21 @@ class PerfExampleManifestTests(unittest.TestCase):
         self.assertIn("--use-short-conv", args)
         self.assertNotIn("--varlen", args)
 
+    def test_flash_gdr_composite_core_builds_true_and_false_flags(self):
+        example = resolve_example("flash_gated_delta_rule")
+
+        enabled = normalize_example_attributes(example, {})
+        enabled_args = example_cli_args(example, enabled, 2)
+        self.assertTrue(enabled["use_composite_core"])
+        self.assertNotIn("--use-composite-core", enabled_args)
+        self.assertNotIn("--legacy-unfused-core", enabled_args)
+
+        disabled = normalize_example_attributes(example, {"use_composite_core": False})
+        disabled_args = example_cli_args(example, disabled, 2)
+        self.assertFalse(disabled["use_composite_core"])
+        self.assertNotIn("--use-composite-core", disabled_args)
+        self.assertIn("--legacy-unfused-core", disabled_args)
+
     def test_recurrent_integer_lists_are_forwarded_as_nargs(self):
         example = resolve_example("recurrent_gated_delta_rule")
         attributes = normalize_example_attributes(example, {"cache_indices": [0, 3, 7]})
