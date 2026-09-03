@@ -1,43 +1,31 @@
 {
-  "generatedAt": "2026-09-02T18:05:45+08:00",
+  "generatedAt": "2026-09-03T09:50:21+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 301,
+  "total": 302,
   "items": [
     {
-      "number": 442,
-      "title": "fix(kda): 回合 v26.9.0 的 ChunkKdaFwd 变长尾块确定性修复",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/442",
+      "number": 444,
+      "title": "docs: 增加算子方案数值稳定性门禁",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/444",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T08:45:56Z",
-      "createdAt": "2026-09-02T08:44:57Z",
-      "headRef": "codex/fix-kda-varlen-determinism-v269",
+      "updatedAt": "2026-09-02T14:52:00Z",
+      "createdAt": "2026-09-02T13:11:07Z",
+      "headRef": "codex/design-numerical-stability-rules",
       "labels": []
     },
     {
-      "number": 441,
-      "title": "fix(kda): 修复 ChunkKdaFwd 变长尾块输出不确定",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/441",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-02T08:45:56Z",
-      "createdAt": "2026-09-02T08:43:02Z",
-      "headRef": "codex/fix-kda-varlen-determinism-main",
-      "labels": []
-    },
-    {
-      "number": 439,
+      "number": 443,
       "title": "perf: optimize recurrent gated delta rule on A5",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/439",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/443",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T03:11:45Z",
-      "createdAt": "2026-09-02T03:07:53Z",
-      "headRef": "A5_perf",
+      "updatedAt": "2026-09-02T10:59:15Z",
+      "createdAt": "2026-09-02T10:56:31Z",
+      "headRef": "a5_perf",
       "labels": []
     },
     {
@@ -71,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T03:55:38Z",
+      "updatedAt": "2026-09-02T13:38:34Z",
       "createdAt": "2026-09-01T12:25:16Z",
       "headRef": "chunk-fwd-o-a5",
       "labels": []
@@ -131,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T08:18:31Z",
+      "updatedAt": "2026-09-02T12:24:10Z",
       "createdAt": "2026-08-31T20:46:12Z",
       "headRef": "codex/chunk-kda-fwd-atk-modern-200",
       "labels": []
@@ -173,18 +161,6 @@
       "labels": []
     },
     {
-      "number": 423,
-      "title": "feat(chunk_gated_delta_rule_fwd): 支持 A2/A3/A5 Phase6 融合实现",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/423",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-02T09:00:36Z",
-      "createdAt": "2026-08-31T08:11:59Z",
-      "headRef": "chw_a2_a5",
-      "labels": []
-    },
-    {
       "number": 421,
       "title": "[Performance][KDA] Add A5 RegBase chunk backward prepare KernelA",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/421",
@@ -198,12 +174,12 @@
     },
     {
       "number": 419,
-      "title": "docs: 新增 ChunkGdnBwdIntra 融合算子方案设计",
+      "title": "feat: 新增 ChunkGdnBwdIntra 融合算子",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/419",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-31T18:40:57Z",
+      "updatedAt": "2026-09-02T13:09:43Z",
       "createdAt": "2026-08-30T19:19:10Z",
       "headRef": "codex/restrict-agent-workflow-sources",
       "labels": []
@@ -222,12 +198,12 @@
     },
     {
       "number": 404,
-      "title": "feat(gdn): 新增反向 finalize Ascend 950 算子",
+      "title": "feat(gdn): 新增 ChunkGatedDeltaRuleBwdFinalize Ascend 950 算子",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/404",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T04:21:08Z",
+      "updatedAt": "2026-09-02T22:18:35Z",
       "createdAt": "2026-08-29T03:56:28Z",
       "headRef": "feat/chunk-gdn-bwd-finalize",
       "labels": []
@@ -437,18 +413,6 @@
       "labels": []
     },
     {
-      "number": 354,
-      "title": "megakernel3 new cumsum kkt solve tri",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/354",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-21T06:14:51Z",
-      "createdAt": "2026-08-21T06:14:41Z",
-      "headRef": "chw_new_cumsum_kkt_solve_tri",
-      "labels": []
-    },
-    {
       "number": 350,
       "title": "fix(kda): 修复 ChunkKdaFwd 尾块 bitwise determinism",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/350",
@@ -470,18 +434,6 @@
       "updatedAt": "2026-08-29T16:38:29Z",
       "createdAt": "2026-08-20T16:01:42Z",
       "headRef": "20260812_000618_operator-optimization-docs",
-      "labels": []
-    },
-    {
-      "number": 339,
-      "title": "mega kernel V2",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/339",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-20T12:29:32Z",
-      "createdAt": "2026-08-19T09:16:40Z",
-      "headRef": "chw_new_cumsum_kkt",
       "labels": []
     },
     {
@@ -575,7 +527,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T03:58:24Z",
+      "updatedAt": "2026-09-02T14:45:09Z",
       "createdAt": "2026-08-15T02:18:59Z",
       "headRef": "chw",
       "labels": []
@@ -1109,6 +1061,42 @@
       "labels": []
     },
     {
+      "number": 442,
+      "title": "fix(kda): 回合 v26.9.0 的 ChunkKdaFwd 变长尾块确定性修复",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/442",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-02T10:22:22Z",
+      "updatedAt": "2026-09-02T10:22:23Z",
+      "createdAt": "2026-09-02T08:44:57Z",
+      "headRef": "codex/fix-kda-varlen-determinism-v269",
+      "labels": []
+    },
+    {
+      "number": 441,
+      "title": "fix(kda): 修复 ChunkKdaFwd 变长尾块输出不确定",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/441",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-02T10:10:02Z",
+      "updatedAt": "2026-09-02T10:10:02Z",
+      "createdAt": "2026-09-02T08:43:02Z",
+      "headRef": "codex/fix-kda-varlen-determinism-main",
+      "labels": []
+    },
+    {
+      "number": 423,
+      "title": "feat(chunk_gated_delta_rule_fwd): 支持 A2/A3/A5 Phase6 融合实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/423",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-03T01:15:22Z",
+      "updatedAt": "2026-09-03T01:15:23Z",
+      "createdAt": "2026-08-31T08:11:59Z",
+      "headRef": "chw_a2_a5",
+      "labels": []
+    },
+    {
       "number": 422,
       "title": "fix(chunk_fwd_h): 模板化 V 维度并补齐 ATK 交付",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/422",
@@ -1469,6 +1457,18 @@
       "labels": []
     },
     {
+      "number": 354,
+      "title": "megakernel3 new cumsum kkt solve tri",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/354",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-03T01:15:24Z",
+      "updatedAt": "2026-09-03T01:15:24Z",
+      "createdAt": "2026-08-21T06:14:41Z",
+      "headRef": "chw_new_cumsum_kkt_solve_tri",
+      "labels": []
+    },
+    {
       "number": 353,
       "title": "fix(build): prefer vendored opbase inc/src in OP_TILING_INCLUDE",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/353",
@@ -1562,6 +1562,18 @@
       "updatedAt": "2026-08-24T02:20:35Z",
       "createdAt": "2026-08-20T08:25:17Z",
       "headRef": "feature/solve_tri_update",
+      "labels": []
+    },
+    {
+      "number": 339,
+      "title": "mega kernel V2",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/339",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-03T01:15:24Z",
+      "updatedAt": "2026-09-03T01:15:24Z",
+      "createdAt": "2026-08-19T09:16:40Z",
+      "headRef": "chw_new_cumsum_kkt",
       "labels": []
     },
     {
