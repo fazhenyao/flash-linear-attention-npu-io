@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-09-03T18:16:14+08:00",
+  "generatedAt": "2026-09-04T09:44:52+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 304,
+  "total": 306,
   "items": [
+    {
+      "number": 450,
+      "title": "feat(gdn): 支持 allow_neg_eigval 模板参数",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/450",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-03T16:33:27Z",
+      "createdAt": "2026-09-03T16:33:25Z",
+      "headRef": "feat/chunk-gdn-bwd-finalize",
+      "labels": []
+    },
+    {
+      "number": 449,
+      "title": "feat(kda): 新增融合反向算子并修复 shared-anchor NaN",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/449",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-03T11:16:08Z",
+      "createdAt": "2026-09-03T11:13:47Z",
+      "headRef": "codex/kda-bwd-pr334-shared-anchor-fix-upstream",
+      "labels": []
+    },
     {
       "number": 447,
       "title": "Gdn fwd prepare",
@@ -11,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-03T09:27:43Z",
+      "updatedAt": "2026-09-03T17:53:33Z",
       "createdAt": "2026-09-03T09:27:33Z",
       "headRef": "gdn_fwd_prepare",
       "labels": []
@@ -23,21 +47,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-03T07:54:08Z",
+      "updatedAt": "2026-09-04T01:25:43Z",
       "createdAt": "2026-09-03T07:53:01Z",
       "headRef": "main",
-      "labels": []
-    },
-    {
-      "number": 444,
-      "title": "docs: 增加算子方案数值稳定性门禁",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/444",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-02T14:52:00Z",
-      "createdAt": "2026-09-02T13:11:07Z",
-      "headRef": "codex/design-numerical-stability-rules",
       "labels": []
     },
     {
@@ -71,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-03T06:06:07Z",
+      "updatedAt": "2026-09-03T14:22:44Z",
       "createdAt": "2026-09-01T13:15:47Z",
       "headRef": "main",
       "labels": []
@@ -83,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-03T07:14:30Z",
+      "updatedAt": "2026-09-03T14:35:35Z",
       "createdAt": "2026-09-01T12:25:16Z",
       "headRef": "chunk-fwd-o-a5",
       "labels": []
@@ -95,21 +107,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T02:09:08Z",
+      "updatedAt": "2026-09-04T01:42:45Z",
       "createdAt": "2026-09-01T12:21:21Z",
       "headRef": "zdy_fwd_o_pr",
-      "labels": []
-    },
-    {
-      "number": 433,
-      "title": "fix(v26.9.0): backport #429 OPP env hints from main",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/433",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-03T07:40:33Z",
-      "createdAt": "2026-09-01T04:10:54Z",
-      "headRef": "fix/v26.9.0-opp-env-hints",
       "labels": []
     },
     {
@@ -122,18 +122,6 @@
       "updatedAt": "2026-09-02T08:52:54Z",
       "createdAt": "2026-09-01T02:21:11Z",
       "headRef": "main",
-      "labels": []
-    },
-    {
-      "number": 431,
-      "title": "fix: warn when ASCEND_CUSTOM_OPP_PATH misses the embedded OPP (#429)",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/431",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-03T07:41:09Z",
-      "createdAt": "2026-09-01T02:12:46Z",
-      "headRef": "fix/issue-429-opp-env-warning",
       "labels": []
     },
     {
@@ -155,19 +143,19 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T02:09:20Z",
+      "updatedAt": "2026-09-03T11:57:49Z",
       "createdAt": "2026-08-31T11:45:55Z",
       "headRef": "gdn_fwd_h_optim",
       "labels": []
     },
     {
       "number": 425,
-      "title": "feat(pypi): support publishing v26.9.0 wheels to PyPI",
+      "title": "feat(pypi): per-tier a2/a3/a5 wheels with import guards (v26.9.0)",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/425",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-01T06:04:22Z",
+      "updatedAt": "2026-09-04T01:18:08Z",
       "createdAt": "2026-08-31T08:58:19Z",
       "headRef": "feat/pypi-publish",
       "labels": []
@@ -218,18 +206,6 @@
       "updatedAt": "2026-08-29T21:59:02Z",
       "createdAt": "2026-08-29T21:58:32Z",
       "headRef": "docs/separate-output-workspace-stage-design",
-      "labels": []
-    },
-    {
-      "number": 404,
-      "title": "feat(gdn): 新增 ChunkGatedDeltaRuleBwdFinalize Ascend 950 算子",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/404",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-03T09:14:13Z",
-      "createdAt": "2026-08-29T03:56:28Z",
-      "headRef": "feat/chunk-gdn-bwd-finalize",
       "labels": []
     },
     {
@@ -1085,6 +1061,18 @@
       "labels": []
     },
     {
+      "number": 444,
+      "title": "docs: 增加算子设计文档约束",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/444",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-03T17:50:08Z",
+      "updatedAt": "2026-09-03T17:50:08Z",
+      "createdAt": "2026-09-02T13:11:07Z",
+      "headRef": "codex/design-numerical-stability-rules",
+      "labels": []
+    },
+    {
       "number": 442,
       "title": "fix(kda): 回合 v26.9.0 的 ChunkKdaFwd 变长尾块确定性修复",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/442",
@@ -1106,6 +1094,30 @@
       "updatedAt": "2026-09-02T10:10:02Z",
       "createdAt": "2026-09-02T08:43:02Z",
       "headRef": "codex/fix-kda-varlen-determinism-main",
+      "labels": []
+    },
+    {
+      "number": 433,
+      "title": "fix(v26.9.0): backport #429 OPP env hints from main",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/433",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-03T12:10:39Z",
+      "updatedAt": "2026-09-03T12:10:39Z",
+      "createdAt": "2026-09-01T04:10:54Z",
+      "headRef": "fix/v26.9.0-opp-env-hints",
+      "labels": []
+    },
+    {
+      "number": 431,
+      "title": "fix: warn when ASCEND_CUSTOM_OPP_PATH misses the embedded OPP (#429)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/431",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-03T12:10:53Z",
+      "updatedAt": "2026-09-04T01:26:11Z",
+      "createdAt": "2026-09-01T02:12:46Z",
+      "headRef": "fix/issue-429-opp-env-warning",
       "labels": []
     },
     {
@@ -1226,6 +1238,18 @@
       "updatedAt": "2026-08-29T16:07:57Z",
       "createdAt": "2026-08-29T05:56:12Z",
       "headRef": "codex/fwd-h-core-partition",
+      "labels": []
+    },
+    {
+      "number": 404,
+      "title": "feat(gdn): 新增 ChunkGatedDeltaRuleBwdFinalize Ascend 950 算子",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/404",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-03T11:12:43Z",
+      "updatedAt": "2026-09-03T11:12:43Z",
+      "createdAt": "2026-08-29T03:56:28Z",
+      "headRef": "feat/chunk-gdn-bwd-finalize",
       "labels": []
     },
     {
