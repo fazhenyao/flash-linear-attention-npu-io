@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-09-05T09:45:35+08:00",
+  "generatedAt": "2026-09-05T17:34:58+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 314,
+  "total": 318,
   "items": [
+    {
+      "number": 468,
+      "title": "Chw a2 a5",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/468",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-05T06:58:58Z",
+      "createdAt": "2026-09-05T06:49:45Z",
+      "headRef": "chw_a2_a5",
+      "labels": []
+    },
+    {
+      "number": 467,
+      "title": "docs: 完善 Ascend C 算子 Agent 工作流规则",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/467",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-05T09:16:55Z",
+      "createdAt": "2026-09-05T02:24:59Z",
+      "headRef": "codex/positive-agent-workflow-rules",
+      "labels": []
+    },
+    {
+      "number": 465,
+      "title": "fix: 修复 chunk_bwd_dv_local 特定 GQA 配置 kernel hang",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/465",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-05T08:11:19Z",
+      "createdAt": "2026-09-05T01:55:55Z",
+      "headRef": "codex/fix-issue462-chunk-dv-hang",
+      "labels": []
+    },
     {
       "number": 463,
       "title": "Woey/fix recurrent kda k128 ub",
@@ -47,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-04T09:47:28Z",
+      "updatedAt": "2026-09-05T07:38:55Z",
       "createdAt": "2026-09-04T04:05:51Z",
       "headRef": "chunk-fwd-o-a5-pro",
       "labels": []
@@ -59,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-04T07:45:36Z",
+      "updatedAt": "2026-09-05T09:02:12Z",
       "createdAt": "2026-09-04T03:33:33Z",
       "headRef": "readme-usability",
       "labels": []
@@ -95,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-04T03:39:37Z",
+      "updatedAt": "2026-09-05T08:22:06Z",
       "createdAt": "2026-09-03T09:27:33Z",
       "headRef": "gdn_fwd_prepare",
       "labels": []
@@ -131,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-04T08:18:14Z",
+      "updatedAt": "2026-09-05T02:17:01Z",
       "createdAt": "2026-09-02T02:58:49Z",
       "headRef": "causal-conv1d-v26.9.0",
       "labels": []
@@ -227,7 +263,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-04T15:25:35Z",
+      "updatedAt": "2026-09-05T08:50:10Z",
       "createdAt": "2026-08-30T19:19:10Z",
       "headRef": "codex/restrict-agent-workflow-sources",
       "labels": []
@@ -299,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-04T09:41:58Z",
+      "updatedAt": "2026-09-05T02:17:47Z",
       "createdAt": "2026-08-26T09:02:48Z",
       "headRef": "causal-conv1d",
       "labels": []
@@ -1094,6 +1130,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 466,
+      "title": "fix(chunk_bwd_dv_local): clarify cumulative gate semantics",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/466",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-05T03:38:21Z",
+      "updatedAt": "2026-09-05T03:38:21Z",
+      "createdAt": "2026-09-05T02:17:48Z",
+      "headRef": "codex/fix-issue456-gate-semantics",
       "labels": []
     },
     {
