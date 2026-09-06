@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-09-06T09:39:49+08:00",
+  "generatedAt": "2026-09-06T17:49:25+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 320,
+  "total": 321,
   "items": [
+    {
+      "number": 472,
+      "title": "feat(gdn): 新增 ChunkGatedDeltaRuleFwdPrepare Ascend 950 融合算子",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/472",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-06T09:46:06Z",
+      "createdAt": "2026-09-06T09:24:46Z",
+      "headRef": "codex/chunk-gdn-fwd-prepare-a5",
+      "labels": []
+    },
     {
       "number": 468,
       "title": "Chw a2 a5",
@@ -14,18 +26,6 @@
       "updatedAt": "2026-09-05T06:58:58Z",
       "createdAt": "2026-09-05T06:49:45Z",
       "headRef": "chw_a2_a5",
-      "labels": []
-    },
-    {
-      "number": 465,
-      "title": "fix: 修复 chunk_bwd_dv_local 特定 GQA 配置 kernel hang",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/465",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-05T18:13:12Z",
-      "createdAt": "2026-09-05T01:55:55Z",
-      "headRef": "codex/fix-issue462-chunk-dv-hang",
       "labels": []
     },
     {
@@ -71,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-05T07:38:55Z",
+      "updatedAt": "2026-09-06T07:27:14Z",
       "createdAt": "2026-09-04T04:05:51Z",
       "headRef": "chunk-fwd-o-a5-pro",
       "labels": []
@@ -110,18 +110,6 @@
       "updatedAt": "2026-09-03T11:16:08Z",
       "createdAt": "2026-09-03T11:13:47Z",
       "headRef": "codex/kda-bwd-pr334-shared-anchor-fix-upstream",
-      "labels": []
-    },
-    {
-      "number": 447,
-      "title": "ChunkGdnFwdPrepare",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/447",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-05T14:36:19Z",
-      "createdAt": "2026-09-03T09:27:33Z",
-      "headRef": "gdn_fwd_prepare",
       "labels": []
     },
     {
@@ -251,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-05T08:50:10Z",
+      "updatedAt": "2026-09-06T07:54:50Z",
       "createdAt": "2026-08-30T19:19:10Z",
       "headRef": "codex/restrict-agent-workflow-sources",
       "labels": []
@@ -1169,6 +1157,18 @@
       "labels": []
     },
     {
+      "number": 465,
+      "title": "fix: 修复 chunk_bwd_dv_local 特定 GQA 配置 kernel hang",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/465",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-06T09:26:40Z",
+      "updatedAt": "2026-09-06T09:26:40Z",
+      "createdAt": "2026-09-05T01:55:55Z",
+      "headRef": "codex/fix-issue462-chunk-dv-hang",
+      "labels": []
+    },
+    {
       "number": 464,
       "title": "fix(opapi): align L2 DFX arguments with API signatures",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/464",
@@ -1202,6 +1202,18 @@
       "updatedAt": "2026-09-04T08:50:06Z",
       "createdAt": "2026-09-04T02:43:14Z",
       "headRef": "FastKernel",
+      "labels": []
+    },
+    {
+      "number": 447,
+      "title": "ChunkGdnFwdPrepare",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/447",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-06T09:40:05Z",
+      "updatedAt": "2026-09-06T09:40:05Z",
+      "createdAt": "2026-09-03T09:27:33Z",
+      "headRef": "gdn_fwd_prepare",
       "labels": []
     },
     {
