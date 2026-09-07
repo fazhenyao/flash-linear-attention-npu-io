@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-09-07T09:37:45+08:00",
+  "generatedAt": "2026-09-07T18:55:26+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 323,
+  "total": 325,
   "items": [
+    {
+      "number": 481,
+      "title": "Add solve_tri mixed-tolerance ATK .",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/481",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-07T08:05:55Z",
+      "createdAt": "2026-09-07T08:05:46Z",
+      "headRef": "solve-tri-atk",
+      "labels": []
+    },
+    {
+      "number": 478,
+      "title": "8 17 26",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/478",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-07T07:06:19Z",
+      "createdAt": "2026-09-07T07:06:09Z",
+      "headRef": "8_17_26",
+      "labels": []
+    },
+    {
+      "number": 477,
+      "title": "perf: fuse recurrent gated delta rule into regbase vf",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/477",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-07T06:30:40Z",
+      "createdAt": "2026-09-07T06:30:02Z",
+      "headRef": "perf",
+      "labels": []
+    },
     {
       "number": 476,
       "title": "fix(chunk_scaled_dot_kkt): bound tail reads to valid tokens",
@@ -35,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-06T09:46:06Z",
+      "updatedAt": "2026-09-07T07:39:17Z",
       "createdAt": "2026-09-06T09:24:46Z",
       "headRef": "codex/chunk-gdn-fwd-prepare-a5",
       "labels": []
@@ -54,12 +90,12 @@
     },
     {
       "number": 463,
-      "title": "Woey/fix recurrent kda k128 ub",
+      "title": "fix recurrent kda k128 ub",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/463",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-05T01:15:14Z",
+      "updatedAt": "2026-09-07T10:26:28Z",
       "createdAt": "2026-09-04T07:25:38Z",
       "headRef": "woey/fix-recurrent-kda-k128-ub",
       "labels": []
@@ -78,12 +114,12 @@
     },
     {
       "number": 460,
-      "title": "docs(kda): 增加 chunk_kda_fwd_prepare 分阶段伪代码",
+      "title": "docs(kda): 完善 A2/A3/A5 chunk_kda_fwd_prepare 设计伪代码",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/460",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T01:37:30Z",
+      "updatedAt": "2026-09-07T04:10:43Z",
       "createdAt": "2026-09-04T04:29:07Z",
       "headRef": "codex/chunk-kda-fwd-prepare-pseudocode",
       "labels": []
@@ -95,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-06T17:42:10Z",
+      "updatedAt": "2026-09-07T10:36:53Z",
       "createdAt": "2026-09-04T04:05:51Z",
       "headRef": "chunk-fwd-o-a5-pro",
       "labels": []
@@ -107,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-05T09:02:12Z",
+      "updatedAt": "2026-09-07T06:19:36Z",
       "createdAt": "2026-09-04T03:33:33Z",
       "headRef": "readme-usability",
       "labels": []
@@ -125,18 +161,6 @@
       "labels": []
     },
     {
-      "number": 449,
-      "title": "feat(kda): 新增融合反向算子并修复 shared-anchor NaN",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/449",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-03T11:16:08Z",
-      "createdAt": "2026-09-03T11:13:47Z",
-      "headRef": "codex/kda-bwd-pr334-shared-anchor-fix-upstream",
-      "labels": []
-    },
-    {
       "number": 446,
       "title": "新增fused_recurrent_rwkv8算子",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/446",
@@ -149,25 +173,13 @@
       "labels": []
     },
     {
-      "number": 443,
-      "title": "perf: optimize recurrent gated delta rule on A5",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/443",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-02T10:59:15Z",
-      "createdAt": "2026-09-02T10:56:31Z",
-      "headRef": "a5_perf",
-      "labels": []
-    },
-    {
       "number": 438,
       "title": "feat(causal_conv1d): add fn/update APIs and device metadata. And performance improvement on 950 for v26.9.0.",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/438",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-05T02:17:01Z",
+      "updatedAt": "2026-09-07T10:49:43Z",
       "createdAt": "2026-09-02T02:58:49Z",
       "headRef": "causal-conv1d-v26.9.0",
       "labels": []
@@ -186,12 +198,12 @@
     },
     {
       "number": 432,
-      "title": "recompute_w_u_fwd算子A5性能优化",
+      "title": "feat:recompute_w_u_fwd算子A5性能优化",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/432",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T08:52:54Z",
+      "updatedAt": "2026-09-07T07:26:45Z",
       "createdAt": "2026-09-01T02:21:11Z",
       "headRef": "main",
       "labels": []
@@ -215,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T01:28:42Z",
+      "updatedAt": "2026-09-07T06:35:05Z",
       "createdAt": "2026-08-31T11:45:55Z",
       "headRef": "gdn_fwd_h_optim",
       "labels": []
@@ -227,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-04T08:23:44Z",
+      "updatedAt": "2026-09-07T02:01:31Z",
       "createdAt": "2026-08-31T08:58:19Z",
       "headRef": "feat/pypi-publish",
       "labels": []
@@ -323,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T01:22:45Z",
+      "updatedAt": "2026-09-07T10:49:50Z",
       "createdAt": "2026-08-26T09:02:48Z",
       "headRef": "causal-conv1d",
       "labels": []
@@ -359,7 +371,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-27T02:33:24Z",
+      "updatedAt": "2026-09-07T08:48:24Z",
       "createdAt": "2026-08-25T08:01:04Z",
       "headRef": "0825-blank2",
       "labels": []
@@ -383,7 +395,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-02T01:37:56Z",
+      "updatedAt": "2026-09-07T03:04:11Z",
       "createdAt": "2026-08-24T14:59:12Z",
       "headRef": "chw_new_cumsum_kkt_solve_tri_simple",
       "labels": []
@@ -422,18 +434,6 @@
       "updatedAt": "2026-08-24T06:42:30Z",
       "createdAt": "2026-08-24T06:41:47Z",
       "headRef": "rwkv_v8",
-      "labels": []
-    },
-    {
-      "number": 370,
-      "title": "refactor: FwdH 优化",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/370",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-26T13:25:27Z",
-      "createdAt": "2026-08-24T01:21:30Z",
-      "headRef": "codex/fwdh-stage0-replacement",
       "labels": []
     },
     {
@@ -539,7 +539,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-04T08:03:43Z",
+      "updatedAt": "2026-09-07T06:56:22Z",
       "createdAt": "2026-08-17T09:30:05Z",
       "headRef": "8_17",
       "labels": []
@@ -1109,6 +1109,18 @@
       "labels": []
     },
     {
+      "number": 480,
+      "title": "Sync kda",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/480",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-07T09:27:48Z",
+      "updatedAt": "2026-09-07T09:27:48Z",
+      "createdAt": "2026-09-07T08:01:47Z",
+      "headRef": "sync_kda",
+      "labels": []
+    },
+    {
       "number": 474,
       "title": "docs: 完善算子设计证据与性能验收规则",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/474",
@@ -1226,6 +1238,18 @@
       "updatedAt": "2026-09-04T08:50:06Z",
       "createdAt": "2026-09-04T02:43:14Z",
       "headRef": "FastKernel",
+      "labels": []
+    },
+    {
+      "number": 449,
+      "title": "feat(kda): 新增融合反向算子并修复 shared-anchor NaN",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/449",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-07T06:23:36Z",
+      "updatedAt": "2026-09-07T06:23:36Z",
+      "createdAt": "2026-09-03T11:13:47Z",
+      "headRef": "codex/kda-bwd-pr334-shared-anchor-fix-upstream",
       "labels": []
     },
     {
