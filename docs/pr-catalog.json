@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-09-07T18:55:26+08:00",
+  "generatedAt": "2026-09-08T09:48:31+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 325,
+  "total": 327,
   "items": [
+    {
+      "number": 484,
+      "title": "fix recurrent kda k128 ub",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/484",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-07T12:47:41Z",
+      "createdAt": "2026-09-07T12:47:29Z",
+      "headRef": "sync_kda",
+      "labels": []
+    },
     {
       "number": 481,
       "title": "Add solve_tri mixed-tolerance ATK .",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T08:05:55Z",
+      "updatedAt": "2026-09-07T13:16:23Z",
       "createdAt": "2026-09-07T08:05:46Z",
       "headRef": "solve-tri-atk",
       "labels": []
@@ -71,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T07:39:17Z",
+      "updatedAt": "2026-09-08T01:04:29Z",
       "createdAt": "2026-09-06T09:24:46Z",
       "headRef": "codex/chunk-gdn-fwd-prepare-a5",
       "labels": []
@@ -95,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T10:26:28Z",
+      "updatedAt": "2026-09-08T01:31:12Z",
       "createdAt": "2026-09-04T07:25:38Z",
       "headRef": "woey/fix-recurrent-kda-k128-ub",
       "labels": []
@@ -119,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T04:10:43Z",
+      "updatedAt": "2026-09-07T15:10:37Z",
       "createdAt": "2026-09-04T04:29:07Z",
       "headRef": "codex/chunk-kda-fwd-prepare-pseudocode",
       "labels": []
@@ -203,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T07:26:45Z",
+      "updatedAt": "2026-09-07T14:40:00Z",
       "createdAt": "2026-09-01T02:21:11Z",
       "headRef": "main",
       "labels": []
@@ -245,18 +257,6 @@
       "labels": []
     },
     {
-      "number": 424,
-      "title": "fix(v26.1.0): backport v26.6.0 build fixes (gen.sh python/PATH + duplicate op_api symbols)",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/424",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-01T14:23:10Z",
-      "createdAt": "2026-08-31T08:19:08Z",
-      "headRef": "fix/v26.1.0-build-dup-and-py-path",
-      "labels": []
-    },
-    {
       "number": 421,
       "title": "[Performance][KDA] Add A5 RegBase chunk backward prepare KernelA",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/421",
@@ -275,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-06T07:54:50Z",
+      "updatedAt": "2026-09-08T01:12:55Z",
       "createdAt": "2026-08-30T19:19:10Z",
       "headRef": "codex/restrict-agent-workflow-sources",
       "labels": []
@@ -335,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T10:49:50Z",
+      "updatedAt": "2026-09-07T11:22:28Z",
       "createdAt": "2026-08-26T09:02:48Z",
       "headRef": "causal-conv1d",
       "labels": []
@@ -395,7 +395,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T03:04:11Z",
+      "updatedAt": "2026-09-07T15:16:57Z",
       "createdAt": "2026-08-24T14:59:12Z",
       "headRef": "chw_new_cumsum_kkt_solve_tri_simple",
       "labels": []
@@ -1106,6 +1106,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 487,
+      "title": "docs: 对齐详设地址与生命周期记录格式",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/487",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-07T16:37:25Z",
+      "updatedAt": "2026-09-07T16:37:25Z",
+      "createdAt": "2026-09-07T15:57:51Z",
+      "headRef": "codex/enforce-solution-design-gate",
+      "labels": []
+    },
+    {
+      "number": 485,
+      "title": "fix(v26.1.0): backport #397 build fixes and pin wheel packages to fla_npu",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/485",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-07T14:26:48Z",
+      "updatedAt": "2026-09-07T14:26:49Z",
+      "createdAt": "2026-09-07T13:57:53Z",
+      "headRef": "fix/v26.1.0-backport-397",
       "labels": []
     },
     {
