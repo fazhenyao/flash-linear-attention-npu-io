@@ -1,9 +1,69 @@
 {
-  "generatedAt": "2026-09-09T09:54:42+08:00",
+  "generatedAt": "2026-09-09T18:16:36+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 339,
+  "total": 344,
   "items": [
+    {
+      "number": 516,
+      "title": "ChunkGatedDeltaRuleFwdPrepare Optimize",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/516",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-09T09:53:20Z",
+      "createdAt": "2026-09-09T09:26:02Z",
+      "headRef": "gdn_fwd_prepare",
+      "labels": []
+    },
+    {
+      "number": 514,
+      "title": "fix(ascendc): correct KKT event initialization and lifecycle",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/514",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-09T08:13:56Z",
+      "createdAt": "2026-09-09T08:09:18Z",
+      "headRef": "9_8",
+      "labels": []
+    },
+    {
+      "number": 512,
+      "title": "chore: integration branch (#390 + thin launcher) for vLLM validation",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/512",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-09T07:16:27Z",
+      "createdAt": "2026-09-09T07:10:43Z",
+      "headRef": "feat/fla-npu-thin-launcher-390",
+      "labels": []
+    },
+    {
+      "number": 510,
+      "title": "perf: fuse recurrent gated delta rule into regbase vf",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/510",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-09T08:38:50Z",
+      "createdAt": "2026-09-09T03:20:01Z",
+      "headRef": "perf26.9",
+      "labels": []
+    },
+    {
+      "number": 509,
+      "title": "Lyq/chunk kda bwd recompute",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/509",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-09T03:13:29Z",
+      "createdAt": "2026-09-09T03:13:20Z",
+      "headRef": "lyq/chunk_kda_bwd_recompute",
+      "labels": []
+    },
     {
       "number": 507,
       "title": "feat(pypi): per-tier a2/a3/a5 wheels with import guards (v26.9.0) [backport #425 to v26.9.0]",
@@ -59,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-08T14:18:47Z",
+      "updatedAt": "2026-09-09T10:08:52Z",
       "createdAt": "2026-09-08T07:24:25Z",
       "headRef": "feat/fla-npu-thin-launcher",
       "labels": []
@@ -74,18 +134,6 @@
       "updatedAt": "2026-09-08T14:16:53Z",
       "createdAt": "2026-09-08T07:20:40Z",
       "headRef": "codex/chunk-gdn-fwd-route",
-      "labels": []
-    },
-    {
-      "number": 492,
-      "title": "perf(chunk_fwd_o): A5 arch35 拆相流水线重构与跨 Cube 重叠，l0c2ub 直通落地及同步修复",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/492",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-08T07:54:02Z",
-      "createdAt": "2026-09-08T03:16:41Z",
-      "headRef": "fwd_o_l0c2ub_final",
       "labels": []
     },
     {
@@ -107,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-08T11:24:55Z",
+      "updatedAt": "2026-09-09T07:58:47Z",
       "createdAt": "2026-09-07T12:47:29Z",
       "headRef": "sync_kda",
       "labels": []
@@ -143,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-08T11:24:47Z",
+      "updatedAt": "2026-09-09T07:58:33Z",
       "createdAt": "2026-09-04T07:25:38Z",
       "headRef": "woey/fix-recurrent-kda-k128-ub",
       "labels": []
@@ -167,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-08T17:13:11Z",
+      "updatedAt": "2026-09-09T09:49:47Z",
       "createdAt": "2026-09-04T04:29:07Z",
       "headRef": "codex/chunk-kda-fwd-prepare-pseudocode",
       "labels": []
@@ -179,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-07T06:19:36Z",
+      "updatedAt": "2026-09-09T03:35:27Z",
       "createdAt": "2026-09-04T03:33:33Z",
       "headRef": "readme-usability",
       "labels": []
@@ -215,33 +263,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-08T10:13:36Z",
+      "updatedAt": "2026-09-09T06:46:04Z",
       "createdAt": "2026-09-02T02:58:49Z",
       "headRef": "causal-conv1d-v26.9.0",
-      "labels": []
-    },
-    {
-      "number": 436,
-      "title": "新增chunk_kda_bwd_recompute算子",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/436",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-03T14:22:44Z",
-      "createdAt": "2026-09-01T13:15:47Z",
-      "headRef": "main",
-      "labels": []
-    },
-    {
-      "number": 432,
-      "title": "feat:recompute_w_u_fwd算子A5性能优化",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/432",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-08T03:13:42Z",
-      "createdAt": "2026-09-01T02:21:11Z",
-      "headRef": "main",
       "labels": []
     },
     {
@@ -251,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-09T01:46:39Z",
+      "updatedAt": "2026-09-09T04:21:20Z",
       "createdAt": "2026-08-31T20:46:12Z",
       "headRef": "codex/chunk-kda-fwd-atk-modern-200",
       "labels": []
@@ -347,7 +371,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-08T10:14:01Z",
+      "updatedAt": "2026-09-09T06:27:40Z",
       "createdAt": "2026-08-26T09:02:48Z",
       "headRef": "causal-conv1d",
       "labels": []
@@ -1121,6 +1145,18 @@
       "labels": []
     },
     {
+      "number": 513,
+      "title": "fix(recompute_w_u_fwd): aclnn侧补充校验",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/513",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-09T09:17:33Z",
+      "updatedAt": "2026-09-09T09:17:33Z",
+      "createdAt": "2026-09-09T08:03:34Z",
+      "headRef": "RecomputeWUFwd",
+      "labels": []
+    },
+    {
       "number": 506,
       "title": "fix(example): 移除GDN大融合输出的transpose",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/506",
@@ -1166,6 +1202,18 @@
       "updatedAt": "2026-09-08T06:40:28Z",
       "createdAt": "2026-09-08T06:36:04Z",
       "headRef": "0908-ci-2",
+      "labels": []
+    },
+    {
+      "number": 492,
+      "title": "perf(chunk_fwd_o): A5 arch35 拆相流水线重构与跨 Cube 重叠，l0c2ub 直通落地及同步修复",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/492",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-09T03:30:28Z",
+      "updatedAt": "2026-09-09T03:30:29Z",
+      "createdAt": "2026-09-08T03:16:41Z",
+      "headRef": "fwd_o_l0c2ub_final",
       "labels": []
     },
     {
@@ -1490,6 +1538,18 @@
       "updatedAt": "2026-09-03T12:10:39Z",
       "createdAt": "2026-09-01T04:10:54Z",
       "headRef": "fix/v26.9.0-opp-env-hints",
+      "labels": []
+    },
+    {
+      "number": 432,
+      "title": "feat:recompute_w_u_fwd算子A5性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/432",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-09T02:24:10Z",
+      "updatedAt": "2026-09-09T02:24:10Z",
+      "createdAt": "2026-09-01T02:21:11Z",
+      "headRef": "main",
       "labels": []
     },
     {
