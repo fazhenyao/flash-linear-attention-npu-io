@@ -437,6 +437,7 @@
       selectedRunnerId: localStorage.getItem("fla-perf-runner-id") || "",
       jobs: [],
       perfPollTimer: null,
+      perfPollBusy: false,
       npuStatusPollTimer: null,
       npuStatusRefreshing: false,
       sourceBranchesRefreshing: false,
@@ -1919,8 +1920,11 @@
 
     function hasPendingPerfRuns() {
       const pending = new Set(["queued", "waiting_runner", "waiting_vpn", "claimed", "running", "disconnected", "cancel_requested"]);
-      return state.jobs.some((job) => pending.has(job.status))
-        || (state.data?.runs || []).some((run) => pending.has(run.status));
+      // Historical JSON snapshots are not an authoritative live job queue.
+      // In particular, a fallback snapshot must never keep calling a failed API.
+      if (WORKER_API_BASE && state.token) return state.jobs.some((job) => pending.has(job.status));
+      return state.dataSource === "local-api"
+        && (state.data?.runs || []).some((run) => pending.has(run.status));
     }
 
     function maybeStartPerfPolling() {
@@ -1933,14 +1937,22 @@
       }
       if (state.perfPollTimer) return;
       state.perfPollTimer = setInterval(async () => {
-        await loadData();
-        await Promise.all([loadPerfJobs(), loadRunnerStatus()]);
-        renderRuns();
-        renderMeta();
-        if (!hasPendingPerfRuns()) {
-          clearInterval(state.perfPollTimer);
-          state.perfPollTimer = null;
-          renderAll();
+        if (state.perfPollBusy || document.hidden) return;
+        state.perfPollBusy = true;
+        try {
+          await loadData();
+          await Promise.all([loadPerfJobs(), loadRunnerStatus()]);
+          renderRuns();
+          renderMeta();
+          if (!hasPendingPerfRuns()) {
+            clearInterval(state.perfPollTimer);
+            state.perfPollTimer = null;
+            renderAll();
+          }
+        } catch (error) {
+          console.warn("性能任务刷新失败", error);
+        } finally {
+          state.perfPollBusy = false;
         }
       }, 5000);
     }

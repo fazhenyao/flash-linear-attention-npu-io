@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-04T09:21:14.578Z",
+  "version": "2026-09-10T16:35:18.000Z",
   "models": [
     {
       "id": "gdn",
@@ -88912,12 +88912,13 @@
         "branch_source": "local"
       },
       "kernel_name": "",
-      "status": "running",
-      "message": "Relay 已开始执行测试任务",
+      "status": "done",
+      "message": "msprof（整网） 执行并导入：PROF_000001_20260818162301373_03627029QFKAIFMO",
       "created_by": "法振尧",
       "created_at": "2026-08-18T08:22:41.257Z",
       "started_at": "2026-08-18T08:23:07.389Z",
-      "finished_at": null
+      "finished_at": "2026-08-18T08:24:29.514852Z",
+      "status_recovery_source": "Relay completed record; finished_at is the completion acknowledgement time"
     },
     {
       "id": "perf-job-41c87915-8b4b-4bbb-ae81-fa2f406d6985",

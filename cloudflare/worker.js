@@ -1,4 +1,5 @@
 import { planArtifactStorageCleanup } from "./artifact_storage.js";
+import { preparePerfCollectionMerge, preparePerfRunProjection } from "./perf_data.js";
 
 const DEFAULT_PROJECT = {
   name: "flash-linear-attention-npu",
@@ -2231,14 +2232,14 @@ async function addPerfModel(env, model) {
   const data = await getPerfData(env);
   const id = String(model?.id || "").trim() || `model-${Date.now()}`;
   if (data.models.some((item) => item.id === id)) throw withStatus(400, "model already exists");
-  data.models.push({
+  const modelEntry = {
     id,
     label: String(model?.label || id).trim() || id,
     position: data.models.length,
     active: true,
-  });
-  data.version = nowIso();
-  const saved = await savePerfData(env, data);
+  };
+  await preparePerfCollectionMerge(env, "models", [modelEntry], nowIso()).run();
+  const saved = await getPerfData(env);
   await insertAudit(env, {
     ts: nowIso(),
     action: "perf.model.create",
@@ -3202,12 +3203,14 @@ async function sweepExpiredPerfLeases(env) {
         WHERE id = ? AND status = 'claimed'`,
       ).bind(timestamp, job.id).run();
       await appendPerfJobEvent(env, job.id, job.attempt_id, "lease_expired", "warning", "任务尚未启动，领取租约过期后重新排队");
+      await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(job.id).first());
       continue;
     }
     await env.DB.prepare(
       "UPDATE perf_jobs SET status = 'disconnected', status_message = 'Runner heartbeat 超时，等待恢复核对', updated_at = ? WHERE id = ? AND status = 'running'",
     ).bind(timestamp, job.id).run();
     await appendPerfJobEvent(env, job.id, job.attempt_id, "disconnected", "warning", "运行中任务 heartbeat 超时，未自动重跑");
+    await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(job.id).first());
   }
 }
 
@@ -3569,8 +3572,12 @@ async function runnerJobHeartbeat(env, row, payload) {
   const status = row.cancel_requested ? "cancel_requested" : (disconnected ? "disconnected" : (row.status === "disconnected" ? "running" : row.status));
   const message = String(payload.message || row.status_message || "Runner heartbeat").slice(0, 1000);
   await env.DB.prepare(
-    "UPDATE perf_jobs SET status = ?, status_message = ?, lease_expires_at = ?, updated_at = ? WHERE id = ?",
-  ).bind(status, message, new Date(Date.now() + PERF_LEASE_SECONDS * 1000).toISOString(), nowIso(), row.id).run();
+    `UPDATE perf_jobs SET status = ?, status_message = ?, lease_expires_at = ?, updated_at = ?
+      WHERE id = ? AND status = ? AND attempt_id IS ?`,
+  ).bind(status, message, new Date(Date.now() + PERF_LEASE_SECONDS * 1000).toISOString(), nowIso(), row.id, row.status, row.attempt_id || null).run();
+  if (status !== row.status) {
+    await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(row.id).first());
+  }
   return { ok: true, cancel_requested: Boolean(row.cancel_requested), lease_seconds: PERF_LEASE_SECONDS };
 }
 
@@ -3635,6 +3642,9 @@ function normalizePerfArtifact(artifact, allowMissingObjectKey = false) {
 async function runnerJobComplete(env, row, payload) {
   if (PERF_JOB_FINAL_STATES.has(row.status)) {
     if (row.status !== "succeeded") throw withStatus(409, `performance job already finished as ${row.status}`);
+    // A prior request may have committed the job status but failed to publish
+    // its performance document. Replaying the same outcome must repair it.
+    await mergePerfJobCompletion(env, row.id, payload, payload.result || {}, payload.snapshot || payload.result?.snapshot || null);
     return { ok: true, final: true, job: await getPerfJob(env, row.id), artifacts: await listPerfJobArtifacts(env, row.id) };
   }
   const request = parseJson(row.request_json, {});
@@ -3675,6 +3685,7 @@ async function runnerJobFail(env, row, payload) {
     if (!["failed", "canceled"].includes(row.status)) {
       throw withStatus(409, `performance job already finished as ${row.status}`);
     }
+    await projectPerfJobRun(env, row);
     return { ok: true, final: true, job: await getPerfJob(env, row.id) };
   }
   const canceled = Boolean(payload.canceled || row.cancel_requested);
@@ -3719,7 +3730,6 @@ async function sha256Text(value) {
 
 async function projectPerfJobRun(env, row) {
   if (!row) return;
-  const data = await getPerfData(env);
   const request = parseJson(row.request_json, {});
   const statusMap = { succeeded: "done", canceled: "canceled", orphaned: "failed" };
   const run = {
@@ -3741,26 +3751,15 @@ async function projectPerfJobRun(env, row) {
     started_at: row.started_at || null,
     finished_at: row.finished_at || null,
   };
-  const index = data.runs.findIndex((item) => item.id === row.id);
-  if (index >= 0) data.runs[index] = { ...data.runs[index], ...run };
-  else data.runs.push(run);
-  data.version = nowIso();
-  await savePerfData(env, data);
+  await env.DB.batch([
+    env.DB.prepare("INSERT OR IGNORE INTO project_meta(key, value) VALUES ('perfData', ?)").bind(toJson(emptyPerfData())),
+    preparePerfRunProjection(env, row, run, nowIso()),
+  ]);
 }
 
 async function mergePerfJobCompletion(env, jobId, payload, resultDetail, snapshot) {
   const row = await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(jobId).first();
-  const data = await getPerfData(env);
   const incoming = payload.perf_data || resultDetail.data || {};
-  for (const collection of ["models", "cases", "snapshots"]) {
-    if (!Array.isArray(incoming[collection])) continue;
-    const byId = new Map(data[collection].map((item) => [item.id, item]));
-    for (const item of incoming[collection]) {
-      if (item?.id) byId.set(item.id, item);
-    }
-    data[collection] = [...byId.values()];
-  }
-  if (snapshot?.id && !data.snapshots.some((item) => item.id === snapshot.id)) data.snapshots.push(snapshot);
   const request = parseJson(row.request_json, {});
   const run = {
     id: jobId,
@@ -3786,11 +3785,17 @@ async function mergePerfJobCompletion(env, jobId, payload, resultDetail, snapsho
     started_at: row.started_at,
     finished_at: row.finished_at,
   };
-  const index = data.runs.findIndex((item) => item.id === jobId);
-  if (index >= 0) data.runs[index] = { ...data.runs[index], ...run };
-  else data.runs.push(run);
-  data.version = nowIso();
-  await savePerfData(env, data);
+  const timestamp = nowIso();
+  const statements = [
+    env.DB.prepare("INSERT OR IGNORE INTO project_meta(key, value) VALUES ('perfData', ?)").bind(toJson(emptyPerfData())),
+  ];
+  for (const collection of ["models", "cases", "snapshots"]) {
+    const items = Array.isArray(incoming[collection]) ? [...incoming[collection]] : [];
+    if (collection === "snapshots" && snapshot?.id && !items.some((item) => item.id === snapshot.id)) items.push(snapshot);
+    if (items.length) statements.push(preparePerfCollectionMerge(env, collection, items, timestamp));
+  }
+  statements.push(preparePerfRunProjection(env, row, run, timestamp));
+  await env.DB.batch(statements);
 }
 
 function parseJson(value, fallback) {
@@ -3864,4 +3869,8 @@ export {
   perfJobCancelTransition,
   runnerEventMessage,
   runnerCanExecute,
+  projectPerfJobRun,
+  mergePerfJobCompletion,
+  sweepExpiredPerfLeases,
+  runnerJobHeartbeat,
 };
