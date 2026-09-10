@@ -77,7 +77,9 @@ class PerfExampleManifestTests(unittest.TestCase):
 
     def test_flash_gdr_composite_core_builds_true_and_false_flags(self):
         example = resolve_example("flash_gated_delta_rule")
+        parameter = next(item for item in example["parameters"] if item["name"] == "use_composite_core")
 
+        self.assertEqual(parameter["chips"], ["A2", "A5"])
         enabled = normalize_example_attributes(example, {})
         enabled_args = example_cli_args(example, enabled, 2)
         self.assertTrue(enabled["use_composite_core"])
