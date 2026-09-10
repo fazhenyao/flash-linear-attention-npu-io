@@ -1194,14 +1194,22 @@
     function syncTriggerExampleOptions() {
       const select = document.querySelector("#triggerExample");
       const hint = document.querySelector("#triggerExampleHint");
+      const parameterHost = document.querySelector("#triggerExampleParameters");
       if (!select) return;
+      const renderedExample = exampleManifestEntries().find(
+        (example) => example.id === parameterHost?.dataset.exampleId,
+      );
+      captureTriggerExampleValues(renderedExample);
       const examples = availableTriggerExamples();
       const previous = select.value || state.selectedExampleId;
       select.innerHTML = "";
       if (!examples.length) {
         select.add(new Option("当前 Runner 未提供测试示例", ""));
         select.disabled = true;
-        document.querySelector("#triggerExampleParameters").innerHTML = "";
+        if (parameterHost) {
+          parameterHost.innerHTML = "";
+          delete parameterHost.dataset.exampleId;
+        }
         hint.textContent = "请确认 Runner 已更新并上报 test_examples 能力。";
         return;
       }
@@ -1213,7 +1221,12 @@
       select.value = selected.id;
       state.selectedExampleId = selected.id;
       localStorage.setItem("fla-perf-example-id", selected.id);
-      renderTriggerExampleParameters();
+      if (parameterHost?.dataset.exampleId !== selected.id) {
+        renderTriggerExampleParameters();
+      } else {
+        hint.textContent = `${selected.script} · 参数随所选示例切换`;
+        updateTriggerExampleVisibility();
+      }
     }
 
     function triggerExampleStoredValues(example) {
@@ -1262,6 +1275,7 @@
         }).join("");
         return `<fieldset class="perf-attr-fieldset"><legend>${escapeHtml(group)}</legend>${fields}</fieldset>`;
       }).join("");
+      host.dataset.exampleId = example.id;
       hint.textContent = `${example.script} · 参数随所选示例切换`;
       updateTriggerExampleVisibility();
     }
