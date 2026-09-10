@@ -181,6 +181,39 @@ test("normalizes dynamic example parameters and preserves the example id", () =>
   assert.deepEqual(request.attributes.cache_indices, [0, 1]);
 });
 
+test("accepts only current Flash KDA parameters", () => {
+  const request = normalizePerfJobRequest({
+    task_type: "profile",
+    example_id: "flash_kda",
+    attributes: {
+      batch: 1,
+      tokens: 65536,
+      query_heads: 32,
+      value_heads: 32,
+      key_dim: 128,
+      value_dim: 128,
+      chunk_size: 64,
+      qk_l2norm: false,
+      varlen: true,
+      mean_len: 1024,
+      lower_bound: -5,
+      demo_model: false,
+    },
+  }, { role: "user" });
+
+  assert.equal(request.attributes.qk_l2norm, false);
+  assert.throws(() => normalizePerfJobRequest({
+    task_type: "profile",
+    example_id: "flash_kda",
+    attributes: { use_short_conv: true },
+  }, { role: "user" }), /unsupported flash_kda attribute/);
+  assert.throws(() => normalizePerfJobRequest({
+    task_type: "profile",
+    example_id: "flash_kda",
+    attributes: { demo_model: true, qk_l2norm: false },
+  }, { role: "user" }), /demo_model requires qk_l2norm/);
+});
+
 test("routes examples only to runners that advertise them", () => {
   const request = {
     task_type: "profile",

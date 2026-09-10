@@ -183,6 +183,8 @@ def _validate_cross_fields(example_id: str, attrs: dict[str, Any]) -> None:
             raise ValueError("Flash KDA 要求 query-heads 等于 value-heads")
         if attrs.get("varlen") and int(attrs.get("batch") or 1) != 1:
             raise ValueError("Flash KDA 变长输入要求 batch=1")
+        if attrs.get("demo_model") and not attrs.get("qk_l2norm"):
+            raise ValueError("Flash KDA 完整模型链路要求启用 Q/K L2Norm")
     if example_id == "flash_gated_delta_rule" and attrs.get("demo_model") and int(attrs.get("batch") or 1) != 1:
         raise ValueError("--demo-model requires batch=1")
     if example_id in {"recurrent_gated_delta_rule", "recurrent_kda_layer"}:

@@ -2398,6 +2398,21 @@ function normalizePerfJobRequest(payload, user) {
     throw withStatus(400, "kernel_name contains unsupported characters");
   }
   const attributes = normalizePerfAttributes(payload.attributes || payload.parameters || {}, exampleId);
+  if (exampleId === "flash_kda") {
+    if (
+      attributes.query_heads !== undefined
+      && attributes.value_heads !== undefined
+      && attributes.query_heads !== attributes.value_heads
+    ) {
+      throw withStatus(400, "Flash KDA requires query_heads == value_heads");
+    }
+    if (attributes.varlen === true && Number(attributes.batch ?? 1) !== 1) {
+      throw withStatus(400, "Flash KDA variable-length input requires batch=1");
+    }
+    if (attributes.demo_model === true && attributes.qk_l2norm === false) {
+      throw withStatus(400, "Flash KDA demo_model requires qk_l2norm");
+    }
+  }
   const exampleSchemaVersion = boundedInteger(payload.example_schema_version ?? 1, "example_schema_version", 1, 1000);
   if (exampleSchemaVersion !== 1) throw withStatus(400, "unsupported example_schema_version");
   const request = {
@@ -2544,19 +2559,18 @@ function normalizePerfAttributes(value, exampleId = "flash_gated_delta_rule") {
 }
 
 function normalizeDynamicPerfAttributes(value, exampleId) {
-  const common = ["batch", "query_heads", "value_heads", "key_dim", "value_dim", "hidden_size", "seed", "notes", "layout"];
+  const common = ["batch", "query_heads", "value_heads", "key_dim", "value_dim", "seed", "notes", "layout"];
   const byExample = {
     flash_kda: [
-      "case_name", "tokens", "chunk_size", "scale", "dtype", "varlen", "mean_len", "cu_seqlens",
-      "initial_state", "output_final_state", "safe_gate", "lower_bound", "allow_neg_eigval",
-      "disable_recompute", "forward_only", "demo_model", "use_short_conv", "conv_kernel", "conv_bias",
+      "tokens", "chunk_size", "scale", "dtype", "qk_l2norm", "varlen", "mean_len", "cu_seqlens",
+      "lower_bound", "demo_model",
     ],
     recurrent_gated_delta_rule: [
-      "mtp", "conv_kernel", "state_dtype", "conv_state_capacity", "delta_state_capacity",
+      "hidden_size", "mtp", "conv_kernel", "state_dtype", "conv_state_capacity", "delta_state_capacity",
       "cache_indices", "ssm_state_indices", "num_accepted_tokens", "steps",
     ],
     recurrent_kda_layer: [
-      "mtp", "use_short_conv", "conv_kernel", "conv_bias", "conv_state_capacity", "cache_indices",
+      "hidden_size", "mtp", "use_short_conv", "conv_kernel", "conv_bias", "conv_state_capacity", "cache_indices",
       "state_dtype", "state_capacity", "ssm_state_indices", "num_accepted_tokens", "safe_gate",
       "lower_bound", "allow_neg_eigval", "steps",
     ],
@@ -2567,7 +2581,7 @@ function normalizeDynamicPerfAttributes(value, exampleId) {
   }
   const booleans = new Set([
     "varlen", "output_final_state", "safe_gate", "allow_neg_eigval", "disable_recompute",
-    "forward_only", "demo_model", "use_short_conv", "conv_bias",
+    "forward_only", "demo_model", "use_short_conv", "conv_bias", "qk_l2norm",
   ]);
   const lists = new Set(["cu_seqlens", "cache_indices", "ssm_state_indices", "num_accepted_tokens"]);
   const strings = new Set(["case_name", "dtype", "initial_state", "state_dtype", "notes", "layout"]);

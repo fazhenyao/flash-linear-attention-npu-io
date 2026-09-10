@@ -28,15 +28,29 @@ class PerfExampleManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "schema"):
             resolve_example({"example_id": "flash_kda", "example_schema_version": 2})
 
-    def test_flash_kda_defaults_build_expected_flags(self):
+    def test_flash_kda_defaults_match_remote_script(self):
         example = resolve_example("flash_kda")
         attributes = normalize_example_attributes(example, {})
         args = example_cli_args(example, attributes, 7)
 
         self.assertEqual(args[:2], ["--device", "7"])
+        self.assertEqual(attributes["tokens"], 65536)
+        self.assertEqual(attributes["query_heads"], 32)
+        self.assertEqual(attributes["value_heads"], 32)
+        self.assertEqual(attributes["mean_len"], 1024)
         self.assertIn("--chunk-size", args)
-        self.assertIn("--use-short-conv", args)
-        self.assertNotIn("--varlen", args)
+        self.assertIn("--qk-l2norm", args)
+        self.assertIn("--varlen", args)
+        self.assertNotIn("--hidden-size", args)
+        self.assertNotIn("--use-short-conv", args)
+
+    def test_flash_kda_dense_and_no_l2norm_build_false_flags(self):
+        example = resolve_example("flash_kda")
+        attributes = normalize_example_attributes(example, {"varlen": False, "qk_l2norm": False})
+        args = example_cli_args(example, attributes, 7)
+
+        self.assertIn("--no-varlen", args)
+        self.assertIn("--no-qk-l2norm", args)
 
     def test_flash_gdr_composite_core_builds_true_and_false_flags(self):
         example = resolve_example("flash_gated_delta_rule")
@@ -65,6 +79,8 @@ class PerfExampleManifestTests(unittest.TestCase):
         flash_kda = resolve_example("flash_kda")
         with self.assertRaisesRegex(ValueError, "query-heads"):
             normalize_example_attributes(flash_kda, {"query_heads": 2, "value_heads": 4})
+        with self.assertRaisesRegex(ValueError, "Q/K L2Norm"):
+            normalize_example_attributes(flash_kda, {"demo_model": True, "qk_l2norm": False})
 
         recurrent = resolve_example("recurrent_kda_layer")
         with self.assertRaisesRegex(ValueError, "conv-kernel"):

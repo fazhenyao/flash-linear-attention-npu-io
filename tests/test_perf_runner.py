@@ -552,6 +552,48 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         self.assertNotIn("ssh ", profiler_command)
         self.assertNotIn("conda activate", profiler_command)
 
+    def test_flash_kda_uses_manifest_remote_script(self):
+        remote_script = "/home/fazhenyao/flash-linear-attention-npu-exp/examples/flash_kda.py"
+        payload = {
+            "prof_tool": "msprof",
+            "example_id": "flash_kda",
+            "attributes": {},
+        }
+
+        with patch.dict(os.environ, {**self.environment, "PERF_CHIP": "A5"}, clear=False):
+            command = build_command(payload)
+            profiler_command = build_profiler_command(payload)
+
+        self.assertIn(remote_script, command)
+        self.assertIn(remote_script, profiler_command)
+        self.assertNotIn(
+            "/workspace/user/flash-linear-attention-npu/examples/flash_kda.py",
+            command,
+        )
+
+    def test_flash_kda_custom_branch_uses_branch_script(self):
+        payload = {
+            "prof_tool": "msprof",
+            "example_id": "flash_kda",
+            "attributes": {},
+            "execution_environment": {
+                "cann_path": "/data/user/cann/7_20/ascend-toolkit",
+                "conda_env": "feature_env",
+                "source_repo": "/workspace/user/flash-linear-attention-npu",
+                "rebuild": False,
+                "branch": "feature/kda",
+            },
+        }
+
+        with patch.dict(os.environ, self.environment, clear=False):
+            command = build_command(payload)
+
+        self.assertIn(
+            "/workspace/user/flash-linear-attention-npu/examples/flash_kda.py",
+            command,
+        )
+        self.assertNotIn("flash-linear-attention-npu-exp", command)
+
     def test_default_remote_script_survives_custom_environment_without_branch(self):
         remote_script = (
             "/workspace/fazhenyao/flash-linear-attention-npu_bak/"

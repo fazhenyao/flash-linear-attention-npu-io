@@ -347,14 +347,22 @@ def local_prof_output_path(prof_tool: str, config: PerfRunnerConfig | None = Non
     return to_repo_relative_path(config.local_prof_output_app)
 
 
+def _example_remote_script(example: dict[str, Any], config: PerfRunnerConfig) -> str:
+    chip_scripts = example.get("remote_scripts") or {}
+    return str(chip_scripts.get(config.chip) or example.get("remote_script") or "")
+
+
 def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> tuple[str, str]:
     example = resolve_example(payload)
+    example_remote_script = _example_remote_script(example, config)
     local_raw = str(example.get("local_script") or example["script"])
     configured = config.local_script if example["id"] == DEFAULT_EXAMPLE_ID else Path(local_raw)
     local_abs = configured if configured.is_absolute() else ROOT / configured
     if config.mode == "local" and not local_abs.exists():
         raise FileNotFoundError(f"本地脚本不存在：{local_abs}")
-    if example["id"] == DEFAULT_EXAMPLE_ID and config.remote_script:
+    if example_remote_script:
+        remote_script = example_remote_script
+    elif example["id"] == DEFAULT_EXAMPLE_ID and config.remote_script:
         remote_script = config.remote_script
     elif config.remote_source_repo:
         remote_script = f"{config.remote_source_repo}/{example['script']}"
@@ -370,13 +378,13 @@ def remote_script_for_execution(
     config: PerfRunnerConfig,
     execution: ExecutionEnvironment,
 ) -> str:
+    example_remote_script = _example_remote_script(example, config)
     if (
-        example["id"] == DEFAULT_EXAMPLE_ID
-        and config.remote_script
+        (example_remote_script or (example["id"] == DEFAULT_EXAMPLE_ID and config.remote_script))
         and not execution.branch
         and not execution.rebuild
     ):
-        return config.remote_script
+        return example_remote_script or config.remote_script
     return f"{execution.source_repo}/{example['script']}"
 
 
