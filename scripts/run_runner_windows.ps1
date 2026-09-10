@@ -59,7 +59,16 @@ try {
                     New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
                 }
                 Add-Content -LiteralPath $LogFile -Encoding UTF8 -Value "[$([DateTime]::Now.ToString('s'))] [launcher] starting Runner agent"
-                & $python @runnerArguments *>> $LogFile
+                $previousErrorActionPreference = $ErrorActionPreference
+                try {
+                    # Native stderr is expected when the API is temporarily unavailable.
+                    # Keep it in the log without terminating the supervisor loop.
+                    $ErrorActionPreference = "Continue"
+                    & $python @runnerArguments *>> $LogFile
+                }
+                finally {
+                    $ErrorActionPreference = $previousErrorActionPreference
+                }
             }
             else {
                 & $python @runnerArguments
