@@ -24,10 +24,16 @@ def load_example_manifest(path: Path | None = None) -> dict[str, Any]:
     for example in value["examples"]:
         example_id = str(example.get("id") or "")
         script = str(example.get("script") or "")
+        local_script = str(example.get("local_script") or script)
         if not re.fullmatch(r"[a-z][a-z0-9_]{1,63}", example_id):
             raise ValueError(f"性能示例 ID 不合法：{example_id}")
         if example_id in ids or not re.fullmatch(r"examples/[A-Za-z0-9_./-]+\.py", script):
             raise ValueError(f"性能示例定义不合法：{example_id}")
+        if not re.fullmatch(r"(?:examples|scripts)/[A-Za-z0-9_./-]+\.py", local_script):
+            raise ValueError(f"示例 {example_id} 的本仓脚本路径不合法：{local_script}")
+        local_path = (ROOT / local_script).resolve()
+        if not local_path.is_relative_to(ROOT.resolve()) or not local_path.is_file():
+            raise ValueError(f"示例 {example_id} 的本仓脚本不存在：{local_script}")
         ids.add(example_id)
         aliases.update(str(item) for item in example.get("legacy_ids", []))
         parameter_names: set[str] = set()

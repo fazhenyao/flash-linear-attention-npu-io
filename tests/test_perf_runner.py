@@ -21,7 +21,9 @@ from backend.perf_runner import (
     _list_remote_prof_dirs,
     _run_command,
     _scp_command,
+    _scp_upload_command,
     _ssh_command,
+    _sync_repository_script,
     build_command,
     build_profiler_command,
     execute,
@@ -38,6 +40,7 @@ from backend.perf_runner import (
     soc_build_target,
     start_persistent_build_install,
 )
+from backend.perf_examples import resolve_example
 from backend.runner_agent import (
     AgentConfig,
     RunnerAgent,
@@ -533,27 +536,28 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
                     "attributes": {"batch": 2, "demo_model": True},
                 })
 
-    def test_remote_script_can_be_mapped_by_trusted_runner_config(self):
+    def test_legacy_remote_script_cannot_override_repository_example(self):
         remote_script = (
             "/home/npu_user7/fazhenyao/flash-linear-attention-npu/"
             "examples/flash_gated_delta_rule.py"
         )
+        repository_script = "/workspace/project/scripts/flash_gated_delta_rule.py"
         environment = {**self.environment, "PERF_REMOTE_SCRIPT": remote_script}
 
         with patch.dict(os.environ, environment, clear=False):
             command = build_command({"prof_tool": "msprof", "attributes": {}})
             profiler_command = build_profiler_command({"prof_tool": "msprof", "attributes": {}})
 
-        self.assertIn(remote_script, command)
-        self.assertNotIn("python3 scripts/flash_gated_delta_rule.py", command)
+        self.assertIn(repository_script, command)
+        self.assertNotIn(remote_script, command)
 
         self.assertTrue(profiler_command.startswith("msprof --output="))
-        self.assertIn(remote_script, profiler_command)
+        self.assertIn(repository_script, profiler_command)
         self.assertNotIn("ssh ", profiler_command)
         self.assertNotIn("conda activate", profiler_command)
 
-    def test_flash_kda_uses_manifest_remote_script(self):
-        remote_script = "/home/fazhenyao/flash-linear-attention-npu-exp/examples/flash_kda.py"
+    def test_flash_kda_uses_repository_remote_script(self):
+        remote_script = "/workspace/project/examples/flash_kda.py"
         payload = {
             "prof_tool": "msprof",
             "example_id": "flash_kda",
@@ -566,10 +570,7 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
 
         self.assertIn(remote_script, command)
         self.assertIn(remote_script, profiler_command)
-        self.assertNotIn(
-            "/workspace/user/flash-linear-attention-npu/examples/flash_kda.py",
-            command,
-        )
+        self.assertNotIn("flash-linear-attention-npu-exp", command)
 
     def test_flash_kda_custom_branch_uses_branch_script(self):
         payload = {
@@ -594,12 +595,13 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         )
         self.assertNotIn("flash-linear-attention-npu-exp", command)
 
-    def test_default_remote_script_survives_custom_environment_without_branch(self):
+    def test_repository_script_survives_custom_environment_without_branch(self):
         remote_script = (
             "/workspace/fazhenyao/flash-linear-attention-npu_bak/"
             "examples/flash_gated_delta_rule.py"
         )
         environment = {**self.environment, "PERF_REMOTE_SCRIPT": remote_script}
+        repository_script = "/workspace/project/scripts/flash_gated_delta_rule.py"
         payload = {
             "prof_tool": "msprof",
             "attributes": {},
@@ -616,8 +618,9 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             command = build_command(payload)
             profiler_command = build_profiler_command(payload)
 
-        self.assertIn(remote_script, command)
-        self.assertIn(remote_script, profiler_command)
+        self.assertIn(repository_script, command)
+        self.assertIn(repository_script, profiler_command)
+        self.assertNotIn(remote_script, command)
         self.assertNotIn(
             "/workspace/user/flash-linear-attention-npu/examples/flash_gated_delta_rule.py",
             command,
@@ -635,7 +638,7 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
             self.assertEqual(resolve_chip({}, config), "A5")
             self.assertEqual(
                 prof_output_root("msprof", local=True),
-                config.local_script.resolve().parents[1] / "data/runner-artifacts/a5/prof_gdr",
+                Path(__file__).resolve().parents[1] / "data/runner-artifacts/a5/prof_gdr",
             )
 
     def test_a5_does_not_reuse_a2_theoretical_limits(self):
@@ -803,10 +806,30 @@ class PerfRunnerRemoteCommandTests(unittest.TestCase):
         for command in (
             _ssh_command(config, "true"),
             _scp_command(config, "/tmp/prof", os.path.abspath("data")),
+            _scp_upload_command(config, Path("examples/flash_kda.py"), "/tmp/flash_kda.py"),
         ):
             self.assertIn("ConnectTimeout=10", command)
             self.assertIn("ServerAliveInterval=15", command)
             self.assertIn("ServerAliveCountMax=4", command)
+
+    def test_repository_script_sync_uploads_then_atomically_activates(self):
+        with patch.dict(os.environ, self.environment, clear=False):
+            config = load_config()
+        example = resolve_example("flash_kda")
+        remote_script = "/workspace/project/examples/flash_kda.py"
+
+        with patch("backend.perf_runner._run_remote_checked") as remote, patch(
+            "backend.perf_runner._run_command",
+        ) as run:
+            _sync_repository_script(config, example, remote_script)
+
+        self.assertEqual(remote.call_count, 2)
+        self.assertIn("mkdir -p /workspace/project/examples", remote.call_args_list[0].args[1])
+        self.assertIn("mv -f", remote.call_args_list[1].args[1])
+        upload = run.call_args.args[0]
+        self.assertEqual(upload[0], "scp")
+        self.assertEqual(Path(upload[-2]).name, "flash_kda.py")
+        self.assertIn(f"{config.ssh_user}@{config.ssh_host}:{remote_script}.tmp-", upload[-1])
 
     def test_parse_a2_npu_smi_status_with_process(self):
         output = """__NPU__:0

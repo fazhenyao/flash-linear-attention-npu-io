@@ -84,7 +84,6 @@ class PerfRunnerConfig:
     ssh_port: str
     ssh_identity: str
     remote_workdir: str
-    remote_script: str
     remote_env_script: str
     remote_path_prepend: str
     remote_conda_sh: str
@@ -93,7 +92,6 @@ class PerfRunnerConfig:
     allowed_cann_roots: tuple[str, ...]
     allowed_source_roots: tuple[str, ...]
     remote_build_root: str
-    local_script: Path
     npu_device: int
     chip: str
     prof_output_app: str
@@ -145,7 +143,6 @@ def load_config() -> PerfRunnerConfig:
         ssh_port=os.environ.get("PERF_SSH_PORT", "").strip(),
         ssh_identity=os.environ.get("PERF_SSH_IDENTITY_FILE", "").strip(),
         remote_workdir=os.environ.get("PERF_REMOTE_WORKDIR", "").strip() or ".",
-        remote_script=os.environ.get("PERF_REMOTE_SCRIPT", "").strip() or DEFAULT_TRIGGER_SCRIPT,
         remote_env_script=os.environ.get("PERF_REMOTE_ENV_SCRIPT", "").strip(),
         remote_path_prepend=os.environ.get("PERF_REMOTE_PATH_PREPEND", "").strip(),
         remote_conda_sh=os.environ.get("PERF_REMOTE_CONDA_SH", "").strip(),
@@ -154,7 +151,6 @@ def load_config() -> PerfRunnerConfig:
         allowed_cann_roots=_env_paths("PERF_ALLOWED_CANN_ROOTS"),
         allowed_source_roots=_env_paths("PERF_ALLOWED_SOURCE_ROOTS"),
         remote_build_root=os.environ.get("PERF_REMOTE_BUILD_ROOT", "/tmp/fla-runner-builds").strip().rstrip("/"),
-        local_script=Path(os.environ.get("PERF_LOCAL_SCRIPT", DEFAULT_TRIGGER_SCRIPT)),
         npu_device=int(os.environ.get("PERF_NPU_DEVICE", "2")),
         chip=os.environ.get("PERF_CHIP", "").strip().upper() or "A2",
         prof_output_app=os.environ.get("PERF_PROF_OUTPUT", LOCAL_PROF_OUTPUT_APP).strip() or LOCAL_PROF_OUTPUT_APP,
@@ -347,30 +343,29 @@ def local_prof_output_path(prof_tool: str, config: PerfRunnerConfig | None = Non
     return to_repo_relative_path(config.local_prof_output_app)
 
 
-def _example_remote_script(example: dict[str, Any], config: PerfRunnerConfig) -> str:
-    chip_scripts = example.get("remote_scripts") or {}
-    return str(chip_scripts.get(config.chip) or example.get("remote_script") or "")
+def _example_local_script(example: dict[str, Any]) -> tuple[Path, str]:
+    relative = str(example.get("local_script") or example["script"])
+    local_abs = (ROOT / relative).resolve()
+    try:
+        local_relative = local_abs.relative_to(ROOT.resolve()).as_posix()
+    except ValueError as exc:
+        raise ValueError(f"示例脚本必须位于本仓内：{relative}") from exc
+    if not local_abs.is_file():
+        raise FileNotFoundError(f"本仓示例脚本不存在：{local_abs}")
+    return local_abs, local_relative
+
+
+def _repository_remote_script(example: dict[str, Any], config: PerfRunnerConfig) -> str:
+    _, relative = _example_local_script(example)
+    remote_root = _normalized_remote_absolute_path(config.remote_workdir, "远端工作目录")
+    return f"{remote_root}/{relative}"
 
 
 def resolve_script_paths(payload: dict[str, Any], config: PerfRunnerConfig) -> tuple[str, str]:
     example = resolve_example(payload)
-    example_remote_script = _example_remote_script(example, config)
-    local_raw = str(example.get("local_script") or example["script"])
-    configured = config.local_script if example["id"] == DEFAULT_EXAMPLE_ID else Path(local_raw)
-    local_abs = configured if configured.is_absolute() else ROOT / configured
-    if config.mode == "local" and not local_abs.exists():
-        raise FileNotFoundError(f"本地脚本不存在：{local_abs}")
-    if example_remote_script:
-        remote_script = example_remote_script
-    elif example["id"] == DEFAULT_EXAMPLE_ID and config.remote_script:
-        remote_script = config.remote_script
-    elif config.remote_source_repo:
-        remote_script = f"{config.remote_source_repo}/{example['script']}"
-    elif config.remote_script:
-        remote_script = str(PurePosixPath(config.remote_script).parent / PurePosixPath(example["script"]).name)
-    else:
-        remote_script = example["script"]
-    return remote_script, to_repo_relative_path(local_abs)
+    _, local_script = _example_local_script(example)
+    remote_script = _repository_remote_script(example, config) if config.mode == "ssh" else local_script
+    return remote_script, local_script
 
 
 def remote_script_for_execution(
@@ -378,13 +373,8 @@ def remote_script_for_execution(
     config: PerfRunnerConfig,
     execution: ExecutionEnvironment,
 ) -> str:
-    example_remote_script = _example_remote_script(example, config)
-    if (
-        (example_remote_script or (example["id"] == DEFAULT_EXAMPLE_ID and config.remote_script))
-        and not execution.branch
-        and not execution.rebuild
-    ):
-        return example_remote_script or config.remote_script
+    if not execution.branch and not execution.rebuild:
+        return _repository_remote_script(example, config)
     return f"{execution.source_repo}/{example['script']}"
 
 
@@ -516,7 +506,7 @@ def runner_status() -> dict[str, Any]:
         "remote_env_script": config.remote_env_script if config.mode == "ssh" else None,
         "remote_path_prepend": config.remote_path_prepend if config.mode == "ssh" else None,
         "remote_conda_env": config.remote_conda_env if config.mode == "ssh" else None,
-        "local_script": to_repo_relative_path(config.local_script) if config.mode == "local" else None,
+        "local_script": DEFAULT_TRIGGER_SCRIPT if config.mode == "local" else None,
         "npu_device": config.npu_device,
         "chip": config.chip,
         "soc_version": config.soc_version,
@@ -689,6 +679,18 @@ def _scp_command(config: PerfRunnerConfig, remote_path: str, local_path: Path) -
     cmd.extend(_ssh_connection_options())
     cmd.append(f"{config.ssh_user}@{config.ssh_host}:{remote_path}")
     cmd.append(str(local_path))
+    return cmd
+
+
+def _scp_upload_command(config: PerfRunnerConfig, local_path: Path, remote_path: str) -> list[str]:
+    cmd = ["scp"]
+    if config.ssh_port:
+        cmd.extend(["-P", config.ssh_port])
+    if config.ssh_identity:
+        cmd.extend(["-i", config.ssh_identity])
+    cmd.extend(_ssh_connection_options())
+    cmd.append(str(local_path))
+    cmd.append(f"{config.ssh_user}@{config.ssh_host}:{remote_path}")
     return cmd
 
 
@@ -900,6 +902,30 @@ def _run_remote_checked(
             detail = (exc.stderr or exc.stdout or "SSH connection failed").strip()
             raise RemoteConnectionError(f"{label}连接失败：{detail[-1000:]}") from None
         raise _remote_command_error(label, exc) from None
+
+
+def _sync_repository_script(
+    config: PerfRunnerConfig,
+    example: dict[str, Any],
+    remote_script: str,
+) -> None:
+    local_script, _ = _example_local_script(example)
+    remote_script = _normalized_remote_absolute_path(remote_script, "远端示例脚本")
+    remote_parent = PurePosixPath(remote_script).parent.as_posix()
+    remote_temp = f"{remote_script}.tmp-{uuid.uuid4().hex}"
+    _run_remote_checked(config, f"mkdir -p {shlex.quote(remote_parent)}", "远端示例脚本目录准备")
+    try:
+        _run_command(_scp_upload_command(config, local_script, remote_temp))
+        _run_remote_checked(
+            config,
+            f"chmod 600 {shlex.quote(remote_temp)} && mv -f {shlex.quote(remote_temp)} {shlex.quote(remote_script)}",
+            "本仓示例脚本激活",
+        )
+    except subprocess.CalledProcessError as exc:
+        if exc.returncode == 255:
+            detail = (exc.stderr or exc.stdout or "SCP connection failed").strip()
+            raise RemoteConnectionError(f"本仓示例脚本同步连接失败：{detail[-1000:]}") from None
+        raise _remote_command_error("本仓示例脚本同步", exc) from None
 
 
 def _validate_remote_execution_environment(
@@ -1596,6 +1622,8 @@ def execute(
                 build_info = _prepare_remote_source_build(config, execution, chip)
                 build_worktree = build_info["worktree"]
                 remote_script = f"{build_worktree}/{example['script']}"
+            if not execution.branch and not execution.rebuild:
+                _sync_repository_script(config, example, remote_script)
             before = _list_remote_prof_dirs(config, prof_tool, remote_output)
             invocation = build_prof_invocation(
                 config,

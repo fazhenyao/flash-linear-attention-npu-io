@@ -46,7 +46,7 @@ NPU 状态链路与任务领取解耦：每个 Relay 默认每 30 分钟在后�
 - Profiling 原始目录可能很大，不适合直接存入 D1。
 - 当前 Relay 是用户开启 VPN 的 Windows 电脑，通过两个登录触发的计划任务分别运行 A2 和 A5 Agent。
 - A2 SSH 目标为 `root@192.168.9.221:22`，项目目录为 `/workspace/fazhenyao/flash-linear-attention-npu-io`；CANN 环境脚本为 `/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh`，Conda 环境为 `fla_dump`。
-- A5 SSH 目标为 `fazhenyao@192.168.13.241:22`，Relay 使用 `C:/Users/Administrator/.ssh/id_ed25519` 密钥；采集输出工作目录为 `/home/fazhenyao/flash-linear-attention-npu-io`，执行脚本为 `/home/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py`；CANN 环境脚本为 `/home/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh`，Conda 环境为 `fla`。
+- A5 SSH 目标为 `fazhenyao@192.168.13.241:22`，Relay 使用 `C:/Users/Administrator/.ssh/id_ed25519` 密钥；采集输出工作目录为 `/home/fazhenyao/flash-linear-attention-npu-io`，默认任务执行前会把 IO 仓中的示例脚本同步到该目录；CANN 环境脚本为 `/home/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh`，Conda 环境为 `fla`。
 
 ## 3. 设计目标
 
@@ -273,7 +273,7 @@ Worker 领取任务时先校验 `target_runner_id`，再校验 Agent 上报的�
 
 当前两个 Agent 共享同一个 Runner Token，但使用不同的 `RUNNER_ID`、配置文件、状态目录、日志、计划任务和本地制品目录。后续应为每个 Agent 签发可单独吊销和轮换的凭据。
 
-任务提交仍只接受 Worker 白名单中的 `script_id`。`PERF_REMOTE_SCRIPT` 是受信任的 Relay 本机配置，用于把该白名单 ID 映射到特定 NPU 主机上的脚本路径；浏览器用户不能提交或覆盖远端路径。
+任务提交仍只接受 Worker 白名单中的 `script_id`。默认任务的脚本路径由 IO 仓中的 manifest 固定，Relay 在每次执行前将对应本仓脚本原子同步到 NPU 主机的 `PERF_REMOTE_WORKDIR`；浏览器用户不能提交或覆盖脚本路径。
 
 ### 7.3 管理员自定义执行环境与独立编译安装
 
@@ -304,13 +304,13 @@ Worker 先执行角色、任务类型、字段白名单、路径格式和分支�
 
 ### 7.4 多测试示例与动态参数
 
-测试示例采用显式 manifest 管理，不通过运行脚本或解析 `--help` 自动发现参数。当前权威清单位于 IO 仓库的 `docs/perf-examples.json`，由 GitHub Pages 与 Relay 共同读取；后续 `flash-linear-attention-npu` 分支提供 `examples/dashboard_examples.json` 时，Relay 可按已激活部署的 commit 读取并校验该清单。manifest 为每个示例保存稳定 ID、展示名称、源码相对路径、模型类型及参数 schema。
+测试示例采用显式 manifest 管理，不通过运行脚本或解析 `--help` 自动发现参数。当前权威清单位于 IO 仓库的 `docs/perf-examples.json`，由 GitHub Pages 与 Relay 共同读取。manifest 为每个示例保存稳定 ID、展示名称、本仓脚本路径、用于自定义分支测试的源码相对路径、模型类型及参数 schema；加载时会校验默认脚本确实存在于 IO 仓。以后更新默认示例时，应同时更新 IO 仓中的脚本和 manifest，默认任务不再依赖 NPU 主机上的外部实验仓。
 
 首批接入四个示例：
 
 | 示例 ID | 脚本 | 参数类别 |
 | --- | --- | --- |
-| `flash_gated_delta_rule` | `examples/flash_gated_delta_rule.py` | 长序列形状、varlen、DemoModel |
+| `flash_gated_delta_rule` | `scripts/flash_gated_delta_rule.py` | 长序列形状、varlen、DemoModel |
 | `flash_kda` | `examples/flash_kda.py` | 长序列形状、状态、safe gate、重计算、短卷积、DemoModel |
 | `recurrent_gated_delta_rule` | `examples/recurrent_gated_delta_rule.py` | decode/MTP 形状、卷积缓存、Delta state、accepted tokens |
 | `recurrent_kda_layer` | `examples/recurrent_kda_layer.py` | decode/MTP 形状、短卷积、KDA state、safe gate、accepted tokens |
@@ -898,7 +898,6 @@ PERF_SSH_USER=root
 PERF_SSH_PORT=22
 PERF_SSH_IDENTITY_FILE=C:/Users/Administrator/.ssh/id_ed25519
 PERF_REMOTE_WORKDIR=/workspace/fazhenyao/flash-linear-attention-npu-io
-PERF_REMOTE_SCRIPT=/workspace/fazhenyao/flash-linear-attention-npu_bak/examples/flash_gated_delta_rule.py
 PERF_REMOTE_ENV_SCRIPT=/data/fazhenyao/cann/3_23/ascend-toolkit/set_env.sh
 PERF_REMOTE_CONDA_SH=/data/miniconda3/etc/profile.d/conda.sh
 PERF_REMOTE_CONDA_ENV=fla_dump
@@ -926,7 +925,6 @@ PERF_SSH_USER=fazhenyao
 PERF_SSH_PORT=22
 PERF_SSH_IDENTITY_FILE=C:/Users/Administrator/.ssh/id_ed25519
 PERF_REMOTE_WORKDIR=/home/fazhenyao/flash-linear-attention-npu-io
-PERF_REMOTE_SCRIPT=/home/fazhenyao/flash-linear-attention-npu/examples/flash_gated_delta_rule.py
 PERF_REMOTE_ENV_SCRIPT=/home/fazhenyao/cann/7_20/ascend-toolkit/set_env.sh
 PERF_REMOTE_CONDA_SH=/home/fazhenyao/miniconda3/etc/profile.d/conda.sh
 PERF_REMOTE_CONDA_ENV=fla

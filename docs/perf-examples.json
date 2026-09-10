@@ -29,7 +29,6 @@
       "id": "flash_kda",
       "label": "Flash KDA 训练链路",
       "script": "examples/flash_kda.py",
-      "remote_scripts": {"A5": "/home/fazhenyao/flash-linear-attention-npu-exp/examples/flash_kda.py"},
       "model_id": "kda",
       "parameters": [
         {"name": "batch", "flag": "--batch", "label": "batch", "type": "integer", "default": 1, "min": 1, "max": 4096, "group": "形状/规模"},

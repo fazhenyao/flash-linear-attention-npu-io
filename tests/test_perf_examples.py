@@ -1,14 +1,37 @@
+import copy
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from backend.perf_examples import (
+    EXAMPLE_MANIFEST,
     example_catalog,
     example_cli_args,
+    load_example_manifest,
     normalize_example_attributes,
     resolve_example,
 )
 
 
 class PerfExampleManifestTests(unittest.TestCase):
+    def test_all_example_scripts_are_stored_in_repository(self):
+        root = Path(__file__).resolve().parents[1]
+        for example in example_catalog():
+            relative = example.get("local_script") or example["script"]
+            script = (root / relative).resolve()
+            self.assertTrue(script.is_relative_to(root), relative)
+            self.assertTrue(script.is_file(), relative)
+
+    def test_manifest_rejects_example_script_missing_from_repository(self):
+        manifest = copy.deepcopy(EXAMPLE_MANIFEST)
+        manifest["examples"][0]["local_script"] = "examples/not_in_repository.py"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "perf-examples.json"
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "本仓脚本不存在"):
+                load_example_manifest(path)
+
     def test_catalog_contains_all_supported_examples(self):
         self.assertEqual(
             [item["id"] for item in example_catalog()],
@@ -28,7 +51,7 @@ class PerfExampleManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "schema"):
             resolve_example({"example_id": "flash_kda", "example_schema_version": 2})
 
-    def test_flash_kda_defaults_match_remote_script(self):
+    def test_flash_kda_defaults_match_repository_script(self):
         example = resolve_example("flash_kda")
         attributes = normalize_example_attributes(example, {})
         args = example_cli_args(example, attributes, 7)
