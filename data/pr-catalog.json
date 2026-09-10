@@ -1,19 +1,31 @@
 {
-  "generatedAt": "2026-09-10T09:50:43+08:00",
+  "generatedAt": "2026-09-10T18:10:44+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 345,
+  "total": 348,
   "items": [
     {
-      "number": 517,
-      "title": "ChunkGdnFwdPrepare Fix use_beta_sigmoid_in_kernel=False && add ATK cases",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/517",
+      "number": 522,
+      "title": "ChunkGdnFwdPrepare Support use_qk_l2norm_in_kernel=False",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/522",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-10T01:46:00Z",
-      "createdAt": "2026-09-09T14:38:28Z",
+      "updatedAt": "2026-09-10T08:20:31Z",
+      "createdAt": "2026-09-10T08:19:39Z",
       "headRef": "gdn_fwd_prepare",
+      "labels": []
+    },
+    {
+      "number": 518,
+      "title": "Chw a2 a5 simple a5",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/518",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-10T02:01:02Z",
+      "createdAt": "2026-09-10T02:00:50Z",
+      "headRef": "chw_a2_a5_simple_A5",
       "labels": []
     },
     {
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-09T08:13:56Z",
+      "updatedAt": "2026-09-10T08:27:12Z",
       "createdAt": "2026-09-09T08:09:18Z",
       "headRef": "9_8",
       "labels": []
@@ -35,21 +47,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-10T01:46:35Z",
+      "updatedAt": "2026-09-10T06:54:45Z",
       "createdAt": "2026-09-09T07:10:43Z",
       "headRef": "feat/fla-npu-thin-launcher-390",
-      "labels": []
-    },
-    {
-      "number": 510,
-      "title": "perf: fuse recurrent gated delta rule into regbase vf",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/510",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-09T08:38:50Z",
-      "createdAt": "2026-09-09T03:20:01Z",
-      "headRef": "perf26.9",
       "labels": []
     },
     {
@@ -59,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-09T03:13:29Z",
+      "updatedAt": "2026-09-10T09:18:37Z",
       "createdAt": "2026-09-09T03:13:20Z",
       "headRef": "lyq/chunk_kda_bwd_recompute",
       "labels": []
@@ -119,33 +119,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-10T01:30:35Z",
+      "updatedAt": "2026-09-10T09:57:31Z",
       "createdAt": "2026-09-08T07:24:25Z",
       "headRef": "feat/fla-npu-thin-launcher",
-      "labels": []
-    },
-    {
-      "number": 495,
-      "title": "fix(gdn): 修正前向新旧路径选择与 Torch 参数透传",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/495",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-08T14:16:53Z",
-      "createdAt": "2026-09-08T07:20:40Z",
-      "headRef": "codex/chunk-gdn-fwd-route",
-      "labels": []
-    },
-    {
-      "number": 489,
-      "title": "perf(chunk_fwd_h): 流式输入绕过 L2 cache",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/489",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-10T01:17:20Z",
-      "createdAt": "2026-09-08T02:05:01Z",
-      "headRef": "perf/chunk-fwd-h-l2-bypass",
       "labels": []
     },
     {
@@ -191,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-10T01:47:14Z",
+      "updatedAt": "2026-09-10T02:43:18Z",
       "createdAt": "2026-09-04T04:29:07Z",
       "headRef": "codex/chunk-kda-fwd-prepare-pseudocode",
       "labels": []
@@ -251,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-09T04:21:20Z",
+      "updatedAt": "2026-09-10T08:30:02Z",
       "createdAt": "2026-08-31T20:46:12Z",
       "headRef": "codex/chunk-kda-fwd-atk-modern-200",
       "labels": []
@@ -1121,6 +1097,30 @@
       "labels": []
     },
     {
+      "number": 520,
+      "title": "perf: fuse recurrent gated delta rule into regbase vf",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/520",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-10T03:53:42Z",
+      "updatedAt": "2026-09-10T03:53:42Z",
+      "createdAt": "2026-09-10T03:48:13Z",
+      "headRef": "perf",
+      "labels": []
+    },
+    {
+      "number": 517,
+      "title": "ChunkGdnFwdPrepare Fix use_beta_sigmoid_in_kernel=False && add ATK cases",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/517",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-10T01:50:54Z",
+      "updatedAt": "2026-09-10T01:50:54Z",
+      "createdAt": "2026-09-09T14:38:28Z",
+      "headRef": "gdn_fwd_prepare",
+      "labels": []
+    },
+    {
       "number": 516,
       "title": "ChunkGatedDeltaRuleFwdPrepare Optimize",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/516",
@@ -1145,6 +1145,18 @@
       "labels": []
     },
     {
+      "number": 510,
+      "title": "perf: fuse recurrent gated delta rule into regbase vf",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/510",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-10T03:52:53Z",
+      "updatedAt": "2026-09-10T03:52:53Z",
+      "createdAt": "2026-09-09T03:20:01Z",
+      "headRef": "perf26.9",
+      "labels": []
+    },
+    {
       "number": 506,
       "title": "fix(example): 移除GDN大融合输出的transpose",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/506",
@@ -1166,6 +1178,18 @@
       "updatedAt": "2026-09-08T09:10:33Z",
       "createdAt": "2026-09-08T09:09:27Z",
       "headRef": "0908-ci3",
+      "labels": []
+    },
+    {
+      "number": 495,
+      "title": "fix(gdn): 修正前向新旧路径选择与 Torch 参数透传",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/495",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-10T06:15:25Z",
+      "updatedAt": "2026-09-10T06:15:25Z",
+      "createdAt": "2026-09-08T07:20:40Z",
+      "headRef": "codex/chunk-gdn-fwd-route",
       "labels": []
     },
     {
@@ -1214,6 +1238,18 @@
       "updatedAt": "2026-09-08T02:45:09Z",
       "createdAt": "2026-09-08T02:37:03Z",
       "headRef": "0908-ci",
+      "labels": []
+    },
+    {
+      "number": 489,
+      "title": "perf(chunk_fwd_h): 流式输入绕过 L2 cache",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/489",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-10T08:18:17Z",
+      "updatedAt": "2026-09-10T08:18:18Z",
+      "createdAt": "2026-09-08T02:05:01Z",
+      "headRef": "perf/chunk-fwd-h-l2-bypass",
       "labels": []
     },
     {
