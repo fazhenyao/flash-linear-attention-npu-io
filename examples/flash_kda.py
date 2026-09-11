@@ -137,12 +137,6 @@ def _head_major(tensor: torch.Tensor, *, varlen: bool) -> torch.Tensor:
     return tensor.squeeze(0) if varlen else tensor
 
 
-def _sequence_major(tensor: torch.Tensor, *, varlen: bool) -> torch.Tensor:
-    if varlen:
-        tensor = tensor.unsqueeze(0)
-    return tensor.transpose(1, 2).contiguous()
-
-
 def _l2norm_fwd(x):
     x32 = x.float()
     rstd = torch.rsqrt(x32.square().sum(-1, keepdim=True) + 1e-6)
@@ -164,10 +158,18 @@ class AscendCChunkKDAFunction(torch.autograd.Function):
     def forward(ctx, q, k, v, raw_gate, beta, A_log, dt_bias, scale,
                 cu_seqlens_host, lower_bound, use_gate_in_kernel,
                 use_qk_l2norm_in_kernel, use_beta_sigmoid_in_kernel, allow_neg_eigval,
-                chunk_size, safe_gate):
+                chunk_size, safe_gate, qkv_head_major):
         from fla_npu.ops.ascendc import chunk_kda_fwd
 
         ctx.set_materialize_grads(False)
+        # The model passes convolution QKV directly in BNSD; the public adapter
+        # still accepts BSND. Gate/beta projections use BSND/BSH in both paths.
+        ctx.qkv_head_major = qkv_head_major
+        if qkv_head_major:
+            q, k, v = (tensor.contiguous() for tensor in (q, k, v))
+        else:
+            q, k, v = (_head_major(tensor, varlen=False) for tensor in (q, k, v))
+        raw_gate, beta = (_head_major(tensor, varlen=False) for tensor in (raw_gate, beta))
         q_input, k_input, beta_input = q, k, beta
         q_rstd, k_rstd = None, None
         if use_qk_l2norm_in_kernel:
@@ -181,7 +183,7 @@ class AscendCChunkKDAFunction(torch.autograd.Function):
         (out, _final_state, gk, Aqk, Akk, w, _u, qg, kg, v_new, h,
          _initial_state) = chunk_kda_fwd(
             q, k, v, gate, beta, scale, chunk_size,
-            layout="BSND", initial_state=None, output_final_state=False,
+            layout="BNSD", initial_state=None, output_final_state=False,
             cu_seqlens=cu_seqlens_host, chunk_indices=None,
             safe_gate=safe_gate, lower_bound=lower_bound, use_gate_in_kernel=use_gate_in_kernel,
             A_log=A_log,
@@ -189,6 +191,8 @@ class AscendCChunkKDAFunction(torch.autograd.Function):
             disable_recompute=True,
             return_intermediate_states=False, state_v_first=False,
         )
+        # These eight tensors come from this forward invocation, not from
+        # model projections or a separate reconstruction in backward.
         saved = (gk, Aqk, Akk, w, qg, kg, v_new, h)
         if any(tensor is None for tensor in saved):
             raise RuntimeError("chunk_kda_fwd did not return all fused backward intermediates")
@@ -213,31 +217,37 @@ class AscendCChunkKDAFunction(torch.autograd.Function):
         if dht is not None:
             raise RuntimeError("Fused AscendC KDA backward does not support final-state gradients.")
         (q, k, v, raw_gate, beta, A_log, dt_bias, q_input, k_input,
-         q_rstd, k_rstd, beta_input, *saved) = ctx.saved_tensors
+         q_rstd, k_rstd, beta_input, gk, Aqk, Akk, w, qg, kg, v_new, h) = ctx.saved_tensors
+        # q/k are the normalized forward inputs; beta is post-sigmoid.
+        # do is supplied by autograd from the downstream norm/projection/loss.
+        saved = (gk, Aqk, Akk, w, qg, kg, v_new, h)
         varlen = ctx.cu_seqlens_host is not None
         # Saved tensors already use head-major layout. Packed backward only
         # removes the singleton batch, including h: [1,Nc,H,K,V] -> [Nc,H,K,V].
         if varlen:
             saved = [tensor.squeeze(0) for tensor in saved]
-        q_head, k_head, v_head, beta_head, do_head = (
-            _head_major(tensor, varlen=varlen)
-            for tensor in (q, k, v, beta, do)
+        gk_head, Aqk_head, Akk_head, w_head, qg_head, kg_head, v_new_head, h_head = saved
+        q_head, k_head, v_head, beta_head, gate_head = (
+            tensor.squeeze(0) if varlen else tensor
+            for tensor in (q, k, v, beta, raw_gate)
         )
-        gate_head = _head_major(raw_gate, varlen=varlen) if ctx.use_gate_in_kernel else None
+        # Forward always returns BSND, even when its inputs are BNSD.
+        # Only the downstream gradient needs a layout conversion here.
+        do_head = _head_major(do, varlen=varlen)
         dq, dk, dv, dbeta, dg, _dh0, dA, dbias = chunk_kda_bwd(
-            q_head, k_head, v_head, beta_head, *saved, do_head, ctx.scale,
-            raw_g=gate_head, A_log=A_log,
-            dt_bias=(dt_bias.reshape(q.shape[2], q.shape[3]).contiguous()
+            q_head, k_head, v_head, beta_head,
+            gk_head, Aqk_head, Akk_head, w_head, qg_head, kg_head, v_new_head, h_head,
+            do_head, ctx.scale,
+            raw_g=gate_head if ctx.use_gate_in_kernel else None, A_log=A_log,
+            dt_bias=(dt_bias.reshape(q.shape[1], q.shape[3]).contiguous()
                      if dt_bias is not None else None),
             initial_state=None, dht=None, cu_seqlens=ctx.cu_seqlens_host,
             chunk_indices=None, chunk_size=ctx.chunk_size, safe_gate=ctx.safe_gate,
             lower_bound=ctx.lower_bound, use_gate_in_kernel=ctx.use_gate_in_kernel,
             disable_recompute=True, use_exp2=True, state_v_first=False,
         )
-        dq, dk, dv, dg, dbeta = (
-            _sequence_major(grad, varlen=varlen)
-            for grad in (dq, dk, dv, dg, dbeta)
-        )
+        if varlen:
+            dq, dk, dv, dg, dbeta = (grad.unsqueeze(0) for grad in (dq, dk, dv, dg, dbeta))
         # Match example_1.py: consume FP32 dq/dk/dbeta before the final casts.
         if ctx.use_qk_l2norm_in_kernel:
             dq = _l2norm_bwd(q_input, q_rstd, dq)
@@ -247,11 +257,19 @@ class AscendCChunkKDAFunction(torch.autograd.Function):
             dbeta = dbeta.float() * sigmoid * (1.0 - sigmoid)
             if ctx.allow_neg_eigval:
                 dbeta = dbeta * 2.0
-        return (dq.to(q_input.dtype), dk.to(k_input.dtype), dv.to(v.dtype),
-                dg.to(ctx.gate_dtype), dbeta.to(beta_input.dtype),
+        # Cast while contiguous/head-major: casting a transposed view on NPU
+        # can materialize the view and then restore its strides via transposes.
+        dq, dk, dv = dq.to(q_input.dtype), dk.to(k_input.dtype), dv.to(v.dtype)
+        dg, dbeta = dg.to(ctx.gate_dtype), dbeta.to(beta_input.dtype)
+        # Convolution receives BNSD gradients directly. Only the public BSND
+        # adapter restores QKV views; gate/beta return to their projections.
+        if not ctx.qkv_head_major:
+            dq, dk, dv = (grad.transpose(1, 2) for grad in (dq, dk, dv))
+        dg, dbeta = dg.transpose(1, 2), dbeta.transpose(1, 2)
+        return (dq, dk, dv, dg, dbeta,
                 dA.to(A_log.dtype) if dA is not None else None,
                 dbias.reshape_as(dt_bias).to(dt_bias.dtype) if dbias is not None else None,
-                None, None, None, None, None, None, None, None, None)
+                None, None, None, None, None, None, None, None, None, None)
 
 
 @torch.compiler.disable
@@ -260,9 +278,35 @@ def chunk_kda(q, k, v, g, beta, *, A_log=None, dt_bias=None, scale=None,
               use_beta_sigmoid_in_kernel=False, allow_neg_eigval=False,
               cu_seqlens=None, cu_seqlens_cpu=None, lower_bound=-5.0,
               chunk_size=64, safe_gate=True):
+    """BSND/BSH training adapter; return BSND output and no final state.
+
+    Input layout and preprocessing options match example_1.py. The demo model
+    uses the private implementation to pass convolution QKV directly in BNSD.
+    """
+    return _chunk_kda_impl(
+        q, k, v, g, beta, A_log=A_log, dt_bias=dt_bias, scale=scale,
+        use_qk_l2norm_in_kernel=use_qk_l2norm_in_kernel,
+        use_gate_in_kernel=use_gate_in_kernel,
+        use_beta_sigmoid_in_kernel=use_beta_sigmoid_in_kernel,
+        allow_neg_eigval=allow_neg_eigval, cu_seqlens=cu_seqlens,
+        cu_seqlens_cpu=cu_seqlens_cpu, lower_bound=lower_bound,
+        chunk_size=chunk_size, safe_gate=safe_gate,
+    )
+
+
+@torch.compiler.disable
+def _chunk_kda_impl(q, k, v, g, beta, *, A_log=None, dt_bias=None, scale=None,
+              use_qk_l2norm_in_kernel=False, use_gate_in_kernel=False,
+              use_beta_sigmoid_in_kernel=False, allow_neg_eigval=False,
+              cu_seqlens=None, cu_seqlens_cpu=None, lower_bound=-5.0,
+              chunk_size=64, safe_gate=True, _qkv_head_major=False):
     """Training subset of example_1.py; return (out, None) with fused backward.
 
-    Inputs use BSND/BSH. With use_gate_in_kernel=True, g is the raw gate
+    QKV use BNSD on the private model path; otherwise BSND. Gate/beta always
+    use BSND/BSH and output uses BSND, matching the original caller API.
+    The Function reuses BNSD/BHS inputs for both fused calls. QKV gradients
+    match the selected internal path; gate/beta gradients use BSND/BSH views.
+    With use_gate_in_kernel=True, g is the raw gate
     and A_log (FP32 [H]) is required; dt_bias (FP32 [H*K] or [H,K]) is optional.
     Otherwise g is the precomputed log-space decay. The L2Norm and beta sigmoid
     switches follow the reference API and use FP32 tensor math in the custom
@@ -276,9 +320,10 @@ def chunk_kda(q, k, v, g, beta, *, A_log=None, dt_bias=None, scale=None,
     if chunk_size != 64 or not safe_gate:
         raise ValueError("fused KDA backward requires chunk_size=64 and safe_gate=True")
     if q.ndim != 4 or q.shape != k.shape or v.shape != q.shape or q.shape[-1] != 128:
-        raise ValueError("fused KDA requires BSND q/k/v of equal shape with K=V=128")
-    if g.shape != q.shape or beta.shape != q.shape[:-1]:
-        raise ValueError("g must have shape [B,T,H,K] and beta must have shape [B,T,H]")
+        raise ValueError("fused KDA requires rank-4 q/k/v of equal shape with K=V=128")
+    gate_shape = (q.shape[0], q.shape[2], q.shape[1], q.shape[3]) if _qkv_head_major else q.shape
+    if g.shape != gate_shape or beta.shape != gate_shape[:-1]:
+        raise ValueError("g must use BSND and beta BSH matching QKV's batch/token/head dimensions")
     if allow_neg_eigval and not use_beta_sigmoid_in_kernel:
         raise ValueError("allow_neg_eigval=True requires use_beta_sigmoid_in_kernel=True")
     if use_gate_in_kernel:
@@ -286,7 +331,7 @@ def chunk_kda(q, k, v, g, beta, *, A_log=None, dt_bias=None, scale=None,
             raise ValueError("A_log is required when use_gate_in_kernel=True")
         if A_log.dtype != torch.float32 or (dt_bias is not None and dt_bias.dtype != torch.float32):
             raise TypeError("A_log and dt_bias must use float32")
-        heads, key_dim = q.shape[-2:]
+        heads, key_dim = gate_shape[-2:]
         if A_log.shape != (heads,):
             raise ValueError("A_log must have shape [H]")
         if dt_bias is not None and dt_bias.shape not in ((heads * key_dim,), (heads, key_dim)):
@@ -304,10 +349,10 @@ def chunk_kda(q, k, v, g, beta, *, A_log=None, dt_bias=None, scale=None,
             metadata = metadata.detach().cpu().reshape(-1).tolist()
         metadata = tuple(int(value) for value in metadata)
     return AscendCChunkKDAFunction.apply(
-        q.contiguous(), k.contiguous(), v.contiguous(), g.contiguous(), beta.contiguous(), A_log, dt_bias,
+        q, k, v, g, beta, A_log, dt_bias,
         q.shape[-1] ** -0.5 if scale is None else float(scale), metadata, lower_bound,
         use_gate_in_kernel, use_qk_l2norm_in_kernel,
-        use_beta_sigmoid_in_kernel, allow_neg_eigval, chunk_size, safe_gate,
+        use_beta_sigmoid_in_kernel, allow_neg_eigval, chunk_size, safe_gate, _qkv_head_major,
     )
 
 
@@ -458,6 +503,9 @@ class DemoKimiDeltaAttention(nn.Module):
         self.chunk_size = chunk_size
         self.safe_gate = safe_gate
 
+        if key_dim != 128 or value_dim != 128:
+            raise ValueError("fused KDA training requires key_dim == value_dim == 128")
+
         key_size = heads * key_dim
         value_size = heads * value_dim
         gate_size = heads * key_dim
@@ -512,7 +560,9 @@ class DemoKimiDeltaAttention(nn.Module):
         z = self.in_proj_z(hidden_states).reshape(
             batch, tokens, self.heads, self.value_dim
         )
-        b = self.in_proj_b(hidden_states)
+        # Match MindSpeed-MM Kimi-K3: the model supplies FP32 raw beta logits;
+        # the KDA Function activates them and saves that same beta for backward.
+        b = self.in_proj_b(hidden_states).float()
         a = self.in_proj_a(hidden_states)
 
         if self.use_short_conv:
@@ -520,25 +570,25 @@ class DemoKimiDeltaAttention(nn.Module):
                 mixed_qkv,
                 self.conv1d.weight.squeeze(1),
                 self.conv1d.bias,
-                head_num=0,
-                cu_seqlens=cu_seqlens,
+                head_num=3 * self.heads,
+                cu_seqlens=cu_seqlens_cpu if cu_seqlens_cpu is not None else cu_seqlens,
             )
         else:
-            mixed_qkv = F.silu(mixed_qkv)
+            mixed_qkv = _head_major(
+                F.silu(mixed_qkv).reshape(batch, tokens, 3 * self.heads, self.key_dim),
+                varlen=False,
+            )
 
         query, key, value = torch.split(
             mixed_qkv,
-            (self.key_size, self.key_size, self.value_size),
-            dim=-1,
+            self.heads,
+            dim=1,
         )
-        query = query.reshape(batch, tokens, self.heads, self.key_dim).contiguous()
-        key = key.reshape(batch, tokens, self.heads, self.key_dim).contiguous()
-        value = value.reshape(batch, tokens, self.heads, self.value_dim).contiguous()
-
-        raw_gate = a.reshape(
-            batch, tokens, self.heads, self.key_dim
-        ).contiguous()
-        core_out, _ = chunk_kda(
+        # QKV stay BNSD from convolution through KDA forward/backward.
+        # Projection branches keep their natural BSND/BSH layout.
+        raw_gate = a.reshape(batch, tokens, self.heads, self.key_dim)
+        core_out, _ = _chunk_kda_impl(
+            _qkv_head_major=True,
             q=query,
             k=key,
             v=value,
@@ -627,7 +677,7 @@ def _run_core(
         k=k,
         v=v,
         g=raw_gate,
-        beta=raw_beta,
+        beta=raw_beta.float(),
         A_log=A_log,
         dt_bias=dt_bias,
         scale=args.scale if args.scale is not None else args.key_dim**-0.5,
