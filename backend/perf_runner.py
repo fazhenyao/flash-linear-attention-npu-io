@@ -12,6 +12,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import threading
 import uuid
 import zipfile
 from dataclasses import dataclass
@@ -904,6 +905,61 @@ def _run_remote_checked(
         raise _remote_command_error(label, exc) from None
 
 
+def _profile_control_command(action: str, directory: str, token: str, command: str = "") -> str:
+    source = (Path(__file__).with_name("remote_profile_control.py")).read_text(encoding="utf-8")
+    encoded = base64.b64encode(source.encode()).decode("ascii")
+    program = f"import base64;exec(compile(base64.b64decode({encoded!r}),'<profile-control>','exec'))"
+    return " ".join(shlex.quote(part) for part in ["python3", "-c", program, action, directory, token, command])
+
+
+def _run_cancelable_profile(config, execution, invocation, control_dir, cancel_event, on_status=None):
+    token = uuid.uuid4().hex
+    def remote(action):
+        return _ssh_command(config, _remote_execution_command(
+            config, _profile_control_command(action, control_dir, token, invocation), execution=execution,
+        ))
+    if cancel_event.is_set():
+        raise InterruptedError("任务启动前已取消")
+    process = subprocess.Popen(remote("run"), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               text=True, stdin=subprocess.DEVNULL)
+    canceled = False
+    try:
+        while True:
+            if cancel_event.is_set() and not canceled:
+                if on_status:
+                    on_status("正在终止远端测试进程，等待退出确认")
+                try:
+                    result = subprocess.run(remote("cancel"), capture_output=True, text=True,
+                                            stdin=subprocess.DEVNULL, timeout=25)
+                    if result.returncode != 0 or not json.loads(result.stdout.strip()).get("stopped"):
+                        raise RuntimeError((result.stderr or result.stdout)[-1000:])
+                    canceled = True
+                except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as exc:
+                    if on_status:
+                        on_status(f"等待取消确认，将重试远端终止：{exc}")
+                    # Do not report canceled on a disconnected SSH transport.
+                    threading.Event().wait(2)
+                    continue
+            try:
+                stdout, stderr = process.communicate(timeout=1)
+                break
+            except subprocess.TimeoutExpired:
+                if canceled:
+                    # Remote process exit has been confirmed; release only the
+                    # local SSH transport if it fails to close promptly.
+                    process.kill()
+        if canceled:
+            raise InterruptedError("已终止远端测试进程并确认退出")
+        if process.returncode:
+            if process.returncode in (3, 255):
+                raise RemoteBuildOrphanedError(f"远端执行状态需要核对：{stderr[-1000:]}")
+            raise RuntimeError(f"性能测试失败：{(stderr or stdout)[-3000:]}")
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.communicate()
+
+
 def _sync_repository_script(
     config: PerfRunnerConfig,
     example: dict[str, Any],
@@ -1567,6 +1623,8 @@ def execute(
     *,
     persist_local_data: bool = True,
     run_id: str | None = None,
+    cancel_event: threading.Event | None = None,
+    on_status=None,
 ) -> dict[str, Any]:
     config = ensure_runner_configured()
     task_type = normalize_task_type(payload)
@@ -1640,12 +1698,19 @@ def execute(
             remote_invocation = f"mkdir -p {shlex.quote(remote_prof_root)} && {invocation}"
             remote = _remote_execution_command(config, remote_invocation, execution=execution)
             command = " ".join(shlex.quote(part) for part in _ssh_command(config, remote))
-            _run_remote_checked(config, remote, prof_tool_label(prof_tool))
+            if cancel_event is not None:
+                # The directory contains the unique job+attempt namespace.
+                _run_cancelable_profile(config, execution, invocation,
+                                        f"{remote_prof_root}/.control", cancel_event, on_status)
+            else:
+                _run_remote_checked(config, remote, prof_tool_label(prof_tool))
             after = _list_remote_prof_dirs(config, prof_tool, remote_output)
         finally:
             if build_worktree:
                 _cleanup_remote_source_build(config, execution.source_repo, build_worktree)
         prof_name = _resolve_new_prof_dir(before, after, prof_tool)
+        if cancel_event is not None and cancel_event.is_set():
+            raise InterruptedError("测试进程已结束，取消后续结果处理")
         local_dir = local_root / prof_name
         local_dir.parent.mkdir(parents=True, exist_ok=True)
         remote_prof = f"{_remote_output_path(config, remote_output).rstrip('/')}/{prof_name}"

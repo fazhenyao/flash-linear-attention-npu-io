@@ -296,9 +296,12 @@ class RunnerNotificationClient:
             return
         if (
             message.get("version") != 1
-            or message.get("type") != "job_available"
+            or message.get("type") not in {"job_available", "job_cancel_requested"}
             or message.get("runner_id") != self.config.runner_id
         ):
+            return
+        if message.get("type") == "job_cancel_requested":
+            self.agent.request_job_cancel(message.get("job_id"), message.get("attempt_id"))
             return
         with self._status_lock:
             self._status["last_event_at"] = utc_now()
@@ -391,23 +394,17 @@ class JobHeartbeat(threading.Thread):
     def run(self) -> None:
         while not self.stop_event.wait(self.agent.config.heartbeat_seconds):
             try:
-                health = self.agent.health()
-                self.agent.send_runner_heartbeat(health)
+                # Cancellation is delivered before potentially slow SSH probes.
+                # Runner-level health continues to be refreshed by the main loop.
                 task_type = str((self.job.get("request") or {}).get("task_type") or "profile")
                 if task_type == "build_install" and self.remote_state:
-                    heartbeat_state = "disconnected" if not health["npu_reachable"] else "running"
-                    message = (
-                        f"远端编译阶段：{self.remote_state}"
-                        if health["npu_reachable"]
-                        else f"VPN 或 NPU SSH 暂不可达，最后远端阶段：{self.remote_state}"
-                    )
+                    message = f"远端编译阶段：{self.remote_state}"
                 else:
-                    heartbeat_state = "running" if health["npu_reachable"] else "disconnected"
-                    message = "测试执行中" if health["npu_reachable"] else "VPN 或 NPU SSH 暂不可达"
+                    message = self.remote_state or "测试执行中"
                 response = self.agent.api.post(
                     f"/api/runner/jobs/{self.job['id']}/heartbeat",
                     self.agent.job_auth(self.job, {
-                        "state": heartbeat_state,
+                        "state": "running",
                         "remote_state": self.remote_state or None,
                         "message": message,
                     }),
@@ -426,6 +423,7 @@ class RunnerAgent:
         self._dispatch_event = threading.Event()
         self._active_jobs_lock = threading.Lock()
         self._active_job_ids: set[str] = set()
+        self._job_cancellations: dict[tuple[str, str], threading.Event] = {}
         self.current_jobs = 0
         self._futures_lock = threading.Lock()
         self._futures: dict[Future[None], str] = {}
@@ -1028,7 +1026,7 @@ class RunnerAgent:
             if not isinstance(payload, dict):
                 raise RuntimeError("本地编译成功记录缺少 completion_payload")
             try:
-                self.api.post(f"/api/runner/jobs/{job['id']}/complete", payload)
+                completion_response = self.api.post(f"/api/runner/jobs/{job['id']}/complete", payload)
             except Exception as exc:
                 print(f"[runner] 编译任务 {job['id']} 成功结果回传失败，将继续重试：{exc}", flush=True)
                 return False
@@ -1040,7 +1038,7 @@ class RunnerAgent:
                     print(f"[runner] 编译任务 {job['id']} 远端清理延后：{exc}", flush=True)
             self.save_job_state(
                 job,
-                "completed",
+                "canceled" if (completion_response.get("job") or {}).get("status") == "canceled" else "completed",
                 request=request,
                 artifacts=record.get("artifacts") or [],
                 message=record.get("message") or "",
@@ -1107,6 +1105,7 @@ class RunnerAgent:
         task_type = str(request.get("task_type") or "profile")
         task_label = "编译安装" if task_type == "build_install" else "测试"
         recovery_state = dict(job.get("recovery_state") or {})
+        response = {}
         if not resume:
             self.save_job_state(job, "claimed", request=request)
         if resume and recovery_state.get("state") in {"claimed", "running"}:
@@ -1139,6 +1138,13 @@ class RunnerAgent:
             if response.get("final") and self.finish_recovered_final_job(job, response):
                 return
         heartbeat = JobHeartbeat(self, job)
+        cancel_key = (job["id"], job.get("attempt_id") or "")
+        # __new__ is used by isolated agent tests and older embeddings.
+        if not hasattr(self, "_job_cancellations"):
+            self._job_cancellations = {}
+        self._job_cancellations[cancel_key] = heartbeat.cancel_requested
+        if response.get("cancel_requested") is True:
+            heartbeat.cancel_requested.set()
         heartbeat.start()
         try:
             if resume and recovery_state.get("state") in {"reporting", "reporting_failure", "reporting_orphaned"}:
@@ -1152,8 +1158,13 @@ class RunnerAgent:
                         result = self.run_persistent_build_job(job, heartbeat, resume=resume)
                 else:
                     run_id = f"{job['id']}-{job.get('attempt_id') or 'attempt'}"
-                    result = execute(request, persist_local_data=False, run_id=run_id)
+                    result = execute(request, persist_local_data=False, run_id=run_id,
+                                     cancel_event=heartbeat.cancel_requested, on_status=heartbeat.set_remote_state)
+                if heartbeat.cancel_requested.is_set():
+                    raise InterruptedError("远端任务已退出，取消后续制品处理")
                 artifacts, local_artifacts = self.build_artifacts(job, result)
+                if heartbeat.cancel_requested.is_set():
+                    raise InterruptedError("远端任务已退出，取消后续制品上传")
                 upload_errors: list[str] = []
                 if artifacts:
                     upload_slot = getattr(self, "_upload_slots", None) or nullcontext()
@@ -1258,8 +1269,14 @@ class RunnerAgent:
                 )
                 self.report_persisted_outcome(job, outcome_record)
         finally:
+            self._job_cancellations.pop(cancel_key, None)
             heartbeat.stop()
             heartbeat.join(timeout=2)
+
+    def request_job_cancel(self, job_id, attempt_id):
+        event = getattr(self, "_job_cancellations", {}).get((job_id, attempt_id))
+        if event is not None:
+            event.set()
 
     def environment_summary(self) -> dict[str, Any]:
         status = runner_status()

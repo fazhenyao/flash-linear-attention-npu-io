@@ -3,7 +3,8 @@ import test from "node:test";
 import { DatabaseSync } from "node:sqlite";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { projectPerfJobRun, mergePerfJobCompletion, sweepExpiredPerfLeases, runnerJobHeartbeat } from "../cloudflare/worker.js";
+import { projectPerfJobRun, mergePerfJobCompletion, sweepExpiredPerfLeases, runnerJobHeartbeat,
+  runnerJobStarted, runnerJobComplete, runnerJobFail, cancelPerfJob } from "../cloudflare/worker.js";
 
 function fixture() {
   const db = new DatabaseSync(":memory:");
@@ -162,5 +163,47 @@ test("historical A5 repair requires the acknowledged attempt and a stored succes
   db.prepare("UPDATE perf_jobs SET status = 'running', attempt_id = 'new-attempt' WHERE id = ?").run(id);
   db.exec(sql);
   assert.equal(data().runs[0].status, "running");
+  db.close();
+});
+
+test("cancellation wins against in-flight started and completion reports", async () => {
+  const { db, env, job, data } = fixture();
+  const stale = job("cancel-race");
+  db.prepare("UPDATE perf_jobs SET status='cancel_requested', cancel_requested=1 WHERE id=?").run(stale.id);
+  const started = await runnerJobStarted(env, stale, {});
+  assert.equal(started.cancel_requested, true);
+  assert.equal(started.job.status, "cancel_requested");
+  const result = await runnerJobComplete(env, stale, { result: {} });
+  assert.equal(result.job.status, "canceled");
+  assert.equal(data().runs[0].status, "canceled");
+  db.close();
+});
+
+test("late failure and cancel cannot revive a succeeded task", async () => {
+  const { db, env, job } = fixture();
+  const stale = job("complete-race");
+  db.prepare("UPDATE perf_jobs SET status='succeeded' WHERE id=?").run(stale.id);
+  await runnerJobFail(env, stale, { canceled: true });
+  const result = await cancelPerfJob(env, stale.id, { id: 'user', role: 'admin' });
+  assert.equal(result.job.status, "succeeded");
+  db.close();
+});
+
+test("cancel retries a concurrent claim instead of silently losing the request", async () => {
+  const { db, env, job } = fixture();
+  const row = job("claim-race", "queued");
+  const prepare = env.DB.prepare;
+  let raced = false;
+  env.DB.prepare = (sql) => {
+    if (!raced && sql.includes("cancel_requested = 1, finished_at")) {
+      raced = true;
+      db.prepare("UPDATE perf_jobs SET status='claimed', attempt_id='new-attempt' WHERE id=?").run(row.id);
+    }
+    return prepare(sql);
+  };
+  const result = await cancelPerfJob(env, row.id, { id: 'user', role: 'admin' });
+  assert.equal(result.job.status, "cancel_requested");
+  assert.equal(result.job.attempt_id, "new-attempt");
+  assert.equal(result.job.cancel_requested, true);
   db.close();
 });

@@ -1059,6 +1059,8 @@ __END_NPU__
             {"prof_tool": "msprof"},
             persist_local_data=False,
             run_id="job-test-attempt-test",
+            cancel_event=heartbeat_class.return_value.cancel_requested,
+            on_status=heartbeat_class.return_value.set_remote_state,
         )
         complete_payload = next(
             call.args[1]

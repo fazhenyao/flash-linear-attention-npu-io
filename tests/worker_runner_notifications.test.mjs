@@ -86,3 +86,16 @@ test("notification is a no-op before the durable object binding is configured", 
     { ok: true, enabled: false, delivered: 0, runners: [] },
   );
 });
+
+test("cancel notification carries the exact job attempt to connected runners", async () => {
+  const sent = [];
+  const hub = new RunnerEventHub({ getWebSockets: () => [{ send: (value) => sent.push(JSON.parse(value)) }] }, {});
+  const response = await hub.fetch(new Request("https://runner-events.internal/notify", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ runner_id: "runner-a5", job_id: "job-a", attempt_id: "attempt-a", type: "job_cancel_requested" }),
+  }));
+  assert.equal(response.status, 200);
+  assert.equal(sent[0].type, "job_cancel_requested");
+  assert.equal(sent[0].job_id, "job-a");
+  assert.equal(sent[0].attempt_id, "attempt-a");
+});

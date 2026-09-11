@@ -102,6 +102,11 @@ export class RunnerEventHub {
     if (url.pathname === "/notify" && request.method === "POST") {
       const payload = await readJson(request);
       const message = runnerEventMessage(payload.runner_id, payload.event_id, payload.created_at);
+      if (payload.type === "job_cancel_requested") {
+        message.type = payload.type;
+        message.job_id = safeIdentifier(payload.job_id, "job_id", 128);
+        message.attempt_id = safeIdentifier(payload.attempt_id, "attempt_id", 128);
+      }
       let delivered = 0;
       for (const socket of this.state.getWebSockets()) {
         try {
@@ -235,7 +240,7 @@ export default {
           return jsonResponse(request, env, await listPerfJobArtifactsForUser(env, jobId, user));
         }
         if (action === "cancel" && request.method === "POST") {
-          return jsonResponse(request, env, await cancelPerfJob(env, jobId, user));
+          return jsonResponse(request, env, await cancelPerfJob(env, jobId, user, ctx));
         }
         if (action === "retry" && request.method === "POST") {
           return jsonResponse(request, env, await retryPerfJob(env, jobId, user, await readOptionalJson(request), ctx));
@@ -2325,7 +2330,7 @@ function runnerEventMessage(runnerId, eventId = "", createdAt = "") {
   };
 }
 
-async function notifyRunnerJobAvailable(env, request, jobId = "") {
+async function notifyRunnerJobAvailable(env, request, jobId = "", cancellation = null) {
   if (!env.RUNNER_EVENTS) return { ok: true, enabled: false, delivered: 0, runners: [] };
   const targetedRunnerId = String(request?.target_runner_id || "").trim();
   const runnerIds = targetedRunnerId
@@ -2339,7 +2344,9 @@ async function notifyRunnerJobAvailable(env, request, jobId = "") {
     const response = await env.RUNNER_EVENTS.get(objectId).fetch(new Request("https://runner-events.internal/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
-      body: JSON.stringify({ runner_id: runnerId, event_id: eventId, created_at: createdAt, job_id: jobId || null }),
+      body: JSON.stringify({ runner_id: runnerId, event_id: eventId, created_at: createdAt, job_id: jobId || null,
+        ...(cancellation ? { type: "job_cancel_requested", attempt_id: cancellation.attempt_id } : {}),
+      }),
     }));
     if (!response.ok) throw new Error(`runner notification failed with HTTP ${response.status}`);
     const result = await response.json();
@@ -2772,7 +2779,7 @@ async function downloadPerfArtifact(request, env, jobId, artifactId, user) {
   return new Response(object.body, { headers });
 }
 
-async function cancelPerfJob(env, jobId, user) {
+async function cancelPerfJob(env, jobId, user, ctx, retries = 3) {
   const job = await getPerfJob(env, jobId);
   assertPerfJobAccess(job, user);
   if (PERF_JOB_FINAL_STATES.has(job.status)) return { ok: true, job };
@@ -2782,15 +2789,27 @@ async function cancelPerfJob(env, jobId, user) {
   const transition = perfJobCancelTransition({ ...job, lease_expires_at: lease?.lease_expires_at });
   const final = PERF_JOB_FINAL_STATES.has(transition.status);
   const timestamp = nowIso();
-  await env.DB.prepare(
+  const canceledUpdate = await env.DB.prepare(
     `UPDATE perf_jobs SET status = ?, status_message = ?, cancel_requested = 1, finished_at = ?,
       lease_token_hash = CASE WHEN ? = 1 THEN NULL ELSE lease_token_hash END,
       lease_expires_at = CASE WHEN ? = 1 THEN NULL ELSE lease_expires_at END,
-      updated_at = ? WHERE id = ?`,
+      updated_at = ? WHERE id = ? AND status = ? AND attempt_id IS ?`,
   ).bind(
     transition.status, transition.message, final ? timestamp : null,
-    final ? 1 : 0, final ? 1 : 0, timestamp, jobId,
+    final ? 1 : 0, final ? 1 : 0, timestamp, jobId, job.status, job.attempt_id || null,
   ).run();
+  if (Number(canceledUpdate.meta?.changes ?? canceledUpdate.changes) === 0) {
+    // A claim, heartbeat, or completion raced the request. Re-read rather than
+    // silently dropping the user's cancellation or reviving a finished job.
+    if (retries > 0) return cancelPerfJob(env, jobId, user, ctx, retries - 1);
+    throw withStatus(409, "任务状态正在变化，请重试取消");
+  }
+  if (!final && job.runner_id && job.attempt_id) {
+    const notify = notifyRunnerJobAvailable(env, { target_runner_id: job.runner_id }, jobId, job)
+      .catch((error) => console.warn("Cancel notification failed; heartbeat will retry", error));
+    if (ctx?.waitUntil) ctx.waitUntil(notify);
+    else await notify;
+  }
   await appendPerfJobEvent(
     env, jobId, job.attempt_id, transition.event_type, transition.level, transition.message,
     { requested_by: user.username },
@@ -3542,20 +3561,23 @@ async function runnerJobStarted(env, row, payload) {
   if (PERF_JOB_FINAL_STATES.has(row.status)) {
     return { ok: true, final: true, job: await getPerfJob(env, row.id) };
   }
+  if (row.cancel_requested) return { ok: true, cancel_requested: true };
   const timestamp = nowIso();
   const request = parseJson(row.request_json, {});
   const taskLabel = request.task_type === "build_install" ? "编译安装" : "NPU 测试";
   const remoteExecutionId = String(payload.remote_execution_id || `${payload.runner_id}:${row.id}`).slice(0, 256);
   await env.DB.prepare(
     `UPDATE perf_jobs SET status = 'running', status_message = ?, remote_execution_id = ?,
-      started_at = COALESCE(started_at, ?), lease_expires_at = ?, updated_at = ? WHERE id = ?`,
+      started_at = COALESCE(started_at, ?), lease_expires_at = ?, updated_at = ?
+      WHERE id = ? AND cancel_requested = 0 AND status = ? AND attempt_id IS ?`,
   ).bind(
     String(payload.message || `${taskLabel}任务正在执行`).slice(0, 1000), remoteExecutionId, timestamp,
-    new Date(Date.now() + PERF_LEASE_SECONDS * 1000).toISOString(), timestamp, row.id,
+    new Date(Date.now() + PERF_LEASE_SECONDS * 1000).toISOString(), timestamp, row.id, row.status, row.attempt_id || null,
   ).run();
   await appendPerfJobEvent(env, row.id, row.attempt_id, "started", "info", `${taskLabel}任务开始执行`, { remote_execution_id: remoteExecutionId });
   await projectPerfJobRun(env, await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(row.id).first());
-  return { ok: true, job: await getPerfJob(env, row.id) };
+  const startedJob = await getPerfJob(env, row.id);
+  return { ok: true, job: startedJob, cancel_requested: startedJob.cancel_requested };
 }
 
 async function runnerJobHeartbeat(env, row, payload) {
@@ -3672,9 +3694,16 @@ async function runnerJobComplete(env, row, payload) {
   const defaultMessage = request.task_type === "build_install" ? "源码编译安装完成" : "性能测试完成";
   const message = String(payload.message || resultDetail.message || defaultMessage).slice(0, 1000);
   await env.DB.prepare(
-    `UPDATE perf_jobs SET status = 'succeeded', status_message = ?, exit_code = ?, finished_at = ?,
-      lease_token_hash = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ?`,
-  ).bind(message, exitCode, timestamp, timestamp, row.id).run();
+    `UPDATE perf_jobs SET status = CASE WHEN cancel_requested = 1 THEN 'canceled' ELSE 'succeeded' END,
+      status_message = CASE WHEN cancel_requested = 1 THEN '任务已结束并确认取消' ELSE ? END,
+      exit_code = ?, finished_at = ?, lease_token_hash = NULL, lease_expires_at = NULL, updated_at = ?
+      WHERE id = ? AND attempt_id IS ? AND status IN ('claimed', 'running', 'disconnected', 'cancel_requested')`,
+  ).bind(message, exitCode, timestamp, timestamp, row.id, row.attempt_id || null).run();
+  const completedRow = await env.DB.prepare("SELECT * FROM perf_jobs WHERE id = ?").bind(row.id).first();
+  if (completedRow.status !== "succeeded") {
+    await projectPerfJobRun(env, completedRow);
+    return { ok: true, job: await getPerfJob(env, row.id), artifacts: await listPerfJobArtifacts(env, row.id) };
+  }
   await appendPerfJobEvent(env, row.id, row.attempt_id, "completed", "info", message, { exit_code: exitCode });
   await mergePerfJobCompletion(env, row.id, payload, resultDetail, snapshot);
   return { ok: true, job: await getPerfJob(env, row.id), artifacts: await listPerfJobArtifacts(env, row.id) };
@@ -3699,8 +3728,9 @@ async function runnerJobFail(env, row, payload) {
   const timestamp = nowIso();
   await env.DB.prepare(
     `UPDATE perf_jobs SET status = ?, status_message = ?, exit_code = ?, finished_at = ?,
-      lease_token_hash = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ?`,
-  ).bind(status, message, exitCode, timestamp, timestamp, row.id).run();
+      lease_token_hash = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ? AND attempt_id IS ?
+      AND status IN ('claimed', 'running', 'disconnected', 'cancel_requested')`,
+  ).bind(status, message, exitCode, timestamp, timestamp, row.id, row.attempt_id || null).run();
   await appendPerfJobEvent(env, row.id, row.attempt_id, status, canceled ? "info" : "error", message, {
     error_type: String(payload.error_type || "execution_error").slice(0, 128), exit_code: exitCode,
   });
@@ -3873,4 +3903,8 @@ export {
   mergePerfJobCompletion,
   sweepExpiredPerfLeases,
   runnerJobHeartbeat,
+  runnerJobStarted,
+  runnerJobComplete,
+  runnerJobFail,
+  cancelPerfJob,
 };
