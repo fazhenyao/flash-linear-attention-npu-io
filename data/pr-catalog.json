@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-09-11T18:07:33+08:00",
+  "generatedAt": "2026-09-12T09:55:13+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 353,
+  "total": 356,
   "items": [
+    {
+      "number": 540,
+      "title": "feat: GDN 新路径支持 use_exp2=false",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/540",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-12T01:52:26Z",
+      "createdAt": "2026-09-12T01:51:29Z",
+      "headRef": "codex/gdn-new-path-exp",
+      "labels": []
+    },
+    {
+      "number": 536,
+      "title": "fix(chunk_local_cumsum): register Ascend950 op config (v26.9.0)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/536",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-11T12:21:40Z",
+      "createdAt": "2026-09-11T10:16:06Z",
+      "headRef": "codex/fix-chunk-local-cumsum-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 535,
+      "title": "fix(chunk_local_cumsum): register Ascend950 op config",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/535",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-11T12:22:09Z",
+      "createdAt": "2026-09-11T10:15:50Z",
+      "headRef": "codex/fix-chunk-local-cumsum-main",
+      "labels": []
+    },
     {
       "number": 532,
       "title": "feat(gdn): 新增 ChunkGatedDeltaRuleBwd 融合接口",
@@ -42,12 +78,12 @@
     },
     {
       "number": 522,
-      "title": "ChunkGdnFwdPrepare Support use_qk_l2norm_in_kernel=False",
+      "title": "ChunkGdnFwdPrepare Performance optimization && Function generalization",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/522",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-10T08:20:31Z",
+      "updatedAt": "2026-09-11T16:21:03Z",
       "createdAt": "2026-09-10T08:19:39Z",
       "headRef": "gdn_fwd_prepare",
       "labels": []
@@ -59,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-11T10:05:13Z",
+      "updatedAt": "2026-09-11T10:13:16Z",
       "createdAt": "2026-09-10T02:00:50Z",
       "headRef": "chw_a2_a5_simple_A5",
       "labels": []
@@ -191,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-11T09:42:16Z",
+      "updatedAt": "2026-09-11T22:52:24Z",
       "createdAt": "2026-09-04T04:29:07Z",
       "headRef": "codex/chunk-kda-fwd-prepare-pseudocode",
       "labels": []
