@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-09-14T10:05:08+08:00",
+  "generatedAt": "2026-09-14T19:07:38+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 364,
+  "total": 365,
   "items": [
     {
       "number": 552,
@@ -47,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-12T10:51:14Z",
+      "updatedAt": "2026-09-14T08:40:51Z",
       "createdAt": "2026-09-12T01:51:29Z",
       "headRef": "codex/gdn-new-path-exp",
       "labels": []
@@ -59,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-12T12:43:23Z",
+      "updatedAt": "2026-09-14T11:05:53Z",
       "createdAt": "2026-09-11T02:11:00Z",
       "headRef": "codex/a5-ci-deployment",
       "labels": []
@@ -83,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-12T10:18:42Z",
+      "updatedAt": "2026-09-14T04:53:12Z",
       "createdAt": "2026-09-10T08:19:39Z",
       "headRef": "gdn_fwd_prepare",
       "labels": []
@@ -215,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-12T11:05:35Z",
+      "updatedAt": "2026-09-14T07:53:13Z",
       "createdAt": "2026-09-04T04:29:07Z",
       "headRef": "codex/chunk-kda-fwd-prepare-pseudocode",
       "labels": []
@@ -287,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-12T02:12:26Z",
+      "updatedAt": "2026-09-14T02:19:40Z",
       "createdAt": "2026-08-31T02:02:05Z",
       "headRef": "feat/chunk-kda-bwd-prepare-a5-regbase",
       "labels": []
@@ -1106,6 +1106,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 553,
+      "title": "fix(kda): 修复 A2/A5 变长尾块反向梯度异常",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/553",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-14T08:16:46Z",
+      "updatedAt": "2026-09-14T08:16:46Z",
+      "createdAt": "2026-09-14T02:32:39Z",
+      "headRef": "codex/fix-kda-bwd-a2-varlen-tail",
       "labels": []
     },
     {
