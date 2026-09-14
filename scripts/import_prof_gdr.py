@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import re
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -527,6 +528,39 @@ def metric_from_summary_row(row: dict[str, str]) -> dict[str, Any]:
     return payload
 
 
+def summarize_named_ops(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
+    """Keep every exact OP_Name and timing column, without logical-op mapping.
+
+    Repeated names are summarized per column; counts exclude missing samples.
+    Start/end timestamp columns retain only min/max, never a meaningless sum.
+    """
+    grouped: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        name = next((str(row[key]).strip() for key in ("Op Name", "OP Name", "OP_Name", "Op_Name") if row.get(key)), "")
+        if not name:
+            continue
+        entry = grouped.setdefault(name, {"op_name": name, "call_count": 0, "time_stats": {}})
+        entry["call_count"] += 1
+        for field, raw in row.items():
+            if not re.search(r"time|duration|wait", field, re.I) or not re.search(r"\((?:ns|us|µs|μs|ms|s)\)", field, re.I):
+                continue
+            value = to_float(raw)
+            if value is None or not math.isfinite(value):
+                continue
+            stats = entry["time_stats"].setdefault(field, {"count": 0, "total": 0.0, "min": value, "max": value})
+            stats["count"] += 1
+            stats["total"] += value
+            stats["min"] = min(stats["min"], value)
+            stats["max"] = max(stats["max"], value)
+    for entry in grouped.values():
+        for field, stats in entry["time_stats"].items():
+            if re.search(r"start|end|timestamp", field, re.I):
+                del stats["total"]
+            else:
+                stats["avg"] = stats["total"] / stats["count"]
+    return list(grouped.values())
+
+
 def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[tuple[str, str | None], dict[str, Any]]:
     grouped: dict[tuple[str, str | None], list[dict[str, Any]]] = {}
     for row in rows:
@@ -785,6 +819,7 @@ def import_prof(
         prof_dir, model_id, chip, case, statistic_ops, summary_metrics, total_ms, device_id=device_id,
     )
     snapshot["example_id"] = example_id
+    snapshot["op_summary"] = summarize_named_ops(summary_rows)
     snapshot["soc_version"] = soc_version or ""
     cube_mod = load_cube_theoretical_flops_module()
     attrs = case.get("attributes") or {}

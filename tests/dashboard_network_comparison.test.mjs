@@ -91,11 +91,10 @@ test("grouped chart aligns backend-specific operators and uses null for missing 
   f.state.networkCompareSnapshots = ["old", "new", "other"];
   f.run("renderNetworkTab()");
   const datasets = f.state.charts.networkCompare.config.data.datasets;
-  assert.equal(datasets.length, 3);
-  assert.deepEqual(Array.from(datasets[0].data), [5, 5]);
-  assert.deepEqual(Array.from(datasets[1].data), [4, null]);
-  assert.deepEqual(Array.from(datasets[2].data), [null, 8]);
-  assert.match(f.node("#networkComparisonTable").innerHTML, /-60\.00%/);
+  assert.equal(datasets.length, 2);
+  assert.deepEqual(Array.from(datasets[0].data), [5, 4, null]);
+  assert.deepEqual(Array.from(datasets[1].data), [5, null, 8]);
+  assert.equal(f.state.charts.networkCompare.config.data.labels.length, 3);
   assert.match(f.node("#networkComparisonTable").innerHTML, /KDA &lt;script&gt;/);
   assert.match(f.node("#networkComparisonTable").innerHTML, /<td>—<\/td>/);
 });
@@ -110,7 +109,7 @@ test("add is idempotent; remove rebaselines; clear restores current single colle
   f.node("#netCompareList").value = "old";
   f.node("#netCompareRemoveBtn").events.click();
   assert.deepEqual(Array.from(f.state.networkCompareSnapshots), ["new"]);
-  assert.match(f.node("#networkComparisonTable").innerHTML, /0\.00%/);
+  assert.match(f.node("#networkComparisonTable").innerHTML, /采集 1（基准）/);
   f.node("#netCompareClearBtn").events.click();
   assert.equal(f.state.networkCompareSnapshots.length, 0);
   assert.equal(f.state.charts.networkCompare.config.data.datasets.length, 1);
@@ -156,7 +155,7 @@ test("empty initial render waits for data; explicit deselection stays empty", ()
   assert.equal(f.state.compareOps.length, 2);
   f.state.compareOps = [];
   f.run("renderNetworkTab()");
-  assert.equal(f.state.charts.networkCompare.config.data.labels.length, 0);
+  assert.equal(f.state.charts.networkCompare.config.data.datasets.length, 0);
 });
 
 test("reloading data preserves historical collection and chosen operators", async () => {
@@ -169,7 +168,7 @@ test("reloading data preserves historical collection and chosen operators", asyn
   f.run("refreshNetworkSnapshotSelect(); renderNetworkTab()");
   assert.equal(f.node("#netSnapshot").value, "old");
   assert.deepEqual(Array.from(f.state.compareOps), ["shared::triton"]);
-  assert.equal(f.state.charts.networkCompare.config.data.datasets.length, 2);
+  assert.equal(f.state.charts.networkCompare.config.data.labels.length, 2);
 });
 
 test("load matching history merges independent cases, orders timestamps, and excludes incompatible inputs", () => {
@@ -189,9 +188,9 @@ test("load matching history merges independent cases, orders timestamps, and exc
   f.state.data.snapshots.find((snap) => snap.id === 'old').created_at = '2026-09-13T06:00:00+08:00';
   f.run('loadMatchingNetworkHistory()');
   assert.deepEqual(Array.from(f.state.networkCompareSnapshots), ['old', 'other', 'new']);
-  assert.equal(f.state.networkComparisonTable.values.length, 3);
-  assert.equal(f.state.networkComparisonTable.values[0][3], 10);
-  assert.ok(Math.abs(f.state.networkComparisonTable.values[1][4] + 20) < 1e-10);
+  assert.equal(f.state.networkComparisonTable.headers.length, 5);
+  assert.match(f.state.networkComparisonTable.headers[2], /2026-09-13T06:00:00/);
+  assert.match(f.state.networkComparisonTable.headers[3], /2026-09-12T23:30:00Z/);
 });
 
 test("manual addition rejects a different example or input and keeps existing comparison", () => {
@@ -226,12 +225,13 @@ test("CSV exports the full displayed table, independent of chart selection, with
   f.state.compareOps = [];
   f.run('renderNetworkComparison()');
   const table = f.state.networkComparisonTable;
-  assert.equal(table.headers.length, 12);
-  assert.equal(table.values[1][11], null);
+  assert.equal(table.headers.length, 5);
+  const timeRow = table.values.find((row) => row[0].includes('shared (triton)'));
+  assert.deepEqual(Array.from(timeRow.slice(2)), [5, null, 8]);
   const csv = f.run('networkComparisonCsv(state.networkComparisonTable)');
-  assert.ok(csv.startsWith('\ufeff"采集","采集时间"'));
-  assert.match(csv, /shared \(ascendc\) \(ms\)/);
-  assert.match(csv, /"4","-60"/);
+  assert.ok(csv.startsWith('\ufeff"OP_Name / 采集信息","时间字段 / 统计"'));
+  assert.match(csv, /历史逻辑汇总：shared \(ascendc\)/);
+  assert.match(csv, /"5","4",""/);
   assert.ok(!csv.includes('undefined'));
   let download;
   f.context.downloadBlobFile = (name, blob) => { download = { name, blob }; };
@@ -252,4 +252,54 @@ test("CSV quotes commas, quotes, multiline labels, and neutralizes formulas with
   assert.ok(csv.includes('"a,""b""\nc","-60"\r\n'));
   assert.ok(csv.includes('"\'=HYPERLINK(""bad"")",""'));
   assert.ok(csv.includes('"\'  @SUM(1)","0"'));
+});
+
+test("transposed summary unions exact OP_Name and timing fields even with disjoint kernels and empty chart scope", () => {
+  const f = fixture();
+  const stats = (total) => ({ total, avg: total / 2, min: 0, max: total, count: 2 });
+  f.state.data.snapshots[0].op_summary = [
+    { op_name: 'Exact_old<kernel>', call_count: 2, time_stats: { 'Task Duration(us)': stats(0.5), 'Task Wait Time(us)': stats(0) } },
+    { op_name: 'shared_actual_name', call_count: 1, time_stats: { 'Task Duration(us)': stats(3) } },
+  ];
+  f.state.data.snapshots[1].op_summary = [
+    { op_name: 'Exact_new_kernel', call_count: 1, time_stats: { 'Task Duration(us)': stats(2), 'new_time(ms)': stats(1) } },
+    { op_name: 'shared_actual_name', call_count: 1, time_stats: { 'Task Duration(us)': stats(4) } },
+  ];
+  f.state.networkCompareSnapshots = ['old', 'new'];
+  f.node('#netShowAscendc').checked = false;
+  f.node('#netShowTriton').checked = false;
+  f.run('renderNetworkTab()');
+  const table = f.state.networkComparisonTable;
+  assert.equal(table.headers.length, 4);
+  const get = (name, field) => Array.from(table.values.find((row) => row[0] === name && row[1] === field).slice(2));
+  assert.deepEqual(get('Exact_old<kernel>', 'Task Duration(us) · 累计'), [0.5, null]);
+  assert.deepEqual(get('Exact_new_kernel', 'Task Duration(us) · 累计'), [null, 2]);
+  assert.deepEqual(get('shared_actual_name', 'Task Duration(us) · 累计'), [3, 4]);
+  assert.deepEqual(get('Exact_old<kernel>', 'Task Wait Time(us) · 累计'), [0, null]);
+  assert.deepEqual(get('Exact_new_kernel', 'new_time(ms) · 累计'), [null, 1]);
+  assert.match(f.node('#networkComparisonTable').innerHTML, /Exact_old&lt;kernel&gt;/);
+  const csv = f.run('networkComparisonCsv(state.networkComparisonTable)');
+  assert.ok(csv.includes('"Exact_old<kernel>","Task Duration(us) · 累计","0.5",""'));
+  assert.ok(csv.includes('"Exact_new_kernel","Task Duration(us) · 累计","","2"'));
+});
+
+test("time-stat selector exports exactly displayed stats and never aligns legacy aggregates to raw names", () => {
+  const f = fixture();
+  f.state.data.snapshots[0].op_summary = [{op_name:'shared',call_count:2,time_stats:{
+    'Task Duration(us)':{total:6,avg:3,min:2,max:4,count:2},
+    'Task Start Time(us)':{min:100,max:200,count:2},
+  }}];
+  f.state.networkCompareSnapshots = ['old', 'new'];
+  f.run('bindEvents()');
+  f.node('#netSummaryStat').value = 'avg';
+  f.node('#netSummaryStat').events.change();
+  let values = f.state.networkComparisonTable.values;
+  assert.deepEqual(Array.from(values.find(row=>row[1]==='Task Duration(us) · 平均').slice(2)), [3,null]);
+  assert.equal(values.some(row=>row[1].includes('Task Start Time')), false);
+  f.node('#netSummaryStat').value = 'all';
+  f.node('#netSummaryStat').events.change();
+  values = f.state.networkComparisonTable.values;
+  assert.deepEqual(Array.from(values.find(row=>row[1]==='Task Start Time(us) · 最大').slice(2)), [200,null]);
+  assert.deepEqual(Array.from(values.find(row=>row[0].startsWith('历史逻辑汇总')).slice(2)), [null,4]);
+  assert.equal(values.some(row=>row[1]==='Task Start Time(us) · 累计'), false);
 });

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>性能看板 - flash-linear-attention-npu</title>
-  <link rel="stylesheet" href="./styles.css?v=20260914-network-compare-1">
+  <link rel="stylesheet" href="./styles.css?v=20260914-network-summary-2">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -144,7 +144,18 @@
             <h2>同示例同输入历史性能</h2>
             <button type="button" class="perf-case-download-btn" id="netCompareExportBtn">导出表格 CSV</button>
           </div>
-          <p class="perf-compare-hint">每行是一次采集，按时间从早到晚排列，以最早一次为基准。表格和导出包含当前算子范围内的全部算子，不受柱状图最多 4 项的限制。总耗时是算子耗时之和，不代表端到端墙钟时间；缺失项为“—”。输入按已记录参数匹配，请结合设备和执行环境判断变化。</p>
+          <p class="perf-compare-hint">每列是一次采集，按时间从早到晚排列；每行是实际 OP_Name 的时间字段。列出各次 op_summary 的算子名称并集，不要求名称一致，未采集到的项显示“—”。此表保留全部算子，不受上方算子范围或图表选项限制。重复 OP_Name 按所选统计方式汇总，单位沿用原始列名；时间戳只支持最小值 / 最大值。旧采集未保存原始明细时单独标为历史逻辑汇总，需重新导入 Prof 才能补全。</p>
+          <div class="perf-filters-row">
+            <label>时间统计
+              <select id="netSummaryStat">
+                <option value="total">累计时间</option>
+                <option value="avg">平均时间</option>
+                <option value="min">最小值</option>
+                <option value="max">最大值</option>
+                <option value="all">全部统计</option>
+              </select>
+            </label>
+          </div>
           <p id="netCompareHint" role="status"></p>
           <div class="perf-network-bar-wrap"><canvas id="networkTotals"></canvas></div>
           <div class="table-wrap stats-table-wrap" id="networkComparisonTable"></div>
@@ -508,6 +519,7 @@
       document.querySelector("#netCompareAddBtn").addEventListener("click", addNetworkComparison);
       document.querySelector("#netCompareMatchingBtn").addEventListener("click", loadMatchingNetworkHistory);
       document.querySelector("#netCompareExportBtn").addEventListener("click", exportNetworkComparison);
+      document.querySelector("#netSummaryStat").addEventListener("change", renderNetworkComparison);
       document.querySelector("#netCompareRemoveBtn").addEventListener("click", () => {
         const id = document.querySelector("#netCompareList").value;
         state.networkCompareSnapshots = state.networkCompareSnapshots.filter((item) => item !== id);
@@ -3197,20 +3209,58 @@
       renderNetworkTab();
     }
 
-    function networkComparisonTableData(rows, operators) {
-      const headers = ["采集", "采集时间", "测试示例", "总耗时 (ms)", "相对基准 (%)", "芯片 / SoC", "设备", "输入参数", "执行环境", "用例 / 采集来源",
-        ...operators.map((item) => `${operatorDisplayLabel(item)} (ms)`)];
-      const values = rows.map((row, index) => {
-        const { snap } = row;
-        const identity = networkInputIdentity(snap);
-        const run = (state.data.runs || []).find((item) => item.snapshot_id === snap.id);
-        const environment = run?.execution_environment;
-        return [index + 1, networkHistoryTime(snap) || "未记录", identity.example || "未记录", row.total, row.change,
-          [snap.chip, snap.soc_version].filter(Boolean).join(" / "), snap.device_id ?? run?.device ?? "未记录",
-          JSON.stringify(identity.attrs),
-          environment ? JSON.stringify(environment) : "未记录", networkSnapshotLabel(snap),
-          ...operators.map((item) => row.operators.get(operatorScopeKey(item))?.time_ms ?? null)];
-      });
+    function networkSummaryCells(snap, statistic) {
+      const cells = new Map();
+      function add(name, field, value, source) {
+        const key = JSON.stringify([source, name, field]);
+        cells.set(key, { name, field, value, source });
+      }
+      const raw = state.data.snapshots.find((item) => item.id === snap.id) || snap;
+      if (Array.isArray(raw.op_summary)) {
+        const labels = { total: "累计", avg: "平均", min: "最小", max: "最大" };
+        const selected = statistic === "all" ? Object.keys(labels) : [statistic];
+        for (const op of raw.op_summary) {
+          add(op.op_name, "调用次数", op.call_count, "op_summary");
+          for (const [field, stats] of Object.entries(op.time_stats || {})) {
+            for (const kind of selected) {
+              if (stats[kind] != null && Number.isFinite(Number(stats[kind]))) {
+                add(op.op_name, `${field} · ${labels[kind]}`, Number(stats[kind]), "op_summary");
+              }
+            }
+          }
+        }
+      } else {
+        // Historical logical aggregates may represent several original names.
+        // Never align them with raw OP_Name rows or reconstruct unknown values.
+        for (const op of networkOperatorTotals(raw).values()) {
+          const name = `历史逻辑汇总：${operatorDisplayLabel(op)}`;
+          if (statistic === "total" || statistic === "all") {
+            if (op.time_ms != null) add(name, "time_ms (ms) · 累计", Number(op.time_ms), "legacy");
+          }
+        }
+      }
+      return cells;
+    }
+
+    function networkComparisonTableData(rows) {
+      const statistic = document.querySelector("#netSummaryStat")?.value || "total";
+      const headers = ["OP_Name / 采集信息", "时间字段 / 统计", ...rows.map((row, index) =>
+        `采集 ${index + 1}${index ? "" : "（基准）"} · ${networkHistoryTime(row.snap) || "时间未记录"}`)];
+      const values = [];
+      const metadata = (title, getValue) => values.push(["采集信息", title, ...rows.map(({ snap }) => getValue(snap))]);
+      metadata("测试示例", (snap) => networkInputIdentity(snap).example || "未记录");
+      metadata("输入参数", (snap) => JSON.stringify(networkInputIdentity(snap).attrs));
+      metadata("芯片 / SoC", (snap) => [snap.chip, snap.soc_version].filter(Boolean).join(" / "));
+      metadata("设备", (snap) => snap.device_id ?? (state.data.runs || []).find((run) => run.snapshot_id === snap.id)?.device ?? "未记录");
+      metadata("执行环境", (snap) => JSON.stringify((state.data.runs || []).find((run) => run.snapshot_id === snap.id)?.execution_environment || {}));
+      metadata("采集来源", networkSnapshotLabel);
+      metadata("时间数据来源", (snap) => Array.isArray(snap.op_summary) ? "op_summary 原始名称统计" : "历史逻辑汇总，缺少原始 OP_Name 明细");
+      const collections = rows.map(({ snap }) => networkSummaryCells(snap, statistic));
+      const keys = new Map();
+      collections.forEach((cells) => cells.forEach((entry, key) => keys.set(key, entry)));
+      for (const [key, entry] of [...keys].sort((a, b) => a[1].name.localeCompare(b[1].name) || a[1].field.localeCompare(b[1].field))) {
+        values.push([entry.name, entry.field, ...collections.map((cells) => cells.get(key)?.value ?? null)]);
+      }
       return { headers, values };
     }
 
@@ -3292,16 +3342,15 @@
             plugins: { legend: { display: false } } },
         });
       }
-      const table = networkComparisonTableData(rows, candidates);
+      const table = networkComparisonTableData(rows);
       state.networkComparisonTable = table;
       document.querySelector("#netCompareExportBtn").disabled = !rows.length;
       document.querySelector("#networkComparisonTable").innerHTML = rows.length ? `
         <table class="stats-table perf-table perf-network-table">
           <thead><tr>${table.headers.map((title) => `<th>${escapeHtml(title)}</th>`).join("")}</tr></thead>
-          <tbody>${table.values.map((values, index) => `<tr>${values.map((value, column) => {
-            if (column === 0) return `<th scope="row">${value}${index ? "" : "（基准）"}</th>`;
-            const text = value == null ? "—" : column === 4 ? `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
-              : column === 3 || column >= 10 ? value.toFixed(3) : String(value);
+          <tbody>${table.values.map((values) => `<tr>${values.map((value, column) => {
+            if (column === 0) return `<th scope="row">${escapeHtml(value)}</th>`;
+            const text = value == null ? "—" : typeof value === "number" ? String(Number(value.toFixed(6))) : String(value);
             return `<td>${escapeHtml(text)}</td>`;
           }).join("")}</tr>`).join("")}</tbody>
         </table>` : '<p class="empty">暂无采集结果可展示。</p>';
@@ -3401,10 +3450,10 @@
       state.charts.networkCompare = new Chart(document.querySelector("#networkCompare"), {
         type: "bar",
         data: {
-          labels: selected.map(operatorDisplayLabel),
-          datasets: rows.map((row, index) => ({
-            label: `采集 ${index + 1}${index ? "" : "（基准）"} 耗时(ms)`,
-            data: selected.map((item) => row.operators.get(operatorScopeKey(item))?.time_ms ?? null),
+          labels: rows.map((row, index) => `采集 ${index + 1} · ${networkHistoryTime(row.snap) || "时间未记录"}`),
+          datasets: selected.map((item, index) => ({
+            label: `${operatorDisplayLabel(item)} 耗时(ms)`,
+            data: rows.map((row) => row.operators.get(operatorScopeKey(item))?.time_ms ?? null),
             backgroundColor: OPERATOR_PALETTE[index % OPERATOR_PALETTE.length],
             borderRadius: 8,
           })),
