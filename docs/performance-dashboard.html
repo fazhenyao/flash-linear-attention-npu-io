@@ -83,6 +83,7 @@
               <select id="netSnapshot"></select>
             </label>
             <button type="button" class="perf-compare-add-btn" id="netCompareAddBtn">添加对比</button>
+            <button type="button" class="perf-compare-add-btn" id="netCompareMatchingBtn">加载同示例同输入历史</button>
           </div>
           <div class="perf-compare-case-toolbar">
             <label>对比结果
@@ -91,7 +92,7 @@
             <button type="button" class="perf-compare-remove-btn" id="netCompareRemoveBtn">移除</button>
             <button type="button" class="perf-compare-clear-btn" id="netCompareClearBtn">清空</button>
           </div>
-          <small class="perf-compare-hint">选择用例及采集结果后添加对比，第一项为基准。属性筛选仅影响候选用例；已添加结果会保留。饼图、运行环境和下载对应上方当前采集。</small>
+          <small class="perf-compare-hint">选择一次采集，点击“加载同示例同输入历史”，按时间对比全部匹配结果。手动添加仅允许同一示例、相同输入和相同采集工具；切换对比组请先清空。饼图、运行环境和 Prof 下载对应上方当前采集。</small>
           <div class="perf-case-io-toolbar">
             <button type="button" class="perf-case-download-btn" id="netCaseDownloadBtn">下载完整 Prof ZIP</button>
           </div>
@@ -139,8 +140,11 @@
           <div class="perf-network-bar-wrap"><canvas id="networkCompare"></canvas></div>
         </div>
         <div class="perf-chart-card perf-chart-wide">
-          <h2>采集耗时对比</h2>
-          <p class="perf-compare-hint">耗时为当前勾选范围内的算子耗时之和，不代表端到端墙钟时间。变化率相对第一项，负值表示耗时降低；未采集到的算子显示为“—”。请核对形状、设备和采集工具后比较。</p>
+          <div class="panel-title-row">
+            <h2>同示例同输入历史性能</h2>
+            <button type="button" class="perf-case-download-btn" id="netCompareExportBtn">导出表格 CSV</button>
+          </div>
+          <p class="perf-compare-hint">每行是一次采集，按时间从早到晚排列，以最早一次为基准。表格和导出包含当前算子范围内的全部算子，不受柱状图最多 4 项的限制。总耗时是算子耗时之和，不代表端到端墙钟时间；缺失项为“—”。输入按已记录参数匹配，请结合设备和执行环境判断变化。</p>
           <p id="netCompareHint" role="status"></p>
           <div class="perf-network-bar-wrap"><canvas id="networkTotals"></canvas></div>
           <div class="table-wrap stats-table-wrap" id="networkComparisonTable"></div>
@@ -502,6 +506,8 @@
         });
       });
       document.querySelector("#netCompareAddBtn").addEventListener("click", addNetworkComparison);
+      document.querySelector("#netCompareMatchingBtn").addEventListener("click", loadMatchingNetworkHistory);
+      document.querySelector("#netCompareExportBtn").addEventListener("click", exportNetworkComparison);
       document.querySelector("#netCompareRemoveBtn").addEventListener("click", () => {
         const id = document.querySelector("#netCompareList").value;
         state.networkCompareSnapshots = state.networkCompareSnapshots.filter((item) => item !== id);
@@ -3103,6 +3109,11 @@
     function addNetworkComparison() {
       const snap = currentSnapshot();
       if (!snap || state.networkCompareSnapshots.includes(snap.id)) return;
+      const baseline = selectedNetworkSnapshots()[0];
+      if (baseline && networkInputIdentity(baseline).key !== networkInputIdentity(snap).key) {
+        document.querySelector("#netCompareHint").textContent = "示例、输入参数或采集工具不同，请先清空对比列表，或加载当前采集的同输入历史。";
+        return;
+      }
       state.networkCompareSnapshots.push(snap.id);
       renderNetworkTab();
       document.querySelector("#netCompareList").value = snap.id;
@@ -3114,7 +3125,109 @@
         .filter((snap) => activeCases.has(snap.case_id) && snapshotEligibleForNetworkTab(snap))
         .map((snap) => [snap.id, snap]));
       state.networkCompareSnapshots = [...new Set(state.networkCompareSnapshots)].filter((id) => snapshots.has(id));
-      return state.networkCompareSnapshots.map((id) => normalizeSnapshotOperators(snapshots.get(id)));
+      const selected = state.networkCompareSnapshots.map((id) => snapshots.get(id));
+      const key = selected.length ? networkInputIdentity(selected[0]).key : null;
+      const matching = sortNetworkHistory(selected.filter((snap) => networkInputIdentity(snap).key === key));
+      state.networkCompareSnapshots = matching.map((snap) => snap.id);
+      return matching.map(normalizeSnapshotOperators);
+    }
+
+    function networkInputIdentity(snap) {
+      const testCase = state.data.cases.find((item) => item.id === snap.case_id);
+      const run = (state.data.runs || []).find((item) => item.snapshot_id === snap.id);
+      const raw = { ...testCase?.attributes, ...run?.attributes, ...snap.attributes };
+      const example = snap.example_id || run?.example_id || raw.example_id || testCase?.example_id || "";
+      // Keep all recorded execution parameters, including mode, seed and compute
+      // switches. Do not infer old defaults from today's example manifest.
+      function canonical(value) {
+        if (Array.isArray(value)) return value.map(canonical);
+        if (value && typeof value === "object") return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+        if (typeof value !== "string") return value;
+        const text = value.trim();
+        if (/^(true|false)$/i.test(text)) return text.toLowerCase() === "true";
+        if (text && Number.isFinite(Number(text))) return Number(text);
+        return text;
+      }
+      const attrs = {};
+      for (const key of Object.keys(raw).sort()) {
+        if (["notes", "example_id"].includes(key)) continue;
+        let value = raw[key];
+        if (key === "cu_seqlens" && typeof value === "string") value = value.trim() ? value.split(/[\s,]+/) : [];
+        if (key === "layout") value = String(value || "").toUpperCase();
+        attrs[key] = canonical(value);
+      }
+      // Missing identity or parameters cannot establish equivalence across cases.
+      const unknown = !example || !Object.keys(attrs).length ? snap.case_id : null;
+      return { example, attrs, key: JSON.stringify([example, attrs, snapshotProfTool(snap), unknown]) };
+    }
+
+    function networkHistoryTime(snap) {
+      const run = (state.data.runs || []).find((item) => item.snapshot_id === snap.id);
+      return snap.created_at || run?.started_at || run?.created_at || snap.snapshot_date || "";
+    }
+
+    function sortNetworkHistory(snapshots) {
+      return [...snapshots].sort((a, b) => {
+        const time = (snap) => {
+          const raw = networkHistoryTime(snap);
+          // Legacy times without an offset were recorded in the dashboard's
+          // Asia/Shanghai timezone; make ordering independent of the browser.
+          const normalized = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T00:00:00+08:00`
+            : /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(raw)
+              ? `${raw.replace(" ", "T")}+08:00` : raw;
+          return Date.parse(normalized);
+        };
+        const left = time(a), right = time(b);
+        if (Number.isFinite(left) && Number.isFinite(right) && left !== right) return left - right;
+        if (Number.isFinite(left) !== Number.isFinite(right)) return Number.isFinite(left) ? -1 : 1;
+        return String(a.id).localeCompare(String(b.id));
+      });
+    }
+
+    function matchingNetworkHistory(snap) {
+      if (!snap) return [];
+      const key = networkInputIdentity(snap).key;
+      const cases = new Set(state.data.cases.filter((item) => item.active !== false).map((item) => item.id));
+      return sortNetworkHistory(state.data.snapshots.filter((item) => cases.has(item.case_id)
+        && snapshotEligibleForNetworkTab(item) && networkInputIdentity(item).key === key));
+    }
+
+    function loadMatchingNetworkHistory() {
+      state.networkCompareSnapshots = matchingNetworkHistory(currentSnapshot()).map((snap) => snap.id);
+      renderNetworkTab();
+    }
+
+    function networkComparisonTableData(rows, operators) {
+      const headers = ["采集", "采集时间", "测试示例", "总耗时 (ms)", "相对基准 (%)", "芯片 / SoC", "设备", "输入参数", "执行环境", "用例 / 采集来源",
+        ...operators.map((item) => `${operatorDisplayLabel(item)} (ms)`)];
+      const values = rows.map((row, index) => {
+        const { snap } = row;
+        const identity = networkInputIdentity(snap);
+        const run = (state.data.runs || []).find((item) => item.snapshot_id === snap.id);
+        const environment = run?.execution_environment;
+        return [index + 1, networkHistoryTime(snap) || "未记录", identity.example || "未记录", row.total, row.change,
+          [snap.chip, snap.soc_version].filter(Boolean).join(" / "), snap.device_id ?? run?.device ?? "未记录",
+          JSON.stringify(identity.attrs),
+          environment ? JSON.stringify(environment) : "未记录", networkSnapshotLabel(snap),
+          ...operators.map((item) => row.operators.get(operatorScopeKey(item))?.time_ms ?? null)];
+      });
+      return { headers, values };
+    }
+
+    function networkComparisonCsv(table) {
+      const cell = (value) => {
+        let text = value == null ? "" : String(value);
+        // Spreadsheet formulas must never be evaluated from imported labels.
+        if (typeof value === "string" && /^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
+        return `"${text.replace(/"/g, '""')}"`;
+      };
+      return "\ufeff" + [table.headers, ...table.values].map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n";
+    }
+
+    function exportNetworkComparison() {
+      const table = state.networkComparisonTable;
+      if (!table?.values.length) return;
+      downloadBlobFile(`network-performance-${todayYmd()}.csv`, new Blob([networkComparisonCsv(table)], { type: "text/csv;charset=utf-8" }));
     }
 
     function networkOperatorTotals(snap) {
@@ -3149,9 +3262,13 @@
       document.querySelector("#netCompareClearBtn").disabled = !snapshots.length;
       const current = currentSnapshot();
       document.querySelector("#netCompareAddBtn").disabled = !current || state.networkCompareSnapshots.includes(current.id);
+      document.querySelector("#netCompareMatchingBtn").disabled = !current;
+      document.querySelector("#netCompareAddBtn").title = snapshots.length && current
+        && networkInputIdentity(snapshots[0]).key !== networkInputIdentity(current).key
+        ? "当前采集与对比组的示例、输入或采集工具不同，请先清空或加载当前历史" : "添加当前采集";
       const rows = networkComparisonRows(snapshots.length ? snapshots : current ? [current] : []);
       document.querySelector("#netCompareHint").textContent = snapshots.length > 1
-        ? `已添加 ${snapshots.length} 次采集；图中编号对应下表。`
+        ? `同示例同输入共 ${snapshots.length} 次采集，按时间排序；最早一次为基准。图中编号对应下表。`
         : snapshots.length ? "已添加 1 次采集，请再添加至少一项进行对比。"
           : "尚未添加对比结果，当前展示上方所选采集。";
       const operators = new Map();
@@ -3175,20 +3292,18 @@
             plugins: { legend: { display: false } } },
         });
       }
-      const selected = candidates.filter((item) => state.compareOps.includes(operatorScopeKey(item)));
-      const duration = (value) => value == null ? "—" : `${value.toFixed(3)} ms`;
+      const table = networkComparisonTableData(rows, candidates);
+      state.networkComparisonTable = table;
+      document.querySelector("#netCompareExportBtn").disabled = !rows.length;
       document.querySelector("#networkComparisonTable").innerHTML = rows.length ? `
         <table class="stats-table perf-table perf-network-table">
-          <thead><tr><th>采集</th><th>用例 / 采集来源</th><th>总耗时</th><th>相对基准</th>
-            ${selected.map((item) => `<th>${escapeHtml(operatorDisplayLabel(item))}</th>`).join("")}
-          </tr></thead>
-          <tbody>${rows.map((row, index) => `<tr>
-            <th scope="row">${index + 1}${index ? "" : "（基准）"}</th>
-            <td>${escapeHtml(networkSnapshotLabel(row.snap))}</td>
-            <td>${duration(row.total)}</td>
-            <td>${row.change == null ? "—" : `${row.change > 0 ? "+" : ""}${row.change.toFixed(2)}%`}</td>
-            ${selected.map((item) => `<td>${duration(row.operators.get(operatorScopeKey(item))?.time_ms)}</td>`).join("")}
-          </tr>`).join("")}</tbody>
+          <thead><tr>${table.headers.map((title) => `<th>${escapeHtml(title)}</th>`).join("")}</tr></thead>
+          <tbody>${table.values.map((values, index) => `<tr>${values.map((value, column) => {
+            if (column === 0) return `<th scope="row">${value}${index ? "" : "（基准）"}</th>`;
+            const text = value == null ? "—" : column === 4 ? `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
+              : column === 3 || column >= 10 ? value.toFixed(3) : String(value);
+            return `<td>${escapeHtml(text)}</td>`;
+          }).join("")}</tr>`).join("")}</tbody>
         </table>` : '<p class="empty">暂无采集结果可展示。</p>';
     }
 

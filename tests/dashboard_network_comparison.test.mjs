@@ -29,7 +29,7 @@ function fixture() {
     return nodes.get(selector);
   }
   const context = vm.createContext({
-    window: {}, localStorage: { getItem() { return ""; } },
+    window: {}, Blob, localStorage: { getItem() { return ""; } },
     document: { querySelector: node, querySelectorAll() { return []; }, addEventListener() {} },
     Chart: class { constructor(canvas, config) { this.config = config; } destroy() {} },
   });
@@ -41,7 +41,9 @@ function fixture() {
     created_at: id === "old" ? "2026-09-13" : "2026-09-14", prof_source: `PROF_${id}`,
   });
   state.data = { models: [], runs: [], cases: [
-    { id: "c1", label: "GDN B=1" }, { id: "c2", label: "KDA <script>" }, { id: "hidden", active: false },
+    { id: "c1", label: "GDN B=1", example_id: "flash_gated_delta_rule", attributes: { batch: 1, tokens: 128, demo_model: true } },
+    { id: "c2", label: "KDA <script>", example_id: "flash_gated_delta_rule", attributes: { batch: 1, tokens: 128, demo_model: true } },
+    { id: "hidden", active: false },
   ], snapshots: [
     snap("old", "c1", [op("ascendc", 2), op("ascendc", 3), op("triton", 5)]),
     snap("new", "c1", [op("ascendc", 4)]),
@@ -168,4 +170,86 @@ test("reloading data preserves historical collection and chosen operators", asyn
   assert.equal(f.node("#netSnapshot").value, "old");
   assert.deepEqual(Array.from(f.state.compareOps), ["shared::triton"]);
   assert.equal(f.state.charts.networkCompare.config.data.datasets.length, 2);
+});
+
+test("load matching history merges independent cases, orders timestamps, and excludes incompatible inputs", () => {
+  const f = fixture();
+  f.state.data.cases[1].attributes = { tokens: '128', demo_model: 'true', batch: '1', notes: 'another day' };
+  const base = f.state.data.snapshots[0];
+  for (const [id, change] of [
+    ['shape', { tokens: 256 }], ['mode', { demo_model: false }],
+    ['switch', { use_composite_core: true }], ['seed', { seed: 99 }],
+  ]) {
+    f.state.data.cases.push({ id, example_id: 'flash_gated_delta_rule', attributes: { ...f.state.data.cases[0].attributes, ...change } });
+    f.state.data.snapshots.push({ ...base, id, case_id: id });
+  }
+  f.state.data.snapshots.push({ ...base, id: 'wrong-example', example_id: 'flash_kda' });
+  f.state.data.snapshots.push({ ...base, id: 'wrong-profiler', prof_tool: 'msprof_op' });
+  f.state.data.snapshots.find((snap) => snap.id === 'other').created_at = '2026-09-12T23:30:00Z';
+  f.state.data.snapshots.find((snap) => snap.id === 'old').created_at = '2026-09-13T06:00:00+08:00';
+  f.run('loadMatchingNetworkHistory()');
+  assert.deepEqual(Array.from(f.state.networkCompareSnapshots), ['old', 'other', 'new']);
+  assert.equal(f.state.networkComparisonTable.values.length, 3);
+  assert.equal(f.state.networkComparisonTable.values[0][3], 10);
+  assert.ok(Math.abs(f.state.networkComparisonTable.values[1][4] + 20) < 1e-10);
+});
+
+test("manual addition rejects a different example or input and keeps existing comparison", () => {
+  const f = fixture();
+  f.run('addNetworkComparison()');
+  f.state.data.cases[1].attributes.tokens = 256;
+  f.node('#netCase').value = 'c2';
+  f.node('#netSnapshot').value = 'other';
+  f.run('addNetworkComparison()');
+  assert.deepEqual(Array.from(f.state.networkCompareSnapshots), ['old']);
+  assert.match(f.node('#netCompareHint').textContent, /不同/);
+  f.run('loadMatchingNetworkHistory()');
+  assert.deepEqual(Array.from(f.state.networkCompareSnapshots), ['other']);
+});
+
+test("incomplete legacy metadata never groups unrelated cases, but supports same-case history", () => {
+  const f = fixture();
+  delete f.state.data.cases[0].example_id;
+  delete f.state.data.cases[1].example_id;
+  assert.deepEqual(Array.from(f.run('matchingNetworkHistory(currentSnapshot())'), (snap) => snap.id), ['old', 'new']);
+});
+
+test("run-specific parameters prevent same-case runs with different inputs from merging", () => {
+  const f = fixture();
+  f.state.data.runs = [{ snapshot_id: 'new', attributes: { demo_model: false } }];
+  assert.deepEqual(Array.from(f.run('matchingNetworkHistory(currentSnapshot())'), (snap) => snap.id), ['old', 'other']);
+});
+
+test("CSV exports the full displayed table, independent of chart selection, with numeric missing values", async () => {
+  const f = fixture();
+  f.run('bindEvents(); loadMatchingNetworkHistory()');
+  f.state.compareOps = [];
+  f.run('renderNetworkComparison()');
+  const table = f.state.networkComparisonTable;
+  assert.equal(table.headers.length, 12);
+  assert.equal(table.values[1][11], null);
+  const csv = f.run('networkComparisonCsv(state.networkComparisonTable)');
+  assert.ok(csv.startsWith('\ufeff"采集","采集时间"'));
+  assert.match(csv, /shared \(ascendc\) \(ms\)/);
+  assert.match(csv, /"4","-60"/);
+  assert.ok(!csv.includes('undefined'));
+  let download;
+  f.context.downloadBlobFile = (name, blob) => { download = { name, blob }; };
+  f.node('#netCompareExportBtn').events.click();
+  assert.match(download.name, /^network-performance-.*\.csv$/);
+  assert.equal(download.blob.type, 'text/csv;charset=utf-8');
+  const buffer = new Uint8Array(await download.blob.arrayBuffer());
+  assert.deepEqual(Array.from(buffer.slice(0, 3)), [239, 187, 191]);
+  assert.equal(await download.blob.text(), csv.slice(1));
+});
+
+test("CSV quotes commas, quotes, multiline labels, and neutralizes formulas without changing numeric negatives", () => {
+  const f = fixture();
+  f.context.exportFixture = { headers: ['名称', '变化'], values: [
+    ['a,"b"\nc', -60], ['=HYPERLINK("bad")', null], ['  @SUM(1)', 0],
+  ] };
+  const csv = f.run('networkComparisonCsv(exportFixture)');
+  assert.ok(csv.includes('"a,""b""\nc","-60"\r\n'));
+  assert.ok(csv.includes('"\'=HYPERLINK(""bad"")",""'));
+  assert.ok(csv.includes('"\'  @SUM(1)","0"'));
 });

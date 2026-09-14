@@ -250,7 +250,7 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-chart-card { display:grid; gap:12px; padding:14px; border:1px solid var(--line); border-radius:16px; background:#fffaf1; min-height:360px; }
 .perf-chart-wide { grid-column:1 / -1; }
 .perf-network-bar-wrap { position:relative; height:280px; min-width:0; }
-.perf-network-table td:nth-child(2) { min-width:220px; max-width:520px; white-space:normal; overflow-wrap:anywhere; }
+.perf-network-table td:is(:nth-child(8), :nth-child(9), :nth-child(10)) { min-width:220px; max-width:360px; white-space:normal; overflow-wrap:anywhere; }
 .perf-network-table th, .perf-network-table td { white-space:nowrap; }
 .perf-pie-wrap { position:relative; height:300px; }
 .perf-pie-wrap canvas { width:100% !important; height:100% !important; }
