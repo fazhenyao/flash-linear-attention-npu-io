@@ -1508,7 +1508,8 @@
       }
       document.querySelector("#triggerCannPath").value = defaults.cann_path || "";
       document.querySelector("#triggerCondaEnv").value = defaults.conda_env || "";
-      document.querySelector("#triggerSourceRepo").value = defaults.source_repo || "";
+      const sourceRepo = String(defaults.source_repo || "").replace(/\/+$/, "");
+      document.querySelector("#triggerSourceRepo").value = sourceRepo.replace(/[^/]+$/, "flash-linear-attention-npu-perf");
       state.triggerSourceBranchDefault = defaults.branch || "";
       document.querySelector("#triggerBuildSoc").value = triggerBuildSoc(triggerRunnerChip(runner));
       state.triggerExecutionEnvironmentSynced = runner.id;
