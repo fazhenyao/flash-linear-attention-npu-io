@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-09-13T18:44:05+08:00",
+  "generatedAt": "2026-09-14T10:05:08+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 360,
+  "total": 364,
   "items": [
+    {
+      "number": 552,
+      "title": "fix: always call l0op::Contiguous in DataContiguous",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/552",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-14T02:02:07Z",
+      "createdAt": "2026-09-14T02:01:09Z",
+      "headRef": "v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 551,
+      "title": "fix: always call l0op::Contiguous in DataContiguous",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/551",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-14T02:02:02Z",
+      "createdAt": "2026-09-14T02:00:44Z",
+      "headRef": "dhu",
+      "labels": []
+    },
     {
       "number": 546,
       "title": "fix(ascendc): correct KKT event initialization and lifecycle (v26.9.0)",
@@ -14,18 +38,6 @@
       "updatedAt": "2026-09-12T10:16:11Z",
       "createdAt": "2026-09-12T10:16:09Z",
       "headRef": "9_8_sf",
-      "labels": []
-    },
-    {
-      "number": 542,
-      "title": "fix(gdn): 隔离融合私有 WU/H/O tiling 类型与 FwdH 注册",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/542",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-12T09:09:54Z",
-      "createdAt": "2026-09-12T08:00:27Z",
-      "headRef": "fix/gdn-private-tiling-isolation",
       "labels": []
     },
     {
@@ -83,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-12T10:16:29Z",
+      "updatedAt": "2026-09-14T01:35:49Z",
       "createdAt": "2026-09-09T08:09:18Z",
       "headRef": "9_8",
       "labels": []
@@ -1097,6 +1109,30 @@
       "labels": []
     },
     {
+      "number": 549,
+      "title": "docs: 在 v26.9.0 迁移 DHU 设计文档到算子目录",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/549",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-14T01:54:40Z",
+      "updatedAt": "2026-09-14T01:54:40Z",
+      "createdAt": "2026-09-14T01:51:08Z",
+      "headRef": "codex/move-dhu-design-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 548,
+      "title": "docs: 迁移 DHU 设计文档到算子目录",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/548",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-14T01:54:29Z",
+      "updatedAt": "2026-09-14T01:54:29Z",
+      "createdAt": "2026-09-14T01:51:08Z",
+      "headRef": "codex/move-dhu-design-main",
+      "labels": []
+    },
+    {
       "number": 545,
       "title": "docs: enforce run package install verification",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/545",
@@ -1106,6 +1142,18 @@
       "updatedAt": "2026-09-12T09:06:12Z",
       "createdAt": "2026-09-12T09:00:16Z",
       "headRef": "codex/enforce-run-install-verification",
+      "labels": []
+    },
+    {
+      "number": 542,
+      "title": "fix(gdn): 隔离融合私有 WU/H/O tiling 类型与 FwdH 注册",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/542",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-14T01:21:36Z",
+      "updatedAt": "2026-09-14T01:21:36Z",
+      "createdAt": "2026-09-12T08:00:27Z",
+      "headRef": "fix/gdn-private-tiling-isolation",
       "labels": []
     },
     {
