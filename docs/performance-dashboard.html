@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>性能看板 - flash-linear-attention-npu</title>
-  <link rel="stylesheet" href="./styles.css?v=20260817-dynamic-examples-1">
+  <link rel="stylesheet" href="./styles.css?v=20260914-network-compare-1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -38,7 +38,7 @@
     </section>
 
     <nav class="perf-tabs view-switch" aria-label="性能看板视图">
-      <button type="button" class="active" data-tab="network">整网性能饼图</button>
+      <button type="button" class="active" data-tab="network">整网性能</button>
       <button type="button" data-tab="case">单个用例性能图</button>
       <button type="button" data-tab="trigger">用例执行触发</button>
     </nav>
@@ -78,6 +78,20 @@
               <select id="netCase"></select>
             </label>
           </div>
+          <div class="perf-compare-case-toolbar">
+            <label>采集结果
+              <select id="netSnapshot"></select>
+            </label>
+            <button type="button" class="perf-compare-add-btn" id="netCompareAddBtn">添加对比</button>
+          </div>
+          <div class="perf-compare-case-toolbar">
+            <label>对比结果
+              <select id="netCompareList" size="4" aria-label="已添加对比采集结果"></select>
+            </label>
+            <button type="button" class="perf-compare-remove-btn" id="netCompareRemoveBtn">移除</button>
+            <button type="button" class="perf-compare-clear-btn" id="netCompareClearBtn">清空</button>
+          </div>
+          <small class="perf-compare-hint">选择用例及采集结果后添加对比，第一项为基准。属性筛选仅影响候选用例；已添加结果会保留。饼图、运行环境和下载对应上方当前采集。</small>
           <div class="perf-case-io-toolbar">
             <button type="button" class="perf-case-download-btn" id="netCaseDownloadBtn">下载完整 Prof ZIP</button>
           </div>
@@ -107,7 +121,7 @@
       <div class="perf-chart-grid">
         <div class="perf-chart-card">
           <div class="panel-title-row">
-            <h2>算子整网占比</h2>
+            <h2>当前采集算子占比</h2>
             <strong id="netTotalTime" class="perf-total-time">—</strong>
           </div>
           <div class="perf-pie-wrap">
@@ -118,11 +132,18 @@
         </div>
         <div class="perf-chart-card">
           <div class="panel-title-row">
-            <h2>算子耗时对比</h2>
+            <h2>跨采集算子耗时对比</h2>
             <small>最多选 4 个算子</small>
           </div>
           <div id="networkComparePick" class="perf-compare-pick"></div>
-          <canvas id="networkCompare"></canvas>
+          <div class="perf-network-bar-wrap"><canvas id="networkCompare"></canvas></div>
+        </div>
+        <div class="perf-chart-card perf-chart-wide">
+          <h2>采集耗时对比</h2>
+          <p class="perf-compare-hint">耗时为当前勾选范围内的算子耗时之和，不代表端到端墙钟时间。变化率相对第一项，负值表示耗时降低；未采集到的算子显示为“—”。请核对形状、设备和采集工具后比较。</p>
+          <p id="netCompareHint" role="status"></p>
+          <div class="perf-network-bar-wrap"><canvas id="networkTotals"></canvas></div>
+          <div class="table-wrap stats-table-wrap" id="networkComparisonTable"></div>
         </div>
       </div>
     </section>
@@ -429,7 +450,8 @@
       token: localStorage.getItem(TOKEN_KEY) || "",
       user: null,
       charts: {},
-      compareOps: [],
+      compareOps: null,
+      networkCompareSnapshots: [],
       compareCases: [],
       caseMetrics: [],
       caseAttrFilters: { net: [], case: [] },
@@ -472,11 +494,22 @@
       document.querySelectorAll(".perf-tabs button").forEach((button) => {
         button.addEventListener("click", () => switchTab(button.dataset.tab));
       });
-      ["netCase", "netShowTriton", "netShowAscendc"].forEach((id) => {
+      ["netCase", "netSnapshot", "netShowTriton", "netShowAscendc"].forEach((id) => {
         document.querySelector(`#${id}`).addEventListener("change", () => {
+          if (id === "netCase") refreshNetworkSnapshotSelect();
           updateRunContextDisplay("net");
           renderNetworkTab();
         });
+      });
+      document.querySelector("#netCompareAddBtn").addEventListener("click", addNetworkComparison);
+      document.querySelector("#netCompareRemoveBtn").addEventListener("click", () => {
+        const id = document.querySelector("#netCompareList").value;
+        state.networkCompareSnapshots = state.networkCompareSnapshots.filter((item) => item !== id);
+        renderNetworkTab();
+      });
+      document.querySelector("#netCompareClearBtn").addEventListener("click", () => {
+        state.networkCompareSnapshots = [];
+        renderNetworkTab();
       });
       document.querySelector("#netCaseAttrKey").addEventListener("change", () => onCaseAttrKeyChange("net"));
       document.querySelector("#netCaseAttrOp").addEventListener("change", () => updateAttrPickerUI("net"));
@@ -542,8 +575,7 @@
       URL.revokeObjectURL(url);
     }
 
-    function cloudRunForCase(caseId) {
-      const snapshot = primarySnapshotForCase(caseId);
+    function cloudRunForCase(caseId, snapshot = primarySnapshotForCase(caseId)) {
       const jobs = new Map((state.jobs || []).map((job) => [job.id, job]));
       const candidates = (state.data?.runs || [])
         .filter((run) => run.case_id === caseId && (!snapshot?.id || run.snapshot_id === snapshot.id))
@@ -566,7 +598,7 @@
         alert("请先选择一个用例");
         return;
       }
-      const run = cloudRunForCase(caseId);
+      const run = cloudRunForCase(caseId, currentSnapshot());
       if (!run) {
         alert("该用例没有可下载的云端 Prof ZIP。历史导入用例需要重新通过测试任务生成 R2 制品。");
         return;
@@ -994,7 +1026,7 @@
     }
 
     function caseEligibleForNetworkTab(caseId) {
-      return snapshotEligibleForNetworkTab(primarySnapshotForCase(caseId));
+      return snapshotsForCase(caseId).some(snapshotEligibleForNetworkTab);
     }
 
     function networkCases(filters, caseId) {
@@ -1870,7 +1902,6 @@
       } else {
         state.dataSource = "worker";
       }
-      state.compareOps = (currentSnapshot()?.operators || []).slice(0, 2).map(operatorScopeKey);
     }
 
     async function loadRunnerStatus() {
@@ -2723,7 +2754,7 @@
         textNode.textContent = "—";
         return;
       }
-      const snap = primarySnapshotForCaseTab(caseId);
+      const snap = isNet ? currentSnapshot() : primarySnapshotForCaseTab(caseId);
       if (!snap) {
         panel.classList.add("hidden");
         textNode.textContent = "—";
@@ -2858,6 +2889,7 @@
         fillSelect(caseSelector, [["", "无整网用例"]]);
         select.disabled = true;
         select.value = "";
+        refreshNetworkSnapshotSelect();
         updateRunContextDisplay("net");
         return;
       }
@@ -2871,6 +2903,7 @@
         const profCase = candidates.find((item) => item.id.startsWith("case-gdn-"));
         select.value = profCase?.id || entries[0][0];
       }
+      refreshNetworkSnapshotSelect();
       updateRunContextDisplay("net");
     }
 
@@ -3047,7 +3080,116 @@
       if (!caseId) return null;
       const filters = getCaseAttrFilters("net");
       if (!networkCases(filters, caseId).some((item) => item.id === caseId)) return null;
-      return normalizeSnapshotOperators(primarySnapshotForCase(caseId));
+      const snapshotId = document.querySelector("#netSnapshot").value;
+      const snap = snapshotsForCase(caseId).find((item) => item.id === snapshotId && snapshotEligibleForNetworkTab(item));
+      return normalizeSnapshotOperators(snap);
+    }
+
+    function networkSnapshotLabel(snap) {
+      const testCase = state.data.cases.find((item) => item.id === snap.case_id);
+      return [testCase?.label || snap.case_id, snap.label || snap.created_at, snap.chip,
+        profToolLabel(snapshotProfTool(snap)), snap.prof_source, snap.id].filter(Boolean).join(" · ");
+    }
+
+    function refreshNetworkSnapshotSelect() {
+      const caseId = document.querySelector("#netCase").value;
+      const snapshots = snapshotsForCase(caseId).filter(snapshotEligibleForNetworkTab);
+      fillSelect("#netSnapshot", snapshots.length
+        ? snapshots.map((snap) => [snap.id, networkSnapshotLabel(snap)])
+        : [["", "无采集结果"]]);
+      document.querySelector("#netSnapshot").disabled = !snapshots.length;
+    }
+
+    function addNetworkComparison() {
+      const snap = currentSnapshot();
+      if (!snap || state.networkCompareSnapshots.includes(snap.id)) return;
+      state.networkCompareSnapshots.push(snap.id);
+      renderNetworkTab();
+      document.querySelector("#netCompareList").value = snap.id;
+    }
+
+    function selectedNetworkSnapshots() {
+      const activeCases = new Set(state.data.cases.filter((item) => item.active !== false).map((item) => item.id));
+      const snapshots = new Map(state.data.snapshots
+        .filter((snap) => activeCases.has(snap.case_id) && snapshotEligibleForNetworkTab(snap))
+        .map((snap) => [snap.id, snap]));
+      state.networkCompareSnapshots = [...new Set(state.networkCompareSnapshots)].filter((id) => snapshots.has(id));
+      return state.networkCompareSnapshots.map((id) => normalizeSnapshotOperators(snapshots.get(id)));
+    }
+
+    function networkOperatorTotals(snap) {
+      const totals = new Map();
+      for (const item of snap.operators || []) {
+        if (item.time_ms == null || !Number.isFinite(Number(item.time_ms)) || Number(item.time_ms) < 0) continue;
+        const key = operatorScopeKey(item);
+        const previous = totals.get(key);
+        totals.set(key, { ...item, time_ms: (previous?.time_ms || 0) + Number(item.time_ms) });
+      }
+      return totals;
+    }
+
+    function networkComparisonRows(snapshots) {
+      const rows = snapshots.map((snap) => {
+        const operators = networkOperatorTotals(snap);
+        return { snap, operators, total: operators.size
+          ? [...operators.values()].reduce((sum, item) => sum + item.time_ms, 0) : null };
+      });
+      const baseline = rows[0]?.total;
+      return rows.map((row) => ({ ...row, change: baseline > 0 && row.total != null
+        ? (row.total / baseline - 1) * 100 : null }));
+    }
+
+    function renderNetworkComparison() {
+      const snapshots = selectedNetworkSnapshots();
+      fillSelect("#netCompareList", snapshots.length
+        ? snapshots.map((snap, index) => [snap.id, `${index + 1}${index ? "" : "（基准）"} · ${networkSnapshotLabel(snap)}`])
+        : [["", "对比列表为空"]]);
+      document.querySelector("#netCompareList").disabled = !snapshots.length;
+      document.querySelector("#netCompareRemoveBtn").disabled = !snapshots.length;
+      document.querySelector("#netCompareClearBtn").disabled = !snapshots.length;
+      const current = currentSnapshot();
+      document.querySelector("#netCompareAddBtn").disabled = !current || state.networkCompareSnapshots.includes(current.id);
+      const rows = networkComparisonRows(snapshots.length ? snapshots : current ? [current] : []);
+      document.querySelector("#netCompareHint").textContent = snapshots.length > 1
+        ? `已添加 ${snapshots.length} 次采集；图中编号对应下表。`
+        : snapshots.length ? "已添加 1 次采集，请再添加至少一项进行对比。"
+          : "尚未添加对比结果，当前展示上方所选采集。";
+      const operators = new Map();
+      rows.forEach((row) => row.operators.forEach((item, key) => {
+        if (!operators.has(key)) operators.set(key, item);
+      }));
+      const candidates = [...operators.values()].sort((a, b) => b.time_ms - a.time_ms);
+      renderComparePick(candidates);
+      renderCompareChart(candidates, rows);
+      destroyChart("networkTotals");
+      if (rows.length) {
+        state.charts.networkTotals = new Chart(document.querySelector("#networkTotals"), {
+          type: "bar",
+          data: { labels: rows.map((row, index) => `采集 ${index + 1}`), datasets: [{
+            label: "所选算子总耗时 (ms)", data: rows.map((row) => row.total),
+            backgroundColor: rows.map((row, index) => OPERATOR_PALETTE[index % OPERATOR_PALETTE.length]),
+            borderRadius: 6,
+          }] },
+          options: { responsive: true, maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, title: { display: true, text: "ms" } } },
+            plugins: { legend: { display: false } } },
+        });
+      }
+      const selected = candidates.filter((item) => state.compareOps.includes(operatorScopeKey(item)));
+      const duration = (value) => value == null ? "—" : `${value.toFixed(3)} ms`;
+      document.querySelector("#networkComparisonTable").innerHTML = rows.length ? `
+        <table class="stats-table perf-table perf-network-table">
+          <thead><tr><th>采集</th><th>用例 / 采集来源</th><th>总耗时</th><th>相对基准</th>
+            ${selected.map((item) => `<th>${escapeHtml(operatorDisplayLabel(item))}</th>`).join("")}
+          </tr></thead>
+          <tbody>${rows.map((row, index) => `<tr>
+            <th scope="row">${index + 1}${index ? "" : "（基准）"}</th>
+            <td>${escapeHtml(networkSnapshotLabel(row.snap))}</td>
+            <td>${duration(row.total)}</td>
+            <td>${row.change == null ? "—" : `${row.change > 0 ? "+" : ""}${row.change.toFixed(2)}%`}</td>
+            ${selected.map((item) => `<td>${duration(row.operators.get(operatorScopeKey(item))?.time_ms)}</td>`).join("")}
+          </tr>`).join("")}</tbody>
+        </table>` : '<p class="empty">暂无采集结果可展示。</p>';
     }
 
     function filteredCases(filters, caseId) {
@@ -3059,6 +3201,7 @@
     }
 
     function renderNetworkTab() {
+      renderNetworkComparison();
       const snap = currentSnapshot();
       const center = document.querySelector("#networkPieCenter");
       const legend = document.querySelector("#networkLegend");
@@ -3072,8 +3215,6 @@
           ? '<p class="empty">请至少勾选 ascendc 或 triton 算子。</p>'
           : '<p class="empty">当前筛选条件下没有 msprof 整网或 msopprof 快照。</p>';
         destroyChart("networkPie");
-        destroyChart("networkCompare");
-        document.querySelector("#networkComparePick").innerHTML = "";
         return;
       }
       const operators = [...(snap.operators || [])].sort((a, b) => b.time_ms - a.time_ms);
@@ -3082,8 +3223,6 @@
         center.innerHTML = "";
         legend.innerHTML = '<p class="empty">当前算子范围下没有可展示的算子。</p>';
         destroyChart("networkPie");
-        destroyChart("networkCompare");
-        document.querySelector("#networkComparePick").innerHTML = "";
         return;
       }
       totalNode.textContent = `总耗时 ${snap.total_time_ms.toFixed(3)} ms`;
@@ -3115,15 +3254,13 @@
           plugins: { legend: { display: false } },
         },
       });
-      renderComparePick(operators);
-      renderCompareChart(operators, snap);
     }
 
     function renderComparePick(operators) {
       const host = document.querySelector("#networkComparePick");
       const visible = new Set(operators.map(operatorScopeKey));
-      state.compareOps = (state.compareOps || []).filter((id) => visible.has(id));
-      if (!state.compareOps.length) state.compareOps = operators.slice(0, 2).map(operatorScopeKey);
+      if (state.compareOps == null && operators.length) state.compareOps = operators.slice(0, 2).map(operatorScopeKey);
+      if (state.compareOps != null) state.compareOps = state.compareOps.filter((id) => visible.has(id));
       host.innerHTML = operators.map((item) => {
         const key = operatorScopeKey(item);
         const checked = state.compareOps.includes(key) ? "checked" : "";
@@ -3137,24 +3274,25 @@
             return alert("最多选择 4 个算子进行对比。");
           }
           state.compareOps = selected;
-          renderCompareChart(operators, currentSnapshot());
+          renderNetworkComparison();
         });
       });
     }
 
-    function renderCompareChart(operators, snap) {
+    function renderCompareChart(operators, rows) {
       const selected = operators.filter((item) => state.compareOps.includes(operatorScopeKey(item)));
       destroyChart("networkCompare");
+      if (!rows.length) return;
       state.charts.networkCompare = new Chart(document.querySelector("#networkCompare"), {
         type: "bar",
         data: {
-          labels: selected.map((item) => operatorLabel(item.operator_id)),
-          datasets: [{
-            label: `${snap?.label || ""} 耗时(ms)`,
-            data: selected.map((item) => item.time_ms),
-            backgroundColor: selected.map((item) => operatorColor(item.operator_id)),
+          labels: selected.map(operatorDisplayLabel),
+          datasets: rows.map((row, index) => ({
+            label: `采集 ${index + 1}${index ? "" : "（基准）"} 耗时(ms)`,
+            data: selected.map((item) => row.operators.get(operatorScopeKey(item))?.time_ms ?? null),
+            backgroundColor: OPERATOR_PALETTE[index % OPERATOR_PALETTE.length],
             borderRadius: 8,
-          }],
+          })),
         },
         options: {
           responsive: true,
@@ -3162,7 +3300,7 @@
           scales: {
             y: { beginAtZero: true, title: { display: true, text: "ms" } },
           },
-          plugins: { legend: { display: false } },
+          plugins: { legend: { display: true, position: "bottom" } },
         },
       });
     }

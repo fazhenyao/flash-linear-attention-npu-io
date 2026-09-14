@@ -249,6 +249,9 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
 .perf-chart-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
 .perf-chart-card { display:grid; gap:12px; padding:14px; border:1px solid var(--line); border-radius:16px; background:#fffaf1; min-height:360px; }
 .perf-chart-wide { grid-column:1 / -1; }
+.perf-network-bar-wrap { position:relative; height:280px; min-width:0; }
+.perf-network-table td:nth-child(2) { min-width:220px; max-width:520px; white-space:normal; overflow-wrap:anywhere; }
+.perf-network-table th, .perf-network-table td { white-space:nowrap; }
 .perf-pie-wrap { position:relative; height:300px; }
 .perf-pie-wrap canvas { width:100% !important; height:100% !important; }
 .perf-pie-center { position:absolute; inset:0; display:grid; place-content:center; text-align:center; pointer-events:none; }
