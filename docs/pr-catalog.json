@@ -1,31 +1,79 @@
 {
-  "generatedAt": "2026-09-14T19:07:38+08:00",
+  "generatedAt": "2026-09-15T10:12:41+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 365,
+  "total": 372,
   "items": [
     {
-      "number": 552,
-      "title": "fix: always call l0op::Contiguous in DataContiguous",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/552",
+      "number": 567,
+      "title": "feat(kda): 接入 chunk_kda_fwd_finalize 解耦 Python 入口",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/567",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-14T02:02:07Z",
-      "createdAt": "2026-09-14T02:01:09Z",
-      "headRef": "v26.9.0",
+      "updatedAt": "2026-09-15T01:28:50Z",
+      "createdAt": "2026-09-15T01:26:56Z",
+      "headRef": "codex/chunk-kda-fwd-finalize-python",
       "labels": []
     },
     {
-      "number": 551,
-      "title": "fix: always call l0op::Contiguous in DataContiguous",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/551",
+      "number": 566,
+      "title": "feat(kda): 实现 A2/A3/A5 chunk_kda_fwd_finalize",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/566",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-14T02:02:02Z",
-      "createdAt": "2026-09-14T02:00:44Z",
-      "headRef": "dhu",
+      "updatedAt": "2026-09-15T01:28:51Z",
+      "createdAt": "2026-09-15T01:16:17Z",
+      "headRef": "codex/chunk-kda-fwd-finalize",
+      "labels": []
+    },
+    {
+      "number": 564,
+      "title": "fix: align A5 ChunkFwdO output scaling order",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/564",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-14T18:18:00Z",
+      "createdAt": "2026-09-14T18:00:29Z",
+      "headRef": "fix_fwd_o_add_mul",
+      "labels": []
+    },
+    {
+      "number": 562,
+      "title": "test(gdn): 增加 A5 新路径 ATK 双标杆测试",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/562",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-14T14:48:56Z",
+      "createdAt": "2026-09-14T14:48:55Z",
+      "headRef": "codex/gdn-atk-dual-benchmark",
+      "labels": []
+    },
+    {
+      "number": 560,
+      "title": "新增merge_fwd_bwd_kernel算子",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/560",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-14T12:29:12Z",
+      "createdAt": "2026-09-14T12:22:59Z",
+      "headRef": "merge_fwd_bwd_kernel",
+      "labels": []
+    },
+    {
+      "number": 559,
+      "title": "feat(torch_custom): Stable-ABI 薄层替换 ctypes 热路径（默认后端）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/559",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-15T01:58:06Z",
+      "createdAt": "2026-09-14T12:12:39Z",
+      "headRef": "pr/stable-abi-macro-main",
       "labels": []
     },
     {
@@ -35,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-12T10:16:11Z",
+      "updatedAt": "2026-09-14T12:53:32Z",
       "createdAt": "2026-09-12T10:16:09Z",
       "headRef": "9_8_sf",
       "labels": []
@@ -47,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-14T08:40:51Z",
+      "updatedAt": "2026-09-15T01:24:47Z",
       "createdAt": "2026-09-12T01:51:29Z",
       "headRef": "codex/gdn-new-path-exp",
       "labels": []
@@ -59,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-14T11:05:53Z",
+      "updatedAt": "2026-09-14T11:52:28Z",
       "createdAt": "2026-09-11T02:11:00Z",
       "headRef": "codex/a5-ci-deployment",
       "labels": []
@@ -95,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-14T01:35:49Z",
+      "updatedAt": "2026-09-14T12:53:39Z",
       "createdAt": "2026-09-09T08:09:18Z",
       "headRef": "9_8",
       "labels": []
@@ -206,18 +254,6 @@
       "updatedAt": "2026-09-04T08:48:50Z",
       "createdAt": "2026-09-04T06:38:49Z",
       "headRef": "recurrent_kda_slice",
-      "labels": []
-    },
-    {
-      "number": 460,
-      "title": "feat(kda): 实现 A2/A3/A5 chunk_kda_fwd_prepare",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/460",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-14T07:53:13Z",
-      "createdAt": "2026-09-04T04:29:07Z",
-      "headRef": "codex/chunk-kda-fwd-prepare-pseudocode",
       "labels": []
     },
     {
@@ -1109,6 +1145,18 @@
       "labels": []
     },
     {
+      "number": 556,
+      "title": "fix(gdn): 修正反向融合接口输入布局校验",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/556",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-15T01:31:06Z",
+      "updatedAt": "2026-09-15T01:31:06Z",
+      "createdAt": "2026-09-14T11:51:05Z",
+      "headRef": "op_gdn_bwd_layout_check",
+      "labels": []
+    },
+    {
       "number": 553,
       "title": "fix(kda): 修复 A2/A5 变长尾块反向梯度异常",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/553",
@@ -1118,6 +1166,30 @@
       "updatedAt": "2026-09-14T08:16:46Z",
       "createdAt": "2026-09-14T02:32:39Z",
       "headRef": "codex/fix-kda-bwd-a2-varlen-tail",
+      "labels": []
+    },
+    {
+      "number": 552,
+      "title": "fix: always call l0op::Contiguous in DataContiguous",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/552",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-14T12:22:36Z",
+      "updatedAt": "2026-09-14T12:22:36Z",
+      "createdAt": "2026-09-14T02:01:09Z",
+      "headRef": "v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 551,
+      "title": "fix: always call l0op::Contiguous in DataContiguous",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/551",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-14T12:22:34Z",
+      "updatedAt": "2026-09-14T12:22:34Z",
+      "createdAt": "2026-09-14T02:00:44Z",
+      "headRef": "dhu",
       "labels": []
     },
     {
@@ -1622,6 +1694,18 @@
       "updatedAt": "2026-09-09T13:22:18Z",
       "createdAt": "2026-09-04T07:25:38Z",
       "headRef": "woey/fix-recurrent-kda-k128-ub",
+      "labels": []
+    },
+    {
+      "number": 460,
+      "title": "feat(kda): 实现 A2/A3/A5 chunk_kda_fwd_prepare",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/460",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-14T15:02:56Z",
+      "updatedAt": "2026-09-14T15:02:56Z",
+      "createdAt": "2026-09-04T04:29:07Z",
+      "headRef": "codex/chunk-kda-fwd-prepare-pseudocode",
       "labels": []
     },
     {
