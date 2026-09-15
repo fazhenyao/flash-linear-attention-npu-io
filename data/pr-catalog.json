@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-09-15T10:12:41+08:00",
+  "generatedAt": "2026-09-15T18:36:08+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 372,
+  "total": 376,
   "items": [
+    {
+      "number": 571,
+      "title": "fix(build): validate FLA_NPU_OPS/--ops names before CMake configuration",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/571",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-15T09:13:46Z",
+      "createdAt": "2026-09-15T09:01:54Z",
+      "headRef": "fix/issue-482-ops-precheck",
+      "labels": []
+    },
+    {
+      "number": 570,
+      "title": "【易用性】报错时打印详细信息",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/570",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-15T08:57:55Z",
+      "createdAt": "2026-09-15T08:53:50Z",
+      "headRef": "0915-fix-bord-cases",
+      "labels": []
+    },
+    {
+      "number": 569,
+      "title": "fix: remove KDA backward chunk cap and preserve state update precision",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/569",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-15T06:39:55Z",
+      "createdAt": "2026-09-15T06:39:55Z",
+      "headRef": "codex/fix-508-packed-chunks",
+      "labels": []
+    },
+    {
+      "number": 568,
+      "title": "[v26.9.0] feat(stable): route every operator through the Stable-ABI launcher",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/568",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-15T06:49:28Z",
+      "createdAt": "2026-09-15T06:18:36Z",
+      "headRef": "pr/stable-abi-macro-v26.9.0",
+      "labels": []
+    },
     {
       "number": 567,
       "title": "feat(kda): 接入 chunk_kda_fwd_finalize 解耦 Python 入口",
@@ -59,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-14T12:29:12Z",
+      "updatedAt": "2026-09-15T02:48:33Z",
       "createdAt": "2026-09-14T12:22:59Z",
       "headRef": "merge_fwd_bwd_kernel",
       "labels": []
@@ -71,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-15T01:58:06Z",
+      "updatedAt": "2026-09-15T09:00:04Z",
       "createdAt": "2026-09-14T12:12:39Z",
       "headRef": "pr/stable-abi-macro-main",
       "labels": []
@@ -95,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-15T01:24:47Z",
+      "updatedAt": "2026-09-15T07:31:47Z",
       "createdAt": "2026-09-12T01:51:29Z",
       "headRef": "codex/gdn-new-path-exp",
       "labels": []
