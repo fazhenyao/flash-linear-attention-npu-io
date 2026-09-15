@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>性能看板 - flash-linear-attention-npu</title>
-  <link rel="stylesheet" href="./styles.css?v=20260914-network-summary-2">
+  <link rel="stylesheet" href="./styles.css?v=20260915-network-summary-3">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -144,10 +144,14 @@
             <h2>同示例同输入历史性能</h2>
             <button type="button" class="perf-case-download-btn" id="netCompareExportBtn">导出表格 CSV</button>
           </div>
-          <p class="perf-compare-hint">每列是一次采集，按时间从早到晚排列；每行是实际 OP_Name 的时间字段。列出各次 op_summary 的算子名称并集，不要求名称一致，未采集到的项显示“—”。此表保留全部算子，不受上方算子范围或图表选项限制。重复 OP_Name 按所选统计方式汇总，单位沿用原始列名；时间戳只支持最小值 / 最大值。旧采集未保存原始明细时单独标为历史逻辑汇总，需重新导入 Prof 才能补全。</p>
+          <p class="perf-compare-hint">每次采集独立排列“OP_Name＋耗时”列组，按采集时间从早到晚并排展示。默认按 op_summary 记录顺序逐条列出，同名算子重复执行也分行保留；不同采集的同一行不代表同一算子或执行位置。缺失值与未记录的 Block / SubBlock 留空。表格包含全部算子，不受图表筛选限制。旧数据只有汇总值时明确标注，重新导入 Prof 可补全逐条明细。</p>
           <div class="perf-filters-row">
+            <label>时间字段
+              <select id="netSummaryField"></select>
+            </label>
             <label>时间统计
               <select id="netSummaryStat">
+                <option value="raw">逐次执行（不合并同名算子）</option>
                 <option value="total">累计时间</option>
                 <option value="avg">平均时间</option>
                 <option value="min">最小值</option>
@@ -157,6 +161,7 @@
             </label>
           </div>
           <p id="netCompareHint" role="status"></p>
+          <details class="perf-summary-context"><summary>采集信息与统计口径</summary><div id="networkComparisonContext"></div></details>
           <div class="perf-network-bar-wrap"><canvas id="networkTotals"></canvas></div>
           <div class="table-wrap stats-table-wrap" id="networkComparisonTable"></div>
         </div>
@@ -520,6 +525,7 @@
       document.querySelector("#netCompareMatchingBtn").addEventListener("click", loadMatchingNetworkHistory);
       document.querySelector("#netCompareExportBtn").addEventListener("click", exportNetworkComparison);
       document.querySelector("#netSummaryStat").addEventListener("change", renderNetworkComparison);
+      document.querySelector("#netSummaryField").addEventListener("change", renderNetworkComparison);
       document.querySelector("#netCompareRemoveBtn").addEventListener("click", () => {
         const id = document.querySelector("#netCompareList").value;
         state.networkCompareSnapshots = state.networkCompareSnapshots.filter((item) => item !== id);
@@ -3209,59 +3215,69 @@
       renderNetworkTab();
     }
 
-    function networkSummaryCells(snap, statistic) {
-      const cells = new Map();
-      function add(name, field, value, source) {
-        const key = JSON.stringify([source, name, field]);
-        cells.set(key, { name, field, value, source });
-      }
+    function networkSummaryOperators(snap, statistic) {
       const raw = state.data.snapshots.find((item) => item.id === snap.id) || snap;
-      if (Array.isArray(raw.op_summary)) {
-        const labels = { total: "累计", avg: "平均", min: "最小", max: "最大" };
-        const selected = statistic === "all" ? Object.keys(labels) : [statistic];
-        for (const op of raw.op_summary) {
-          add(op.op_name, "调用次数", op.call_count, "op_summary");
-          for (const [field, stats] of Object.entries(op.time_stats || {})) {
-            for (const kind of selected) {
-              if (stats[kind] != null && Number.isFinite(Number(stats[kind]))) {
-                add(op.op_name, `${field} · ${labels[kind]}`, Number(stats[kind]), "op_summary");
-              }
-            }
-          }
-        }
-      } else {
-        // Historical logical aggregates may represent several original names.
-        // Never align them with raw OP_Name rows or reconstruct unknown values.
-        for (const op of networkOperatorTotals(raw).values()) {
-          const name = `历史逻辑汇总：${operatorDisplayLabel(op)}`;
-          if (statistic === "total" || statistic === "all") {
-            if (op.time_ms != null) add(name, "time_ms (ms) · 累计", Number(op.time_ms), "legacy");
-          }
-        }
+      const details = raw.op_summary_details;
+      if (statistic === "raw" && details && Array.isArray(details.rows)) {
+        return details.rows.map(([index, ...values]) => ({
+          ...details.names[index],
+          time_stats: Object.fromEntries(details.fields.map((field, column) => [field, { raw: values[column] }])),
+        }));
       }
-      return cells;
+      if (Array.isArray(raw.op_summary)) return statistic === "raw" ? raw.op_summary.map((op) => ({
+        ...op, op_name: `${op.op_name}【同名汇总，缺逐次明细】`,
+        time_stats: Object.fromEntries(Object.entries(op.time_stats || {}).map(([field, stats]) => [field, { raw: stats.total }])),
+      })) : raw.op_summary;
+      // Legacy totals have no per-call statistics or exact original names.
+      return [...networkOperatorTotals(raw).values()].map((op) => ({
+        op_name: `历史逻辑汇总：${operatorDisplayLabel(op)}`,
+        time_stats: { "Task Duration(us)": { [statistic === "raw" ? "raw" : "total"]: op.time_ms * 1000 } },
+      }));
     }
 
     function networkComparisonTableData(rows) {
-      const statistic = document.querySelector("#netSummaryStat")?.value || "total";
-      const headers = ["OP_Name / 采集信息", "时间字段 / 统计", ...rows.map((row, index) =>
-        `采集 ${index + 1}${index ? "" : "（基准）"} · ${networkHistoryTime(row.snap) || "时间未记录"}`)];
-      const values = [];
-      const metadata = (title, getValue) => values.push(["采集信息", title, ...rows.map(({ snap }) => getValue(snap))]);
+      const statistic = document.querySelector("#netSummaryStat")?.value || "raw";
+      const labels = { raw: "时间值", total: "累计耗时", avg: "平均耗时", min: "最小值", max: "最大值" };
+      const kinds = statistic === "all" ? ["total", "avg", "min", "max"] : [statistic];
+      const collections = rows.map(({ snap }) => networkSummaryOperators(snap, statistic));
+      const fields = [...new Set(collections.flatMap((ops) => ops.flatMap((op) => Object.keys(op.time_stats || {}))))];
+      if (!fields.length) fields.push("Task Duration(us)");
+      fields.sort((a, b) => (b === "Task Duration(us)") - (a === "Task Duration(us)") || a.localeCompare(b));
+      const selector = document.querySelector("#netSummaryField");
+      const field = fields.includes(selector.value) ? selector.value : fields[0];
+      fillSelect("#netSummaryField", fields.map((name) => [name, name]));
+      selector.value = field;
+      const captions = rows.map((row, index) =>
+        `采集 ${index + 1}${index ? "" : "（基准）"} · ${networkHistoryTime(row.snap) || "时间未记录"} · ${row.snap.chip || "芯片未记录"}`);
+      const width = 1 + kinds.length;
+      const headers = ["Block", "SubBlock", ...captions.flatMap((caption) =>
+        [`${caption} · OP_Name`, ...kinds.map((kind) => `${caption} · ${field} · ${labels[kind]}`)])];
+      const values = [], metadataValues = [];
+      const metadata = (title, getValue) => metadataValues.push([title, ...rows.map(({ snap }) => getValue(snap))]);
       metadata("测试示例", (snap) => networkInputIdentity(snap).example || "未记录");
       metadata("输入参数", (snap) => JSON.stringify(networkInputIdentity(snap).attrs));
       metadata("芯片 / SoC", (snap) => [snap.chip, snap.soc_version].filter(Boolean).join(" / "));
       metadata("设备", (snap) => snap.device_id ?? (state.data.runs || []).find((run) => run.snapshot_id === snap.id)?.device ?? "未记录");
       metadata("执行环境", (snap) => JSON.stringify((state.data.runs || []).find((run) => run.snapshot_id === snap.id)?.execution_environment || {}));
       metadata("采集来源", networkSnapshotLabel);
-      metadata("时间数据来源", (snap) => Array.isArray(snap.op_summary) ? "op_summary 原始名称统计" : "历史逻辑汇总，缺少原始 OP_Name 明细");
-      const collections = rows.map(({ snap }) => networkSummaryCells(snap, statistic));
-      const keys = new Map();
-      collections.forEach((cells) => cells.forEach((entry, key) => keys.set(key, entry)));
-      for (const [key, entry] of [...keys].sort((a, b) => a[1].name.localeCompare(b[1].name) || a[1].field.localeCompare(b[1].field))) {
-        values.push([entry.name, entry.field, ...collections.map((cells) => cells.get(key)?.value ?? null)]);
+      metadata("时间数据来源", (snap) => snap.op_summary_details ? "op_summary 逐次执行记录" : Array.isArray(snap.op_summary) ? "同名汇总，缺少逐次执行明细" : "历史逻辑汇总，缺少原始 OP_Name 与逐次执行明细");
+      const groupKey = (op) => JSON.stringify([op.block || "", op.sub_block || ""]);
+      const groups = [...new Set(collections.flatMap((ops) => ops.map(groupKey)))];
+      for (const key of groups) {
+        const grouped = collections.map((ops) => ops.filter((op) => groupKey(op) === key));
+        const [block, subBlock] = JSON.parse(key);
+        const count = Math.max(0, ...grouped.map((ops) => ops.length));
+        for (let index = 0; index < count; index++) {
+          values.push([index ? "" : block, index ? "" : subBlock, ...grouped.flatMap((ops) => {
+            const op = ops[index];
+            return [op?.op_name ?? null, ...kinds.map((kind) => {
+              const value = op?.time_stats?.[field]?.[kind];
+              return value != null && Number.isFinite(Number(value)) ? Number(value) : null;
+            })];
+          })]);
+        }
       }
-      return { headers, values };
+      return { headers, values, captions, kinds, field, width, labels, metadata: metadataValues };
     }
 
     function networkComparisonCsv(table) {
@@ -3271,7 +3287,14 @@
         if (typeof value === "string" && /^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
         return `"${text.replace(/"/g, '""')}"`;
       };
-      return "\ufeff" + [table.headers, ...table.values].map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n";
+      const records = [table.headers, ...table.values];
+      if (table.metadata?.length) {
+        records.push(Array(table.headers.length).fill(null));
+        records.push(["采集信息", "", ...table.captions.flatMap((caption) => [caption, ...Array(table.width - 1).fill(null)])]);
+        records.push(...table.metadata.map(([label, ...values]) =>
+          [label, "", ...values.flatMap((value) => [value, ...Array(table.width - 1).fill(null)])]));
+      }
+      return "\ufeff" + records.map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n";
     }
 
     function exportNetworkComparison() {
@@ -3345,13 +3368,17 @@
       const table = networkComparisonTableData(rows);
       state.networkComparisonTable = table;
       document.querySelector("#netCompareExportBtn").disabled = !rows.length;
+      document.querySelector("#networkComparisonContext").innerHTML = rows.length ?
+        `<table class="stats-table perf-table"><thead><tr><th>采集信息</th>${table.captions.map((caption) => `<th>${escapeHtml(caption)}</th>`).join("")}</tr></thead>
+        <tbody>${table.metadata.map((record) => `<tr>${record.map((value) => `<td>${escapeHtml(value)}</td>`).join("")}</tr>`).join("")}</tbody></table>` : "";
       document.querySelector("#networkComparisonTable").innerHTML = rows.length ? `
         <table class="stats-table perf-table perf-network-table">
-          <thead><tr>${table.headers.map((title) => `<th>${escapeHtml(title)}</th>`).join("")}</tr></thead>
+          <thead><tr class="perf-capture-headers"><th rowspan="2">Block</th><th rowspan="2">SubBlock</th>${table.captions.map((caption) => `<th colspan="${table.width}">${escapeHtml(caption)}</th>`).join("")}</tr>
+          <tr>${table.captions.map(() => `<th class="perf-op-name">OP_Name</th>${table.kinds.map((kind) => `<th class="perf-op-time">${escapeHtml(table.field)}<br>${escapeHtml(table.labels[kind])}</th>`).join("")}`).join("")}</tr></thead>
           <tbody>${table.values.map((values) => `<tr>${values.map((value, column) => {
-            if (column === 0) return `<th scope="row">${escapeHtml(value)}</th>`;
-            const text = value == null ? "—" : typeof value === "number" ? String(Number(value.toFixed(6))) : String(value);
-            return `<td>${escapeHtml(text)}</td>`;
+            const text = value == null ? "" : String(value);
+            const kind = column < 2 ? "perf-op-block" : (column - 2) % table.width === 0 ? "perf-op-name" : "perf-op-time";
+            return `<td class="${kind}">${escapeHtml(text)}</td>`;
           }).join("")}</tr>`).join("")}</tbody>
         </table>` : '<p class="empty">暂无采集结果可展示。</p>';
     }

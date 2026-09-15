@@ -534,12 +534,18 @@ def summarize_named_ops(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
     Repeated names are summarized per column; counts exclude missing samples.
     Start/end timestamp columns retain only min/max, never a meaningless sum.
     """
-    grouped: dict[str, dict[str, Any]] = {}
+    grouped: dict[tuple[str, str, str], dict[str, Any]] = {}
     for row in rows:
         name = next((str(row[key]).strip() for key in ("Op Name", "OP Name", "OP_Name", "Op_Name") if row.get(key)), "")
         if not name:
             continue
-        entry = grouped.setdefault(name, {"op_name": name, "call_count": 0, "time_stats": {}})
+        block = str(row.get("Block") or "").strip()
+        sub_block = str(row.get("SubBlock") or "").strip()
+        entry = grouped.setdefault((block, sub_block, name), {"op_name": name, "call_count": 0, "time_stats": {}})
+        if block:
+            entry["block"] = block
+        if sub_block:
+            entry["sub_block"] = sub_block
         entry["call_count"] += 1
         for field, raw in row.items():
             if not re.search(r"time|duration|wait", field, re.I) or not re.search(r"\((?:ns|us|µs|μs|ms|s)\)", field, re.I):
@@ -559,6 +565,28 @@ def summarize_named_ops(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
             else:
                 stats["avg"] = stats["total"] / stats["count"]
     return list(grouped.values())
+
+
+def execution_summary_details(rows: list[dict[str, str]]) -> dict[str, Any]:
+    """Preserve CSV execution order and duplicates with interned names/columns."""
+    fields = list(dict.fromkeys(
+        field for row in rows for field in row
+        if re.search(r"time|duration|wait", field, re.I)
+        and re.search(r"\((?:ns|us|µs|μs|ms|s)\)", field, re.I)
+    ))
+    names, records, indices = [], [], {}
+    for row in rows:
+        name = next((str(row[key]).strip() for key in ("Op Name", "OP Name", "OP_Name", "Op_Name") if row.get(key)), "")
+        if not name:
+            continue
+        block, sub_block = str(row.get("Block") or "").strip(), str(row.get("SubBlock") or "").strip()
+        key = (block, sub_block, name)
+        if key not in indices:
+            indices[key] = len(names)
+            names.append({"op_name": name, "block": block, "sub_block": sub_block})
+        values = [to_float(row.get(field)) for field in fields]
+        records.append([indices[key], *[value if value is not None and math.isfinite(value) else None for value in values]])
+    return {"fields": fields, "names": names, "rows": records}
 
 
 def aggregate_summary_metrics(rows: list[dict[str, str]]) -> dict[tuple[str, str | None], dict[str, Any]]:
@@ -820,6 +848,7 @@ def import_prof(
     )
     snapshot["example_id"] = example_id
     snapshot["op_summary"] = summarize_named_ops(summary_rows)
+    snapshot["op_summary_details"] = execution_summary_details(summary_rows)
     snapshot["soc_version"] = soc_version or ""
     cube_mod = load_cube_theoretical_flops_module()
     attrs = case.get("attributes") or {}
