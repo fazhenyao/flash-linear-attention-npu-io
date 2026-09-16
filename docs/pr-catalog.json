@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-09-15T18:36:08+08:00",
+  "generatedAt": "2026-09-16T10:05:02+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 376,
+  "total": 377,
   "items": [
+    {
+      "number": 572,
+      "title": "fix(chunk_fwd_o): 补齐 aclnn host 层参数校验并修正错误码语义",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/572",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-15T11:37:55Z",
+      "createdAt": "2026-09-15T11:29:24Z",
+      "headRef": "chunk_fwd_o_abnormal",
+      "labels": []
+    },
     {
       "number": 571,
       "title": "fix(build): validate FLA_NPU_OPS/--ops names before CMake configuration",
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-15T08:57:55Z",
+      "updatedAt": "2026-09-16T01:38:40Z",
       "createdAt": "2026-09-15T08:53:50Z",
       "headRef": "0915-fix-bord-cases",
       "labels": []
@@ -119,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-15T09:00:04Z",
+      "updatedAt": "2026-09-15T23:13:09Z",
       "createdAt": "2026-09-14T12:12:39Z",
       "headRef": "pr/stable-abi-macro-main",
       "labels": []
@@ -134,30 +146,6 @@
       "updatedAt": "2026-09-14T12:53:32Z",
       "createdAt": "2026-09-12T10:16:09Z",
       "headRef": "9_8_sf",
-      "labels": []
-    },
-    {
-      "number": 540,
-      "title": "feat: GDN A5 拼接路径支持 use_exp2=false 和关闭 QK L2Norm",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/540",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-15T07:31:47Z",
-      "createdAt": "2026-09-12T01:51:29Z",
-      "headRef": "codex/gdn-new-path-exp",
-      "labels": []
-    },
-    {
-      "number": 527,
-      "title": "ci: 新增 A5 双平台 NPU 验证",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/527",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-14T11:52:28Z",
-      "createdAt": "2026-09-11T02:11:00Z",
-      "headRef": "codex/a5-ci-deployment",
       "labels": []
     },
     {
@@ -1301,6 +1289,18 @@
       "labels": []
     },
     {
+      "number": 540,
+      "title": "feat: GDN A5 拼接路径支持 use_exp2=false 和关闭 QK L2Norm",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/540",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-15T12:00:32Z",
+      "updatedAt": "2026-09-15T12:00:32Z",
+      "createdAt": "2026-09-12T01:51:29Z",
+      "headRef": "codex/gdn-new-path-exp",
+      "labels": []
+    },
+    {
       "number": 536,
       "title": "fix(chunk_local_cumsum): register Ascend950 op config (v26.9.0)",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/536",
@@ -1358,6 +1358,18 @@
       "updatedAt": "2026-09-11T08:59:25Z",
       "createdAt": "2026-09-11T02:12:28Z",
       "headRef": "chw_a2_a5_triton",
+      "labels": []
+    },
+    {
+      "number": 527,
+      "title": "ci: 新增 A5 双平台 NPU 验证",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/527",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-15T14:53:56Z",
+      "updatedAt": "2026-09-15T14:53:56Z",
+      "createdAt": "2026-09-11T02:11:00Z",
+      "headRef": "codex/a5-ci-deployment",
       "labels": []
     },
     {
