@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-09-16T18:24:59+08:00",
+  "generatedAt": "2026-09-17T10:08:54+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 379,
+  "total": 381,
   "items": [
     {
-      "number": 582,
-      "title": "fix: 对齐 GDN 正向六输出与混合精度接口",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/582",
+      "number": 584,
+      "title": "feat(gdn): 支持融合反向 use_exp2 false",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/584",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-16T10:15:42Z",
-      "createdAt": "2026-09-16T09:31:10Z",
-      "headRef": "codex/gdn-fwd-dtype-contract",
+      "updatedAt": "2026-09-17T01:41:30Z",
+      "createdAt": "2026-09-16T13:39:02Z",
+      "headRef": "gdn_bwd_exp_false",
       "labels": []
     },
     {
@@ -71,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-16T07:56:49Z",
+      "updatedAt": "2026-09-17T01:22:55Z",
       "createdAt": "2026-09-15T06:18:36Z",
       "headRef": "pr/stable-abi-macro-v26.9.0",
       "labels": []
@@ -83,21 +83,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-15T01:28:50Z",
+      "updatedAt": "2026-09-16T17:55:54Z",
       "createdAt": "2026-09-15T01:26:56Z",
       "headRef": "codex/chunk-kda-fwd-finalize-python",
-      "labels": []
-    },
-    {
-      "number": 566,
-      "title": "feat(kda): 实现 A2/A3/A5 chunk_kda_fwd_finalize",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/566",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-16T05:05:01Z",
-      "createdAt": "2026-09-15T01:16:17Z",
-      "headRef": "codex/chunk-kda-fwd-finalize",
       "labels": []
     },
     {
@@ -143,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-16T07:26:49Z",
+      "updatedAt": "2026-09-17T01:22:34Z",
       "createdAt": "2026-09-14T12:12:39Z",
       "headRef": "pr/stable-abi-macro-main",
       "labels": []
@@ -1193,6 +1181,30 @@
       "labels": []
     },
     {
+      "number": 583,
+      "title": "fix(gdn): 对齐融合反向接口与标量布局",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/583",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-16T12:38:18Z",
+      "updatedAt": "2026-09-16T12:38:18Z",
+      "createdAt": "2026-09-16T12:03:09Z",
+      "headRef": "gdn_bwd_inter_adj",
+      "labels": []
+    },
+    {
+      "number": 582,
+      "title": "fix: 对齐 GDN 正向六输出与混合精度接口",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/582",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-16T12:37:59Z",
+      "updatedAt": "2026-09-16T12:37:59Z",
+      "createdAt": "2026-09-16T09:31:10Z",
+      "headRef": "codex/gdn-fwd-dtype-contract",
+      "labels": []
+    },
+    {
       "number": 572,
       "title": "fix(chunk_fwd_o): 补齐 aclnn host 层参数校验并修正错误码语义",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/572",
@@ -1202,6 +1214,18 @@
       "updatedAt": "2026-09-16T06:52:39Z",
       "createdAt": "2026-09-15T11:29:24Z",
       "headRef": "chunk_fwd_o_abnormal",
+      "labels": []
+    },
+    {
+      "number": 566,
+      "title": "feat(kda): 实现 A2/A3/A5 chunk_kda_fwd_finalize",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/566",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-16T15:27:55Z",
+      "updatedAt": "2026-09-16T15:27:55Z",
+      "createdAt": "2026-09-15T01:16:17Z",
+      "headRef": "codex/chunk-kda-fwd-finalize",
       "labels": []
     },
     {
