@@ -1,19 +1,55 @@
 {
-  "generatedAt": "2026-09-17T10:08:54+08:00",
+  "generatedAt": "2026-09-17T18:34:10+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 381,
+  "total": 385,
   "items": [
     {
-      "number": 584,
-      "title": "feat(gdn): 支持融合反向 use_exp2 false",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/584",
+      "number": 590,
+      "title": "perf(gdn): 优化 A2 cumsum 准备与 Phase6 流水",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/590",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-17T01:41:30Z",
-      "createdAt": "2026-09-16T13:39:02Z",
-      "headRef": "gdn_bwd_exp_false",
+      "updatedAt": "2026-09-17T08:15:59Z",
+      "createdAt": "2026-09-17T08:15:59Z",
+      "headRef": "perf/gdn-arch22-cumsum-prep",
+      "labels": []
+    },
+    {
+      "number": 588,
+      "title": "fix tips",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/588",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-17T09:10:40Z",
+      "createdAt": "2026-09-17T07:19:21Z",
+      "headRef": "0917-fix-tips-sf",
+      "labels": []
+    },
+    {
+      "number": 587,
+      "title": "[Fix] 修复causal_conv1d_bwd的资料和接口易用性问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/587",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-17T07:18:26Z",
+      "createdAt": "2026-09-17T07:18:16Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 586,
+      "title": "perf(kda): 优化 A5 三阶段前向分核与状态复用",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/586",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-17T06:58:34Z",
+      "createdAt": "2026-09-17T06:58:25Z",
+      "headRef": "codex/kda-dense-4300",
       "labels": []
     },
     {
@@ -47,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-16T07:39:08Z",
+      "updatedAt": "2026-09-17T08:05:42Z",
       "createdAt": "2026-09-15T08:53:50Z",
       "headRef": "0915-fix-bord-cases",
       "labels": []
@@ -83,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-16T17:55:54Z",
+      "updatedAt": "2026-09-17T08:28:59Z",
       "createdAt": "2026-09-15T01:26:56Z",
       "headRef": "codex/chunk-kda-fwd-finalize-python",
       "labels": []
@@ -162,12 +198,12 @@
     },
     {
       "number": 522,
-      "title": "ChunkGdnFwdPrepare Performance optimization && Function generalization",
+      "title": "ChunkGdnFwdPrepare cumsum Sklansky 1D && add ATK cases",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/522",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-14T04:53:12Z",
+      "updatedAt": "2026-09-17T09:14:25Z",
       "createdAt": "2026-09-10T08:19:39Z",
       "headRef": "gdn_fwd_prepare",
       "labels": []
@@ -206,18 +242,6 @@
       "updatedAt": "2026-09-11T06:05:33Z",
       "createdAt": "2026-09-08T13:32:41Z",
       "headRef": "pypi-v2690",
-      "labels": []
-    },
-    {
-      "number": 505,
-      "title": "recompute_w_u_fwd算子A5性能优化",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/505",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-08T12:27:10Z",
-      "createdAt": "2026-09-08T11:58:46Z",
-      "headRef": "v26.9.0",
       "labels": []
     },
     {
@@ -263,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-08T01:54:56Z",
+      "updatedAt": "2026-09-17T08:53:01Z",
       "createdAt": "2026-09-07T08:05:46Z",
       "headRef": "solve-tri-atk",
       "labels": []
@@ -1181,6 +1205,18 @@
       "labels": []
     },
     {
+      "number": 584,
+      "title": "feat(gdn): 支持融合反向 use_exp2 false",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/584",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-17T06:25:45Z",
+      "updatedAt": "2026-09-17T06:25:45Z",
+      "createdAt": "2026-09-16T13:39:02Z",
+      "headRef": "gdn_bwd_exp_false",
+      "labels": []
+    },
+    {
       "number": 583,
       "title": "fix(gdn): 对齐融合反向接口与标量布局",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/583",
@@ -1514,6 +1550,18 @@
       "updatedAt": "2026-09-08T13:32:07Z",
       "createdAt": "2026-09-08T13:04:01Z",
       "headRef": "chw_a2_a5",
+      "labels": []
+    },
+    {
+      "number": 505,
+      "title": "recompute_w_u_fwd算子A5性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/505",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-17T06:43:24Z",
+      "updatedAt": "2026-09-17T06:43:25Z",
+      "createdAt": "2026-09-08T11:58:46Z",
+      "headRef": "v26.9.0",
       "labels": []
     },
     {
