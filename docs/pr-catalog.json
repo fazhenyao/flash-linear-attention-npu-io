@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-09-18T09:55:41+08:00",
+  "generatedAt": "2026-09-18T18:10:44+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 394,
+  "total": 398,
   "items": [
+    {
+      "number": 611,
+      "title": "perf(kda): add optimized A5 saved backward chain",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/611",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-18T09:41:08Z",
+      "createdAt": "2026-09-18T08:51:02Z",
+      "headRef": "feat/kda-bwd-optimized-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 608,
+      "title": "perf(gdn): 优化 A5 私有 H/VNew 并泛化 H 到 O 流水",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/608",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-18T09:27:45Z",
+      "createdAt": "2026-09-18T06:21:14Z",
+      "headRef": "perf/gdn-a5-ho-generalized-pr",
+      "labels": []
+    },
+    {
+      "number": 606,
+      "title": "Fix solve-tri A3 NTD AicError",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/606",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-18T09:23:52Z",
+      "createdAt": "2026-09-18T02:58:05Z",
+      "headRef": "solve-tri-atk-26.9.1",
+      "labels": []
+    },
     {
       "number": 605,
       "title": "Fix solve-tri A3 NTD AicError",
@@ -11,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-18T01:42:49Z",
+      "updatedAt": "2026-09-18T09:40:03Z",
       "createdAt": "2026-09-18T01:12:30Z",
       "headRef": "solve-tri-atk-26.9.0",
       "labels": []
@@ -47,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-17T13:05:22Z",
+      "updatedAt": "2026-09-18T10:02:53Z",
       "createdAt": "2026-09-17T13:05:22Z",
       "headRef": "feat/kda-bwd-optimized-l2",
       "labels": []
@@ -59,21 +95,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-17T19:37:05Z",
+      "updatedAt": "2026-09-18T10:09:18Z",
       "createdAt": "2026-09-17T12:18:04Z",
       "headRef": "codex/kda-fwd-l0-dispatch",
-      "labels": []
-    },
-    {
-      "number": 595,
-      "title": "fix(chunk_gated_delta_rule_bwd_dhu):aclnn_chunk_gated_delta_rule_bwd_dhu增加一致性校验",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/595",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-18T01:40:07Z",
-      "createdAt": "2026-09-17T12:12:22Z",
-      "headRef": "main",
       "labels": []
     },
     {
@@ -107,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-18T01:52:22Z",
+      "updatedAt": "2026-09-18T03:36:34Z",
       "createdAt": "2026-09-17T07:18:16Z",
       "headRef": "main",
       "labels": []
@@ -215,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-17T12:25:45Z",
+      "updatedAt": "2026-09-18T02:41:14Z",
       "createdAt": "2026-09-14T12:22:59Z",
       "headRef": "merge_fwd_bwd_kernel",
       "labels": []
@@ -251,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-18T01:43:51Z",
+      "updatedAt": "2026-09-18T02:24:16Z",
       "createdAt": "2026-09-10T08:19:39Z",
       "headRef": "gdn_fwd_prepare",
       "labels": []
@@ -329,18 +353,6 @@
       "labels": []
     },
     {
-      "number": 481,
-      "title": "Add solve_tri mixed-tolerance ATK .",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/481",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-18T01:44:29Z",
-      "createdAt": "2026-09-07T08:05:46Z",
-      "headRef": "solve-tri-atk",
-      "labels": []
-    },
-    {
       "number": 478,
       "title": "8 17 26",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/478",
@@ -371,7 +383,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-09T03:35:27Z",
+      "updatedAt": "2026-09-18T10:03:08Z",
       "createdAt": "2026-09-04T03:33:33Z",
       "headRef": "readme-usability",
       "labels": []
@@ -1253,6 +1265,18 @@
       "labels": []
     },
     {
+      "number": 610,
+      "title": "chunk_gated_delta_rule_bwd_dhu文档修改",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/610",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-18T08:49:47Z",
+      "updatedAt": "2026-09-18T08:49:47Z",
+      "createdAt": "2026-09-18T08:29:04Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
       "number": 604,
       "title": "fix(ci): 兼容 .data 载荷布局的 wheel OPP 安装校验",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/604",
@@ -1274,6 +1298,18 @@
       "updatedAt": "2026-09-17T16:26:45Z",
       "createdAt": "2026-09-17T15:55:06Z",
       "headRef": "codex/ci-npu-stale-merge-and-wheel-layout",
+      "labels": []
+    },
+    {
+      "number": 595,
+      "title": "fix(chunk_gated_delta_rule_bwd_dhu):aclnn_chunk_gated_delta_rule_bwd_dhu增加一致性校验",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/595",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-18T02:16:00Z",
+      "updatedAt": "2026-09-18T02:16:01Z",
+      "createdAt": "2026-09-17T12:12:22Z",
+      "headRef": "main",
       "labels": []
     },
     {
@@ -1790,6 +1826,18 @@
       "updatedAt": "2026-09-09T13:22:38Z",
       "createdAt": "2026-09-07T12:47:29Z",
       "headRef": "sync_kda",
+      "labels": []
+    },
+    {
+      "number": 481,
+      "title": "Add solve_tri mixed-tolerance ATK .",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/481",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-18T03:25:48Z",
+      "updatedAt": "2026-09-18T03:25:48Z",
+      "createdAt": "2026-09-07T08:05:46Z",
+      "headRef": "solve-tri-atk",
       "labels": []
     },
     {
