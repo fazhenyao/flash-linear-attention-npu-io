@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-09-19T10:00:20+08:00",
+  "generatedAt": "2026-09-19T17:51:17+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 399,
+  "total": 405,
   "items": [
+    {
+      "number": 624,
+      "title": "docs(recompute_w_u_fwd): 修正 README 调用示例与目录结构",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/624",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-19T09:36:56Z",
+      "createdAt": "2026-09-19T09:36:54Z",
+      "headRef": "docs/recompute-w-u-fwd-readme-main",
+      "labels": []
+    },
+    {
+      "number": 623,
+      "title": "fix(recompute_w_u_fwd): v26.9.0 易用性整改（aclnn 报错文案 + README）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/623",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-19T09:36:33Z",
+      "createdAt": "2026-09-19T09:36:32Z",
+      "headRef": "fix/recompute-w-u-fwd-usability-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 620,
+      "title": "fix(build): scoped 编包补齐依赖算子的 kernel 产物",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/620",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-19T04:33:52Z",
+      "createdAt": "2026-09-19T03:43:12Z",
+      "headRef": "codex/fix-scoped-build-dep-kernels",
+      "labels": []
+    },
+    {
+      "number": 619,
+      "title": "fix(build): scoped 编包补齐依赖算子的 kernel 产物",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/619",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-19T04:12:06Z",
+      "createdAt": "2026-09-19T03:43:09Z",
+      "headRef": "codex/fix-scoped-build-dep-kernels-main",
+      "labels": []
+    },
     {
       "number": 608,
       "title": "perf(gdn): 优化 A5 私有 H/VNew 并泛化 H 到 O 流水",
@@ -11,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-19T01:43:59Z",
+      "updatedAt": "2026-09-19T02:06:07Z",
       "createdAt": "2026-09-18T06:21:14Z",
       "headRef": "perf/gdn-a5-ho-generalized-pr",
       "labels": []
@@ -47,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-17T16:16:36Z",
+      "updatedAt": "2026-09-19T09:44:38Z",
       "createdAt": "2026-09-17T16:09:20Z",
       "headRef": "fix/recompute-w-u-fwd-k-gate-main",
       "labels": []
@@ -59,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-17T17:58:38Z",
+      "updatedAt": "2026-09-19T09:44:35Z",
       "createdAt": "2026-09-17T16:09:14Z",
       "headRef": "fix/recompute-w-u-fwd-k-gate-v26.9.0",
       "labels": []
@@ -347,7 +395,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-18T14:25:34Z",
+      "updatedAt": "2026-09-19T07:29:28Z",
       "createdAt": "2026-09-04T03:33:33Z",
       "headRef": "readme-usability",
       "labels": []
@@ -1226,6 +1274,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 622,
+      "title": "fix: 统一 KDA 反向 h 与前向状态布局",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/622",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-19T09:26:41Z",
+      "updatedAt": "2026-09-19T09:32:50Z",
+      "createdAt": "2026-09-19T08:38:09Z",
+      "headRef": "feat/kda-bwd-forward-h-layout-main",
+      "labels": []
+    },
+    {
+      "number": 621,
+      "title": "fix: 统一 KDA 反向 h 与前向状态布局",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/621",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-19T09:26:27Z",
+      "updatedAt": "2026-09-19T09:32:56Z",
+      "createdAt": "2026-09-19T08:33:18Z",
+      "headRef": "feat/kda-bwd-forward-h-layout",
       "labels": []
     },
     {
