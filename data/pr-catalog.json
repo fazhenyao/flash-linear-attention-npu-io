@@ -1,21 +1,9 @@
 {
-  "generatedAt": "2026-09-18T18:10:44+08:00",
+  "generatedAt": "2026-09-19T10:00:20+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 398,
+  "total": 399,
   "items": [
-    {
-      "number": 611,
-      "title": "perf(kda): add optimized A5 saved backward chain",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/611",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-18T09:41:08Z",
-      "createdAt": "2026-09-18T08:51:02Z",
-      "headRef": "feat/kda-bwd-optimized-v26.9.1",
-      "labels": []
-    },
     {
       "number": 608,
       "title": "perf(gdn): 优化 A5 私有 H/VNew 并泛化 H 到 O 流水",
@@ -23,7 +11,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-18T09:27:45Z",
+      "updatedAt": "2026-09-19T01:43:59Z",
       "createdAt": "2026-09-18T06:21:14Z",
       "headRef": "perf/gdn-a5-ho-generalized-pr",
       "labels": []
@@ -74,30 +62,6 @@
       "updatedAt": "2026-09-17T17:58:38Z",
       "createdAt": "2026-09-17T16:09:14Z",
       "headRef": "fix/recompute-w-u-fwd-k-gate-v26.9.0",
-      "labels": []
-    },
-    {
-      "number": 597,
-      "title": "perf(kda): add optimized A5 saved backward chain",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/597",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-18T10:02:53Z",
-      "createdAt": "2026-09-17T13:05:22Z",
-      "headRef": "feat/kda-bwd-optimized-l2",
-      "labels": []
-    },
-    {
-      "number": 596,
-      "title": "feat(kda): 合并 #586/#567、新增 aclnnChunkKdaFwdV2 组合入口并优化 A2 Prepare 分核（V1/V2 按场景选择）",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/596",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-18T10:09:18Z",
-      "createdAt": "2026-09-17T12:18:04Z",
-      "headRef": "codex/kda-fwd-l0-dispatch",
       "labels": []
     },
     {
@@ -383,7 +347,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-18T10:03:08Z",
+      "updatedAt": "2026-09-18T14:25:34Z",
       "createdAt": "2026-09-04T03:33:33Z",
       "headRef": "readme-usability",
       "labels": []
@@ -1265,6 +1229,30 @@
       "labels": []
     },
     {
+      "number": 617,
+      "title": "[v26.9.1] feat(kda): 同步 #596（V2 组合入口 + A2 Prepare 分核优化 + Stable-ABI 薄层适配）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/617",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-18T12:19:04Z",
+      "updatedAt": "2026-09-18T12:19:04Z",
+      "createdAt": "2026-09-18T11:53:27Z",
+      "headRef": "codex/kda-fwd-v2-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 611,
+      "title": "perf(kda): add optimized A5 saved backward chain",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/611",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-18T14:52:03Z",
+      "updatedAt": "2026-09-18T14:52:04Z",
+      "createdAt": "2026-09-18T08:51:02Z",
+      "headRef": "feat/kda-bwd-optimized-v26.9.1",
+      "labels": []
+    },
+    {
       "number": 610,
       "title": "chunk_gated_delta_rule_bwd_dhu文档修改",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/610",
@@ -1298,6 +1286,30 @@
       "updatedAt": "2026-09-17T16:26:45Z",
       "createdAt": "2026-09-17T15:55:06Z",
       "headRef": "codex/ci-npu-stale-merge-and-wheel-layout",
+      "labels": []
+    },
+    {
+      "number": 597,
+      "title": "perf(kda): add optimized A5 saved backward chain",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/597",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-18T14:51:45Z",
+      "updatedAt": "2026-09-18T14:51:45Z",
+      "createdAt": "2026-09-17T13:05:22Z",
+      "headRef": "feat/kda-bwd-optimized-l2",
+      "labels": []
+    },
+    {
+      "number": 596,
+      "title": "feat(kda): 合并 #586/#567、新增 aclnnChunkKdaFwdV2 组合入口并优化 A2 Prepare 分核（V1/V2 按场景选择）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/596",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-18T11:45:44Z",
+      "updatedAt": "2026-09-18T11:45:44Z",
+      "createdAt": "2026-09-17T12:18:04Z",
+      "headRef": "codex/kda-fwd-l0-dispatch",
       "labels": []
     },
     {
