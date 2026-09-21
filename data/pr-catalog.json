@@ -1,29 +1,113 @@
 {
-  "generatedAt": "2026-09-21T10:05:31+08:00",
+  "generatedAt": "2026-09-21T19:18:03+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 430,
+  "total": 439,
   "items": [
     {
-      "number": 702,
-      "title": "docs(kda): 补全 chunk_kda_fwd API 文档的 Python 主入口",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/702",
+      "number": 712,
+      "title": "perf(gdn): 统一 A2 Phase6 FP32 Solve 布局并恢复 ATK 历史输入口径",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/712",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T01:55:13Z",
-      "createdAt": "2026-09-21T01:54:40Z",
-      "headRef": "codex/kda-fwd-api-doc-full",
+      "updatedAt": "2026-09-21T09:21:03Z",
+      "createdAt": "2026-09-21T09:21:03Z",
+      "headRef": "codex/a2-solve-unified-headfirst",
+      "labels": []
+    },
+    {
+      "number": 711,
+      "title": "perf(chunk_fwd_o): A5 arch35 拆相流水线重构与跨 Cube 重叠优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/711",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-21T10:52:12Z",
+      "createdAt": "2026-09-21T08:47:00Z",
+      "headRef": "fwd_o_v2690_perf",
+      "labels": []
+    },
+    {
+      "number": 710,
+      "title": "perf:chunk_gated_delta_rule_bwd_dhu性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/710",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-21T08:38:13Z",
+      "createdAt": "2026-09-21T08:38:05Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 709,
+      "title": "perf(kkt): 回移 A2 CATLASS 与尾块优化至 v26.9.1",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/709",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-21T07:51:23Z",
+      "createdAt": "2026-09-21T07:51:22Z",
+      "headRef": "codex/kkt-a2-catlass-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 708,
+      "title": "perf(kkt): 回移 A2 CATLASS 与尾块优化至 v26.9.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/708",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-21T07:50:54Z",
+      "createdAt": "2026-09-21T07:50:54Z",
+      "headRef": "codex/kkt-a2-catlass-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 707,
+      "title": "fix(kkt): 回移 ACLNN 异常参数错误码修复到 v26.9.1",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/707",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-21T08:52:36Z",
+      "createdAt": "2026-09-21T07:39:10Z",
+      "headRef": "codex/fix-kkt-aclnn-params-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 706,
+      "title": "fix(kkt): 回移 ACLNN 异常参数错误码修复到 v26.9.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/706",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-21T08:52:08Z",
+      "createdAt": "2026-09-21T07:39:08Z",
+      "headRef": "codex/fix-kkt-aclnn-params-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 703,
+      "title": "Fix solve-tri A3 NTD AicError- #605",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/703",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-21T02:15:37Z",
+      "createdAt": "2026-09-21T02:12:51Z",
+      "headRef": "solve-tri-atk-26.9.0",
       "labels": []
     },
     {
       "number": 701,
-      "title": "fix: unify ChunkFwdH h layout for KDA V2 recompute",
+      "title": "fix: unify NT-first h across FwdH and KDA V2 finalize/recompute",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/701",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T01:55:05Z",
+      "updatedAt": "2026-09-21T08:34:43Z",
       "createdAt": "2026-09-21T01:45:48Z",
       "headRef": "fix/fwd-h-nt-first-kda-recompute",
       "labels": []
@@ -47,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T01:54:33Z",
+      "updatedAt": "2026-09-21T07:52:10Z",
       "createdAt": "2026-09-20T19:00:39Z",
       "headRef": "codex/fix-508-kda-bwd-packed-and-cap",
       "labels": []
@@ -83,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-20T12:56:49Z",
+      "updatedAt": "2026-09-21T08:57:05Z",
       "createdAt": "2026-09-20T12:56:22Z",
       "headRef": "0920-9.0-blank3",
       "labels": []
@@ -95,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T01:37:37Z",
+      "updatedAt": "2026-09-21T08:42:14Z",
       "createdAt": "2026-09-20T12:55:40Z",
       "headRef": "0920-main-blank3",
       "labels": []
@@ -191,45 +275,21 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-20T09:17:40Z",
+      "updatedAt": "2026-09-21T08:52:17Z",
       "createdAt": "2026-09-20T09:10:29Z",
       "headRef": "codex/fix-kkt-aclnn-params",
       "labels": []
     },
     {
       "number": 639,
-      "title": "feat(stable): size_of 报错带上调用点行号与实际 shape [v26.9.1]",
+      "title": "feat(stable): size_of 报错带上张量名、调用点行号与实际 shape [v26.9.1]",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/639",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-20T08:20:24Z",
+      "updatedAt": "2026-09-21T10:59:47Z",
       "createdAt": "2026-09-20T08:20:23Z",
       "headRef": "feat/size-of-error-loc-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 637,
-      "title": "[Fix] 修复causal_conv1d_bwd的资料和接口易用性问题",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/637",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-21T01:57:54Z",
-      "createdAt": "2026-09-20T08:03:08Z",
-      "headRef": "test",
-      "labels": []
-    },
-    {
-      "number": 635,
-      "title": "fix dv_local issue",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/635",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-20T14:58:11Z",
-      "createdAt": "2026-09-20T04:58:36Z",
-      "headRef": "fix0920",
       "labels": []
     },
     {
@@ -239,33 +299,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-20T07:42:47Z",
+      "updatedAt": "2026-09-21T07:35:45Z",
       "createdAt": "2026-09-20T02:12:10Z",
       "headRef": "codex/kkt-a2-catlass",
-      "labels": []
-    },
-    {
-      "number": 626,
-      "title": "fix(recompute_w_u_fwd): tiling 侧补充 K=128 校验 [v26.9.1]",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/626",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-21T00:55:51Z",
-      "createdAt": "2026-09-19T10:48:51Z",
-      "headRef": "fix/recompute-w-u-fwd-k-gate-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 625,
-      "title": "docs(recompute_w_u_fwd): 修正 README 调用示例与目录结构 [v26.9.1]",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/625",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-21T02:00:08Z",
-      "createdAt": "2026-09-19T10:33:05Z",
-      "headRef": "docs/recompute-w-u-fwd-readme-v26.9.1",
       "labels": []
     },
     {
@@ -275,7 +311,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-19T04:33:52Z",
+      "updatedAt": "2026-09-21T08:33:46Z",
       "createdAt": "2026-09-19T03:43:12Z",
       "headRef": "codex/fix-scoped-build-dep-kernels",
       "labels": []
@@ -287,7 +323,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-19T04:12:06Z",
+      "updatedAt": "2026-09-21T08:33:53Z",
       "createdAt": "2026-09-19T03:43:09Z",
       "headRef": "codex/fix-scoped-build-dep-kernels-main",
       "labels": []
@@ -305,25 +341,13 @@
       "labels": []
     },
     {
-      "number": 605,
-      "title": "Fix solve-tri A3 NTD AicError",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/605",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-20T06:26:07Z",
-      "createdAt": "2026-09-18T01:12:30Z",
-      "headRef": "solve-tri-atk-26.9.0",
-      "labels": []
-    },
-    {
       "number": 590,
-      "title": "perf(gdn): 优化 A2 cumsum 准备与 Phase6 流水",
+      "title": "perf(gdn): 优化 A2 cumsum、KKT/Solve 与 H/O 流水",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/590",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-17T08:15:59Z",
+      "updatedAt": "2026-09-21T09:06:43Z",
       "createdAt": "2026-09-17T08:15:59Z",
       "headRef": "perf/gdn-arch22-cumsum-prep",
       "labels": []
@@ -335,21 +359,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T01:30:55Z",
+      "updatedAt": "2026-09-21T06:06:56Z",
       "createdAt": "2026-09-17T07:19:21Z",
       "headRef": "0917-fix-tips-sf",
-      "labels": []
-    },
-    {
-      "number": 587,
-      "title": "[Fix] 修复causal_conv1d_bwd的资料和接口易用性问题",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/587",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-21T01:42:42Z",
-      "createdAt": "2026-09-17T07:18:16Z",
-      "headRef": "main",
       "labels": []
     },
     {
@@ -374,18 +386,6 @@
       "updatedAt": "2026-09-16T05:30:54Z",
       "createdAt": "2026-09-16T05:06:13Z",
       "headRef": "codex/gdn-regbase-prepare",
-      "labels": []
-    },
-    {
-      "number": 571,
-      "title": "fix(build): validate FLA_NPU_OPS/--ops names before CMake configuration",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/571",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-21T01:27:47Z",
-      "createdAt": "2026-09-15T09:01:54Z",
-      "headRef": "fix/issue-482-ops-precheck",
       "labels": []
     },
     {
@@ -491,7 +491,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-20T12:36:35Z",
+      "updatedAt": "2026-09-21T06:31:17Z",
       "createdAt": "2026-09-10T08:19:39Z",
       "headRef": "gdn_fwd_prepare",
       "labels": []
@@ -575,7 +575,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T01:44:57Z",
+      "updatedAt": "2026-09-21T07:15:01Z",
       "createdAt": "2026-09-04T03:33:33Z",
       "headRef": "readme-usability",
       "labels": []
@@ -863,7 +863,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T02:03:01Z",
+      "updatedAt": "2026-09-21T06:55:01Z",
       "createdAt": "2026-08-17T08:52:11Z",
       "headRef": "fix/issue-326-capability-probe",
       "labels": []
@@ -1385,6 +1385,42 @@
       "labels": []
     },
     {
+      "number": 705,
+      "title": "feat(kda): 回移 #696/#702 到 v26.9.1（保存值导出、prepare 入口、A2/A3 修复、看护用例与 API 文档）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/705",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-21T09:35:35Z",
+      "updatedAt": "2026-09-21T10:41:38Z",
+      "createdAt": "2026-09-21T04:13:19Z",
+      "headRef": "codex/kda-saved-values-backport-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 704,
+      "title": "fix tips",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/704",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-21T04:09:43Z",
+      "updatedAt": "2026-09-21T04:50:59Z",
+      "createdAt": "2026-09-21T03:11:54Z",
+      "headRef": "0921-add-error-display",
+      "labels": []
+    },
+    {
+      "number": 702,
+      "title": "docs(kda): 补全 chunk_kda_fwd API 文档的 Python 主入口",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/702",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-21T09:35:12Z",
+      "updatedAt": "2026-09-21T09:35:12Z",
+      "createdAt": "2026-09-21T01:54:40Z",
+      "headRef": "codex/kda-fwd-api-doc-full",
+      "labels": []
+    },
+    {
       "number": 696,
       "title": "feat(kda): 导出反向 L2Norm 保存值并暴露 chunk_kda_fwd_prepare 入口",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/696",
@@ -1442,6 +1478,30 @@
       "updatedAt": "2026-09-20T09:18:13Z",
       "createdAt": "2026-09-20T08:14:45Z",
       "headRef": "0920-ci-26.9.0",
+      "labels": []
+    },
+    {
+      "number": 637,
+      "title": "[Fix] 修复causal_conv1d_bwd的资料和接口易用性问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/637",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-21T06:58:22Z",
+      "updatedAt": "2026-09-21T06:58:23Z",
+      "createdAt": "2026-09-20T08:03:08Z",
+      "headRef": "test",
+      "labels": []
+    },
+    {
+      "number": 635,
+      "title": "fix dv_local issue",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/635",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-21T08:57:48Z",
+      "updatedAt": "2026-09-21T08:57:48Z",
+      "createdAt": "2026-09-20T04:58:36Z",
+      "headRef": "fix0920",
       "labels": []
     },
     {
@@ -1514,6 +1574,30 @@
       "updatedAt": "2026-09-20T02:18:52Z",
       "createdAt": "2026-09-20T01:15:47Z",
       "headRef": "codex/kda-kv-dim-guard",
+      "labels": []
+    },
+    {
+      "number": 626,
+      "title": "fix(recompute_w_u_fwd): tiling 侧补充 K=128 校验 [v26.9.1]",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/626",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-21T02:14:51Z",
+      "updatedAt": "2026-09-21T02:18:57Z",
+      "createdAt": "2026-09-19T10:48:51Z",
+      "headRef": "fix/recompute-w-u-fwd-k-gate-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 625,
+      "title": "docs(recompute_w_u_fwd): 修正 README 调用示例与目录结构 [v26.9.1]",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/625",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-21T02:13:03Z",
+      "updatedAt": "2026-09-21T02:13:03Z",
+      "createdAt": "2026-09-19T10:33:05Z",
+      "headRef": "docs/recompute-w-u-fwd-readme-v26.9.1",
       "labels": []
     },
     {
@@ -1709,6 +1793,18 @@
       "labels": []
     },
     {
+      "number": 587,
+      "title": "[Fix] 修复causal_conv1d_bwd的资料和接口易用性问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/587",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-21T06:38:13Z",
+      "updatedAt": "2026-09-21T06:38:13Z",
+      "createdAt": "2026-09-17T07:18:16Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
       "number": 584,
       "title": "feat(gdn): 支持融合反向 use_exp2 false",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/584",
@@ -1754,6 +1850,18 @@
       "updatedAt": "2026-09-16T06:52:39Z",
       "createdAt": "2026-09-15T11:29:24Z",
       "headRef": "chunk_fwd_o_abnormal",
+      "labels": []
+    },
+    {
+      "number": 571,
+      "title": "fix(build): validate FLA_NPU_OPS/--ops names before CMake configuration",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/571",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-21T02:17:29Z",
+      "updatedAt": "2026-09-21T02:17:30Z",
+      "createdAt": "2026-09-15T09:01:54Z",
+      "headRef": "fix/issue-482-ops-precheck",
       "labels": []
     },
     {
