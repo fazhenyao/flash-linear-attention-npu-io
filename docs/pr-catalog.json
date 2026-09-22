@@ -1,55 +1,55 @@
 {
-  "generatedAt": "2026-09-22T10:11:17+08:00",
+  "generatedAt": "2026-09-22T18:28:41+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 447,
   "items": [
     {
-      "number": 722,
-      "title": "fix: 回移 legacy 构建能力检查到 v26.9.0",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/722",
+      "number": 730,
+      "title": "fix tips",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/730",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T01:47:49Z",
-      "createdAt": "2026-09-22T01:29:15Z",
-      "headRef": "fix/issue-326-v26.9.0",
+      "updatedAt": "2026-09-22T08:17:36Z",
+      "createdAt": "2026-09-22T08:17:11Z",
+      "headRef": "0922-fix-tips-9.0",
       "labels": []
     },
     {
-      "number": 721,
-      "title": "fix: 回移 legacy 构建能力检查到 v26.9.1",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/721",
+      "number": 728,
+      "title": "docs: 新增算子工程结构规范、标准工程示例与精度静态检视 skill",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/728",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T01:48:05Z",
-      "createdAt": "2026-09-22T01:29:10Z",
-      "headRef": "fix/issue-326-v26.9.1",
+      "updatedAt": "2026-09-22T07:30:44Z",
+      "createdAt": "2026-09-22T07:22:30Z",
+      "headRef": "codex/docs-engineering-reference",
       "labels": []
     },
     {
-      "number": 719,
-      "title": "dv_local fix 26.9.1",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/719",
+      "number": 726,
+      "title": "feat(gdn): 回迁 A2/A5 megakernel 与原生布局优化至 v26.9.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/726",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T01:17:26Z",
-      "createdAt": "2026-09-21T16:52:37Z",
-      "headRef": "9.1fix",
+      "updatedAt": "2026-09-22T06:54:45Z",
+      "createdAt": "2026-09-22T03:32:26Z",
+      "headRef": "backport/gdn-megakernel-v26.9.0",
       "labels": []
     },
     {
-      "number": 718,
-      "title": "dv_local 26.9.0 fix",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/718",
+      "number": 724,
+      "title": "perf(gdn): 支持 A2 原生TND输入并融合O布局写回",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/724",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T01:21:11Z",
-      "createdAt": "2026-09-21T16:49:01Z",
-      "headRef": "9.0fix",
+      "updatedAt": "2026-09-22T06:26:54Z",
+      "createdAt": "2026-09-22T03:00:29Z",
+      "headRef": "perf/gdn-a2-native-tnd-o",
       "labels": []
     },
     {
@@ -59,21 +59,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T16:52:45Z",
+      "updatedAt": "2026-09-22T10:04:46Z",
       "createdAt": "2026-09-21T11:35:08Z",
       "headRef": "solve-tri-atk-26.9.0",
-      "labels": []
-    },
-    {
-      "number": 712,
-      "title": "perf(gdn): 统一 A2 Phase6 FP32 Solve 布局并恢复 ATK 历史输入口径",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/712",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-21T09:21:03Z",
-      "createdAt": "2026-09-21T09:21:03Z",
-      "headRef": "codex/a2-solve-unified-headfirst",
       "labels": []
     },
     {
@@ -83,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T10:52:12Z",
+      "updatedAt": "2026-09-22T07:12:32Z",
       "createdAt": "2026-09-21T08:47:00Z",
       "headRef": "fwd_o_v2690_perf",
       "labels": []
@@ -95,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T01:33:37Z",
+      "updatedAt": "2026-09-22T08:17:45Z",
       "createdAt": "2026-09-21T08:38:05Z",
       "headRef": "main",
       "labels": []
@@ -155,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T13:24:16Z",
+      "updatedAt": "2026-09-22T09:28:04Z",
       "createdAt": "2026-09-21T01:45:48Z",
       "headRef": "fix/fwd-h-nt-first-kda-recompute",
       "labels": []
@@ -167,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T19:46:45Z",
+      "updatedAt": "2026-09-22T09:40:38Z",
       "createdAt": "2026-09-20T19:00:39Z",
       "headRef": "codex/fix-508-kda-bwd-packed-and-cap",
       "labels": []
@@ -239,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T11:24:33Z",
+      "updatedAt": "2026-09-22T03:38:17Z",
       "createdAt": "2026-09-20T12:08:07Z",
       "headRef": "gdn_fwd_prepare_26.9.1",
       "labels": []
@@ -282,12 +270,12 @@
     },
     {
       "number": 644,
-      "title": "fix(kda): 整理 Finalize 阶段注释并修复 A5 内存检测兼容性",
+      "title": "fix(kda): 修复 Finalize 检测兼容性并归档混合容差标杆",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/644",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T02:04:56Z",
+      "updatedAt": "2026-09-22T10:10:55Z",
       "createdAt": "2026-09-20T09:14:19Z",
       "headRef": "refactor/kda-finalize-stage-readability",
       "labels": []
@@ -299,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T01:59:18Z",
+      "updatedAt": "2026-09-22T09:56:41Z",
       "createdAt": "2026-09-20T09:10:29Z",
       "headRef": "codex/fix-kkt-aclnn-params",
       "labels": []
@@ -338,18 +326,6 @@
       "updatedAt": "2026-09-21T08:33:53Z",
       "createdAt": "2026-09-19T03:43:09Z",
       "headRef": "codex/fix-scoped-build-dep-kernels-main",
-      "labels": []
-    },
-    {
-      "number": 590,
-      "title": "perf(gdn): 优化 A2 cumsum、KKT/Solve 与 H/O 流水",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/590",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-21T16:32:34Z",
-      "createdAt": "2026-09-17T08:15:59Z",
-      "headRef": "perf/gdn-arch22-cumsum-prep",
       "labels": []
     },
     {
@@ -455,7 +431,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-18T02:41:14Z",
+      "updatedAt": "2026-09-22T07:54:06Z",
       "createdAt": "2026-09-14T12:22:59Z",
       "headRef": "merge_fwd_bwd_kernel",
       "labels": []
@@ -491,7 +467,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T12:36:06Z",
+      "updatedAt": "2026-09-22T03:09:11Z",
       "createdAt": "2026-09-10T08:19:39Z",
       "headRef": "gdn_fwd_prepare",
       "labels": []
@@ -842,18 +818,6 @@
       "updatedAt": "2026-09-07T06:56:22Z",
       "createdAt": "2026-08-17T09:30:05Z",
       "headRef": "8_17",
-      "labels": []
-    },
-    {
-      "number": 329,
-      "title": "fix: probe legacy build capabilities by import",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/329",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T01:48:00Z",
-      "createdAt": "2026-08-17T08:52:11Z",
-      "headRef": "fix/issue-326-capability-probe",
       "labels": []
     },
     {
@@ -1373,6 +1337,30 @@
       "labels": []
     },
     {
+      "number": 719,
+      "title": "dv_local fix 26.9.1",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/719",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-22T06:41:54Z",
+      "updatedAt": "2026-09-22T06:41:54Z",
+      "createdAt": "2026-09-21T16:52:37Z",
+      "headRef": "9.1fix",
+      "labels": []
+    },
+    {
+      "number": 718,
+      "title": "dv_local 26.9.0 fix",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/718",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-22T06:42:11Z",
+      "updatedAt": "2026-09-22T06:42:11Z",
+      "createdAt": "2026-09-21T16:49:01Z",
+      "headRef": "9.0fix",
+      "labels": []
+    },
+    {
       "number": 717,
       "title": "feat(kda): 回移 #628 到 v26.9.1（chunk_kda_fwd 的 K/V 档位收紧为 K=V=64 或 K=V=128）",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/717",
@@ -1874,6 +1862,18 @@
       "updatedAt": "2026-09-17T12:32:48Z",
       "createdAt": "2026-09-17T11:08:25Z",
       "headRef": "codex/gdn-fwd-bwd-example",
+      "labels": []
+    },
+    {
+      "number": 590,
+      "title": "perf(gdn): 优化 A2 cumsum、KKT/Solve 与 H/O 流水",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/590",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-22T02:47:11Z",
+      "updatedAt": "2026-09-22T02:47:11Z",
+      "createdAt": "2026-09-17T08:15:59Z",
+      "headRef": "perf/gdn-arch22-cumsum-prep",
       "labels": []
     },
     {
