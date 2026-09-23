@@ -1,9 +1,129 @@
 {
-  "generatedAt": "2026-09-23T10:10:56+08:00",
+  "generatedAt": "2026-09-23T18:23:47+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 450,
+  "total": 462,
   "items": [
+    {
+      "number": 748,
+      "title": "放开 solve_tri 的 tnd 布局（kernel 已由 #481 修复，移除过期防护）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/748",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-23T10:16:29Z",
+      "createdAt": "2026-09-23T10:16:19Z",
+      "headRef": "solvetri",
+      "labels": []
+    },
+    {
+      "number": 747,
+      "title": "refactor(kkt): 将参数校验集中到 op_api [v26.9.1]",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/747",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-23T07:57:36Z",
+      "createdAt": "2026-09-23T07:53:57Z",
+      "headRef": "codex/remove-kkt-python-contract-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 746,
+      "title": "refactor(kkt): 将参数校验集中到 op_api [v26.9.0]",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/746",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-23T07:57:33Z",
+      "createdAt": "2026-09-23T07:53:56Z",
+      "headRef": "codex/remove-kkt-python-contract-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 745,
+      "title": "refactor(kkt): 将参数校验集中到 op_api",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/745",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-23T07:57:30Z",
+      "createdAt": "2026-09-23T07:53:54Z",
+      "headRef": "codex/remove-kkt-python-contract-main",
+      "labels": []
+    },
+    {
+      "number": 744,
+      "title": "fix: handle empty tensors in chunk gated delta rule fwd",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/744",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-23T07:19:10Z",
+      "createdAt": "2026-09-23T07:16:01Z",
+      "headRef": "v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 743,
+      "title": "perf(v26.9.1): optimize chunk_local_cumsum scan and scheduling",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/743",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-23T07:45:15Z",
+      "createdAt": "2026-09-23T07:14:02Z",
+      "headRef": "codex/c1-chunk-local-cumsum-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 742,
+      "title": "perf(v26.9.0): optimize chunk_local_cumsum scan and scheduling",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/742",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-23T07:45:13Z",
+      "createdAt": "2026-09-23T07:14:00Z",
+      "headRef": "codex/c1-chunk-local-cumsum-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 741,
+      "title": "perf(chunk_local_cumsum): optimize segmented scan and task scheduling",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/741",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-23T07:45:11Z",
+      "createdAt": "2026-09-23T07:13:58Z",
+      "headRef": "codex/c1-chunk-local-cumsum-main",
+      "labels": []
+    },
+    {
+      "number": 740,
+      "title": "ci compile support",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/740",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-23T08:43:08Z",
+      "createdAt": "2026-09-23T07:06:19Z",
+      "headRef": "0921-compile-ci",
+      "labels": []
+    },
+    {
+      "number": 739,
+      "title": "fix: handle empty tensors in chunk gated delta rule fwd",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/739",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-23T07:18:57Z",
+      "createdAt": "2026-09-23T06:46:09Z",
+      "headRef": "fix_empty_tensor",
+      "labels": []
+    },
     {
       "number": 735,
       "title": "chunk_kda_bwd_recompute尾块精度问题",
@@ -11,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T01:56:17Z",
+      "updatedAt": "2026-09-23T06:12:37Z",
       "createdAt": "2026-09-22T13:24:43Z",
       "headRef": "lyq/chunk_kda_bwd_recompute",
       "labels": []
@@ -23,57 +143,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T01:36:37Z",
+      "updatedAt": "2026-09-23T09:11:21Z",
       "createdAt": "2026-09-22T07:22:30Z",
       "headRef": "codex/docs-engineering-reference",
-      "labels": []
-    },
-    {
-      "number": 726,
-      "title": "feat(gdn): 回迁 A2/A5 megakernel 与原生布局优化至 v26.9.0",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/726",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T11:34:28Z",
-      "createdAt": "2026-09-22T03:32:26Z",
-      "headRef": "backport/gdn-megakernel-v26.9.0",
-      "labels": []
-    },
-    {
-      "number": 724,
-      "title": "perf(gdn): 支持 A2 原生TND输入并融合O布局写回",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/724",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T06:26:54Z",
-      "createdAt": "2026-09-22T03:00:29Z",
-      "headRef": "perf/gdn-a2-native-tnd-o",
-      "labels": []
-    },
-    {
-      "number": 713,
-      "title": "Fix solve-tri A3 NTD AicError 26.9.0",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/713",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T10:04:46Z",
-      "createdAt": "2026-09-21T11:35:08Z",
-      "headRef": "solve-tri-atk-26.9.0",
-      "labels": []
-    },
-    {
-      "number": 710,
-      "title": "perf:chunk_gated_delta_rule_bwd_dhu性能优化",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/710",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T08:17:45Z",
-      "createdAt": "2026-09-21T08:38:05Z",
-      "headRef": "main",
       "labels": []
     },
     {
@@ -83,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T07:51:23Z",
+      "updatedAt": "2026-09-23T08:00:40Z",
       "createdAt": "2026-09-21T07:51:22Z",
       "headRef": "codex/kkt-a2-catlass-v26.9.1",
       "labels": []
@@ -95,33 +167,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T07:50:54Z",
+      "updatedAt": "2026-09-23T08:00:10Z",
       "createdAt": "2026-09-21T07:50:54Z",
       "headRef": "codex/kkt-a2-catlass-v26.9.0",
-      "labels": []
-    },
-    {
-      "number": 707,
-      "title": "fix(kkt): 回移 ACLNN 异常参数错误码修复到 v26.9.1",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/707",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T01:59:40Z",
-      "createdAt": "2026-09-21T07:39:10Z",
-      "headRef": "codex/fix-kkt-aclnn-params-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 706,
-      "title": "fix(kkt): 回移 ACLNN 异常参数错误码修复到 v26.9.0",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/706",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T01:59:07Z",
-      "createdAt": "2026-09-21T07:39:08Z",
-      "headRef": "codex/fix-kkt-aclnn-params-v26.9.0",
       "labels": []
     },
     {
@@ -131,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T15:19:02Z",
+      "updatedAt": "2026-09-23T08:13:33Z",
       "createdAt": "2026-09-21T01:45:48Z",
       "headRef": "fix/fwd-h-nt-first-kda-recompute",
       "labels": []
@@ -143,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T09:40:38Z",
+      "updatedAt": "2026-09-23T09:46:13Z",
       "createdAt": "2026-09-20T19:00:39Z",
       "headRef": "codex/fix-508-kda-bwd-packed-and-cap",
       "labels": []
@@ -209,18 +257,6 @@
       "labels": []
     },
     {
-      "number": 650,
-      "title": "ChunkGdnFwdPrepare cumsum Sklansky 1D && add ATK cases",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/650",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T03:38:17Z",
-      "createdAt": "2026-09-20T12:08:07Z",
-      "headRef": "gdn_fwd_prepare_26.9.1",
-      "labels": []
-    },
-    {
       "number": 649,
       "title": "blank 9.1",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/649",
@@ -239,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T13:09:40Z",
+      "updatedAt": "2026-09-23T08:56:27Z",
       "createdAt": "2026-09-20T09:43:48Z",
       "headRef": "pypi-stable-v2691",
       "labels": []
@@ -251,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T13:09:35Z",
+      "updatedAt": "2026-09-23T08:56:35Z",
       "createdAt": "2026-09-20T09:43:43Z",
       "headRef": "pypi-stable-main",
       "labels": []
@@ -266,18 +302,6 @@
       "updatedAt": "2026-09-22T10:10:55Z",
       "createdAt": "2026-09-20T09:14:19Z",
       "headRef": "refactor/kda-finalize-stage-readability",
-      "labels": []
-    },
-    {
-      "number": 643,
-      "title": "fix(kkt): 修复异常参数未返回规范 ACLNN 错误码的问题",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/643",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T09:56:41Z",
-      "createdAt": "2026-09-20T09:10:29Z",
-      "headRef": "codex/fix-kkt-aclnn-params",
       "labels": []
     },
     {
@@ -446,18 +470,6 @@
       "updatedAt": "2026-09-10T11:27:41Z",
       "createdAt": "2026-09-10T11:16:59Z",
       "headRef": "codex/rename-chunk-gated-delta-rule-o",
-      "labels": []
-    },
-    {
-      "number": 522,
-      "title": "ChunkGdnFwdPrepare cumsum Sklansky 1D && add ATK cases",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/522",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T03:09:11Z",
-      "createdAt": "2026-09-10T08:19:39Z",
-      "headRef": "gdn_fwd_prepare",
       "labels": []
     },
     {
@@ -1325,13 +1337,37 @@
       "labels": []
     },
     {
+      "number": 738,
+      "title": "Log GDN tiling workspace size at debug",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/738",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T03:54:51Z",
+      "updatedAt": "2026-09-23T03:54:51Z",
+      "createdAt": "2026-09-23T03:49:20Z",
+      "headRef": "gdn_ws_26.9.1",
+      "labels": []
+    },
+    {
+      "number": 737,
+      "title": "Log GDN tiling workspace size at debug",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/737",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T03:54:58Z",
+      "updatedAt": "2026-09-23T03:54:58Z",
+      "createdAt": "2026-09-23T03:48:16Z",
+      "headRef": "gdn_ws",
+      "labels": []
+    },
+    {
       "number": 734,
       "title": "fix: 移除 KDA 反向重计算的序列长度对齐限制",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/734",
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-23T01:07:16Z",
-      "updatedAt": "2026-09-23T01:07:16Z",
+      "updatedAt": "2026-09-23T08:02:58Z",
       "createdAt": "2026-09-22T12:59:41Z",
       "headRef": "fix/kda-bwd-recompute-tail-v26.9.1",
       "labels": []
@@ -1343,7 +1379,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-23T01:06:58Z",
-      "updatedAt": "2026-09-23T01:06:58Z",
+      "updatedAt": "2026-09-23T08:01:24Z",
       "createdAt": "2026-09-22T12:42:36Z",
       "headRef": "fix/kda-bwd-recompute-tail",
       "labels": []
@@ -1358,6 +1394,30 @@
       "updatedAt": "2026-09-23T02:04:01Z",
       "createdAt": "2026-09-22T08:17:11Z",
       "headRef": "0922-fix-tips-9.0",
+      "labels": []
+    },
+    {
+      "number": 726,
+      "title": "feat(gdn): 回迁 A2/A5 megakernel 与原生布局优化至 v26.9.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/726",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T07:27:11Z",
+      "updatedAt": "2026-09-23T07:27:11Z",
+      "createdAt": "2026-09-22T03:32:26Z",
+      "headRef": "backport/gdn-megakernel-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 724,
+      "title": "perf(gdn): 支持 A2 原生TND输入并融合O布局写回",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/724",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T08:23:57Z",
+      "updatedAt": "2026-09-23T08:23:57Z",
+      "createdAt": "2026-09-22T03:00:29Z",
+      "headRef": "perf/gdn-a2-native-tnd-o",
       "labels": []
     },
     {
@@ -1433,6 +1493,18 @@
       "labels": []
     },
     {
+      "number": 713,
+      "title": "Fix solve-tri A3 NTD AicError 26.9.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/713",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T03:04:45Z",
+      "updatedAt": "2026-09-23T03:04:46Z",
+      "createdAt": "2026-09-21T11:35:08Z",
+      "headRef": "solve-tri-atk-26.9.0",
+      "labels": []
+    },
+    {
       "number": 711,
       "title": "perf(chunk_fwd_o): A5 arch35 拆相流水线重构与跨 Cube 重叠优化",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/711",
@@ -1442,6 +1514,42 @@
       "updatedAt": "2026-09-23T02:01:09Z",
       "createdAt": "2026-09-21T08:47:00Z",
       "headRef": "fwd_o_v2690_perf",
+      "labels": []
+    },
+    {
+      "number": 710,
+      "title": "perf:chunk_gated_delta_rule_bwd_dhu性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/710",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T08:33:48Z",
+      "updatedAt": "2026-09-23T08:33:48Z",
+      "createdAt": "2026-09-21T08:38:05Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 707,
+      "title": "fix(kkt): 回移 ACLNN 异常参数错误码修复到 v26.9.1",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/707",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T06:39:30Z",
+      "updatedAt": "2026-09-23T06:39:30Z",
+      "createdAt": "2026-09-21T07:39:10Z",
+      "headRef": "codex/fix-kkt-aclnn-params-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 706,
+      "title": "fix(kkt): 回移 ACLNN 异常参数错误码修复到 v26.9.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/706",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T06:39:24Z",
+      "updatedAt": "2026-09-23T06:39:25Z",
+      "createdAt": "2026-09-21T07:39:08Z",
+      "headRef": "codex/fix-kkt-aclnn-params-v26.9.0",
       "labels": []
     },
     {
@@ -1517,6 +1625,18 @@
       "labels": []
     },
     {
+      "number": 650,
+      "title": "ChunkGdnFwdPrepare cumsum Sklansky 1D && add ATK cases",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/650",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T03:05:24Z",
+      "updatedAt": "2026-09-23T08:47:42Z",
+      "createdAt": "2026-09-20T12:08:07Z",
+      "headRef": "gdn_fwd_prepare_26.9.1",
+      "labels": []
+    },
+    {
       "number": 646,
       "title": "blank main",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/646",
@@ -1538,6 +1658,18 @@
       "updatedAt": "2026-09-20T12:24:41Z",
       "createdAt": "2026-09-20T09:32:59Z",
       "headRef": "0920-blank",
+      "labels": []
+    },
+    {
+      "number": 643,
+      "title": "fix(kkt): 修复异常参数未返回规范 ACLNN 错误码的问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/643",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T06:39:20Z",
+      "updatedAt": "2026-09-23T06:39:20Z",
+      "createdAt": "2026-09-20T09:10:29Z",
+      "headRef": "codex/fix-kkt-aclnn-params",
       "labels": []
     },
     {
@@ -2210,6 +2342,18 @@
       "updatedAt": "2026-09-15T14:53:56Z",
       "createdAt": "2026-09-11T02:11:00Z",
       "headRef": "codex/a5-ci-deployment",
+      "labels": []
+    },
+    {
+      "number": 522,
+      "title": "ChunkGdnFwdPrepare cumsum Sklansky 1D && add ATK cases",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/522",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T03:05:09Z",
+      "updatedAt": "2026-09-23T03:05:10Z",
+      "createdAt": "2026-09-10T08:19:39Z",
+      "headRef": "gdn_fwd_prepare",
       "labels": []
     },
     {
