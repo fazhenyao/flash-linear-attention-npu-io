@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-09-22T18:28:41+08:00",
+  "generatedAt": "2026-09-23T10:10:56+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 447,
+  "total": 450,
   "items": [
     {
-      "number": 730,
-      "title": "fix tips",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/730",
+      "number": 735,
+      "title": "chunk_kda_bwd_recompute尾块精度问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/735",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T08:17:36Z",
-      "createdAt": "2026-09-22T08:17:11Z",
-      "headRef": "0922-fix-tips-9.0",
+      "updatedAt": "2026-09-23T01:56:17Z",
+      "createdAt": "2026-09-22T13:24:43Z",
+      "headRef": "lyq/chunk_kda_bwd_recompute",
       "labels": []
     },
     {
@@ -23,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T07:30:44Z",
+      "updatedAt": "2026-09-23T01:36:37Z",
       "createdAt": "2026-09-22T07:22:30Z",
       "headRef": "codex/docs-engineering-reference",
       "labels": []
@@ -35,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T06:54:45Z",
+      "updatedAt": "2026-09-22T11:34:28Z",
       "createdAt": "2026-09-22T03:32:26Z",
       "headRef": "backport/gdn-megakernel-v26.9.0",
       "labels": []
@@ -62,18 +62,6 @@
       "updatedAt": "2026-09-22T10:04:46Z",
       "createdAt": "2026-09-21T11:35:08Z",
       "headRef": "solve-tri-atk-26.9.0",
-      "labels": []
-    },
-    {
-      "number": 711,
-      "title": "perf(chunk_fwd_o): A5 arch35 拆相流水线重构与跨 Cube 重叠优化",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/711",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-22T07:12:32Z",
-      "createdAt": "2026-09-21T08:47:00Z",
-      "headRef": "fwd_o_v2690_perf",
       "labels": []
     },
     {
@@ -143,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T09:28:04Z",
+      "updatedAt": "2026-09-22T15:19:02Z",
       "createdAt": "2026-09-21T01:45:48Z",
       "headRef": "fix/fwd-h-nt-first-kda-recompute",
       "labels": []
@@ -431,7 +419,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-22T07:54:06Z",
+      "updatedAt": "2026-09-22T10:52:02Z",
       "createdAt": "2026-09-14T12:22:59Z",
       "headRef": "merge_fwd_bwd_kernel",
       "labels": []
@@ -1337,6 +1325,42 @@
       "labels": []
     },
     {
+      "number": 734,
+      "title": "fix: 移除 KDA 反向重计算的序列长度对齐限制",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/734",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T01:07:16Z",
+      "updatedAt": "2026-09-23T01:07:16Z",
+      "createdAt": "2026-09-22T12:59:41Z",
+      "headRef": "fix/kda-bwd-recompute-tail-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 732,
+      "title": "fix: 移除 KDA 反向重计算的序列长度对齐限制",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/732",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T01:06:58Z",
+      "updatedAt": "2026-09-23T01:06:58Z",
+      "createdAt": "2026-09-22T12:42:36Z",
+      "headRef": "fix/kda-bwd-recompute-tail",
+      "labels": []
+    },
+    {
+      "number": 730,
+      "title": "增加报错时提示信息",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/730",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T02:04:01Z",
+      "updatedAt": "2026-09-23T02:04:01Z",
+      "createdAt": "2026-09-22T08:17:11Z",
+      "headRef": "0922-fix-tips-9.0",
+      "labels": []
+    },
+    {
       "number": 719,
       "title": "dv_local fix 26.9.1",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/719",
@@ -1406,6 +1430,18 @@
       "updatedAt": "2026-09-21T13:07:26Z",
       "createdAt": "2026-09-21T12:54:42Z",
       "headRef": "codex/fix-594-sensitive-path-main",
+      "labels": []
+    },
+    {
+      "number": 711,
+      "title": "perf(chunk_fwd_o): A5 arch35 拆相流水线重构与跨 Cube 重叠优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/711",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T02:01:09Z",
+      "updatedAt": "2026-09-23T02:01:09Z",
+      "createdAt": "2026-09-21T08:47:00Z",
+      "headRef": "fwd_o_v2690_perf",
       "labels": []
     },
     {
