@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-09-24T09:57:41+08:00",
+  "generatedAt": "2026-09-24T18:40:06+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 467,
+  "total": 471,
   "items": [
+    {
+      "number": 765,
+      "title": "feat: 新增 CP 反向状态预处理算子 chunk_delta_h_bwd_preprocess",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/765",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-24T08:39:52Z",
+      "createdAt": "2026-09-24T08:39:50Z",
+      "headRef": "codex/chunk-delta-h-bwd-preprocess",
+      "labels": []
+    },
+    {
+      "number": 762,
+      "title": "Revert \"fix: validate recurrent gated delta rule inputs\"",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/762",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-24T07:42:55Z",
+      "createdAt": "2026-09-24T07:42:52Z",
+      "headRef": "revert-758-v26.9.0",
+      "labels": []
+    },
     {
       "number": 754,
       "title": "fix(kda): 修复 A2/A3 chunk_kda_fwd 通用路径精度并把 chunk_size 收窄为 64",
@@ -11,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-24T01:56:26Z",
+      "updatedAt": "2026-09-24T10:23:14Z",
       "createdAt": "2026-09-24T01:56:25Z",
       "headRef": "codex/fix-519-a2-a3-kda-generic-correctness",
       "labels": []
@@ -23,57 +47,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-24T01:56:25Z",
+      "updatedAt": "2026-09-24T10:23:12Z",
       "createdAt": "2026-09-24T01:56:23Z",
       "headRef": "codex/fix-483-a5-kda-dense-correctness",
-      "labels": []
-    },
-    {
-      "number": 752,
-      "title": "fix: align GDN and KDA h/dh layouts with NT-first (v26.9.1)",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/752",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-24T01:40:59Z",
-      "createdAt": "2026-09-24T01:37:37Z",
-      "headRef": "fix/fwd-h-nt-first-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 751,
-      "title": "feat(build): 一键编包脚本增加构建进度条",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/751",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-24T01:39:03Z",
-      "createdAt": "2026-09-23T12:56:50Z",
-      "headRef": "codex/build-wheel-progress-bar",
-      "labels": []
-    },
-    {
-      "number": 749,
-      "title": "放开 solve_tri 的 tnd 布局（kernel 已由 #481 修复，移除过期防护）",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/749",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-24T01:35:54Z",
-      "createdAt": "2026-09-23T10:51:50Z",
-      "headRef": "solvetri_26.9.1",
-      "labels": []
-    },
-    {
-      "number": 748,
-      "title": "放开 solve_tri 的 tnd 布局（kernel 已由 #481 修复，移除过期防护）",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/748",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-24T01:35:39Z",
-      "createdAt": "2026-09-23T10:16:19Z",
-      "headRef": "solvetri",
       "labels": []
     },
     {
@@ -113,49 +89,13 @@
       "labels": []
     },
     {
-      "number": 743,
-      "title": "perf(v26.9.1): optimize chunk_local_cumsum scan and scheduling",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/743",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-23T14:48:36Z",
-      "createdAt": "2026-09-23T07:14:02Z",
-      "headRef": "codex/c1-chunk-local-cumsum-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 742,
-      "title": "perf(v26.9.0): optimize chunk_local_cumsum scan and scheduling",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/742",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-24T01:57:32Z",
-      "createdAt": "2026-09-23T07:14:00Z",
-      "headRef": "codex/c1-chunk-local-cumsum-v26.9.0",
-      "labels": []
-    },
-    {
-      "number": 741,
-      "title": "perf(chunk_local_cumsum): optimize segmented scan and task scheduling",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/741",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-23T14:10:27Z",
-      "createdAt": "2026-09-23T07:13:58Z",
-      "headRef": "codex/c1-chunk-local-cumsum-main",
-      "labels": []
-    },
-    {
       "number": 740,
       "title": "ci compile support",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/740",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T08:43:08Z",
+      "updatedAt": "2026-09-24T02:28:19Z",
       "createdAt": "2026-09-23T07:06:19Z",
       "headRef": "0921-compile-ci",
       "labels": []
@@ -182,30 +122,6 @@
       "updatedAt": "2026-09-23T09:11:21Z",
       "createdAt": "2026-09-22T07:22:30Z",
       "headRef": "codex/docs-engineering-reference",
-      "labels": []
-    },
-    {
-      "number": 709,
-      "title": "perf(kkt): 回移 A2 CATLASS 与尾块优化至 v26.9.1",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/709",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-24T01:28:58Z",
-      "createdAt": "2026-09-21T07:51:22Z",
-      "headRef": "codex/kkt-a2-catlass-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 708,
-      "title": "perf(kkt): 回移 A2 CATLASS 与尾块优化至 v26.9.0",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/708",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-23T08:00:10Z",
-      "createdAt": "2026-09-21T07:50:54Z",
-      "headRef": "codex/kkt-a2-catlass-v26.9.0",
       "labels": []
     },
     {
@@ -305,25 +221,13 @@
       "labels": []
     },
     {
-      "number": 630,
-      "title": "perf(kkt): 为 A2 启用 CATLASS 并优化尾块与 Vector 后处理",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/630",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-21T07:35:45Z",
-      "createdAt": "2026-09-20T02:12:10Z",
-      "headRef": "codex/kkt-a2-catlass",
-      "labels": []
-    },
-    {
       "number": 620,
       "title": "fix(build): scoped 编包补齐依赖算子的 kernel 产物",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/620",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-24T01:44:59Z",
+      "updatedAt": "2026-09-24T07:14:08Z",
       "createdAt": "2026-09-19T03:43:12Z",
       "headRef": "codex/fix-scoped-build-dep-kernels",
       "labels": []
@@ -335,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-24T01:45:11Z",
+      "updatedAt": "2026-09-24T08:47:09Z",
       "createdAt": "2026-09-19T03:43:09Z",
       "headRef": "codex/fix-scoped-build-dep-kernels-main",
       "labels": []
@@ -350,18 +254,6 @@
       "updatedAt": "2026-09-21T06:06:56Z",
       "createdAt": "2026-09-17T07:19:21Z",
       "headRef": "0917-fix-tips-sf",
-      "labels": []
-    },
-    {
-      "number": 586,
-      "title": "perf(kda): 优化 A5 三阶段前向分核与状态复用",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/586",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-17T06:58:34Z",
-      "createdAt": "2026-09-17T06:58:25Z",
-      "headRef": "codex/kda-dense-4300",
       "labels": []
     },
     {
@@ -1337,6 +1229,90 @@
       "labels": []
     },
     {
+      "number": 758,
+      "title": "fix: validate recurrent gated delta rule inputs",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/758",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T03:20:59Z",
+      "updatedAt": "2026-09-24T03:20:59Z",
+      "createdAt": "2026-09-24T03:17:20Z",
+      "headRef": "v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 757,
+      "title": "fix: validate recurrent gated delta rule inputs",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/757",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T03:20:54Z",
+      "updatedAt": "2026-09-24T03:20:54Z",
+      "createdAt": "2026-09-24T03:16:34Z",
+      "headRef": "fix_bug_2691",
+      "labels": []
+    },
+    {
+      "number": 756,
+      "title": "fix: validate recurrent gated delta rule inputs",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/756",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T03:20:45Z",
+      "updatedAt": "2026-09-24T03:20:45Z",
+      "createdAt": "2026-09-24T03:15:12Z",
+      "headRef": "bug_fix",
+      "labels": []
+    },
+    {
+      "number": 752,
+      "title": "fix: align GDN and KDA h/dh layouts with NT-first (v26.9.1)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/752",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T07:59:14Z",
+      "updatedAt": "2026-09-24T07:59:15Z",
+      "createdAt": "2026-09-24T01:37:37Z",
+      "headRef": "fix/fwd-h-nt-first-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 751,
+      "title": "feat(build): 一键编包脚本增加构建进度条",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/751",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T06:16:51Z",
+      "updatedAt": "2026-09-24T06:16:51Z",
+      "createdAt": "2026-09-23T12:56:50Z",
+      "headRef": "codex/build-wheel-progress-bar",
+      "labels": []
+    },
+    {
+      "number": 749,
+      "title": "放开 solve_tri 的 tnd 布局（kernel 已由 #481 修复，移除过期防护）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/749",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T07:58:43Z",
+      "updatedAt": "2026-09-24T07:58:44Z",
+      "createdAt": "2026-09-23T10:51:50Z",
+      "headRef": "solvetri_26.9.1",
+      "labels": []
+    },
+    {
+      "number": 748,
+      "title": "放开 solve_tri 的 tnd 布局（kernel 已由 #481 修复，移除过期防护）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/748",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T07:58:28Z",
+      "updatedAt": "2026-09-24T07:58:28Z",
+      "createdAt": "2026-09-23T10:16:19Z",
+      "headRef": "solvetri",
+      "labels": []
+    },
+    {
       "number": 744,
       "title": "fix: handle empty tensors in chunk gated delta rule fwd",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/744",
@@ -1346,6 +1322,42 @@
       "updatedAt": "2026-09-24T01:15:47Z",
       "createdAt": "2026-09-23T07:16:01Z",
       "headRef": "v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 743,
+      "title": "perf(v26.9.1): optimize chunk_local_cumsum scan and scheduling",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/743",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T06:53:58Z",
+      "updatedAt": "2026-09-24T06:53:59Z",
+      "createdAt": "2026-09-23T07:14:02Z",
+      "headRef": "codex/c1-chunk-local-cumsum-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 742,
+      "title": "perf(v26.9.0): optimize chunk_local_cumsum scan and scheduling",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/742",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T06:53:42Z",
+      "updatedAt": "2026-09-24T06:53:42Z",
+      "createdAt": "2026-09-23T07:14:00Z",
+      "headRef": "codex/c1-chunk-local-cumsum-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 741,
+      "title": "perf(chunk_local_cumsum): optimize segmented scan and task scheduling",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/741",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T06:53:19Z",
+      "updatedAt": "2026-09-24T06:53:19Z",
+      "createdAt": "2026-09-23T07:13:58Z",
+      "headRef": "codex/c1-chunk-local-cumsum-main",
       "labels": []
     },
     {
@@ -1550,6 +1562,30 @@
       "updatedAt": "2026-09-23T08:33:48Z",
       "createdAt": "2026-09-21T08:38:05Z",
       "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 709,
+      "title": "perf(kkt): 回移 A2 CATLASS 与尾块优化至 v26.9.1",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/709",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T03:30:25Z",
+      "updatedAt": "2026-09-24T03:30:26Z",
+      "createdAt": "2026-09-21T07:51:22Z",
+      "headRef": "codex/kkt-a2-catlass-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 708,
+      "title": "perf(kkt): 回移 A2 CATLASS 与尾块优化至 v26.9.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/708",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T03:30:19Z",
+      "updatedAt": "2026-09-24T03:30:19Z",
+      "createdAt": "2026-09-21T07:50:54Z",
+      "headRef": "codex/kkt-a2-catlass-v26.9.0",
       "labels": []
     },
     {
@@ -1838,6 +1874,18 @@
       "updatedAt": "2026-09-20T02:53:31Z",
       "createdAt": "2026-09-20T02:27:06Z",
       "headRef": "RecomputeWUFwd",
+      "labels": []
+    },
+    {
+      "number": 630,
+      "title": "perf(kkt): 为 A2 启用 CATLASS 并优化尾块与 Vector 后处理",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/630",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T03:30:13Z",
+      "updatedAt": "2026-09-24T03:30:14Z",
+      "createdAt": "2026-09-20T02:12:10Z",
+      "headRef": "codex/kkt-a2-catlass",
       "labels": []
     },
     {
