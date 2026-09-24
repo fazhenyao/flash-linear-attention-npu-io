@@ -1,9 +1,69 @@
 {
-  "generatedAt": "2026-09-23T18:23:47+08:00",
+  "generatedAt": "2026-09-24T09:57:41+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 462,
+  "total": 467,
   "items": [
+    {
+      "number": 754,
+      "title": "fix(kda): 修复 A2/A3 chunk_kda_fwd 通用路径精度并把 chunk_size 收窄为 64",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/754",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-24T01:56:26Z",
+      "createdAt": "2026-09-24T01:56:25Z",
+      "headRef": "codex/fix-519-a2-a3-kda-generic-correctness",
+      "labels": []
+    },
+    {
+      "number": 753,
+      "title": "fix(kda): 修复 A5 chunk_kda_fwd 精度并把 chunk_size 收窄为 64",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/753",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-24T01:56:25Z",
+      "createdAt": "2026-09-24T01:56:23Z",
+      "headRef": "codex/fix-483-a5-kda-dense-correctness",
+      "labels": []
+    },
+    {
+      "number": 752,
+      "title": "fix: align GDN and KDA h/dh layouts with NT-first (v26.9.1)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/752",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-24T01:40:59Z",
+      "createdAt": "2026-09-24T01:37:37Z",
+      "headRef": "fix/fwd-h-nt-first-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 751,
+      "title": "feat(build): 一键编包脚本增加构建进度条",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/751",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-24T01:39:03Z",
+      "createdAt": "2026-09-23T12:56:50Z",
+      "headRef": "codex/build-wheel-progress-bar",
+      "labels": []
+    },
+    {
+      "number": 749,
+      "title": "放开 solve_tri 的 tnd 布局（kernel 已由 #481 修复，移除过期防护）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/749",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-24T01:35:54Z",
+      "createdAt": "2026-09-23T10:51:50Z",
+      "headRef": "solvetri_26.9.1",
+      "labels": []
+    },
     {
       "number": 748,
       "title": "放开 solve_tri 的 tnd 布局（kernel 已由 #481 修复，移除过期防护）",
@@ -11,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T10:16:29Z",
+      "updatedAt": "2026-09-24T01:35:39Z",
       "createdAt": "2026-09-23T10:16:19Z",
       "headRef": "solvetri",
       "labels": []
@@ -53,25 +113,13 @@
       "labels": []
     },
     {
-      "number": 744,
-      "title": "fix: handle empty tensors in chunk gated delta rule fwd",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/744",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-23T07:19:10Z",
-      "createdAt": "2026-09-23T07:16:01Z",
-      "headRef": "v26.9.1",
-      "labels": []
-    },
-    {
       "number": 743,
       "title": "perf(v26.9.1): optimize chunk_local_cumsum scan and scheduling",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/743",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T07:45:15Z",
+      "updatedAt": "2026-09-23T14:48:36Z",
       "createdAt": "2026-09-23T07:14:02Z",
       "headRef": "codex/c1-chunk-local-cumsum-v26.9.1",
       "labels": []
@@ -83,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T07:45:13Z",
+      "updatedAt": "2026-09-24T01:57:32Z",
       "createdAt": "2026-09-23T07:14:00Z",
       "headRef": "codex/c1-chunk-local-cumsum-v26.9.0",
       "labels": []
@@ -95,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T07:45:11Z",
+      "updatedAt": "2026-09-23T14:10:27Z",
       "createdAt": "2026-09-23T07:13:58Z",
       "headRef": "codex/c1-chunk-local-cumsum-main",
       "labels": []
@@ -110,18 +158,6 @@
       "updatedAt": "2026-09-23T08:43:08Z",
       "createdAt": "2026-09-23T07:06:19Z",
       "headRef": "0921-compile-ci",
-      "labels": []
-    },
-    {
-      "number": 739,
-      "title": "fix: handle empty tensors in chunk gated delta rule fwd",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/739",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-23T07:18:57Z",
-      "createdAt": "2026-09-23T06:46:09Z",
-      "headRef": "fix_empty_tensor",
       "labels": []
     },
     {
@@ -155,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T08:00:40Z",
+      "updatedAt": "2026-09-24T01:28:58Z",
       "createdAt": "2026-09-21T07:51:22Z",
       "headRef": "codex/kkt-a2-catlass-v26.9.1",
       "labels": []
@@ -173,25 +209,13 @@
       "labels": []
     },
     {
-      "number": 701,
-      "title": "fix: unify NT-first h across FwdH and KDA V2 finalize/recompute",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/701",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-23T08:13:33Z",
-      "createdAt": "2026-09-21T01:45:48Z",
-      "headRef": "fix/fwd-h-nt-first-kda-recompute",
-      "labels": []
-    },
-    {
       "number": 699,
       "title": "fix(kda): 移除 chunk_kda_bwd packed chunk 上限并修复 stable 后端 packed 路径",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/699",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T09:46:13Z",
+      "updatedAt": "2026-09-23T16:25:09Z",
       "createdAt": "2026-09-20T19:00:39Z",
       "headRef": "codex/fix-508-kda-bwd-packed-and-cap",
       "labels": []
@@ -269,30 +293,6 @@
       "labels": []
     },
     {
-      "number": 648,
-      "title": "[v26.9.1] feat(pypi): per-tier a2/a3/a5 wheels, release gates and publish workflow",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/648",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-23T08:56:27Z",
-      "createdAt": "2026-09-20T09:43:48Z",
-      "headRef": "pypi-stable-v2691",
-      "labels": []
-    },
-    {
-      "number": 647,
-      "title": "feat(pypi): per-tier a2/a3/a5 wheels, release gates and publish workflow",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/647",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-23T08:56:35Z",
-      "createdAt": "2026-09-20T09:43:43Z",
-      "headRef": "pypi-stable-main",
-      "labels": []
-    },
-    {
       "number": 644,
       "title": "fix(kda): 修复 Finalize 检测兼容性并归档混合容差标杆",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/644",
@@ -323,7 +323,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T08:33:46Z",
+      "updatedAt": "2026-09-24T01:44:59Z",
       "createdAt": "2026-09-19T03:43:12Z",
       "headRef": "codex/fix-scoped-build-dep-kernels",
       "labels": []
@@ -335,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-21T08:33:53Z",
+      "updatedAt": "2026-09-24T01:45:11Z",
       "createdAt": "2026-09-19T03:43:09Z",
       "headRef": "codex/fix-scoped-build-dep-kernels-main",
       "labels": []
@@ -1337,6 +1337,30 @@
       "labels": []
     },
     {
+      "number": 744,
+      "title": "fix: handle empty tensors in chunk gated delta rule fwd",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/744",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T01:15:47Z",
+      "updatedAt": "2026-09-24T01:15:47Z",
+      "createdAt": "2026-09-23T07:16:01Z",
+      "headRef": "v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 739,
+      "title": "fix: handle empty tensors in chunk gated delta rule fwd",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/739",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T01:15:51Z",
+      "updatedAt": "2026-09-24T01:15:51Z",
+      "createdAt": "2026-09-23T06:46:09Z",
+      "headRef": "fix_empty_tensor",
+      "labels": []
+    },
+    {
       "number": 738,
       "title": "Log GDN tiling workspace size at debug",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/738",
@@ -1589,6 +1613,18 @@
       "labels": []
     },
     {
+      "number": 701,
+      "title": "fix: unify NT-first h across FwdH and KDA V2 finalize/recompute",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/701",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-24T01:34:07Z",
+      "updatedAt": "2026-09-24T01:34:07Z",
+      "createdAt": "2026-09-21T01:45:48Z",
+      "headRef": "fix/fwd-h-nt-first-kda-recompute",
+      "labels": []
+    },
+    {
       "number": 700,
       "title": "fix(kda): 补齐 Gate 标量暂存区读后写依赖，消除 chunk_kda_fwd UB WAR hazard",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/700",
@@ -1634,6 +1670,30 @@
       "updatedAt": "2026-09-23T08:47:42Z",
       "createdAt": "2026-09-20T12:08:07Z",
       "headRef": "gdn_fwd_prepare_26.9.1",
+      "labels": []
+    },
+    {
+      "number": 648,
+      "title": "[v26.9.1] feat(pypi): per-tier a2/a3/a5 wheels, release gates and publish workflow",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/648",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T11:05:06Z",
+      "updatedAt": "2026-09-23T16:25:46Z",
+      "createdAt": "2026-09-20T09:43:48Z",
+      "headRef": "pypi-stable-v2691",
+      "labels": []
+    },
+    {
+      "number": 647,
+      "title": "feat(pypi): per-tier a2/a3/a5 wheels, release gates and publish workflow",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/647",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-23T11:04:54Z",
+      "updatedAt": "2026-09-23T14:49:17Z",
+      "createdAt": "2026-09-20T09:43:43Z",
+      "headRef": "pypi-stable-main",
       "labels": []
     },
     {
