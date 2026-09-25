@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-09-24T18:40:06+08:00",
+  "generatedAt": "2026-09-25T10:14:21+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 471,
+  "total": 473,
   "items": [
+    {
+      "number": 770,
+      "title": "feat(gdn): 统一 A2/A3 arch22 路由并按需导出 H",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/770",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-24T17:20:11Z",
+      "createdAt": "2026-09-24T15:53:48Z",
+      "headRef": "feat/gdn-a2a3-h-export-0924",
+      "labels": []
+    },
+    {
+      "number": 767,
+      "title": "Kda bwd opt w1",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/767",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-24T10:57:51Z",
+      "createdAt": "2026-09-24T10:45:31Z",
+      "headRef": "kda-bwd-opt-w1",
+      "labels": []
+    },
     {
       "number": 765,
       "title": "feat: 新增 CP 反向状态预处理算子 chunk_delta_h_bwd_preprocess",
@@ -35,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-24T10:23:14Z",
+      "updatedAt": "2026-09-24T13:06:33Z",
       "createdAt": "2026-09-24T01:56:25Z",
       "headRef": "codex/fix-519-a2-a3-kda-generic-correctness",
       "labels": []
@@ -47,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-24T10:23:12Z",
+      "updatedAt": "2026-09-24T13:00:39Z",
       "createdAt": "2026-09-24T01:56:23Z",
       "headRef": "codex/fix-483-a5-kda-dense-correctness",
       "labels": []
@@ -1307,7 +1331,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-24T07:58:28Z",
-      "updatedAt": "2026-09-24T07:58:28Z",
+      "updatedAt": "2026-09-24T12:54:43Z",
       "createdAt": "2026-09-23T10:16:19Z",
       "headRef": "solvetri",
       "labels": []
@@ -1331,7 +1355,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-24T06:53:58Z",
-      "updatedAt": "2026-09-24T06:53:59Z",
+      "updatedAt": "2026-09-24T11:56:55Z",
       "createdAt": "2026-09-23T07:14:02Z",
       "headRef": "codex/c1-chunk-local-cumsum-v26.9.1",
       "labels": []
@@ -1355,7 +1379,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-24T06:53:19Z",
-      "updatedAt": "2026-09-24T06:53:19Z",
+      "updatedAt": "2026-09-24T10:41:54Z",
       "createdAt": "2026-09-23T07:13:58Z",
       "headRef": "codex/c1-chunk-local-cumsum-main",
       "labels": []
