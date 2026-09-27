@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-09-27T10:14:55+08:00",
+  "generatedAt": "2026-09-27T18:57:04+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 473,
+  "total": 479,
   "items": [
+    {
+      "number": 776,
+      "title": "fix(kda): 回移 #700 到 v26.9.1（补齐 Gate 标量暂存区读后写依赖，消除 chunk_kda_fwd UB WAR hazard）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/776",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-27T07:37:01Z",
+      "createdAt": "2026-09-27T07:04:39Z",
+      "headRef": "codex/backport-700-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 775,
+      "title": "fix: install_opp 合并 vendors/config.ini 的 load_priority 而非整行覆盖",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/775",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-27T05:58:27Z",
+      "createdAt": "2026-09-27T05:58:17Z",
+      "headRef": "fix/install-opp-merge-load-priority",
+      "labels": []
+    },
     {
       "number": 770,
       "title": "feat(gdn): 统一 A2/A3 arch22 路由并按需导出 H",
@@ -23,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-27T00:58:18Z",
+      "updatedAt": "2026-09-27T06:12:12Z",
       "createdAt": "2026-09-24T10:45:31Z",
       "headRef": "kda-bwd-opt-w1",
       "labels": []
@@ -35,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-24T08:39:52Z",
+      "updatedAt": "2026-09-27T10:26:07Z",
       "createdAt": "2026-09-24T08:39:50Z",
       "headRef": "codex/chunk-delta-h-bwd-preprocess",
       "labels": []
@@ -50,30 +74,6 @@
       "updatedAt": "2026-09-24T07:42:55Z",
       "createdAt": "2026-09-24T07:42:52Z",
       "headRef": "revert-758-v26.9.0",
-      "labels": []
-    },
-    {
-      "number": 754,
-      "title": "fix(kda): 修复 A2/A3 chunk_kda_fwd 通用路径精度并把 chunk_size 收窄为 64",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/754",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-24T13:06:33Z",
-      "createdAt": "2026-09-24T01:56:25Z",
-      "headRef": "codex/fix-519-a2-a3-kda-generic-correctness",
-      "labels": []
-    },
-    {
-      "number": 753,
-      "title": "fix(kda): 修复 A5 chunk_kda_fwd 精度并把 chunk_size 收窄为 64",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/753",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-24T13:00:39Z",
-      "createdAt": "2026-09-24T01:56:23Z",
-      "headRef": "codex/fix-483-a5-kda-dense-correctness",
       "labels": []
     },
     {
@@ -143,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T09:11:21Z",
+      "updatedAt": "2026-09-27T09:28:00Z",
       "createdAt": "2026-09-22T07:22:30Z",
       "headRef": "codex/docs-engineering-reference",
       "labels": []
@@ -1253,6 +1253,54 @@
       "labels": []
     },
     {
+      "number": 780,
+      "title": "docs: 修复需求 Issue 模板名称过短并补齐验收要求字段",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/780",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-27T08:24:55Z",
+      "updatedAt": "2026-09-27T08:24:55Z",
+      "createdAt": "2026-09-27T07:57:43Z",
+      "headRef": "codex/requirement-issue-template",
+      "labels": []
+    },
+    {
+      "number": 779,
+      "title": "fix(kda): 回移 #754 到 v26.9.1（修复 A2/A3 chunk_kda_fwd 通用路径精度并把 chunk_size 收窄为 64）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/779",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-27T10:48:36Z",
+      "updatedAt": "2026-09-27T10:48:36Z",
+      "createdAt": "2026-09-27T07:04:44Z",
+      "headRef": "codex/backport-754-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 778,
+      "title": "fix(kda): 回移 #753 到 v26.9.1（修复 A5 chunk_kda_fwd 精度并把 chunk_size 收窄为 64）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/778",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-27T09:32:47Z",
+      "updatedAt": "2026-09-27T09:32:47Z",
+      "createdAt": "2026-09-27T07:04:42Z",
+      "headRef": "codex/backport-753-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 777,
+      "title": "fix(kda): 回移 #698 到 v26.9.1（chunk_kda_fwd 空 tensor 在 host 侧返回明确错误信息）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/777",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-27T08:54:51Z",
+      "updatedAt": "2026-09-27T08:54:51Z",
+      "createdAt": "2026-09-27T07:04:41Z",
+      "headRef": "codex/backport-698-v26.9.1",
+      "labels": []
+    },
+    {
       "number": 758,
       "title": "fix: validate recurrent gated delta rule inputs",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/758",
@@ -1286,6 +1334,30 @@
       "updatedAt": "2026-09-24T03:20:45Z",
       "createdAt": "2026-09-24T03:15:12Z",
       "headRef": "bug_fix",
+      "labels": []
+    },
+    {
+      "number": 754,
+      "title": "fix(kda): 修复 A2/A3 chunk_kda_fwd 通用路径精度并把 chunk_size 收窄为 64",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/754",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-27T06:35:54Z",
+      "updatedAt": "2026-09-27T06:35:54Z",
+      "createdAt": "2026-09-24T01:56:25Z",
+      "headRef": "codex/fix-519-a2-a3-kda-generic-correctness",
+      "labels": []
+    },
+    {
+      "number": 753,
+      "title": "fix(kda): 修复 A5 chunk_kda_fwd 精度并把 chunk_size 收窄为 64",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/753",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-27T06:35:39Z",
+      "updatedAt": "2026-09-27T06:35:39Z",
+      "createdAt": "2026-09-24T01:56:23Z",
+      "headRef": "codex/fix-483-a5-kda-dense-correctness",
       "labels": []
     },
     {
