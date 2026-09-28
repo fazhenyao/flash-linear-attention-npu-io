@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-09-27T18:57:04+08:00",
+  "generatedAt": "2026-09-28T10:19:19+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 479,
+  "total": 481,
   "items": [
+    {
+      "number": 784,
+      "title": "fix: 一键编包仅发布并提示安装本次生成的 wheel",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/784",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-28T02:16:28Z",
+      "createdAt": "2026-09-28T02:13:12Z",
+      "headRef": "fix/783-current-build-wheel",
+      "labels": []
+    },
+    {
+      "number": 781,
+      "title": "fix: handle empty tensors in chunk gated delta rule bwd",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/781",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-28T02:11:53Z",
+      "createdAt": "2026-09-28T01:51:46Z",
+      "headRef": "fix/chunk-gdn-bwd-empty-tensor",
+      "labels": []
+    },
     {
       "number": 776,
       "title": "fix(kda): 回移 #700 到 v26.9.1（补齐 Gate 标量暂存区读后写依赖，消除 chunk_kda_fwd UB WAR hazard）",
@@ -11,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-27T07:37:01Z",
+      "updatedAt": "2026-09-27T11:51:36Z",
       "createdAt": "2026-09-27T07:04:39Z",
       "headRef": "codex/backport-700-v26.9.1",
       "labels": []
@@ -23,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-27T05:58:27Z",
+      "updatedAt": "2026-09-28T02:17:10Z",
       "createdAt": "2026-09-27T05:58:17Z",
       "headRef": "fix/install-opp-merge-load-priority",
       "labels": []
@@ -47,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-27T06:12:12Z",
+      "updatedAt": "2026-09-28T01:53:34Z",
       "createdAt": "2026-09-24T10:45:31Z",
       "headRef": "kda-bwd-opt-w1",
       "labels": []
