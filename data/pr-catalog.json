@@ -1,53 +1,53 @@
 {
-  "generatedAt": "2026-09-28T20:13:20+08:00",
+  "generatedAt": "2026-09-29T11:03:56+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 491,
+  "total": 490,
   "items": [
     {
       "number": 816,
-      "title": "perf:chunk_gated_delta_rule_bwd_dhu性能优化及aclnn接口增加一致性校验",
+      "title": "perf:chunk_gated_delta_rule_bwd_dhu性能优化(950)及aclnn接口增加一致性校验",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/816",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T11:50:14Z",
+      "updatedAt": "2026-09-29T01:54:59Z",
       "createdAt": "2026-09-28T11:14:00Z",
       "headRef": "v26.9.1",
       "labels": []
     },
     {
       "number": 798,
-      "title": "fix(kda): [v26.9.1] 修复反向 dense 尾块补齐时的 None 元数据处理",
+      "title": "fix(kda): [v26.9.1] 修复反向尾块元数据、缓冲复用与同步问题",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/798",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T09:19:45Z",
+      "updatedAt": "2026-09-28T14:41:28Z",
       "createdAt": "2026-09-28T08:15:26Z",
       "headRef": "fix/v26.9.1-kda-bwd-dense-tail-none",
       "labels": []
     },
     {
       "number": 792,
-      "title": "perf:chunk_gated_delta_rule_bwd_dhu性能优化及aclnn接口增加一致性校验",
+      "title": "perf:chunk_gated_delta_rule_bwd_dhu性能优化(950)及aclnn接口增加一致性校验",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/792",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T11:49:35Z",
+      "updatedAt": "2026-09-29T01:54:27Z",
       "createdAt": "2026-09-28T07:17:13Z",
       "headRef": "v26.9.0",
       "labels": []
     },
     {
       "number": 791,
-      "title": "fix(kda): 修复反向 dense 尾块补齐时的 None 元数据处理",
+      "title": "fix(kda): 修复反向尾块元数据、缓冲复用与同步问题",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/791",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T10:29:05Z",
+      "updatedAt": "2026-09-28T14:41:22Z",
       "createdAt": "2026-09-28T06:42:05Z",
       "headRef": "fix/kda-bwd-dense-tail-none",
       "labels": []
@@ -143,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T02:27:31Z",
+      "updatedAt": "2026-09-28T13:52:48Z",
       "createdAt": "2026-09-27T05:58:17Z",
       "headRef": "fix/install-opp-merge-load-priority",
       "labels": []
@@ -167,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T09:10:31Z",
+      "updatedAt": "2026-09-29T01:25:02Z",
       "createdAt": "2026-09-24T10:45:31Z",
       "headRef": "kda-bwd-opt-w1",
       "labels": []
@@ -179,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-27T10:26:07Z",
+      "updatedAt": "2026-09-29T01:58:30Z",
       "createdAt": "2026-09-24T08:39:50Z",
       "headRef": "codex/chunk-delta-h-bwd-preprocess",
       "labels": []
@@ -239,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-24T02:28:19Z",
+      "updatedAt": "2026-09-29T03:01:04Z",
       "createdAt": "2026-09-23T07:06:19Z",
       "headRef": "0921-compile-ci",
       "labels": []
@@ -362,30 +362,6 @@
       "updatedAt": "2026-09-22T10:10:55Z",
       "createdAt": "2026-09-20T09:14:19Z",
       "headRef": "refactor/kda-finalize-stage-readability",
-      "labels": []
-    },
-    {
-      "number": 620,
-      "title": "fix(build): scoped 编包补齐依赖算子的 kernel 产物",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/620",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-24T07:14:08Z",
-      "createdAt": "2026-09-19T03:43:12Z",
-      "headRef": "codex/fix-scoped-build-dep-kernels",
-      "labels": []
-    },
-    {
-      "number": 619,
-      "title": "fix(build): scoped 编包补齐依赖算子的 kernel 产物",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/619",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-24T08:47:09Z",
-      "createdAt": "2026-09-19T03:43:09Z",
-      "headRef": "codex/fix-scoped-build-dep-kernels-main",
       "labels": []
     },
     {
@@ -890,18 +866,6 @@
       "updatedAt": "2026-08-12T07:29:07Z",
       "createdAt": "2026-08-12T07:28:43Z",
       "headRef": "0812-test-atk",
-      "labels": []
-    },
-    {
-      "number": 297,
-      "title": "test(kda): 增加 CPU 双标杆精度测试",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/297",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-13T05:21:25Z",
-      "createdAt": "2026-08-11T03:33:34Z",
-      "headRef": "codex/chunk-kda-fwd-atk",
       "labels": []
     },
     {
@@ -2222,6 +2186,30 @@
       "updatedAt": "2026-09-19T09:32:56Z",
       "createdAt": "2026-09-19T08:33:18Z",
       "headRef": "feat/kda-bwd-forward-h-layout",
+      "labels": []
+    },
+    {
+      "number": 620,
+      "title": "fix(build): scoped 编包补齐依赖算子的 kernel 产物",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/620",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-28T12:54:59Z",
+      "updatedAt": "2026-09-28T12:55:00Z",
+      "createdAt": "2026-09-19T03:43:12Z",
+      "headRef": "codex/fix-scoped-build-dep-kernels",
+      "labels": []
+    },
+    {
+      "number": 619,
+      "title": "fix(build): scoped 编包补齐依赖算子的 kernel 产物",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/619",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-28T12:54:45Z",
+      "updatedAt": "2026-09-28T12:54:45Z",
+      "createdAt": "2026-09-19T03:43:09Z",
+      "headRef": "codex/fix-scoped-build-dep-kernels-main",
       "labels": []
     },
     {
