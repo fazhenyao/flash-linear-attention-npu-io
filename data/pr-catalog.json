@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-09-29T19:43:15+08:00",
+  "generatedAt": "2026-09-30T10:45:29+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 491,
+  "total": 494,
   "items": [
+    {
+      "number": 825,
+      "title": "[Draft] perf(kda-fwd): Prepare V0/V6 free-wait 延期(FwdP-2)+ 跨 pipe 抢信用死锁修复",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/825",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-30T02:38:36Z",
+      "createdAt": "2026-09-30T02:38:36Z",
+      "headRef": "perf/chunk-kda-fwd-fwdopt",
+      "labels": []
+    },
+    {
+      "number": 824,
+      "title": "feat(ppfm): 新增 pre_process_fwd_kernel_merged 算子（CP 切分 GDN/KDA 前向 pre-process；A5/A2/A3）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/824",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-30T02:24:53Z",
+      "createdAt": "2026-09-30T01:44:02Z",
+      "headRef": "feat/ppfm-tile-a5",
+      "labels": []
+    },
     {
       "number": 818,
       "title": "perf(kda): varlen 单序列 dense 等价时启用 dense 快路径",
@@ -14,18 +38,6 @@
       "updatedAt": "2026-09-29T07:52:50Z",
       "createdAt": "2026-09-29T07:52:46Z",
       "headRef": "kda-varlen-dense-fastpath",
-      "labels": []
-    },
-    {
-      "number": 816,
-      "title": "perf:chunk_gated_delta_rule_bwd_dhu性能优化(950)及aclnn接口增加一致性校验",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/816",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-29T10:33:58Z",
-      "createdAt": "2026-09-28T11:14:00Z",
-      "headRef": "v26.9.1",
       "labels": []
     },
     {
@@ -71,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T10:45:59Z",
+      "updatedAt": "2026-09-29T11:44:14Z",
       "createdAt": "2026-09-28T04:49:45Z",
       "headRef": "fix/chunk-gdn-bwd-empty-tensor-v26.9.1",
       "labels": []
@@ -143,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T10:45:43Z",
+      "updatedAt": "2026-09-29T12:23:12Z",
       "createdAt": "2026-09-28T01:51:46Z",
       "headRef": "fix/chunk-gdn-bwd-empty-tensor",
       "labels": []
@@ -155,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T11:40:41Z",
+      "updatedAt": "2026-09-29T11:51:33Z",
       "createdAt": "2026-09-27T05:58:17Z",
       "headRef": "fix/install-opp-merge-load-priority",
       "labels": []
@@ -167,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T09:26:24Z",
+      "updatedAt": "2026-09-30T02:35:26Z",
       "createdAt": "2026-09-24T15:53:48Z",
       "headRef": "feat/gdn-a2a3-h-export-0924",
       "labels": []
@@ -179,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T01:25:02Z",
+      "updatedAt": "2026-09-30T02:01:10Z",
       "createdAt": "2026-09-24T10:45:31Z",
       "headRef": "kda-bwd-opt-w1",
       "labels": []
@@ -191,7 +203,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T11:34:07Z",
+      "updatedAt": "2026-09-30T01:56:49Z",
       "createdAt": "2026-09-24T08:39:50Z",
       "headRef": "codex/chunk-delta-h-bwd-preprocess",
       "labels": []
@@ -251,7 +263,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T09:16:13Z",
+      "updatedAt": "2026-09-30T02:42:50Z",
       "createdAt": "2026-09-23T07:06:19Z",
       "headRef": "0921-compile-ci",
       "labels": []
@@ -275,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-27T09:28:00Z",
+      "updatedAt": "2026-09-29T14:53:46Z",
       "createdAt": "2026-09-22T07:22:30Z",
       "headRef": "codex/docs-engineering-reference",
       "labels": []
@@ -458,18 +470,6 @@
       "updatedAt": "2026-09-14T14:48:56Z",
       "createdAt": "2026-09-14T14:48:55Z",
       "headRef": "codex/gdn-atk-dual-benchmark",
-      "labels": []
-    },
-    {
-      "number": 560,
-      "title": "新增merge_fwd_bwd_kernel算子",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/560",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-29T10:47:09Z",
-      "createdAt": "2026-09-14T12:22:59Z",
-      "headRef": "merge_fwd_bwd_kernel",
       "labels": []
     },
     {
@@ -1346,6 +1346,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 822,
+      "title": "ci: 增加版本标签同步与置顶需求汇总 workflow",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/822",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-29T15:32:26Z",
+      "updatedAt": "2026-09-29T15:42:39Z",
+      "createdAt": "2026-09-29T14:54:37Z",
+      "headRef": "codex/version-tags",
+      "labels": []
+    },
+    {
+      "number": 816,
+      "title": "perf(26.9.1):chunk_gated_delta_rule_bwd_dhu性能优化(950)及aclnn接口增加一致性校验",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/816",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-30T02:24:41Z",
+      "updatedAt": "2026-09-30T02:24:41Z",
+      "createdAt": "2026-09-28T11:14:00Z",
+      "headRef": "v26.9.1",
       "labels": []
     },
     {
@@ -2486,6 +2510,18 @@
       "updatedAt": "2026-09-16T15:27:55Z",
       "createdAt": "2026-09-15T01:16:17Z",
       "headRef": "codex/chunk-kda-fwd-finalize",
+      "labels": []
+    },
+    {
+      "number": 560,
+      "title": "新增merge_fwd_bwd_kernel算子",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/560",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-09-30T01:36:28Z",
+      "updatedAt": "2026-09-30T01:36:28Z",
+      "createdAt": "2026-09-14T12:22:59Z",
+      "headRef": "merge_fwd_bwd_kernel",
       "labels": []
     },
     {
