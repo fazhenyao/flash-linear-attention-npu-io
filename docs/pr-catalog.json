@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-09-30T19:29:52+08:00",
+  "generatedAt": "2026-10-01T10:51:02+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 496,
+  "total": 497,
   "items": [
+    {
+      "number": 830,
+      "title": "[Fix] Support [B, W] state tables in recurrent GDN for ragged MTP batches",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/830",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-09-30T13:29:00Z",
+      "createdAt": "2026-09-30T13:28:58Z",
+      "headRef": "fix/rgdr-state-table",
+      "labels": []
+    },
     {
       "number": 828,
       "title": "ci pkg",
