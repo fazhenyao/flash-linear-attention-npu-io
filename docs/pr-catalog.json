@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-10-06T20:20:40+08:00",
+  "generatedAt": "2026-10-07T11:03:41+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 497,
+  "total": 498,
   "items": [
+    {
+      "number": 831,
+      "title": "[Fix] Remove deprecated api in causal_conv1d_bwd_def",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/831",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-06T13:09:54Z",
+      "createdAt": "2026-10-06T12:45:42Z",
+      "headRef": "main",
+      "labels": []
+    },
     {
       "number": 830,
       "title": "[Fix] Support [B, W] state tables in recurrent GDN for ragged MTP batches",
@@ -77,18 +89,6 @@
       "labels": []
     },
     {
-      "number": 798,
-      "title": "fix(kda): [v26.9.1] 修复反向尾块元数据、缓冲复用与同步问题",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/798",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-06T02:10:59Z",
-      "createdAt": "2026-09-28T08:15:26Z",
-      "headRef": "fix/v26.9.1-kda-bwd-dense-tail-none",
-      "labels": []
-    },
-    {
       "number": 792,
       "title": "perf:chunk_gated_delta_rule_bwd_dhu性能优化(950)及aclnn接口增加一致性校验",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/792",
@@ -98,18 +98,6 @@
       "updatedAt": "2026-09-29T07:27:22Z",
       "createdAt": "2026-09-28T07:17:13Z",
       "headRef": "v26.9.0",
-      "labels": []
-    },
-    {
-      "number": 791,
-      "title": "fix(kda): 修复反向尾块元数据、缓冲复用与同步问题",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/791",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-06T02:10:51Z",
-      "createdAt": "2026-09-28T06:42:05Z",
-      "headRef": "fix/kda-bwd-dense-tail-none",
       "labels": []
     },
     {
@@ -1382,6 +1370,30 @@
       "updatedAt": "2026-09-30T02:24:41Z",
       "createdAt": "2026-09-28T11:14:00Z",
       "headRef": "v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 798,
+      "title": "fix(kda): [v26.9.1] 修复反向尾块元数据、缓冲复用与同步问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/798",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-07T02:37:14Z",
+      "updatedAt": "2026-10-07T02:37:14Z",
+      "createdAt": "2026-09-28T08:15:26Z",
+      "headRef": "fix/v26.9.1-kda-bwd-dense-tail-none",
+      "labels": []
+    },
+    {
+      "number": 791,
+      "title": "fix(kda): 修复反向尾块元数据、缓冲复用与同步问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/791",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-07T02:37:22Z",
+      "updatedAt": "2026-10-07T02:37:23Z",
+      "createdAt": "2026-09-28T06:42:05Z",
+      "headRef": "fix/kda-bwd-dense-tail-none",
       "labels": []
     },
     {
