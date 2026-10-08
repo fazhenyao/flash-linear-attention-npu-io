@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-07T20:12:40+08:00",
+  "generatedAt": "2026-10-08T11:20:10+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 499,
@@ -11,7 +11,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-07T09:47:35Z",
+      "updatedAt": "2026-10-07T16:32:20Z",
       "createdAt": "2026-10-07T08:36:25Z",
       "headRef": "codex/cannbot-operator-workflow",
       "labels": []
@@ -23,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-06T13:09:54Z",
+      "updatedAt": "2026-10-07T13:10:10Z",
       "createdAt": "2026-10-06T12:45:42Z",
       "headRef": "main",
       "labels": []
@@ -59,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-01T06:06:11Z",
+      "updatedAt": "2026-10-08T02:24:02Z",
       "createdAt": "2026-09-30T07:07:51Z",
       "headRef": "merge_fwd_bwd_kernel",
       "labels": []
@@ -83,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-30T09:26:39Z",
+      "updatedAt": "2026-10-08T01:16:05Z",
       "createdAt": "2026-09-30T01:44:02Z",
       "headRef": "feat/ppfm-tile-a5",
       "labels": []
@@ -102,12 +102,12 @@
     },
     {
       "number": 792,
-      "title": "perf:chunk_gated_delta_rule_bwd_dhu性能优化(950)及aclnn接口增加一致性校验",
+      "title": "perf(26.9.0):chunk_gated_delta_rule_bwd_dhu性能优化(950)及aclnn接口增加一致性校验",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/792",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T07:27:22Z",
+      "updatedAt": "2026-10-08T01:10:41Z",
       "createdAt": "2026-09-28T07:17:13Z",
       "headRef": "v26.9.0",
       "labels": []
@@ -1487,7 +1487,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-30T08:28:49Z",
-      "updatedAt": "2026-09-30T08:28:49Z",
+      "updatedAt": "2026-10-08T02:24:09Z",
       "createdAt": "2026-09-24T08:39:50Z",
       "headRef": "codex/chunk-delta-h-bwd-preprocess",
       "labels": []
@@ -2195,7 +2195,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-20T02:19:08Z",
-      "updatedAt": "2026-09-20T02:19:08Z",
+      "updatedAt": "2026-10-08T02:24:46Z",
       "createdAt": "2026-09-20T01:15:55Z",
       "headRef": "codex/kda-kv-dim-guard-v26.9.1",
       "labels": []
@@ -2207,7 +2207,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-20T02:18:51Z",
-      "updatedAt": "2026-09-20T02:18:52Z",
+      "updatedAt": "2026-10-08T02:24:47Z",
       "createdAt": "2026-09-20T01:15:47Z",
       "headRef": "codex/kda-kv-dim-guard",
       "labels": []
@@ -2435,7 +2435,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-18T11:45:44Z",
-      "updatedAt": "2026-09-18T11:45:44Z",
+      "updatedAt": "2026-10-08T02:25:01Z",
       "createdAt": "2026-09-17T12:18:04Z",
       "headRef": "codex/kda-fwd-l0-dispatch",
       "labels": []
@@ -2783,7 +2783,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-15T14:53:56Z",
-      "updatedAt": "2026-09-15T14:53:56Z",
+      "updatedAt": "2026-10-08T02:25:04Z",
       "createdAt": "2026-09-11T02:11:00Z",
       "headRef": "codex/a5-ci-deployment",
       "labels": []
