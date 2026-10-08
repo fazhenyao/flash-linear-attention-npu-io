@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-10-08T11:20:10+08:00",
+  "generatedAt": "2026-10-08T20:23:11+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 499,
+  "total": 500,
   "items": [
+    {
+      "number": 834,
+      "title": "[Fix] Remove deprecated api in causal_conv1d_bwd_def",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/834",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-08T07:52:54Z",
+      "createdAt": "2026-10-08T07:52:43Z",
+      "headRef": "2691",
+      "labels": []
+    },
     {
       "number": 833,
       "title": "docs: 接入 CANNBot CATLASS C++ 算子开发流程",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-07T16:32:20Z",
+      "updatedAt": "2026-10-08T03:54:41Z",
       "createdAt": "2026-10-07T08:36:25Z",
       "headRef": "codex/cannbot-operator-workflow",
       "labels": []
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-07T13:10:10Z",
+      "updatedAt": "2026-10-08T06:11:31Z",
       "createdAt": "2026-10-06T12:45:42Z",
       "headRef": "main",
       "labels": []
@@ -59,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-08T02:24:02Z",
+      "updatedAt": "2026-10-08T11:48:14Z",
       "createdAt": "2026-09-30T07:07:51Z",
       "headRef": "merge_fwd_bwd_kernel",
       "labels": []
@@ -83,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-08T01:16:05Z",
+      "updatedAt": "2026-10-08T12:18:43Z",
       "createdAt": "2026-09-30T01:44:02Z",
       "headRef": "feat/ppfm-tile-a5",
       "labels": []
