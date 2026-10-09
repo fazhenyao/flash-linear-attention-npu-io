@@ -1,9 +1,81 @@
 {
-  "generatedAt": "2026-10-09T11:25:53+08:00",
+  "generatedAt": "2026-10-09T20:12:47+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 504,
+  "total": 511,
   "items": [
+    {
+      "number": 848,
+      "title": "fix(rgdr): prevent 32-bit overflow in state writeback offsets",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/848",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-09T10:01:07Z",
+      "createdAt": "2026-10-09T10:00:58Z",
+      "headRef": "fix_overflow_v2690",
+      "labels": []
+    },
+    {
+      "number": 847,
+      "title": "fix(rgdr): prevent 32-bit overflow in state writeback offsets",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/847",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-09T09:59:23Z",
+      "createdAt": "2026-10-09T09:59:13Z",
+      "headRef": "v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 846,
+      "title": "centralize host validation and report predefined parameter errors",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/846",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-09T09:32:56Z",
+      "createdAt": "2026-10-09T09:18:39Z",
+      "headRef": "v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 845,
+      "title": "centralize host validation and report predefined parameter errors",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/845",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-09T09:33:24Z",
+      "createdAt": "2026-10-09T09:07:25Z",
+      "headRef": "fix_op_log",
+      "labels": []
+    },
+    {
+      "number": 844,
+      "title": "fix: [v26.9.1] 修复 ChunkKdaBwd OriginalShape 展平导致的 tiling rank 误判",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/844",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-09T08:32:36Z",
+      "createdAt": "2026-10-09T08:32:36Z",
+      "headRef": "fix/issue-615-original-shape-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 841,
+      "title": "fix(rgdr): prevent 32-bit overflow in state writeback offsets",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/841",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-09T03:40:27Z",
+      "createdAt": "2026-10-09T03:38:22Z",
+      "headRef": "fix_state_overflow",
+      "labels": []
+    },
     {
       "number": 840,
       "title": "refactor(cp): 算子改名为 pre_process_bwd_kernel_merged（对齐上游 Triton kernel 命名）",
@@ -11,19 +83,19 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T02:54:54Z",
+      "updatedAt": "2026-10-09T06:43:42Z",
       "createdAt": "2026-10-09T02:54:44Z",
       "headRef": "codex/rename-pre-process-bwd-kernel-merged",
       "labels": []
     },
     {
       "number": 838,
-      "title": "perf(gdn): 优化 A2 前向 KKT、门控准备与 O 完成发布",
+      "title": "perf(gdn): 优化 A2 前向准备、KKT 复用与定长/变长 O 发布",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/838",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T02:26:30Z",
+      "updatedAt": "2026-10-09T06:10:56Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
@@ -35,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T02:02:07Z",
+      "updatedAt": "2026-10-09T08:21:21Z",
       "createdAt": "2026-10-09T02:02:07Z",
       "headRef": "fix/issue-615-original-shape",
       "labels": []
@@ -47,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T01:47:37Z",
+      "updatedAt": "2026-10-09T04:04:31Z",
       "createdAt": "2026-10-09T01:47:08Z",
       "headRef": "fix/ppfm-gate-shape-guard",
       "labels": []
@@ -59,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-08T07:52:54Z",
+      "updatedAt": "2026-10-09T08:39:16Z",
       "createdAt": "2026-10-08T07:52:43Z",
       "headRef": "2691",
       "labels": []
@@ -83,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-08T06:11:31Z",
+      "updatedAt": "2026-10-09T08:39:07Z",
       "createdAt": "2026-10-06T12:45:42Z",
       "headRef": "main",
       "labels": []
@@ -107,19 +179,19 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T01:51:55Z",
+      "updatedAt": "2026-10-09T06:33:48Z",
       "createdAt": "2026-09-30T07:12:01Z",
       "headRef": "0930-ci-pkg",
       "labels": []
     },
     {
       "number": 825,
-      "title": "[Draft] perf(kda-fwd): Prepare V0/V6 free-wait 延期(FwdP-2)+ 跨 pipe 抢信用死锁修复",
+      "title": "perf(kda-fwd): Prepare V0/V6 free-wait 延期(FwdP-2)+ 跨 pipe 抢信用死锁修复",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/825",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-30T03:47:38Z",
+      "updatedAt": "2026-10-09T06:25:54Z",
       "createdAt": "2026-09-30T02:38:36Z",
       "headRef": "perf/chunk-kda-fwd-fwdopt",
       "labels": []
@@ -149,25 +221,13 @@
       "labels": []
     },
     {
-      "number": 790,
-      "title": "fix: handle empty tensors in chunk gated delta rule bwd",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/790",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T02:30:13Z",
-      "createdAt": "2026-09-28T04:49:45Z",
-      "headRef": "fix/chunk-gdn-bwd-empty-tensor-v26.9.1",
-      "labels": []
-    },
-    {
       "number": 789,
       "title": "fix(legacy): drop npu_fast_gelu_custom from the legacy extension",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/789",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T03:37:16Z",
+      "updatedAt": "2026-10-09T03:32:01Z",
       "createdAt": "2026-09-28T03:37:15Z",
       "headRef": "fix/773-drop-legacy-fast-gelu-custom-v26.9.0",
       "labels": []
@@ -179,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T03:37:11Z",
+      "updatedAt": "2026-10-09T07:50:15Z",
       "createdAt": "2026-09-28T03:37:10Z",
       "headRef": "fix/773-drop-legacy-fast-gelu-custom-v26.9.1",
       "labels": []
@@ -191,7 +251,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T03:37:04Z",
+      "updatedAt": "2026-10-09T11:06:15Z",
       "createdAt": "2026-09-28T03:37:03Z",
       "headRef": "fix/773-drop-legacy-fast-gelu-custom",
       "labels": []
@@ -218,18 +278,6 @@
       "updatedAt": "2026-09-28T07:04:53Z",
       "createdAt": "2026-09-28T02:13:12Z",
       "headRef": "fix/783-current-build-wheel",
-      "labels": []
-    },
-    {
-      "number": 781,
-      "title": "fix: handle empty tensors in chunk gated delta rule bwd",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/781",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T03:02:34Z",
-      "createdAt": "2026-09-28T01:51:46Z",
-      "headRef": "fix/chunk-gdn-bwd-empty-tensor",
       "labels": []
     },
     {
@@ -263,7 +311,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T02:24:00Z",
+      "updatedAt": "2026-10-09T06:29:53Z",
       "createdAt": "2026-09-24T10:45:31Z",
       "headRef": "kda-bwd-opt-w1",
       "labels": []
@@ -338,18 +386,6 @@
       "updatedAt": "2026-09-29T14:53:46Z",
       "createdAt": "2026-09-22T07:22:30Z",
       "headRef": "codex/docs-engineering-reference",
-      "labels": []
-    },
-    {
-      "number": 699,
-      "title": "fix(kda): 移除 chunk_kda_bwd packed chunk 上限并修复 stable 后端 packed 路径",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/699",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T02:17:19Z",
-      "createdAt": "2026-09-20T19:00:39Z",
-      "headRef": "codex/fix-508-kda-bwd-packed-and-cap",
       "labels": []
     },
     {
@@ -1397,13 +1433,25 @@
       "labels": []
     },
     {
+      "number": 843,
+      "title": "fix(kda): backport #699 packed 反向与长序列修复到 v26.9.1",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/843",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-09T09:54:13Z",
+      "updatedAt": "2026-10-09T10:32:57Z",
+      "createdAt": "2026-10-09T08:19:36Z",
+      "headRef": "backport/pr699-v26.9.1",
+      "labels": []
+    },
+    {
       "number": 827,
       "title": "Merge fwd bwd kernel",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/827",
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-10-09T02:13:07Z",
-      "updatedAt": "2026-10-09T02:13:07Z",
+      "updatedAt": "2026-10-09T09:12:57Z",
       "createdAt": "2026-09-30T07:07:51Z",
       "headRef": "merge_fwd_bwd_kernel",
       "labels": []
@@ -1415,7 +1463,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-10-09T01:26:33Z",
-      "updatedAt": "2026-10-09T01:26:33Z",
+      "updatedAt": "2026-10-09T09:11:35Z",
       "createdAt": "2026-09-30T01:44:02Z",
       "headRef": "feat/ppfm-tile-a5",
       "labels": []
@@ -1427,7 +1475,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-29T15:32:26Z",
-      "updatedAt": "2026-09-29T15:42:39Z",
+      "updatedAt": "2026-10-09T09:11:33Z",
       "createdAt": "2026-09-29T14:54:37Z",
       "headRef": "codex/version-tags",
       "labels": []
@@ -1439,7 +1487,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-30T02:24:41Z",
-      "updatedAt": "2026-09-30T02:24:41Z",
+      "updatedAt": "2026-10-09T09:11:32Z",
       "createdAt": "2026-09-28T11:14:00Z",
       "headRef": "v26.9.1",
       "labels": []
@@ -1451,7 +1499,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-10-07T02:37:14Z",
-      "updatedAt": "2026-10-07T02:37:14Z",
+      "updatedAt": "2026-10-09T09:11:31Z",
       "createdAt": "2026-09-28T08:15:26Z",
       "headRef": "fix/v26.9.1-kda-bwd-dense-tail-none",
       "labels": []
@@ -1463,9 +1511,21 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-10-07T02:37:22Z",
-      "updatedAt": "2026-10-07T02:37:23Z",
+      "updatedAt": "2026-10-09T09:11:30Z",
       "createdAt": "2026-09-28T06:42:05Z",
       "headRef": "fix/kda-bwd-dense-tail-none",
+      "labels": []
+    },
+    {
+      "number": 790,
+      "title": "fix: handle empty tensors in chunk gated delta rule bwd",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/790",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-09T06:47:23Z",
+      "updatedAt": "2026-10-09T09:11:29Z",
+      "createdAt": "2026-09-28T04:49:45Z",
+      "headRef": "fix/chunk-gdn-bwd-empty-tensor-v26.9.1",
       "labels": []
     },
     {
@@ -1475,9 +1535,21 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-28T06:20:21Z",
-      "updatedAt": "2026-09-28T06:20:21Z",
+      "updatedAt": "2026-10-09T09:11:28Z",
       "createdAt": "2026-09-28T03:22:19Z",
       "headRef": "26.9.0bak",
+      "labels": []
+    },
+    {
+      "number": 781,
+      "title": "fix: handle empty tensors in chunk gated delta rule bwd",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/781",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-09T06:47:28Z",
+      "updatedAt": "2026-10-09T09:11:27Z",
+      "createdAt": "2026-09-28T01:51:46Z",
+      "headRef": "fix/chunk-gdn-bwd-empty-tensor",
       "labels": []
     },
     {
@@ -1487,7 +1559,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-27T08:24:55Z",
-      "updatedAt": "2026-09-27T08:24:55Z",
+      "updatedAt": "2026-10-09T09:11:26Z",
       "createdAt": "2026-09-27T07:57:43Z",
       "headRef": "codex/requirement-issue-template",
       "labels": []
@@ -1499,7 +1571,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-27T10:48:36Z",
-      "updatedAt": "2026-09-27T10:48:36Z",
+      "updatedAt": "2026-10-09T09:11:24Z",
       "createdAt": "2026-09-27T07:04:44Z",
       "headRef": "codex/backport-754-v26.9.1",
       "labels": []
@@ -1511,7 +1583,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-27T09:32:47Z",
-      "updatedAt": "2026-09-27T09:32:47Z",
+      "updatedAt": "2026-10-09T09:11:23Z",
       "createdAt": "2026-09-27T07:04:42Z",
       "headRef": "codex/backport-753-v26.9.1",
       "labels": []
@@ -1523,7 +1595,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-27T08:54:51Z",
-      "updatedAt": "2026-09-27T08:54:51Z",
+      "updatedAt": "2026-10-09T09:11:22Z",
       "createdAt": "2026-09-27T07:04:41Z",
       "headRef": "codex/backport-698-v26.9.1",
       "labels": []
@@ -1535,7 +1607,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-28T03:14:53Z",
-      "updatedAt": "2026-09-28T03:14:53Z",
+      "updatedAt": "2026-10-09T09:11:21Z",
       "createdAt": "2026-09-27T07:04:39Z",
       "headRef": "codex/backport-700-v26.9.1",
       "labels": []
@@ -1547,7 +1619,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-30T08:28:49Z",
-      "updatedAt": "2026-10-08T02:24:09Z",
+      "updatedAt": "2026-10-09T09:11:20Z",
       "createdAt": "2026-09-24T08:39:50Z",
       "headRef": "codex/chunk-delta-h-bwd-preprocess",
       "labels": []
@@ -1559,7 +1631,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-24T03:20:59Z",
-      "updatedAt": "2026-09-24T03:20:59Z",
+      "updatedAt": "2026-10-09T09:11:18Z",
       "createdAt": "2026-09-24T03:17:20Z",
       "headRef": "v26.9.0",
       "labels": []
@@ -1571,7 +1643,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-24T03:20:54Z",
-      "updatedAt": "2026-09-24T03:20:54Z",
+      "updatedAt": "2026-10-09T09:11:17Z",
       "createdAt": "2026-09-24T03:16:34Z",
       "headRef": "fix_bug_2691",
       "labels": []
@@ -1583,7 +1655,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-24T03:20:45Z",
-      "updatedAt": "2026-09-24T03:20:45Z",
+      "updatedAt": "2026-10-09T09:11:16Z",
       "createdAt": "2026-09-24T03:15:12Z",
       "headRef": "bug_fix",
       "labels": []
@@ -1595,7 +1667,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-27T06:35:54Z",
-      "updatedAt": "2026-09-27T06:35:54Z",
+      "updatedAt": "2026-10-09T09:11:14Z",
       "createdAt": "2026-09-24T01:56:25Z",
       "headRef": "codex/fix-519-a2-a3-kda-generic-correctness",
       "labels": []
@@ -1607,7 +1679,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-27T06:35:39Z",
-      "updatedAt": "2026-09-27T06:35:39Z",
+      "updatedAt": "2026-10-09T09:11:13Z",
       "createdAt": "2026-09-24T01:56:23Z",
       "headRef": "codex/fix-483-a5-kda-dense-correctness",
       "labels": []
@@ -1619,7 +1691,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-24T07:59:14Z",
-      "updatedAt": "2026-09-24T07:59:15Z",
+      "updatedAt": "2026-10-09T09:11:12Z",
       "createdAt": "2026-09-24T01:37:37Z",
       "headRef": "fix/fwd-h-nt-first-v26.9.1",
       "labels": []
@@ -1631,7 +1703,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-24T06:16:51Z",
-      "updatedAt": "2026-09-24T06:16:51Z",
+      "updatedAt": "2026-10-09T09:11:11Z",
       "createdAt": "2026-09-23T12:56:50Z",
       "headRef": "codex/build-wheel-progress-bar",
       "labels": []
@@ -1643,7 +1715,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-09-24T07:58:43Z",
-      "updatedAt": "2026-09-24T07:58:44Z",
+      "updatedAt": "2026-10-09T09:11:10Z",
       "createdAt": "2026-09-23T10:51:50Z",
       "headRef": "solvetri_26.9.1",
       "labels": []
@@ -2030,6 +2102,18 @@
       "updatedAt": "2026-09-21T13:28:20Z",
       "createdAt": "2026-09-20T23:16:29Z",
       "headRef": "codex/issue-575-kda-gate-cumsum-war",
+      "labels": []
+    },
+    {
+      "number": 699,
+      "title": "fix(kda): 移除 chunk_kda_bwd packed chunk 上限并修复 stable 后端 packed 路径",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/699",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-09T09:54:29Z",
+      "updatedAt": "2026-10-09T09:54:29Z",
+      "createdAt": "2026-09-20T19:00:39Z",
+      "headRef": "codex/fix-508-kda-bwd-packed-and-cap",
       "labels": []
     },
     {
