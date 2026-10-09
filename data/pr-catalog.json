@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-10-08T20:23:11+08:00",
+  "generatedAt": "2026-10-09T11:25:53+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 500,
+  "total": 504,
   "items": [
+    {
+      "number": 840,
+      "title": "refactor(cp): 算子改名为 pre_process_bwd_kernel_merged（对齐上游 Triton kernel 命名）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/840",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-09T02:54:54Z",
+      "createdAt": "2026-10-09T02:54:44Z",
+      "headRef": "codex/rename-pre-process-bwd-kernel-merged",
+      "labels": []
+    },
+    {
+      "number": 838,
+      "title": "perf(gdn): 优化 A2 前向 KKT、门控准备与 O 完成发布",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/838",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-09T02:26:30Z",
+      "createdAt": "2026-10-09T02:26:30Z",
+      "headRef": "perf/gdn-a2-forward-pipeline-1009",
+      "labels": []
+    },
+    {
+      "number": 836,
+      "title": "fix: 修复 ChunkKdaBwd OriginalShape 展平导致的 tiling rank 误判",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/836",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-09T02:02:07Z",
+      "createdAt": "2026-10-09T02:02:07Z",
+      "headRef": "fix/issue-615-original-shape",
+      "labels": []
+    },
+    {
+      "number": 835,
+      "title": "fix(ppfm): 补 g/gk 的 shape 拦截（aclnn + host tiling 两条入口）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/835",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-09T01:47:37Z",
+      "createdAt": "2026-10-09T01:47:08Z",
+      "headRef": "fix/ppfm-gate-shape-guard",
+      "labels": []
+    },
     {
       "number": 834,
       "title": "[Fix] Remove deprecated api in causal_conv1d_bwd_def",
@@ -23,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-08T03:54:41Z",
+      "updatedAt": "2026-10-08T16:48:39Z",
       "createdAt": "2026-10-07T08:36:25Z",
       "headRef": "codex/cannbot-operator-workflow",
       "labels": []
@@ -59,21 +107,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-02T07:12:51Z",
+      "updatedAt": "2026-10-09T01:51:55Z",
       "createdAt": "2026-09-30T07:12:01Z",
       "headRef": "0930-ci-pkg",
-      "labels": []
-    },
-    {
-      "number": 827,
-      "title": "Merge fwd bwd kernel",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/827",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-08T11:48:14Z",
-      "createdAt": "2026-09-30T07:07:51Z",
-      "headRef": "merge_fwd_bwd_kernel",
       "labels": []
     },
     {
@@ -86,18 +122,6 @@
       "updatedAt": "2026-09-30T03:47:38Z",
       "createdAt": "2026-09-30T02:38:36Z",
       "headRef": "perf/chunk-kda-fwd-fwdopt",
-      "labels": []
-    },
-    {
-      "number": 824,
-      "title": "feat(ppfm): 新增 pre_process_fwd_kernel_merged 算子（CP 切分 GDN/KDA 前向 pre-process；A5/A2/A3）",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/824",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-08T12:18:43Z",
-      "createdAt": "2026-09-30T01:44:02Z",
-      "headRef": "feat/ppfm-tile-a5",
       "labels": []
     },
     {
@@ -119,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-08T01:10:41Z",
+      "updatedAt": "2026-10-09T01:58:03Z",
       "createdAt": "2026-09-28T07:17:13Z",
       "headRef": "v26.9.0",
       "labels": []
@@ -131,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T11:44:14Z",
+      "updatedAt": "2026-10-09T02:30:13Z",
       "createdAt": "2026-09-28T04:49:45Z",
       "headRef": "fix/chunk-gdn-bwd-empty-tensor-v26.9.1",
       "labels": []
@@ -203,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T12:23:12Z",
+      "updatedAt": "2026-10-09T03:02:34Z",
       "createdAt": "2026-09-28T01:51:46Z",
       "headRef": "fix/chunk-gdn-bwd-empty-tensor",
       "labels": []
@@ -239,7 +263,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-30T02:01:10Z",
+      "updatedAt": "2026-10-09T02:24:00Z",
       "createdAt": "2026-09-24T10:45:31Z",
       "headRef": "kda-bwd-opt-w1",
       "labels": []
@@ -323,7 +347,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-23T16:25:09Z",
+      "updatedAt": "2026-10-09T02:17:19Z",
       "createdAt": "2026-09-20T19:00:39Z",
       "headRef": "codex/fix-508-kda-bwd-packed-and-cap",
       "labels": []
@@ -1370,6 +1394,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 827,
+      "title": "Merge fwd bwd kernel",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/827",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-09T02:13:07Z",
+      "updatedAt": "2026-10-09T02:13:07Z",
+      "createdAt": "2026-09-30T07:07:51Z",
+      "headRef": "merge_fwd_bwd_kernel",
+      "labels": []
+    },
+    {
+      "number": 824,
+      "title": "feat(ppfm): 新增 pre_process_fwd_kernel_merged 算子（CP 切分 GDN/KDA 前向 pre-process；A5/A2/A3）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/824",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-09T01:26:33Z",
+      "updatedAt": "2026-10-09T01:26:33Z",
+      "createdAt": "2026-09-30T01:44:02Z",
+      "headRef": "feat/ppfm-tile-a5",
       "labels": []
     },
     {
