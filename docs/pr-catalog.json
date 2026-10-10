@@ -1,19 +1,79 @@
 {
-  "generatedAt": "2026-10-10T11:05:39+08:00",
+  "generatedAt": "2026-10-10T19:30:18+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 511,
+  "total": 517,
   "items": [
     {
-      "number": 848,
-      "title": "fix(rgdr): prevent 32-bit overflow in state writeback offsets",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/848",
+      "number": 865,
+      "title": "fix(kda): ChunkKdaFwdPrepare 拆开 V6→C7 RHS 与 V1 payload 的地址复用 + 跨核读侧失效（Arch22）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/865",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-10T01:58:23Z",
-      "createdAt": "2026-10-09T10:00:58Z",
-      "headRef": "fix_overflow_v2690",
+      "updatedAt": "2026-10-10T10:50:55Z",
+      "createdAt": "2026-10-10T10:50:55Z",
+      "headRef": "codex/kda-prepare-rhs-dedicated",
+      "labels": []
+    },
+    {
+      "number": 864,
+      "title": "fix: use optional input stride for causal conv1d states",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/864",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-10T10:55:15Z",
+      "createdAt": "2026-10-10T10:27:16Z",
+      "headRef": "lzy1-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 863,
+      "title": "fix: use optional input stride for causal conv1d states",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/863",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-10T10:55:17Z",
+      "createdAt": "2026-10-10T10:26:43Z",
+      "headRef": "lzy1-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 860,
+      "title": "fix(kda): ChunkKdaFwdPrepare 的 V6→C7 relay 交接补保守可见性同步（Arch22，临时验证）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/860",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-10T10:37:46Z",
+      "createdAt": "2026-10-10T09:33:09Z",
+      "headRef": "codex/kda-prepare-relay-sync",
+      "labels": []
+    },
+    {
+      "number": 858,
+      "title": "fix: use optional input stride for causal conv1d states",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/858",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-10T10:55:53Z",
+      "createdAt": "2026-10-10T08:14:15Z",
+      "headRef": "lzy1",
+      "labels": []
+    },
+    {
+      "number": 856,
+      "title": "perf:chunk_gated_delta_rule_bwd_dhu（A2）性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/856",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-10T08:34:50Z",
+      "createdAt": "2026-10-10T07:01:10Z",
+      "headRef": "main",
       "labels": []
     },
     {
@@ -35,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-10T01:58:13Z",
+      "updatedAt": "2026-10-10T04:20:17Z",
       "createdAt": "2026-10-09T09:07:25Z",
       "headRef": "fix_op_log",
       "labels": []
@@ -47,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T08:32:36Z",
+      "updatedAt": "2026-10-10T06:18:23Z",
       "createdAt": "2026-10-09T08:32:36Z",
       "headRef": "fix/issue-615-original-shape-v26.9.1",
       "labels": []
@@ -125,18 +185,6 @@
       "labels": []
     },
     {
-      "number": 825,
-      "title": "perf(kda-fwd): Prepare V0/V6 free-wait 延期(FwdP-2)+ 跨 pipe 抢信用死锁修复",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/825",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-10T01:34:48Z",
-      "createdAt": "2026-09-30T02:38:36Z",
-      "headRef": "perf/chunk-kda-fwd-fwdopt",
-      "labels": []
-    },
-    {
       "number": 818,
       "title": "perf(kda): varlen 单序列 dense 等价时启用 dense 快路径",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/818",
@@ -161,61 +209,25 @@
       "labels": []
     },
     {
-      "number": 789,
-      "title": "fix(legacy): drop npu_fast_gelu_custom from the legacy extension",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/789",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T03:32:01Z",
-      "createdAt": "2026-09-28T03:37:15Z",
-      "headRef": "fix/773-drop-legacy-fast-gelu-custom-v26.9.0",
-      "labels": []
-    },
-    {
-      "number": 788,
-      "title": "fix(legacy): drop npu_fast_gelu_custom from the legacy extension",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/788",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T07:50:15Z",
-      "createdAt": "2026-09-28T03:37:10Z",
-      "headRef": "fix/773-drop-legacy-fast-gelu-custom-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 787,
-      "title": "fix(legacy): drop npu_fast_gelu_custom from the legacy extension",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/787",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T11:06:15Z",
-      "createdAt": "2026-09-28T03:37:03Z",
-      "headRef": "fix/773-drop-legacy-fast-gelu-custom",
-      "labels": []
-    },
-    {
       "number": 786,
-      "title": "fix(v26.9.1): 按当前构建配置准确定位 wheel 安装路径",
+      "title": "fix(v26.9.1): 隔离本次 wheel 输出，避免安装提示选中旧包",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/786",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T07:04:57Z",
+      "updatedAt": "2026-10-10T07:24:48Z",
       "createdAt": "2026-09-28T03:30:27Z",
       "headRef": "fix/783-current-build-wheel-v26.9.1",
       "labels": []
     },
     {
       "number": 784,
-      "title": "fix: 按当前构建配置准确定位 wheel 安装路径",
+      "title": "fix: 隔离本次 wheel 输出，避免安装提示选中旧包",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/784",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T07:04:53Z",
+      "updatedAt": "2026-10-10T08:05:33Z",
       "createdAt": "2026-09-28T02:13:12Z",
       "headRef": "fix/783-current-build-wheel",
       "labels": []
@@ -242,18 +254,6 @@
       "updatedAt": "2026-09-30T03:18:41Z",
       "createdAt": "2026-09-24T15:53:48Z",
       "headRef": "feat/gdn-a2a3-h-export-0924",
-      "labels": []
-    },
-    {
-      "number": 767,
-      "title": "Kda bwd opt w1",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/767",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T14:28:15Z",
-      "createdAt": "2026-09-24T10:45:31Z",
-      "headRef": "kda-bwd-opt-w1",
       "labels": []
     },
     {
@@ -1373,6 +1373,18 @@
       "labels": []
     },
     {
+      "number": 848,
+      "title": "fix(rgdr): prevent 32-bit overflow in state writeback offsets",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/848",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-10T03:46:23Z",
+      "updatedAt": "2026-10-10T03:46:23Z",
+      "createdAt": "2026-10-09T10:00:58Z",
+      "headRef": "fix_overflow_v2690",
+      "labels": []
+    },
+    {
       "number": 847,
       "title": "fix(rgdr): prevent 32-bit overflow in state writeback offsets",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/847",
@@ -1457,6 +1469,18 @@
       "labels": []
     },
     {
+      "number": 825,
+      "title": "perf(kda-fwd): Prepare V0/V6 free-wait 延期(FwdP-2)+ 跨 pipe 抢信用死锁修复",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/825",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-10T03:09:54Z",
+      "updatedAt": "2026-10-10T03:09:54Z",
+      "createdAt": "2026-09-30T02:38:36Z",
+      "headRef": "perf/chunk-kda-fwd-fwdopt",
+      "labels": []
+    },
+    {
       "number": 824,
       "title": "feat(ppfm): 新增 pre_process_fwd_kernel_merged 算子（CP 切分 GDN/KDA 前向 pre-process；A5/A2/A3）",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/824",
@@ -1526,6 +1550,42 @@
       "updatedAt": "2026-10-09T09:11:29Z",
       "createdAt": "2026-09-28T04:49:45Z",
       "headRef": "fix/chunk-gdn-bwd-empty-tensor-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 789,
+      "title": "fix(legacy): drop npu_fast_gelu_custom from the legacy extension",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/789",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-10T03:28:52Z",
+      "updatedAt": "2026-10-10T03:28:52Z",
+      "createdAt": "2026-09-28T03:37:15Z",
+      "headRef": "fix/773-drop-legacy-fast-gelu-custom-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 788,
+      "title": "fix(legacy): drop npu_fast_gelu_custom from the legacy extension",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/788",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-10T03:28:42Z",
+      "updatedAt": "2026-10-10T03:28:42Z",
+      "createdAt": "2026-09-28T03:37:10Z",
+      "headRef": "fix/773-drop-legacy-fast-gelu-custom-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 787,
+      "title": "fix(legacy): drop npu_fast_gelu_custom from the legacy extension",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/787",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-10T03:28:33Z",
+      "updatedAt": "2026-10-10T03:28:33Z",
+      "createdAt": "2026-09-28T03:37:03Z",
+      "headRef": "fix/773-drop-legacy-fast-gelu-custom",
       "labels": []
     },
     {
@@ -1610,6 +1670,18 @@
       "updatedAt": "2026-10-09T09:11:21Z",
       "createdAt": "2026-09-27T07:04:39Z",
       "headRef": "codex/backport-700-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 767,
+      "title": "Kda bwd opt w1",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/767",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-10T03:11:25Z",
+      "updatedAt": "2026-10-10T03:11:26Z",
+      "createdAt": "2026-09-24T10:45:31Z",
+      "headRef": "kda-bwd-opt-w1",
       "labels": []
     },
     {
