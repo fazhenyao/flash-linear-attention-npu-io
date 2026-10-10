@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-09T20:12:47+08:00",
+  "generatedAt": "2026-10-10T11:05:39+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 511,
@@ -11,21 +11,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T10:01:07Z",
+      "updatedAt": "2026-10-10T01:58:23Z",
       "createdAt": "2026-10-09T10:00:58Z",
       "headRef": "fix_overflow_v2690",
-      "labels": []
-    },
-    {
-      "number": 847,
-      "title": "fix(rgdr): prevent 32-bit overflow in state writeback offsets",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/847",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T09:59:23Z",
-      "createdAt": "2026-10-09T09:59:13Z",
-      "headRef": "v26.9.0",
       "labels": []
     },
     {
@@ -35,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T09:32:56Z",
+      "updatedAt": "2026-10-10T02:32:32Z",
       "createdAt": "2026-10-09T09:18:39Z",
       "headRef": "v26.9.1",
       "labels": []
@@ -47,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T09:33:24Z",
+      "updatedAt": "2026-10-10T01:58:13Z",
       "createdAt": "2026-10-09T09:07:25Z",
       "headRef": "fix_op_log",
       "labels": []
@@ -62,30 +50,6 @@
       "updatedAt": "2026-10-09T08:32:36Z",
       "createdAt": "2026-10-09T08:32:36Z",
       "headRef": "fix/issue-615-original-shape-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 841,
-      "title": "fix(rgdr): prevent 32-bit overflow in state writeback offsets",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/841",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T03:40:27Z",
-      "createdAt": "2026-10-09T03:38:22Z",
-      "headRef": "fix_state_overflow",
-      "labels": []
-    },
-    {
-      "number": 840,
-      "title": "refactor(cp): 算子改名为 pre_process_bwd_kernel_merged（对齐上游 Triton kernel 命名）",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/840",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T06:43:42Z",
-      "createdAt": "2026-10-09T02:54:44Z",
-      "headRef": "codex/rename-pre-process-bwd-kernel-merged",
       "labels": []
     },
     {
@@ -107,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T08:21:21Z",
+      "updatedAt": "2026-10-09T16:22:00Z",
       "createdAt": "2026-10-09T02:02:07Z",
       "headRef": "fix/issue-615-original-shape",
       "labels": []
@@ -125,18 +89,6 @@
       "labels": []
     },
     {
-      "number": 834,
-      "title": "[Fix] Remove deprecated api in causal_conv1d_bwd_def",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/834",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T08:39:16Z",
-      "createdAt": "2026-10-08T07:52:43Z",
-      "headRef": "2691",
-      "labels": []
-    },
-    {
       "number": 833,
       "title": "docs: 接入 CANNBot CATLASS C++ 算子开发流程",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/833",
@@ -146,18 +98,6 @@
       "updatedAt": "2026-10-08T16:48:39Z",
       "createdAt": "2026-10-07T08:36:25Z",
       "headRef": "codex/cannbot-operator-workflow",
-      "labels": []
-    },
-    {
-      "number": 831,
-      "title": "[Fix] Remove deprecated api in causal_conv1d_bwd_def",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/831",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T08:39:07Z",
-      "createdAt": "2026-10-06T12:45:42Z",
-      "headRef": "main",
       "labels": []
     },
     {
@@ -191,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T06:25:54Z",
+      "updatedAt": "2026-10-10T01:34:48Z",
       "createdAt": "2026-09-30T02:38:36Z",
       "headRef": "perf/chunk-kda-fwd-fwdopt",
       "labels": []
@@ -311,7 +251,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T06:29:53Z",
+      "updatedAt": "2026-10-09T14:28:15Z",
       "createdAt": "2026-09-24T10:45:31Z",
       "headRef": "kda-bwd-opt-w1",
       "labels": []
@@ -1433,6 +1373,18 @@
       "labels": []
     },
     {
+      "number": 847,
+      "title": "fix(rgdr): prevent 32-bit overflow in state writeback offsets",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/847",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-09T13:32:50Z",
+      "updatedAt": "2026-10-09T13:32:50Z",
+      "createdAt": "2026-10-09T09:59:13Z",
+      "headRef": "v26.9.0",
+      "labels": []
+    },
+    {
       "number": 843,
       "title": "fix(kda): backport #699 packed 反向与长序列修复到 v26.9.1",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/843",
@@ -1442,6 +1394,54 @@
       "updatedAt": "2026-10-09T10:32:57Z",
       "createdAt": "2026-10-09T08:19:36Z",
       "headRef": "backport/pr699-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 841,
+      "title": "fix(rgdr): prevent 32-bit overflow in state writeback offsets",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/841",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-09T13:32:31Z",
+      "updatedAt": "2026-10-09T13:32:31Z",
+      "createdAt": "2026-10-09T03:38:22Z",
+      "headRef": "fix_state_overflow",
+      "labels": []
+    },
+    {
+      "number": 840,
+      "title": "refactor(cp): 算子改名为 pre_process_bwd_kernel_merged（对齐上游 Triton kernel 命名）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/840",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-10T01:30:43Z",
+      "updatedAt": "2026-10-10T01:30:43Z",
+      "createdAt": "2026-10-09T02:54:44Z",
+      "headRef": "codex/rename-pre-process-bwd-kernel-merged",
+      "labels": []
+    },
+    {
+      "number": 834,
+      "title": "[Fix] Remove deprecated api in causal_conv1d_bwd_def",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/834",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-09T13:29:55Z",
+      "updatedAt": "2026-10-09T13:29:55Z",
+      "createdAt": "2026-10-08T07:52:43Z",
+      "headRef": "2691",
+      "labels": []
+    },
+    {
+      "number": 831,
+      "title": "[Fix] Remove deprecated api in causal_conv1d_bwd_def",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/831",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-10T01:25:32Z",
+      "updatedAt": "2026-10-10T01:25:32Z",
+      "createdAt": "2026-10-06T12:45:42Z",
+      "headRef": "main",
       "labels": []
     },
     {
