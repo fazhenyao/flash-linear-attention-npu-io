@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-10-11T10:37:18+08:00",
+  "generatedAt": "2026-10-11T19:43:38+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 518,
+  "total": 520,
   "items": [
+    {
+      "number": 869,
+      "title": "fix(kda): Arch22 ChunkKdaFwdPrepare 拆开 V6→C7 RHS 的 workspace 与 L1 lane 两处地址复用",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/869",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-11T11:29:56Z",
+      "createdAt": "2026-10-11T07:32:01Z",
+      "headRef": "codex/kda-arch22-rhs-lane-early-free",
+      "labels": []
+    },
     {
       "number": 866,
       "title": "feat: 新增 GDN/KDA 独立 CP 前后向示例",
@@ -23,33 +35,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-10T15:46:35Z",
+      "updatedAt": "2026-10-11T08:53:57Z",
       "createdAt": "2026-10-10T10:50:55Z",
       "headRef": "codex/kda-prepare-rhs-dedicated",
-      "labels": []
-    },
-    {
-      "number": 864,
-      "title": "fix: use optional input stride for causal conv1d states",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/864",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-10T12:40:32Z",
-      "createdAt": "2026-10-10T10:27:16Z",
-      "headRef": "lzy1-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 863,
-      "title": "fix: use optional input stride for causal conv1d states",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/863",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-10T10:55:17Z",
-      "createdAt": "2026-10-10T10:26:43Z",
-      "headRef": "lzy1-v26.9.0",
       "labels": []
     },
     {
@@ -62,18 +50,6 @@
       "updatedAt": "2026-10-10T10:37:46Z",
       "createdAt": "2026-10-10T09:33:09Z",
       "headRef": "codex/kda-prepare-relay-sync",
-      "labels": []
-    },
-    {
-      "number": 858,
-      "title": "fix: use optional input stride for causal conv1d states",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/858",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-10T13:44:02Z",
-      "createdAt": "2026-10-10T08:14:15Z",
-      "headRef": "lzy1",
       "labels": []
     },
     {
@@ -179,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-10T13:56:44Z",
+      "updatedAt": "2026-10-11T06:09:38Z",
       "createdAt": "2026-09-30T13:28:58Z",
       "headRef": "fix/rgdr-state-table",
       "labels": []
@@ -335,7 +311,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T14:53:46Z",
+      "updatedAt": "2026-10-11T09:00:17Z",
       "createdAt": "2026-09-22T07:22:30Z",
       "headRef": "codex/docs-engineering-reference",
       "labels": []
@@ -1382,6 +1358,54 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 868,
+      "title": "fix(ci): 需求汇总工作流把 OP_NAMES_FILE 下移到 step 级 env，修掉 workflow 校验失败",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/868",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-11T03:21:35Z",
+      "updatedAt": "2026-10-11T03:21:35Z",
+      "createdAt": "2026-10-11T03:17:31Z",
+      "headRef": "fix/requirements-index-runner-temp-env",
+      "labels": []
+    },
+    {
+      "number": 864,
+      "title": "fix: use optional input stride for causal conv1d states",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/864",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-11T08:24:57Z",
+      "updatedAt": "2026-10-11T08:24:57Z",
+      "createdAt": "2026-10-10T10:27:16Z",
+      "headRef": "lzy1-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 863,
+      "title": "fix: use optional input stride for causal conv1d states",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/863",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-11T08:24:52Z",
+      "updatedAt": "2026-10-11T08:24:53Z",
+      "createdAt": "2026-10-10T10:26:43Z",
+      "headRef": "lzy1-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 858,
+      "title": "fix: use optional input stride for causal conv1d states",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/858",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-11T08:24:32Z",
+      "updatedAt": "2026-10-11T08:24:32Z",
+      "createdAt": "2026-10-10T08:14:15Z",
+      "headRef": "lzy1",
       "labels": []
     },
     {
