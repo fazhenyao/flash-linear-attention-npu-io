@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-10-10T19:30:18+08:00",
+  "generatedAt": "2026-10-11T10:37:18+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 517,
+  "total": 518,
   "items": [
+    {
+      "number": 866,
+      "title": "feat: 新增 GDN/KDA 独立 CP 前后向示例",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/866",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-11T02:03:29Z",
+      "createdAt": "2026-10-10T15:37:09Z",
+      "headRef": "examples/gdn-kda-cp",
+      "labels": []
+    },
     {
       "number": 865,
       "title": "fix(kda): ChunkKdaFwdPrepare 拆开 V6→C7 RHS 与 V1 payload 的地址复用 + 跨核读侧失效（Arch22）",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-10T10:50:55Z",
+      "updatedAt": "2026-10-10T15:46:35Z",
       "createdAt": "2026-10-10T10:50:55Z",
       "headRef": "codex/kda-prepare-rhs-dedicated",
       "labels": []
@@ -23,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-10T10:55:15Z",
+      "updatedAt": "2026-10-10T12:40:32Z",
       "createdAt": "2026-10-10T10:27:16Z",
       "headRef": "lzy1-v26.9.1",
       "labels": []
@@ -59,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-10T10:55:53Z",
+      "updatedAt": "2026-10-10T13:44:02Z",
       "createdAt": "2026-10-10T08:14:15Z",
       "headRef": "lzy1",
       "labels": []
@@ -167,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-01T06:06:10Z",
+      "updatedAt": "2026-10-10T13:56:44Z",
       "createdAt": "2026-09-30T13:28:58Z",
       "headRef": "fix/rgdr-state-table",
       "labels": []
