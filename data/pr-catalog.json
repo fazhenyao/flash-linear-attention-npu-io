@@ -1,21 +1,9 @@
 {
-  "generatedAt": "2026-10-11T19:43:38+08:00",
+  "generatedAt": "2026-10-12T11:01:19+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 520,
+  "total": 521,
   "items": [
-    {
-      "number": 869,
-      "title": "fix(kda): Arch22 ChunkKdaFwdPrepare 拆开 V6→C7 RHS 的 workspace 与 L1 lane 两处地址复用",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/869",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-11T11:29:56Z",
-      "createdAt": "2026-10-11T07:32:01Z",
-      "headRef": "codex/kda-arch22-rhs-lane-early-free",
-      "labels": []
-    },
     {
       "number": 866,
       "title": "feat: 新增 GDN/KDA 独立 CP 前后向示例",
@@ -59,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-10T08:34:50Z",
+      "updatedAt": "2026-10-12T02:41:38Z",
       "createdAt": "2026-10-10T07:01:10Z",
       "headRef": "main",
       "labels": []
@@ -194,30 +182,6 @@
       "updatedAt": "2026-10-09T01:58:03Z",
       "createdAt": "2026-09-28T07:17:13Z",
       "headRef": "v26.9.0",
-      "labels": []
-    },
-    {
-      "number": 786,
-      "title": "fix(v26.9.1): 隔离本次 wheel 输出，避免安装提示选中旧包",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/786",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-10T07:24:48Z",
-      "createdAt": "2026-09-28T03:30:27Z",
-      "headRef": "fix/783-current-build-wheel-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 784,
-      "title": "fix: 隔离本次 wheel 输出，避免安装提示选中旧包",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/784",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-10T08:05:33Z",
-      "createdAt": "2026-09-28T02:13:12Z",
-      "headRef": "fix/783-current-build-wheel",
       "labels": []
     },
     {
@@ -1361,6 +1325,30 @@
       "labels": []
     },
     {
+      "number": 871,
+      "title": "fix(kda): backport #869 到 v26.9.1（Arch22 ChunkKdaFwdPrepare 拆开 RHS 的 workspace 与 L1 lane 地址复用）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/871",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-11T12:56:09Z",
+      "updatedAt": "2026-10-11T13:29:42Z",
+      "createdAt": "2026-10-11T12:50:47Z",
+      "headRef": "codex/backport-869-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 869,
+      "title": "fix(kda): Arch22 ChunkKdaFwdPrepare 拆开 V6→C7 RHS 的 workspace 与 L1 lane 两处地址复用",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/869",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-11T12:47:04Z",
+      "updatedAt": "2026-10-11T12:47:04Z",
+      "createdAt": "2026-10-11T07:32:01Z",
+      "headRef": "codex/kda-arch22-rhs-lane-early-free",
+      "labels": []
+    },
+    {
       "number": 868,
       "title": "fix(ci): 需求汇总工作流把 OP_NAMES_FILE 下移到 step 级 env，修掉 workflow 校验失败",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/868",
@@ -1625,6 +1613,18 @@
       "labels": []
     },
     {
+      "number": 786,
+      "title": "fix(v26.9.1): 隔离本次 wheel 输出，避免安装提示选中旧包",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/786",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-12T02:33:11Z",
+      "updatedAt": "2026-10-12T02:33:11Z",
+      "createdAt": "2026-09-28T03:30:27Z",
+      "headRef": "fix/783-current-build-wheel-v26.9.1",
+      "labels": []
+    },
+    {
       "number": 785,
       "title": "fix: validate recurrent_gated_delta_rule inputs",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/785",
@@ -1634,6 +1634,18 @@
       "updatedAt": "2026-10-09T09:11:28Z",
       "createdAt": "2026-09-28T03:22:19Z",
       "headRef": "26.9.0bak",
+      "labels": []
+    },
+    {
+      "number": 784,
+      "title": "fix: 隔离本次 wheel 输出，避免安装提示选中旧包",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/784",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-12T02:32:58Z",
+      "updatedAt": "2026-10-12T02:32:58Z",
+      "createdAt": "2026-09-28T02:13:12Z",
+      "headRef": "fix/783-current-build-wheel",
       "labels": []
     },
     {
