@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>性能看板 - flash-linear-attention-npu</title>
-  <link rel="stylesheet" href="./styles.css?v=20260915-network-summary-3">
+  <link rel="stylesheet" href="./styles.css?v=20261013-xlsx-export">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -142,6 +142,7 @@
         <div class="perf-chart-card perf-chart-wide">
           <div class="panel-title-row">
             <h2>同示例同输入历史性能</h2>
+            <button type="button" class="perf-case-download-btn" id="netXlsxExportBtn">导出 Excel（选择历史记录）</button>
             <button type="button" class="perf-case-download-btn" id="netCompareExportBtn">导出表格 CSV</button>
           </div>
           <p class="perf-compare-hint">每次采集独立排列“OP_Name＋耗时”列组，按采集时间从早到晚并排展示。默认按 op_summary 记录顺序逐条列出，同名算子重复执行也分行保留；不同采集的同一行不代表同一算子或执行位置。缺失值与未记录的 Block / SubBlock 留空。表格包含全部算子，不受图表筛选限制。旧数据只有汇总值时明确标注，重新导入 Prof 可补全逐条明细。</p>
@@ -389,9 +390,34 @@
     </div>
   </div>
 
+  <div id="xlsxExportDialog" class="perf-command-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="xlsxExportTitle">
+    <div class="perf-command-dialog-backdrop" data-xlsx-close></div>
+    <div class="perf-command-dialog-panel perf-xlsx-panel">
+      <div class="perf-command-dialog-header">
+        <h3 id="xlsxExportTitle">选择历史测试记录导出 Excel</h3>
+        <button type="button" class="perf-command-dialog-close" aria-label="关闭" data-xlsx-close>&times;</button>
+      </div>
+      <p class="perf-compare-hint">默认按示例和输入条件分 sheet；要将不同算子放入同一 case 页，请在对应记录中填写相同的“case 分组”（例如 case0）。同页相同平台、版本的不同算子共用列组，重复采集独立排列。保留小算子、重复任务和分段合计；使用 Task Duration（us），不自动去预热或求采样均值。缺少明细或实际 shape 时会注明。</p>
+      <div class="perf-xlsx-toolbar">
+        <label for="xlsxExportSearch">筛选记录</label>
+        <input id="xlsxExportSearch" type="search" placeholder="输入 case、示例、平台、版本或记录 ID">
+        <button type="button" id="xlsxExportSelectVisible">选择筛选结果</button>
+        <button type="button" id="xlsxExportClear">清空选择</button>
+      </div>
+      <div id="xlsxExportRecords" class="perf-xlsx-records"></div>
+      <p id="xlsxExportError" class="perf-dialog-error hidden" role="alert"></p>
+      <div class="perf-command-dialog-actions">
+        <span id="xlsxExportCount" role="status"></span>
+        <button type="button" data-xlsx-close>取消</button>
+        <button type="button" id="xlsxExportConfirm" class="primary">导出 .xlsx</button>
+      </div>
+    </div>
+  </div>
+
   <input id="profImportFolderInput" type="file" webkitdirectory directory multiple class="hidden" aria-hidden="true">
 
   <script src="./config.js?v=20260720-local-api-proxy"></script>
+  <script src="./perf-xlsx-export.js?v=20261013"></script>
   <script>
     const WORKER_API_BASE = String(window.FLASH_IO_API_BASE || localStorage.getItem("flashWorkerApiBase") || "").replace(/\/+$/, "");
     const LOCAL_API_BASE = String(window.FLASH_IO_LOCAL_API || localStorage.getItem("flashLocalApiBase") || "").replace(/\/+$/, "");
@@ -472,6 +498,9 @@
       charts: {},
       compareOps: null,
       networkCompareSnapshots: [],
+      xlsxExportSelection: new Set(),
+      xlsxExportRecords: [],
+      xlsxExportSheetGroups: new Map(),
       compareCases: [],
       caseMetrics: [],
       caseAttrFilters: { net: [], case: [] },
@@ -524,6 +553,7 @@
       document.querySelector("#netCompareAddBtn").addEventListener("click", addNetworkComparison);
       document.querySelector("#netCompareMatchingBtn").addEventListener("click", loadMatchingNetworkHistory);
       document.querySelector("#netCompareExportBtn").addEventListener("click", exportNetworkComparison);
+      bindXlsxExportEvents();
       document.querySelector("#netSummaryStat").addEventListener("change", renderNetworkComparison);
       document.querySelector("#netSummaryField").addEventListener("change", renderNetworkComparison);
       document.querySelector("#netCompareRemoveBtn").addEventListener("click", () => {
@@ -3301,6 +3331,138 @@
       const table = state.networkComparisonTable;
       if (!table?.values.length) return;
       downloadBlobFile(`network-performance-${todayYmd()}.csv`, new Blob([networkComparisonCsv(table)], { type: "text/csv;charset=utf-8" }));
+    }
+
+    function xlsxHistoryRecords() {
+      const cases = new Map((state.data?.cases || []).map((c) => [c.id, c]));
+      const snapshots = new Map((state.data?.snapshots || []).map((s) => [s.id, s]));
+      const linked = new Set(), records = [];
+      function add(run, snap) {
+        const testCase = cases.get(run.case_id || snap?.case_id);
+        if (testCase?.active === false || run.task_type === "build_install" || run.dry_run) return;
+        const attributes = { ...testCase?.attributes, ...run.attributes, ...snap?.attributes };
+        const example = snap?.example_id || run.example_id || testCase?.example_id || run.script_path || snap?.model_id || "";
+        const identity = networkInputIdentity({ ...snap, id: snap?.id || run.id, case_id: run.case_id || snap?.case_id, example_id: example, attributes });
+        const env = run.execution_environment || {};
+        const version = run.version || snap?.version || env.wheel_version;
+        const text = (v) => v && typeof v === "object" ? JSON.stringify(v) : v || "";
+        records.push({
+          selectionId: run.id ? `run:${run.id}` : `snapshot:${snap.id}`,
+          id: run.id || snap.id, snapshotId: snap?.id || "", snapshot: snap || {},
+          caseId: run.case_id || snap?.case_id || "未记录", caseKey: identity.key,
+          caseLabel: testCase?.label || run.case_id || snap?.case_id || "未记录 case",
+          attributes, example, direction: run.direction || snap?.direction || attributes.direction || "",
+          platform: run.host || run.category || snap?.platform || env.host || run.chip || snap?.chip || run.runner_id || "未记录平台",
+          version: version || (env.branch || snap?.branch ? `分支 ${env.branch || snap.branch}（记录值）` : "版本未记录"),
+          time: snap?.created_at || run.started_at || run.created_at || "",
+          source: snap?.prof_source || run.prof_source || "",
+          status: run.raw_job_status || run.status || snap?.status || (snap ? "done" : "missing"),
+          actualShape: text(snap?.actual_input_shapes || run.actual_input_shapes || attributes.actual_input_shapes),
+          actualLayout: text(snap?.actual_layout || attributes.actual_layout),
+        });
+      }
+      for (const run of displayRuns()) {
+        const snap = snapshots.get(run.snapshot_id) || run.snapshot;
+        if (snap?.id) linked.add(snap.id);
+        add(run, snap);
+      }
+      for (const snap of snapshots.values()) if (!linked.has(snap.id)) add({}, snap);
+      return records.sort((a, b) => (Date.parse(b.time) || 0) - (Date.parse(a.time) || 0) || a.selectionId.localeCompare(b.selectionId));
+    }
+
+    function filteredXlsxRecords() {
+      const search = document.querySelector("#xlsxExportSearch").value.trim().toLowerCase();
+      return state.xlsxExportRecords.filter((r) => !search || [r.caseLabel, r.example, r.platform, r.version, r.id, r.time, r.caseId,
+        JSON.stringify(r.attributes)].join(" ").toLowerCase().includes(search));
+    }
+
+    function renderXlsxExportRecords() {
+      const records = filteredXlsxRecords();
+      document.querySelector("#xlsxExportRecords").innerHTML = records.length ? records.map((r) => `
+        <div class="perf-xlsx-record"><label>
+          <input type="checkbox" data-xlsx-record="${escapeHtml(r.selectionId)}" ${state.xlsxExportSelection.has(r.selectionId) ? "checked" : ""}>
+          <span><strong>${escapeHtml(r.platform)} · ${escapeHtml(r.version)} · ${escapeHtml(r.time || "时间未记录")}</strong>
+          <span>${escapeHtml(r.caseLabel)} · ${escapeHtml(r.example)}</span>
+          <small>${escapeHtml(runStatusLabel(r.status))} · ${escapeHtml(r.id)}</small></span></label>
+          <label class="perf-xlsx-sheet-group">case 分组<input type="text" maxlength="80" data-xlsx-sheet="${escapeHtml(r.selectionId)}" aria-label="${escapeHtml(r.caseLabel)} case 分组" placeholder="自动按输入分组" value="${escapeHtml(state.xlsxExportSheetGroups.get(r.selectionId) || "")}"></label>
+        </div>`).join("") : '<p class="empty">没有匹配的历史测试记录。</p>';
+      updateXlsxExportCount(records.length);
+    }
+
+    function updateXlsxExportCount(visibleCount = filteredXlsxRecords().length) {
+      document.querySelector("#xlsxExportCount").textContent = `已选择 ${state.xlsxExportSelection.size} 条；当前显示 ${visibleCount} 条`;
+      document.querySelector("#xlsxExportConfirm").disabled = !state.xlsxExportSelection.size;
+    }
+
+    function openXlsxExportDialog() {
+      state.xlsxExportRecords = xlsxHistoryRecords();
+      state.xlsxExportSheetGroups = new Map();
+      const selected = new Set(selectedNetworkSnapshots().map((s) => s.id));
+      if (!selected.size && currentSnapshot()) selected.add(currentSnapshot().id);
+      state.xlsxExportSelection = new Set(state.xlsxExportRecords.filter((r) => selected.has(r.snapshotId)).map((r) => r.selectionId));
+      document.querySelector("#xlsxExportSearch").value = "";
+      document.querySelector("#xlsxExportError").classList.add("hidden");
+      renderXlsxExportRecords();
+      document.querySelector("#xlsxExportDialog").classList.remove("hidden");
+      document.querySelector("#xlsxExportSearch").focus?.();
+    }
+
+    function closeXlsxExportDialog() {
+      document.querySelector("#xlsxExportDialog").classList.add("hidden");
+      document.querySelector("#netXlsxExportBtn").focus?.();
+    }
+
+    function exportSelectedHistoryXlsx() {
+      try {
+        if (!globalThis.PerfXlsxExport) throw new Error("Excel 导出组件未加载，请刷新页面后重试。");
+        // Resolve the selected IDs against current data so a background refresh
+        // cannot export a deleted record or an outdated job status.
+        const records = xlsxHistoryRecords().filter((r) => state.xlsxExportSelection.has(r.selectionId)).reverse();
+        if (records.length !== state.xlsxExportSelection.size) throw new Error("部分历史记录已更新或删除，请重新打开导出窗口选择。");
+        const workbook = PerfXlsxExport.buildWorkbook(records.map((r) => ({ ...r, sheetGroup: state.xlsxExportSheetGroups.get(r.selectionId) || "" })));
+        downloadBlobFile(`performance-history-${todayYmd()}.xlsx`, new Blob([PerfXlsxExport.writeXlsx(workbook)], { type: PerfXlsxExport.MIME }));
+        closeXlsxExportDialog();
+      } catch (error) {
+        const host = document.querySelector("#xlsxExportError");
+        host.textContent = error.message || String(error);
+        host.classList.remove("hidden");
+      }
+    }
+
+    function bindXlsxExportEvents() {
+      document.querySelector("#netXlsxExportBtn").addEventListener("click", openXlsxExportDialog);
+      document.querySelector("#xlsxExportSearch").addEventListener("input", renderXlsxExportRecords);
+      document.querySelector("#xlsxExportSelectVisible").addEventListener("click", () => {
+        filteredXlsxRecords().forEach((r) => state.xlsxExportSelection.add(r.selectionId)); renderXlsxExportRecords();
+      });
+      document.querySelector("#xlsxExportClear").addEventListener("click", () => {
+        state.xlsxExportSelection.clear(); renderXlsxExportRecords();
+      });
+      document.querySelector("#xlsxExportConfirm").addEventListener("click", exportSelectedHistoryXlsx);
+      document.querySelector("#xlsxExportDialog").addEventListener("input", (event) => {
+        const id = event.target.dataset?.xlsxSheet;
+        if (id) state.xlsxExportSheetGroups.set(id, event.target.value.trim());
+      });
+      document.querySelector("#xlsxExportDialog").addEventListener("change", (event) => {
+        const id = event.target.dataset?.xlsxRecord;
+        if (!id) return;
+        if (event.target.checked) state.xlsxExportSelection.add(id); else state.xlsxExportSelection.delete(id);
+        updateXlsxExportCount();
+      });
+      document.querySelector("#xlsxExportDialog").addEventListener("click", (event) => {
+        if (event.target.closest("[data-xlsx-close]")) closeXlsxExportDialog();
+      });
+      document.addEventListener("keydown", (event) => {
+        const dialog = document.querySelector("#xlsxExportDialog");
+        if (dialog.classList.contains("hidden")) return;
+        if (event.key === "Escape") closeXlsxExportDialog();
+        if (event.key === "Tab") {
+          const controls = [...dialog.querySelectorAll("button:not(:disabled), input:not(:disabled)")];
+          const first = controls[0], last = controls[controls.length - 1];
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+        }
+      });
     }
 
     function networkOperatorTotals(snap) {

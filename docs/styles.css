@@ -662,6 +662,20 @@ h1 { margin:0; font-size:32px; letter-spacing:-.03em; }
   gap:8px;
 }
 .perf-confirm-dialog-panel { width:min(92vw,640px); }
+.perf-xlsx-panel { width:min(94vw,1040px); overflow:auto; }
+.perf-xlsx-panel .perf-command-dialog-actions { flex-wrap:wrap; }
+.perf-xlsx-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.perf-xlsx-toolbar input { flex:1; min-width:220px; padding:8px; }
+.perf-xlsx-records { max-height:42vh; overflow:auto; border:1px solid var(--line); border-radius:8px; }
+.perf-xlsx-record { display:flex; flex-wrap:wrap; align-items:flex-start; gap:10px; padding:10px 12px; border-bottom:1px solid var(--line); }
+.perf-xlsx-record:last-child { border-bottom:0; }
+.perf-xlsx-record > label:first-child { display:flex; gap:10px; flex:1; min-width:220px; cursor:pointer; }
+.perf-xlsx-record input[type=checkbox] { margin-top:4px; flex:none; }
+.perf-xlsx-record label > span { display:grid; gap:4px; min-width:0; overflow-wrap:anywhere; }
+.perf-xlsx-sheet-group { display:grid; gap:4px; font-size:12px; color:var(--muted); }
+.perf-xlsx-sheet-group input { width:160px; padding:6px; }
+.perf-xlsx-record small { color:var(--muted); }
+#xlsxExportCount { margin-right:auto; align-self:center; font-size:12px; color:var(--muted); }
 .perf-dialog-error {
   margin:0;
   padding:10px 12px;

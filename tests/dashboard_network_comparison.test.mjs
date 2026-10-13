@@ -29,10 +29,11 @@ function fixture() {
     return nodes.get(selector);
   }
   const context = vm.createContext({
-    window: {}, Blob, localStorage: { getItem() { return ""; } },
+    window: {}, Blob, TextEncoder, localStorage: { getItem() { return ""; } },
     document: { querySelector: node, querySelectorAll() { return []; }, addEventListener() {} },
     Chart: class { constructor(canvas, config) { this.config = config; } destroy() {} },
   });
+  vm.runInContext(readFileSync(new URL("../docs/perf-xlsx-export.js", import.meta.url), "utf8"), context);
   vm.runInContext(source, context);
   const state = vm.runInContext("state", context);
   const op = (backend, time_ms) => ({ operator_id: "shared", backend, time_ms });
@@ -57,6 +58,71 @@ function fixture() {
 
 test("dashboard inline JavaScript parses", () => {
   new vm.Script(script);
+});
+
+test("Excel picker preselects comparison history and allows independent cross-case selection", () => {
+  const f = fixture();
+  f.state.networkCompareSnapshots = ["old", "new"];
+  f.run("bindXlsxExportEvents(); openXlsxExportDialog()");
+  assert.deepEqual(Array.from(f.state.xlsxExportSelection).sort(), ["snapshot:new", "snapshot:old"]);
+  assert.equal(f.state.xlsxExportRecords.length, 3);
+  assert.match(f.node("#xlsxExportRecords").innerHTML, /KDA &lt;script&gt;/);
+  f.node("#xlsxExportSearch").value = "KDA";
+  f.node("#xlsxExportSelectVisible").events.click();
+  assert.equal(f.state.xlsxExportSelection.size, 3);
+  assert.match(f.node("#xlsxExportCount").textContent, /已选择 3 条；当前显示 1 条/);
+  assert.deepEqual(Array.from(f.state.networkCompareSnapshots), ["old", "new"]);
+  f.node("#xlsxExportClear").events.click();
+  assert.equal(f.node("#xlsxExportConfirm").disabled, true);
+});
+
+test("Excel exports only selected history, preserves manual case grouping and ignores chart filters", () => {
+  const f = fixture();
+  f.run("bindXlsxExportEvents(); openXlsxExportDialog(); globalThis.downloads = []; downloadBlobFile = (name, blob) => downloads.push({name,blob})");
+  f.node("#xlsxExportDialog").events.input({ target: { dataset: { xlsxSheet: "snapshot:old" }, value: "case0" } });
+  f.state.xlsxExportSelection.add("snapshot:other");
+  f.state.xlsxExportSheetGroups.set("snapshot:other", "case0");
+  f.node("#netShowAscendc").checked = false;
+  f.node("#netShowTriton").checked = false;
+  f.run("globalThis.exported = null; const originalBuild = PerfXlsxExport.buildWorkbook; PerfXlsxExport.buildWorkbook = (records) => { exported = records; return originalBuild(records); }; exportSelectedHistoryXlsx()");
+  const records = f.run("exported");
+  assert.deepEqual(Array.from(records, (r) => r.id), ["old", "other"]);
+  assert.ok(records.every((r) => r.sheetGroup === "case0"));
+  assert.equal(f.run("downloads.length"), 1);
+  assert.match(f.run("downloads[0].name"), /^performance-history-.*\.xlsx$/);
+  assert.equal(f.run("downloads[0].blob.type"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+});
+
+test("Excel excludes setup/dry-run jobs and resolves refreshed status without duplicating snapshots", () => {
+  const f = fixture();
+  f.state.data.runs = [
+    { id: "r1", snapshot_id: "old", case_id: "c1", status: "done", host: "A5PR", version: "26.9.1" },
+    { id: "setup", task_type: "build_install" }, { id: "dry", dry_run: true },
+    { id: "failed", case_id: "c2", status: "failed" },
+  ];
+  f.run("openXlsxExportDialog()");
+  assert.deepEqual(Array.from(f.state.xlsxExportSelection), ["run:r1"]);
+  assert.equal(f.state.xlsxExportRecords.some((r) => r.selectionId === "snapshot:old"), false);
+  assert.equal(f.state.xlsxExportRecords.some((r) => ["setup", "dry"].includes(r.id)), false);
+  f.state.data.runs[0].status = "failed";
+  f.run("globalThis.selectedExport = null; PerfXlsxExport.buildWorkbook = (records) => { selectedExport = records; throw new Error('test-stop'); }; exportSelectedHistoryXlsx()");
+  assert.equal(f.run("selectedExport[0].status"), "failed");
+  assert.equal(f.node("#xlsxExportError").textContent, "test-stop");
+  f.state.data.runs = [];
+  f.state.data.snapshots = [];
+  f.run("exportSelectedHistoryXlsx()");
+  assert.match(f.node("#xlsxExportError").textContent, /已更新或删除/);
+});
+
+test("Excel history sorts timestamp offsets chronologically and does not infer actual layout", () => {
+  const f = fixture();
+  f.state.data.snapshots[0].created_at = "2026-10-13T09:00:00+08:00";
+  f.state.data.snapshots[1].created_at = "2026-10-13T02:00:00Z";
+  f.state.data.cases[0].attributes.layout = "BSND";
+  const records = f.run("xlsxHistoryRecords()");
+  assert.equal(records[0].id, "new");
+  assert.equal(records[0].actualShape, "");
+  assert.equal(records[0].actualLayout, "");
 });
 
 test("same-case historical collections keep separate identity, order, and baseline", () => {

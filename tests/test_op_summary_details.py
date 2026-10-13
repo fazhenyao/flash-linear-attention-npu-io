@@ -7,6 +7,20 @@ from scripts import import_prof_gdr as importer
 
 
 class OpSummaryDetailsTests(unittest.TestCase):
+    def test_execution_shapes_formats_and_types_survive_without_merging_variants(self):
+        base = {"Op Name": "same_kernel", "OP Type": "ChunkKdaFwd", "Input Formats": "ND;ND", "Input Data Types": "BF16;FP32"}
+        rows = [
+            {**base, "Input Shapes": "1,16,128,128;1,16,128,128", "Task Duration(us)": "0.125"},
+            {**base, "Input Shapes": "1,16,256,128;1,16,256,128", "Task Duration(us)": "0.375"},
+            {**base, "Input Shapes": "1,16,128,128;1,16,128,128", "Task Duration(us)": "0"},
+        ]
+        result = importer.execution_summary_details(rows)
+        self.assertEqual(len(result["names"]), 2)
+        self.assertEqual(result["rows"], [[0, 0.125], [1, 0.375], [0, 0]])
+        self.assertEqual(result["names"][0]["input_shapes"], rows[0]["Input Shapes"])
+        self.assertEqual(result["names"][1]["input_formats"], "ND;ND")
+        self.assertEqual(result["names"][1]["input_dtypes"], "BF16;FP32")
+
     def test_exact_names_unmapped_ops_and_sub_microsecond_precision_survive(self):
         rows = [
             {"Op Name": "kernel_variant_1", "OP Type": "L2Norm", "Task Duration(us)": "0.125", "aic_mac_time(us)": "2", "Task Start Time(us)": "100"},

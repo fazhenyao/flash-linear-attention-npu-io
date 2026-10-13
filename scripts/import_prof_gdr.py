@@ -580,10 +580,20 @@ def execution_summary_details(rows: list[dict[str, str]]) -> dict[str, Any]:
         if not name:
             continue
         block, sub_block = str(row.get("Block") or "").strip(), str(row.get("SubBlock") or "").strip()
-        key = (block, sub_block, name)
+        metadata = {}
+        for target, aliases in {
+            "op_type": ("OP Type", "Op Type"),
+            "input_shapes": ("Input Shapes", "Input Shape"),
+            "input_dtypes": ("Input Data Types", "Input Data Type"),
+            "input_formats": ("Input Formats", "Input Format"),
+        }.items():
+            value = next((str(row[k]).strip() for k in aliases if row.get(k)), "")
+            if value:
+                metadata[target] = value
+        key = (block, sub_block, name, tuple(metadata.items()))
         if key not in indices:
             indices[key] = len(names)
-            names.append({"op_name": name, "block": block, "sub_block": sub_block})
+            names.append({"op_name": name, "block": block, "sub_block": sub_block, **metadata})
         values = [to_float(row.get(field)) for field in fields]
         records.append([indices[key], *[value if value is not None and math.isfinite(value) else None for value in values]])
     return {"fields": fields, "names": names, "rows": records}
