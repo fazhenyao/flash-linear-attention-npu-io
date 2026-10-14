@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-10-14T10:28:16+08:00",
+  "generatedAt": "2026-10-14T18:46:11+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 531,
+  "total": 534,
   "items": [
+    {
+      "number": 899,
+      "title": "perf(kda): consume BF16 raw gates inside backward kernels",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/899",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-14T09:28:15Z",
+      "createdAt": "2026-10-14T08:16:27Z",
+      "headRef": "perf/kda-bf16-raw-g",
+      "labels": []
+    },
+    {
+      "number": 896,
+      "title": "fix(gdn): unify A2/A3 DAV_2201 host route",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/896",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-14T03:09:51Z",
+      "createdAt": "2026-10-14T03:09:50Z",
+      "headRef": "fix/gdn-unify-a2-a3-phase6",
+      "labels": []
+    },
+    {
+      "number": 895,
+      "title": "fix(kda): keep short-chunk recompute exp2 on the stored gk",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/895",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-14T04:17:12Z",
+      "createdAt": "2026-10-14T03:06:32Z",
+      "headRef": "v26.9.1",
+      "labels": []
+    },
     {
       "number": 894,
       "title": "[Fix] Preserve recurrent GDN state rows for ragged MTP batches",
@@ -11,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-13T13:46:28Z",
+      "updatedAt": "2026-10-14T08:24:32Z",
       "createdAt": "2026-10-13T13:46:26Z",
       "headRef": "fix/recurrent-gdn-state-table-complete",
       "labels": []
@@ -95,21 +131,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-13T02:22:42Z",
+      "updatedAt": "2026-10-14T07:00:13Z",
       "createdAt": "2026-10-13T02:12:53Z",
       "headRef": "1012-fwd-fin",
-      "labels": []
-    },
-    {
-      "number": 879,
-      "title": "fix(kda): keep short-chunk recompute exp2 on the stored gk",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/879",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-13T07:52:18Z",
-      "createdAt": "2026-10-13T01:50:46Z",
-      "headRef": "main",
       "labels": []
     },
     {
@@ -119,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-14T01:21:10Z",
+      "updatedAt": "2026-10-14T08:15:35Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -131,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-13T08:35:15Z",
+      "updatedAt": "2026-10-14T03:14:44Z",
       "createdAt": "2026-10-10T15:37:09Z",
       "headRef": "examples/gdn-kda-cp",
       "labels": []
@@ -191,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-10T06:18:23Z",
+      "updatedAt": "2026-10-14T09:51:46Z",
       "createdAt": "2026-10-09T08:32:36Z",
       "headRef": "fix/issue-615-original-shape-v26.9.1",
       "labels": []
@@ -251,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-11T06:09:38Z",
+      "updatedAt": "2026-10-14T08:11:37Z",
       "createdAt": "2026-09-30T13:28:58Z",
       "headRef": "fix/rgdr-state-table",
       "labels": []
@@ -1430,6 +1454,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 879,
+      "title": "fix(kda): keep short-chunk recompute exp2 on the stored gk",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/879",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-14T03:30:39Z",
+      "updatedAt": "2026-10-14T03:30:40Z",
+      "createdAt": "2026-10-13T01:50:46Z",
+      "headRef": "main",
       "labels": []
     },
     {
