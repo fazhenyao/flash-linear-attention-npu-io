@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-10-14T18:46:11+08:00",
+  "generatedAt": "2026-10-15T10:09:15+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 534,
+  "total": 538,
   "items": [
+    {
+      "number": 906,
+      "title": "feat(gdn): v26.9.1 补齐 A2/A3 megakernel 路径",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/906",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-15T01:42:08Z",
+      "createdAt": "2026-10-14T15:08:48Z",
+      "headRef": "fix/gdn-unify-a2-a3-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 902,
+      "title": "[Fix] Preserve recurrent GDN state rows for ragged MTP batches",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/902",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-14T12:28:06Z",
+      "createdAt": "2026-10-14T12:12:04Z",
+      "headRef": "fix/recurrent-gdn-state-table-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 901,
+      "title": "fix(cp): hold A5 merge CUbFree until each AIV finishes packing",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/901",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-14T13:13:54Z",
+      "createdAt": "2026-10-14T12:11:48Z",
+      "headRef": "main",
+      "labels": []
+    },
     {
       "number": 899,
       "title": "perf(kda): consume BF16 raw gates inside backward kernels",
@@ -17,25 +53,13 @@
       "labels": []
     },
     {
-      "number": 896,
-      "title": "fix(gdn): unify A2/A3 DAV_2201 host route",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/896",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-14T03:09:51Z",
-      "createdAt": "2026-10-14T03:09:50Z",
-      "headRef": "fix/gdn-unify-a2-a3-phase6",
-      "labels": []
-    },
-    {
       "number": 895,
       "title": "fix(kda): keep short-chunk recompute exp2 on the stored gk",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/895",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-14T04:17:12Z",
+      "updatedAt": "2026-10-15T02:00:37Z",
       "createdAt": "2026-10-14T03:06:32Z",
       "headRef": "v26.9.1",
       "labels": []
@@ -47,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-14T08:24:32Z",
+      "updatedAt": "2026-10-14T12:12:22Z",
       "createdAt": "2026-10-13T13:46:26Z",
       "headRef": "fix/recurrent-gdn-state-table-complete",
       "labels": []
@@ -143,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-14T08:15:35Z",
+      "updatedAt": "2026-10-14T12:22:51Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -1454,6 +1478,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 905,
+      "title": "fix(gdn): v26.9.0 统一 A2/A3 DAV_2201 快速路径",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/905",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-15T01:53:12Z",
+      "updatedAt": "2026-10-15T01:53:12Z",
+      "createdAt": "2026-10-14T13:43:05Z",
+      "headRef": "fix/gdn-unify-a2-a3-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 896,
+      "title": "fix(gdn): unify A2/A3 DAV_2201 host route",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/896",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-15T01:52:51Z",
+      "updatedAt": "2026-10-15T01:52:51Z",
+      "createdAt": "2026-10-14T03:09:50Z",
+      "headRef": "fix/gdn-unify-a2-a3-phase6",
       "labels": []
     },
     {
