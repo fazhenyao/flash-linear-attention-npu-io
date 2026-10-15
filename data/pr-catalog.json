@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-10-15T10:09:15+08:00",
+  "generatedAt": "2026-10-15T18:29:07+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 538,
+  "total": 539,
   "items": [
     {
-      "number": 906,
-      "title": "feat(gdn): v26.9.1 补齐 A2/A3 megakernel 路径",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/906",
+      "number": 907,
+      "title": "chunk_gdn_bwd_intra算子A2和A3代际性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/907",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-15T01:42:08Z",
-      "createdAt": "2026-10-14T15:08:48Z",
-      "headRef": "fix/gdn-unify-a2-a3-v26.9.1",
+      "updatedAt": "2026-10-15T09:02:24Z",
+      "createdAt": "2026-10-15T07:00:49Z",
+      "headRef": "main",
       "labels": []
     },
     {
@@ -35,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-14T13:13:54Z",
+      "updatedAt": "2026-10-15T09:42:15Z",
       "createdAt": "2026-10-14T12:11:48Z",
       "headRef": "main",
       "labels": []
@@ -71,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-14T12:12:22Z",
+      "updatedAt": "2026-10-15T06:14:13Z",
       "createdAt": "2026-10-13T13:46:26Z",
       "headRef": "fix/recurrent-gdn-state-table-complete",
       "labels": []
@@ -167,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-14T12:22:51Z",
+      "updatedAt": "2026-10-15T03:50:54Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -1478,6 +1478,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 906,
+      "title": "feat(gdn): v26.9.1 补齐 A2/A3 megakernel 路径",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/906",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-15T03:44:35Z",
+      "updatedAt": "2026-10-15T03:44:35Z",
+      "createdAt": "2026-10-14T15:08:48Z",
+      "headRef": "fix/gdn-unify-a2-a3-v26.9.1",
       "labels": []
     },
     {
