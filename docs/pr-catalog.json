@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-10-16T09:59:47+08:00",
+  "generatedAt": "2026-10-16T18:16:30+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 539,
+  "total": 541,
   "items": [
+    {
+      "number": 914,
+      "title": "Perf/kda bwd wy intra",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/914",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-16T08:03:15Z",
+      "createdAt": "2026-10-16T08:03:07Z",
+      "headRef": "perf/kda-bwd-wy-intra",
+      "labels": []
+    },
+    {
+      "number": 913,
+      "title": "perf(kda): BwdFinalize 五组 VF 行循环 unroll-2 zip 交错展开",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/913",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-16T07:33:02Z",
+      "createdAt": "2026-10-16T07:32:52Z",
+      "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
+      "labels": []
+    },
     {
       "number": 907,
       "title": "chunk_gdn_bwd_intra算子A2和A3代际性能优化",
@@ -11,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-15T14:01:43Z",
+      "updatedAt": "2026-10-16T09:15:59Z",
       "createdAt": "2026-10-15T07:00:49Z",
       "headRef": "main",
       "labels": []
@@ -107,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-16T01:58:54Z",
+      "updatedAt": "2026-10-16T06:25:04Z",
       "createdAt": "2026-10-13T09:11:27Z",
       "headRef": "codex/fix-872-kda-fwdh-empty-seq-main",
       "labels": []
@@ -119,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-16T01:58:33Z",
+      "updatedAt": "2026-10-16T06:25:04Z",
       "createdAt": "2026-10-13T09:11:17Z",
       "headRef": "codex/fix-872-kda-fwdh-empty-seq",
       "labels": []
@@ -143,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-14T07:00:13Z",
+      "updatedAt": "2026-10-16T08:03:02Z",
       "createdAt": "2026-10-13T02:12:53Z",
       "headRef": "1012-fwd-fin",
       "labels": []
@@ -221,39 +245,15 @@
       "labels": []
     },
     {
-      "number": 844,
-      "title": "fix: [v26.9.1] 修复 ChunkKdaBwd OriginalShape 展平导致的 tiling rank 误判",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/844",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-14T09:51:46Z",
-      "createdAt": "2026-10-09T08:32:36Z",
-      "headRef": "fix/issue-615-original-shape-v26.9.1",
-      "labels": []
-    },
-    {
       "number": 838,
-      "title": "perf(gdn): 优化 A2 前向准备、KKT 复用与定长/变长 O 发布",
+      "title": "perf(gdn): 优化 A2 前向准备、KKT 复用、O 发布及 H 尾块计算",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/838",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-09T06:10:56Z",
+      "updatedAt": "2026-10-16T03:45:10Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
-      "labels": []
-    },
-    {
-      "number": 836,
-      "title": "fix: 修复 ChunkKdaBwd OriginalShape 展平导致的 tiling rank 误判",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/836",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T16:22:00Z",
-      "createdAt": "2026-10-09T02:02:07Z",
-      "headRef": "fix/issue-615-original-shape",
       "labels": []
     },
     {
@@ -707,7 +707,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-28T07:49:07Z",
+      "updatedAt": "2026-10-16T06:17:47Z",
       "createdAt": "2026-09-03T07:53:01Z",
       "headRef": "main",
       "labels": []
@@ -1637,6 +1637,18 @@
       "labels": []
     },
     {
+      "number": 844,
+      "title": "fix: [v26.9.1] 修复 ChunkKdaBwd OriginalShape 展平导致的 tiling rank 误判",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/844",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-16T09:30:36Z",
+      "updatedAt": "2026-10-16T09:30:37Z",
+      "createdAt": "2026-10-09T08:32:36Z",
+      "headRef": "fix/issue-615-original-shape-v26.9.1",
+      "labels": []
+    },
+    {
       "number": 843,
       "title": "fix(kda): backport #699 packed 反向与长序列修复到 v26.9.1",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/843",
@@ -1670,6 +1682,18 @@
       "updatedAt": "2026-10-10T01:30:43Z",
       "createdAt": "2026-10-09T02:54:44Z",
       "headRef": "codex/rename-pre-process-bwd-kernel-merged",
+      "labels": []
+    },
+    {
+      "number": 836,
+      "title": "fix: 修复 ChunkKdaBwd OriginalShape 展平导致的 tiling rank 误判",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/836",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-16T09:30:29Z",
+      "updatedAt": "2026-10-16T09:30:29Z",
+      "createdAt": "2026-10-09T02:02:07Z",
+      "headRef": "fix/issue-615-original-shape",
       "labels": []
     },
     {
