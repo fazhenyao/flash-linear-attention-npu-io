@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-10-17T09:54:24+08:00",
+  "generatedAt": "2026-10-17T17:50:27+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 541,
+  "total": 544,
   "items": [
+    {
+      "number": 917,
+      "title": "perf: 优化 RecurrentKda A2/A3 输入流水与 Q/K L2Norm",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/917",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-17T09:36:50Z",
+      "createdAt": "2026-10-17T09:29:24Z",
+      "headRef": "recurrent_kda_a3_improve",
+      "labels": []
+    },
+    {
+      "number": 916,
+      "title": "fix: 修复 KDA 反向单 head 窗口读取残留 scratch 导致的梯度异常",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/916",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-17T07:46:21Z",
+      "createdAt": "2026-10-17T07:36:52Z",
+      "headRef": "fix/issue874-odd-head-square-replay",
+      "labels": []
+    },
+    {
+      "number": 915,
+      "title": "【bugfix】支持 A2/A3 KDA 反向分阶段接入 CP",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/915",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-17T09:19:30Z",
+      "createdAt": "2026-10-17T02:32:24Z",
+      "headRef": "feat/kda-bwd-stages-arch22",
+      "labels": []
+    },
     {
       "number": 914,
       "title": "Perf/kda bwd wy intra",
@@ -35,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-16T09:15:59Z",
+      "updatedAt": "2026-10-17T09:16:09Z",
       "createdAt": "2026-10-15T07:00:49Z",
       "headRef": "main",
       "labels": []
@@ -131,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-16T06:25:04Z",
+      "updatedAt": "2026-10-17T09:41:05Z",
       "createdAt": "2026-10-13T09:11:27Z",
       "headRef": "codex/fix-872-kda-fwdh-empty-seq-main",
       "labels": []
@@ -143,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-16T06:25:04Z",
+      "updatedAt": "2026-10-17T09:41:05Z",
       "createdAt": "2026-10-13T09:11:17Z",
       "headRef": "codex/fix-872-kda-fwdh-empty-seq",
       "labels": []
@@ -167,7 +203,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-16T08:03:02Z",
+      "updatedAt": "2026-10-17T07:23:49Z",
       "createdAt": "2026-10-13T02:12:53Z",
       "headRef": "1012-fwd-fin",
       "labels": []
@@ -707,7 +743,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-16T06:17:47Z",
+      "updatedAt": "2026-10-17T06:11:00Z",
       "createdAt": "2026-09-03T07:53:01Z",
       "headRef": "main",
       "labels": []
