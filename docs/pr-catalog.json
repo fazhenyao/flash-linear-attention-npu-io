@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-18T09:53:15+08:00",
+  "generatedAt": "2026-10-18T18:01:55+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 545,
@@ -23,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-17T14:07:17Z",
+      "updatedAt": "2026-10-18T09:37:02Z",
       "createdAt": "2026-10-17T09:29:24Z",
       "headRef": "recurrent_kda_a3_improve",
       "labels": []
@@ -35,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-17T09:52:40Z",
+      "updatedAt": "2026-10-18T09:52:52Z",
       "createdAt": "2026-10-17T07:36:52Z",
       "headRef": "fix/issue874-odd-head-square-replay",
       "labels": []
@@ -47,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-17T10:20:40Z",
+      "updatedAt": "2026-10-18T09:31:40Z",
       "createdAt": "2026-10-17T02:32:24Z",
       "headRef": "feat/kda-bwd-stages-arch22",
       "labels": []
@@ -179,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-17T09:41:05Z",
+      "updatedAt": "2026-10-18T09:41:19Z",
       "createdAt": "2026-10-13T09:11:27Z",
       "headRef": "codex/fix-872-kda-fwdh-empty-seq-main",
       "labels": []
@@ -191,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-17T09:41:05Z",
+      "updatedAt": "2026-10-18T09:41:18Z",
       "createdAt": "2026-10-13T09:11:17Z",
       "headRef": "codex/fix-872-kda-fwdh-empty-seq",
       "labels": []
@@ -215,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-17T07:23:49Z",
+      "updatedAt": "2026-10-18T07:24:01Z",
       "createdAt": "2026-10-13T02:12:53Z",
       "headRef": "1012-fwd-fin",
       "labels": []
@@ -239,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-14T03:14:44Z",
+      "updatedAt": "2026-10-18T09:37:56Z",
       "createdAt": "2026-10-10T15:37:09Z",
       "headRef": "examples/gdn-kda-cp",
       "labels": []
