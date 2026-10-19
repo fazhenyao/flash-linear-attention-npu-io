@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-10-18T18:01:55+08:00",
+  "generatedAt": "2026-10-19T10:10:07+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 545,
+  "total": 546,
   "items": [
     {
-      "number": 918,
-      "title": "fix: [v26.9.1] 修复 KDA 反向单 head 窗口读取残留 scratch 导致的梯度异常",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/918",
+      "number": 919,
+      "title": "fix(solve_tri): host 校验拒绝 layout 与 varlen 元数据的非法组合",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/919",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-17T09:54:15Z",
-      "createdAt": "2026-10-17T09:54:13Z",
-      "headRef": "fix/issue874-odd-head-v26.9.1",
+      "updatedAt": "2026-10-18T15:47:57Z",
+      "createdAt": "2026-10-18T15:24:55Z",
+      "headRef": "fix/solve-tri-varlen-validation",
       "labels": []
     },
     {
@@ -23,33 +23,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-18T09:37:02Z",
+      "updatedAt": "2026-10-18T17:34:57Z",
       "createdAt": "2026-10-17T09:29:24Z",
       "headRef": "recurrent_kda_a3_improve",
-      "labels": []
-    },
-    {
-      "number": 916,
-      "title": "fix: 修复 KDA 反向单 head 窗口读取残留 scratch 导致的梯度异常",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/916",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-18T09:52:52Z",
-      "createdAt": "2026-10-17T07:36:52Z",
-      "headRef": "fix/issue874-odd-head-square-replay",
-      "labels": []
-    },
-    {
-      "number": 915,
-      "title": "【bugfix】A2/A3 KDA 反向改为三阶段 L0 编排，支持 CP 接入",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/915",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-18T09:31:40Z",
-      "createdAt": "2026-10-17T02:32:24Z",
-      "headRef": "feat/kda-bwd-stages-arch22",
       "labels": []
     },
     {
@@ -179,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-18T09:41:19Z",
+      "updatedAt": "2026-10-19T01:33:59Z",
       "createdAt": "2026-10-13T09:11:27Z",
       "headRef": "codex/fix-872-kda-fwdh-empty-seq-main",
       "labels": []
@@ -191,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-18T09:41:18Z",
+      "updatedAt": "2026-10-19T01:33:59Z",
       "createdAt": "2026-10-13T09:11:17Z",
       "headRef": "codex/fix-872-kda-fwdh-empty-seq",
       "labels": []
@@ -215,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-18T07:24:01Z",
+      "updatedAt": "2026-10-19T01:15:40Z",
       "createdAt": "2026-10-13T02:12:53Z",
       "headRef": "1012-fwd-fin",
       "labels": []
@@ -227,7 +203,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-15T16:46:48Z",
+      "updatedAt": "2026-10-19T01:52:33Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -1514,6 +1490,42 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 918,
+      "title": "fix: [v26.9.1] 修复 KDA 反向单 head 窗口读取残留 scratch 导致的梯度异常",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/918",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-19T01:16:33Z",
+      "updatedAt": "2026-10-19T01:16:33Z",
+      "createdAt": "2026-10-17T09:54:13Z",
+      "headRef": "fix/issue874-odd-head-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 916,
+      "title": "fix: 修复 KDA 反向单 head 窗口读取残留 scratch 导致的梯度异常",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/916",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-19T01:16:40Z",
+      "updatedAt": "2026-10-19T01:16:40Z",
+      "createdAt": "2026-10-17T07:36:52Z",
+      "headRef": "fix/issue874-odd-head-square-replay",
+      "labels": []
+    },
+    {
+      "number": 915,
+      "title": "【bugfix】A2/A3 KDA 反向改为三阶段 L0 编排，支持 CP 接入",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/915",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-19T01:16:27Z",
+      "updatedAt": "2026-10-19T01:16:27Z",
+      "createdAt": "2026-10-17T02:32:24Z",
+      "headRef": "feat/kda-bwd-stages-arch22",
       "labels": []
     },
     {
