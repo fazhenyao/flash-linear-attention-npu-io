@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-10-19T10:10:07+08:00",
+  "generatedAt": "2026-10-19T19:26:13+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 546,
   "items": [
+    {
+      "number": 923,
+      "title": "fix: 修复 A5 GDN 反向门控梯度的提前 BF16 舍入误差",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/923",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-19T06:48:06Z",
+      "createdAt": "2026-10-19T04:20:46Z",
+      "headRef": "fix/a5-gdn-fp32-gate",
+      "labels": []
+    },
+    {
+      "number": 920,
+      "title": "fix(kda): 修复 chunk_kda_fwd 尾块 workspace 越界与 fwd_h 丢任务（v26.10.0）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/920",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-19T07:06:28Z",
+      "createdAt": "2026-10-19T02:43:48Z",
+      "headRef": "codex/fix-872-kda-backport-v26.10.0",
+      "labels": []
+    },
     {
       "number": 919,
       "title": "fix(solve_tri): host 校验拒绝 layout 与 varlen 元数据的非法组合",
@@ -23,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-18T17:34:57Z",
+      "updatedAt": "2026-10-19T09:26:09Z",
       "createdAt": "2026-10-17T09:29:24Z",
       "headRef": "recurrent_kda_a3_improve",
       "labels": []
@@ -59,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-17T09:16:09Z",
+      "updatedAt": "2026-10-19T11:21:52Z",
       "createdAt": "2026-10-15T07:00:49Z",
       "headRef": "main",
       "labels": []
@@ -83,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-15T09:42:15Z",
+      "updatedAt": "2026-10-19T09:25:19Z",
       "createdAt": "2026-10-14T12:11:48Z",
       "headRef": "main",
       "labels": []
@@ -155,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T01:33:59Z",
+      "updatedAt": "2026-10-19T09:33:23Z",
       "createdAt": "2026-10-13T09:11:27Z",
       "headRef": "codex/fix-872-kda-fwdh-empty-seq-main",
       "labels": []
@@ -167,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T01:33:59Z",
+      "updatedAt": "2026-10-19T07:06:23Z",
       "createdAt": "2026-10-13T09:11:17Z",
       "headRef": "codex/fix-872-kda-fwdh-empty-seq",
       "labels": []
@@ -191,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T01:15:40Z",
+      "updatedAt": "2026-10-19T11:18:33Z",
       "createdAt": "2026-10-13T02:12:53Z",
       "headRef": "1012-fwd-fin",
       "labels": []
@@ -270,12 +294,12 @@
     },
     {
       "number": 838,
-      "title": "perf(gdn): 优化 A2 前向准备、KKT 复用、O 发布及 H 尾块计算",
+      "title": "perf(gdn): 优化 A2 前向准备、KKT/O 发布与 H 预取和状态复用",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/838",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-16T03:45:10Z",
+      "updatedAt": "2026-10-19T09:11:32Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
@@ -701,18 +725,6 @@
       "labels": []
     },
     {
-      "number": 461,
-      "title": "fix(recurrent_kda): reuse state output UB on legacy path",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/461",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-04T08:48:50Z",
-      "createdAt": "2026-09-04T06:38:49Z",
-      "headRef": "recurrent_kda_slice",
-      "labels": []
-    },
-    {
       "number": 450,
       "title": "feat(gdn): 支持 allow_neg_eigval 模板参数",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/450",
@@ -803,7 +815,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-08-27T08:07:18Z",
+      "updatedAt": "2026-10-19T02:45:02Z",
       "createdAt": "2026-08-27T08:03:58Z",
       "headRef": "codex/fix-issue312-state-shapes",
       "labels": []
@@ -1109,18 +1121,6 @@
       "labels": []
     },
     {
-      "number": 265,
-      "title": "add recurrent KDA",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/265",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-08-04T06:06:14Z",
-      "createdAt": "2026-08-03T09:09:32Z",
-      "headRef": "recurrent_kda_aclnn",
-      "labels": []
-    },
-    {
       "number": 249,
       "title": "test: 增加 GDN 100 层纯异步压力复现脚本",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/249",
@@ -1403,7 +1403,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-05T16:51:06Z",
+      "updatedAt": "2026-10-19T02:44:55Z",
       "createdAt": "2026-07-05T16:00:56Z",
       "headRef": "codex/reuse-torch-custom-wheel-build",
       "labels": []
@@ -1463,7 +1463,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-06-30T20:39:04Z",
+      "updatedAt": "2026-10-19T02:44:34Z",
       "createdAt": "2026-06-11T14:58:13Z",
       "headRef": "kda_merge_zcc_v2",
       "labels": []
@@ -1523,7 +1523,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-10-19T01:16:27Z",
-      "updatedAt": "2026-10-19T01:16:27Z",
+      "updatedAt": "2026-10-19T08:55:11Z",
       "createdAt": "2026-10-17T02:32:24Z",
       "headRef": "feat/kda-bwd-stages-arch22",
       "labels": []
