@@ -1,18 +1,54 @@
 {
-  "generatedAt": "2026-10-20T10:25:46+08:00",
+  "generatedAt": "2026-10-20T18:32:39+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 547,
+  "total": 550,
   "items": [
     {
-      "number": 929,
-      "title": "perf(kda): enable A2/A3 and optimize ChunkKdaBwdRecompute",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/929",
+      "number": 934,
+      "title": "fix(gdn): initialize backward DHU state from dht (#924)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/934",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-20T02:20:37Z",
-      "createdAt": "2026-10-20T02:20:37Z",
+      "updatedAt": "2026-10-20T09:50:18Z",
+      "createdAt": "2026-10-20T09:50:08Z",
+      "headRef": "codex/fix-dhu-dht-924",
+      "labels": []
+    },
+    {
+      "number": 933,
+      "title": "fix(gdn): initialize backward DHU state from dht (#924)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/933",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-20T09:49:19Z",
+      "createdAt": "2026-10-20T09:42:58Z",
+      "headRef": "codex/fix-dhu-dht-924",
+      "labels": []
+    },
+    {
+      "number": 932,
+      "title": "finalize A2/A3/A5 backward prepare kernel and validation",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/932",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-20T09:37:00Z",
+      "createdAt": "2026-10-20T09:17:49Z",
+      "headRef": "bwd_prepare_a3",
+      "labels": []
+    },
+    {
+      "number": 930,
+      "title": "perf(kda): optimize ChunkKdaBwdRecompute on A2/A3",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/930",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-20T10:21:26Z",
+      "createdAt": "2026-10-20T02:53:01Z",
       "headRef": "kda_recompute",
       "labels": []
     },
@@ -35,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-18T15:47:57Z",
+      "updatedAt": "2026-10-20T09:12:15Z",
       "createdAt": "2026-10-18T15:24:55Z",
       "headRef": "fix/solve-tri-varlen-validation",
       "labels": []
@@ -47,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T14:08:33Z",
+      "updatedAt": "2026-10-20T10:19:17Z",
       "createdAt": "2026-10-17T09:29:24Z",
       "headRef": "recurrent_kda_a3_improve",
       "labels": []
@@ -107,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T09:25:19Z",
+      "updatedAt": "2026-10-20T08:29:38Z",
       "createdAt": "2026-10-14T12:11:48Z",
       "headRef": "main",
       "labels": []
@@ -191,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T01:52:33Z",
+      "updatedAt": "2026-10-20T08:02:48Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -707,7 +743,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T11:57:38Z",
+      "updatedAt": "2026-10-20T06:10:51Z",
       "createdAt": "2026-09-03T07:53:01Z",
       "headRef": "main",
       "labels": []
@@ -1427,7 +1463,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T02:44:34Z",
+      "updatedAt": "2026-10-20T07:59:17Z",
       "createdAt": "2026-06-11T14:58:13Z",
       "headRef": "kda_merge_zcc_v2",
       "labels": []
