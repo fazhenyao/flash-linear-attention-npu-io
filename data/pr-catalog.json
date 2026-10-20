@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-10-19T19:26:13+08:00",
+  "generatedAt": "2026-10-20T10:25:46+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 546,
+  "total": 547,
   "items": [
+    {
+      "number": 929,
+      "title": "perf(kda): enable A2/A3 and optimize ChunkKdaBwdRecompute",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/929",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-20T02:20:37Z",
+      "createdAt": "2026-10-20T02:20:37Z",
+      "headRef": "kda_recompute",
+      "labels": []
+    },
     {
       "number": 923,
       "title": "fix: 修复 A5 GDN 反向门控梯度的提前 BF16 舍入误差",
@@ -14,18 +26,6 @@
       "updatedAt": "2026-10-19T06:48:06Z",
       "createdAt": "2026-10-19T04:20:46Z",
       "headRef": "fix/a5-gdn-fp32-gate",
-      "labels": []
-    },
-    {
-      "number": 920,
-      "title": "fix(kda): 修复 chunk_kda_fwd 尾块 workspace 越界与 fwd_h 丢任务（v26.10.0）",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/920",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-19T07:06:28Z",
-      "createdAt": "2026-10-19T02:43:48Z",
-      "headRef": "codex/fix-872-kda-backport-v26.10.0",
       "labels": []
     },
     {
@@ -42,12 +42,12 @@
     },
     {
       "number": 917,
-      "title": "perf: 优化 RecurrentKda A2/A3 输入流水与 Q/K L2Norm",
+      "title": "perf: RecurrentKda A2/A3 功能增强与性能优化",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/917",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T09:26:09Z",
+      "updatedAt": "2026-10-19T14:08:33Z",
       "createdAt": "2026-10-17T09:29:24Z",
       "headRef": "recurrent_kda_a3_improve",
       "labels": []
@@ -83,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T11:21:52Z",
+      "updatedAt": "2026-10-19T11:54:33Z",
       "createdAt": "2026-10-15T07:00:49Z",
       "headRef": "main",
       "labels": []
@@ -173,30 +173,6 @@
       "labels": []
     },
     {
-      "number": 889,
-      "title": "fix(kda): 修复 chunk_kda_fwd 在含空序列时 fwd_h 调度器丢任务导致的精度问题",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/889",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-19T09:33:23Z",
-      "createdAt": "2026-10-13T09:11:27Z",
-      "headRef": "codex/fix-872-kda-fwdh-empty-seq-main",
-      "labels": []
-    },
-    {
-      "number": 888,
-      "title": "fix(kda): 修复 chunk_kda_fwd 在含空序列时 fwd_h 调度器丢任务导致的精度问题",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/888",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-19T07:06:23Z",
-      "createdAt": "2026-10-13T09:11:17Z",
-      "headRef": "codex/fix-872-kda-fwdh-empty-seq",
-      "labels": []
-    },
-    {
       "number": 887,
       "title": "fix(gdn): v26.9.1 前向在非 950 档位无条件把 g/beta 归一化到 FP32",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/887",
@@ -206,18 +182,6 @@
       "updatedAt": "2026-10-13T07:21:39Z",
       "createdAt": "2026-10-13T07:21:38Z",
       "headRef": "fix/gdn-fwd-fp32-gate-2691",
-      "labels": []
-    },
-    {
-      "number": 880,
-      "title": "fwd finalize a2a3 update",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/880",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-19T11:18:33Z",
-      "createdAt": "2026-10-13T02:12:53Z",
-      "headRef": "1012-fwd-fin",
       "labels": []
     },
     {
@@ -743,7 +707,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-17T06:11:00Z",
+      "updatedAt": "2026-10-19T11:57:38Z",
       "createdAt": "2026-09-03T07:53:01Z",
       "headRef": "main",
       "labels": []
@@ -1493,6 +1457,18 @@
       "labels": []
     },
     {
+      "number": 920,
+      "title": "fix(kda): 修复 chunk_kda_fwd 尾块 workspace 越界与 fwd_h 丢任务（v26.10.0）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/920",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-19T15:21:45Z",
+      "updatedAt": "2026-10-19T15:21:46Z",
+      "createdAt": "2026-10-19T02:43:48Z",
+      "headRef": "codex/fix-872-kda-backport-v26.10.0",
+      "labels": []
+    },
+    {
       "number": 918,
       "title": "fix: [v26.9.1] 修复 KDA 反向单 head 窗口读取残留 scratch 导致的梯度异常",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/918",
@@ -1574,6 +1550,42 @@
       "updatedAt": "2026-10-15T15:26:46Z",
       "createdAt": "2026-10-14T03:06:32Z",
       "headRef": "v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 889,
+      "title": "fix(kda): 修复 chunk_kda_fwd 在含空序列时 fwd_h 调度器丢任务导致的精度问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/889",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-19T15:20:57Z",
+      "updatedAt": "2026-10-19T15:20:58Z",
+      "createdAt": "2026-10-13T09:11:27Z",
+      "headRef": "codex/fix-872-kda-fwdh-empty-seq-main",
+      "labels": []
+    },
+    {
+      "number": 888,
+      "title": "fix(kda): 修复 chunk_kda_fwd 在含空序列时 fwd_h 调度器丢任务导致的精度问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/888",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-19T14:56:53Z",
+      "updatedAt": "2026-10-19T14:56:53Z",
+      "createdAt": "2026-10-13T09:11:17Z",
+      "headRef": "codex/fix-872-kda-fwdh-empty-seq",
+      "labels": []
+    },
+    {
+      "number": 880,
+      "title": "fwd finalize a2a3 performance optimize",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/880",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-19T15:29:45Z",
+      "updatedAt": "2026-10-19T15:29:45Z",
+      "createdAt": "2026-10-13T02:12:53Z",
+      "headRef": "1012-fwd-fin",
       "labels": []
     },
     {
