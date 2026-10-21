@@ -1,55 +1,67 @@
 {
-  "generatedAt": "2026-10-20T18:32:39+08:00",
+  "generatedAt": "2026-10-21T10:19:12+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 550,
+  "total": 555,
   "items": [
     {
-      "number": 934,
-      "title": "fix(gdn): initialize backward DHU state from dht (#924)",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/934",
+      "number": 941,
+      "title": "perf(chunk_fwd_o): A2 overlap pipeline optimizations with form guards and V256 varlen UB race fix",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/941",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-20T09:50:18Z",
-      "createdAt": "2026-10-20T09:50:08Z",
-      "headRef": "codex/fix-dhu-dht-924",
+      "updatedAt": "2026-10-21T02:08:45Z",
+      "createdAt": "2026-10-21T02:08:36Z",
+      "headRef": "fwd_o_a2_merge_verify",
       "labels": []
     },
     {
-      "number": 933,
-      "title": "fix(gdn): initialize backward DHU state from dht (#924)",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/933",
+      "number": 940,
+      "title": "perf(gdn): 优化 A2 反向尾段融合、WY 复用与布局兼容",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/940",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-20T09:49:19Z",
-      "createdAt": "2026-10-20T09:42:58Z",
-      "headRef": "codex/fix-dhu-dht-924",
+      "updatedAt": "2026-10-21T02:14:24Z",
+      "createdAt": "2026-10-20T17:28:55Z",
+      "headRef": "perf/gdn-a2-backward-661-p154",
       "labels": []
     },
     {
-      "number": 932,
-      "title": "finalize A2/A3/A5 backward prepare kernel and validation",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/932",
+      "number": 939,
+      "title": "【v26.10.0】解决issue 900 & 908",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/939",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-20T09:37:00Z",
-      "createdAt": "2026-10-20T09:17:49Z",
-      "headRef": "bwd_prepare_a3",
+      "updatedAt": "2026-10-20T13:18:52Z",
+      "createdAt": "2026-10-20T12:44:06Z",
+      "headRef": "memcheck-v26.10.0",
       "labels": []
     },
     {
-      "number": 930,
-      "title": "perf(kda): optimize ChunkKdaBwdRecompute on A2/A3",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/930",
+      "number": 937,
+      "title": "fix(cp): align merge tiling size and serialize A5 M1 before Fixpipe",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/937",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-20T10:21:26Z",
-      "createdAt": "2026-10-20T02:53:01Z",
-      "headRef": "kda_recompute",
+      "updatedAt": "2026-10-20T14:32:19Z",
+      "createdAt": "2026-10-20T12:27:55Z",
+      "headRef": "memcheck",
+      "labels": []
+    },
+    {
+      "number": 935,
+      "title": "blank",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/935",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-20T12:15:10Z",
+      "createdAt": "2026-10-20T12:13:37Z",
+      "headRef": "1020-26100-blank",
       "labels": []
     },
     {
@@ -74,18 +86,6 @@
       "updatedAt": "2026-10-20T09:12:15Z",
       "createdAt": "2026-10-18T15:24:55Z",
       "headRef": "fix/solve-tri-varlen-validation",
-      "labels": []
-    },
-    {
-      "number": 917,
-      "title": "perf: RecurrentKda A2/A3 功能增强与性能优化",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/917",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-20T10:19:17Z",
-      "createdAt": "2026-10-17T09:29:24Z",
-      "headRef": "recurrent_kda_a3_improve",
       "labels": []
     },
     {
@@ -119,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T11:54:33Z",
+      "updatedAt": "2026-10-21T01:44:01Z",
       "createdAt": "2026-10-15T07:00:49Z",
       "headRef": "main",
       "labels": []
@@ -134,18 +134,6 @@
       "updatedAt": "2026-10-14T12:28:06Z",
       "createdAt": "2026-10-14T12:12:04Z",
       "headRef": "fix/recurrent-gdn-state-table-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 901,
-      "title": "fix(cp): hold A5 merge CUbFree until each AIV finishes packing",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/901",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-20T08:29:38Z",
-      "createdAt": "2026-10-14T12:11:48Z",
-      "headRef": "main",
       "labels": []
     },
     {
@@ -227,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-20T08:02:48Z",
+      "updatedAt": "2026-10-20T13:55:55Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -294,12 +282,12 @@
     },
     {
       "number": 838,
-      "title": "perf(gdn): 优化 A2 前向准备、KKT/O 发布与 H 预取和状态复用",
+      "title": "perf(gdn): 优化 A2 前向流水、统一资源与 recompute U/W 调度",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/838",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T09:11:32Z",
+      "updatedAt": "2026-10-21T01:48:49Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
@@ -743,7 +731,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-20T06:10:51Z",
+      "updatedAt": "2026-10-20T14:49:04Z",
       "createdAt": "2026-09-03T07:53:01Z",
       "headRef": "main",
       "labels": []
@@ -1493,6 +1481,54 @@
       "labels": []
     },
     {
+      "number": 934,
+      "title": "fix(gdn): initialize backward DHU state from dht (#924)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/934",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-21T01:11:18Z",
+      "updatedAt": "2026-10-21T01:11:19Z",
+      "createdAt": "2026-10-20T09:50:08Z",
+      "headRef": "codex/fix-dhu-dht-924",
+      "labels": []
+    },
+    {
+      "number": 933,
+      "title": "fix(gdn): initialize backward DHU state from dht (#924)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/933",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-21T01:11:29Z",
+      "updatedAt": "2026-10-21T01:11:29Z",
+      "createdAt": "2026-10-20T09:42:58Z",
+      "headRef": "codex/fix-dhu-dht-924",
+      "labels": []
+    },
+    {
+      "number": 932,
+      "title": "finalize A2/A3/A5 backward prepare kernel and validation",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/932",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-21T01:13:31Z",
+      "updatedAt": "2026-10-21T01:13:31Z",
+      "createdAt": "2026-10-20T09:17:49Z",
+      "headRef": "bwd_prepare_a3",
+      "labels": []
+    },
+    {
+      "number": 930,
+      "title": "perf(kda): optimize ChunkKdaBwdRecompute on A2/A3",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/930",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-20T12:49:52Z",
+      "updatedAt": "2026-10-20T12:49:52Z",
+      "createdAt": "2026-10-20T02:53:01Z",
+      "headRef": "kda_recompute",
+      "labels": []
+    },
+    {
       "number": 920,
       "title": "fix(kda): 修复 chunk_kda_fwd 尾块 workspace 越界与 fwd_h 丢任务（v26.10.0）",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/920",
@@ -1514,6 +1550,18 @@
       "updatedAt": "2026-10-19T01:16:33Z",
       "createdAt": "2026-10-17T09:54:13Z",
       "headRef": "fix/issue874-odd-head-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 917,
+      "title": "perf: RecurrentKda A2/A3 功能增强与性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/917",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-20T11:45:04Z",
+      "updatedAt": "2026-10-20T11:45:04Z",
+      "createdAt": "2026-10-17T09:29:24Z",
+      "headRef": "recurrent_kda_a3_improve",
       "labels": []
     },
     {
@@ -1562,6 +1610,18 @@
       "updatedAt": "2026-10-15T01:53:12Z",
       "createdAt": "2026-10-14T13:43:05Z",
       "headRef": "fix/gdn-unify-a2-a3-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 901,
+      "title": "fix(cp): hold A5 merge CUbFree until each AIV finishes packing",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/901",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-20T11:43:05Z",
+      "updatedAt": "2026-10-20T11:43:05Z",
+      "createdAt": "2026-10-14T12:11:48Z",
+      "headRef": "main",
       "labels": []
     },
     {
