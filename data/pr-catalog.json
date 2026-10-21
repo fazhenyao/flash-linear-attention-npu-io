@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-10-21T10:19:12+08:00",
+  "generatedAt": "2026-10-21T18:45:16+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 555,
+  "total": 558,
   "items": [
+    {
+      "number": 945,
+      "title": " docs(Huawei Ascend): 将主页单独表述Ascend的地方修改为Huawei Ascend，避免混淆",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/945",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-21T08:57:58Z",
+      "createdAt": "2026-10-21T08:47:45Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 944,
+      "title": "finalize A2/A3/A5 backward prepare kernel and validation- #932",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/944",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-21T08:47:09Z",
+      "createdAt": "2026-10-21T08:39:58Z",
+      "headRef": "26.10.0",
+      "labels": []
+    },
+    {
+      "number": 943,
+      "title": "perf(kda): sync main finalize A2/A3 optimization to v26.10.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/943",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-21T07:49:37Z",
+      "createdAt": "2026-10-21T07:18:13Z",
+      "headRef": "backport/chunk-kda-fwd-finalize-v26.10.0-20261021",
+      "labels": []
+    },
     {
       "number": 941,
       "title": "perf(chunk_fwd_o): A2 overlap pipeline optimizations with form guards and V256 varlen UB race fix",
@@ -11,45 +47,21 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-21T02:08:45Z",
+      "updatedAt": "2026-10-21T07:48:20Z",
       "createdAt": "2026-10-21T02:08:36Z",
       "headRef": "fwd_o_a2_merge_verify",
       "labels": []
     },
     {
       "number": 940,
-      "title": "perf(gdn): 优化 A2 反向尾段融合、WY 复用与布局兼容",
+      "title": "feat(gdn): 实现 910B/910C 单 kernel Finalize 并接入反向 Bwd",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/940",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-21T02:14:24Z",
+      "updatedAt": "2026-10-21T10:09:56Z",
       "createdAt": "2026-10-20T17:28:55Z",
       "headRef": "perf/gdn-a2-backward-661-p154",
-      "labels": []
-    },
-    {
-      "number": 939,
-      "title": "【v26.10.0】解决issue 900 & 908",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/939",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-20T13:18:52Z",
-      "createdAt": "2026-10-20T12:44:06Z",
-      "headRef": "memcheck-v26.10.0",
-      "labels": []
-    },
-    {
-      "number": 937,
-      "title": "fix(cp): align merge tiling size and serialize A5 M1 before Fixpipe",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/937",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-20T14:32:19Z",
-      "createdAt": "2026-10-20T12:27:55Z",
-      "headRef": "memcheck",
       "labels": []
     },
     {
@@ -114,12 +126,12 @@
     },
     {
       "number": 907,
-      "title": "chunk_gdn_bwd_intra算子A2和A3代际性能优化",
+      "title": "perf:chunk_gdn_bwd_intra算子A2和A3代际性能优化",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/907",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-21T01:44:01Z",
+      "updatedAt": "2026-10-21T02:37:25Z",
       "createdAt": "2026-10-15T07:00:49Z",
       "headRef": "main",
       "labels": []
@@ -227,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-18T09:37:56Z",
+      "updatedAt": "2026-10-21T06:50:25Z",
       "createdAt": "2026-10-10T15:37:09Z",
       "headRef": "examples/gdn-kda-cp",
       "labels": []
@@ -1478,6 +1490,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 939,
+      "title": "【v26.10.0】解决issue 900 & 908",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/939",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-21T08:34:07Z",
+      "updatedAt": "2026-10-21T08:34:08Z",
+      "createdAt": "2026-10-20T12:44:06Z",
+      "headRef": "memcheck-v26.10.0",
+      "labels": []
+    },
+    {
+      "number": 937,
+      "title": "fix(cp): align merge tiling size and serialize A5 M1 before Fixpipe",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/937",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-21T08:33:54Z",
+      "updatedAt": "2026-10-21T08:33:54Z",
+      "createdAt": "2026-10-20T12:27:55Z",
+      "headRef": "memcheck",
       "labels": []
     },
     {
