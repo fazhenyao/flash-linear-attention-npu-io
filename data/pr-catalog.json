@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-10-22T10:13:54+08:00",
+  "generatedAt": "2026-10-22T18:46:32+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 562,
+  "total": 565,
   "items": [
+    {
+      "number": 954,
+      "title": "feat(build): 支持 experimental 算子严格隔离构建",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/954",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-22T10:42:57Z",
+      "createdAt": "2026-10-22T06:54:36Z",
+      "headRef": "feat/experimental-build",
+      "labels": []
+    },
+    {
+      "number": 953,
+      "title": "fix: 使 torch 2.13 legacy 扩展完成编译",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/953",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-22T10:19:06Z",
+      "createdAt": "2026-10-22T06:32:24Z",
+      "headRef": "fix/torch-213-legacy-build",
+      "labels": []
+    },
+    {
+      "number": 951,
+      "title": "[Feature]: 【推理】GDN 正向融合算子支持 chunk_size 32 性能优化 ",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/951",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-22T06:10:38Z",
+      "createdAt": "2026-10-22T03:00:18Z",
+      "headRef": "gdn_fwd_chunk_32",
+      "labels": []
+    },
     {
       "number": 950,
       "title": "add A6 kda",
@@ -11,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T01:32:52Z",
+      "updatedAt": "2026-10-22T06:08:30Z",
       "createdAt": "2026-10-22T01:32:43Z",
       "headRef": "hyh-kda",
       "labels": []
@@ -23,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T02:09:47Z",
+      "updatedAt": "2026-10-22T02:25:46Z",
       "createdAt": "2026-10-22T01:30:52Z",
       "headRef": "fix/torch-213-compat-main",
       "labels": []
@@ -35,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T02:00:36Z",
+      "updatedAt": "2026-10-22T02:25:45Z",
       "createdAt": "2026-10-22T01:30:25Z",
       "headRef": "fix/torch-213-compat-v26.6.0",
       "labels": []
@@ -95,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T01:20:26Z",
+      "updatedAt": "2026-10-22T04:28:30Z",
       "createdAt": "2026-10-21T02:08:36Z",
       "headRef": "fwd_o_a2_merge_verify",
       "labels": []
@@ -107,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T02:02:17Z",
+      "updatedAt": "2026-10-22T08:47:43Z",
       "createdAt": "2026-10-20T17:28:55Z",
       "headRef": "perf/gdn-a2-backward-661-p154",
       "labels": []
@@ -155,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-16T08:03:15Z",
+      "updatedAt": "2026-10-22T06:57:17Z",
       "createdAt": "2026-10-16T08:03:07Z",
       "headRef": "perf/kda-bwd-wy-intra",
       "labels": []
@@ -167,7 +203,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-16T07:33:02Z",
+      "updatedAt": "2026-10-22T07:48:57Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -179,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-21T02:37:25Z",
+      "updatedAt": "2026-10-22T06:20:47Z",
       "createdAt": "2026-10-15T07:00:49Z",
       "headRef": "main",
       "labels": []
@@ -347,7 +383,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T01:26:42Z",
+      "updatedAt": "2026-10-22T08:22:49Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
