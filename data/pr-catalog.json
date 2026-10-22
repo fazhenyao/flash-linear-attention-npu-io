@@ -1,9 +1,69 @@
 {
-  "generatedAt": "2026-10-21T18:45:16+08:00",
+  "generatedAt": "2026-10-22T10:13:54+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 558,
+  "total": 562,
   "items": [
+    {
+      "number": 950,
+      "title": "add A6 kda",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/950",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-22T01:32:52Z",
+      "createdAt": "2026-10-22T01:32:43Z",
+      "headRef": "hyh-kda",
+      "labels": []
+    },
+    {
+      "number": 949,
+      "title": "fix: support torch 2.13 in torch custom ops",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/949",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-22T02:09:47Z",
+      "createdAt": "2026-10-22T01:30:52Z",
+      "headRef": "fix/torch-213-compat-main",
+      "labels": []
+    },
+    {
+      "number": 948,
+      "title": "fix: support torch 2.13 in v26.6.0 torch custom ops",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/948",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-22T02:00:36Z",
+      "createdAt": "2026-10-22T01:30:25Z",
+      "headRef": "fix/torch-213-compat-v26.6.0",
+      "labels": []
+    },
+    {
+      "number": 947,
+      "title": "finalize A2/A3/A5 backward prepare kernel and validation",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/947",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-22T01:12:07Z",
+      "createdAt": "2026-10-21T15:10:06Z",
+      "headRef": "26.10.0",
+      "labels": []
+    },
+    {
+      "number": 946,
+      "title": "perf(kda): backport ChunkKdaBwdRecompute optimization to v26.10.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/946",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-21T15:21:20Z",
+      "createdAt": "2026-10-21T13:24:11Z",
+      "headRef": "codex/backport-chunk-kda-bwd-recompute-v26.10.0",
+      "labels": []
+    },
     {
       "number": 945,
       "title": " docs(Huawei Ascend): 将主页单独表述Ascend的地方修改为Huawei Ascend，避免混淆",
@@ -11,21 +71,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-21T08:57:58Z",
+      "updatedAt": "2026-10-21T12:57:33Z",
       "createdAt": "2026-10-21T08:47:45Z",
       "headRef": "main",
-      "labels": []
-    },
-    {
-      "number": 944,
-      "title": "finalize A2/A3/A5 backward prepare kernel and validation- #932",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/944",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-21T08:47:09Z",
-      "createdAt": "2026-10-21T08:39:58Z",
-      "headRef": "26.10.0",
       "labels": []
     },
     {
@@ -35,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-21T07:49:37Z",
+      "updatedAt": "2026-10-22T01:35:08Z",
       "createdAt": "2026-10-21T07:18:13Z",
       "headRef": "backport/chunk-kda-fwd-finalize-v26.10.0-20261021",
       "labels": []
@@ -47,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-21T07:48:20Z",
+      "updatedAt": "2026-10-22T01:20:26Z",
       "createdAt": "2026-10-21T02:08:36Z",
       "headRef": "fwd_o_a2_merge_verify",
       "labels": []
@@ -59,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-21T10:09:56Z",
+      "updatedAt": "2026-10-22T02:02:17Z",
       "createdAt": "2026-10-20T17:28:55Z",
       "headRef": "perf/gdn-a2-backward-661-p154",
       "labels": []
@@ -294,12 +342,12 @@
     },
     {
       "number": 838,
-      "title": "perf(gdn): 优化 A2 前向流水、统一资源与 recompute U/W 调度",
+      "title": "perf(gdn): 优化 A2 前向资源复用、静态分派与流水同步",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/838",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-21T01:48:49Z",
+      "updatedAt": "2026-10-22T01:26:42Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
