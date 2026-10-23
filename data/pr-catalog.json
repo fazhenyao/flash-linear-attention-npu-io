@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-10-22T18:46:32+08:00",
+  "generatedAt": "2026-10-23T10:19:53+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 565,
+  "total": 568,
   "items": [
+    {
+      "number": 957,
+      "title": "fix: 修复 v26.9.0 的 torch 2.13 legacy 扩展构建",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/957",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-22T12:19:37Z",
+      "createdAt": "2026-10-22T12:15:14Z",
+      "headRef": "fix/torch-213-legacy-v26.9.0",
+      "labels": []
+    },
+    {
+      "number": 956,
+      "title": "fix: 修复 v26.9.1 的 torch 2.13 legacy 扩展构建",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/956",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-22T12:19:27Z",
+      "createdAt": "2026-10-22T12:14:28Z",
+      "headRef": "fix/torch-213-legacy-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 955,
+      "title": "fix: 修复 v26.10.0 的 torch 2.13 legacy 扩展构建",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/955",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-22T12:19:18Z",
+      "createdAt": "2026-10-22T12:13:40Z",
+      "headRef": "fix/torch-213-legacy-v26.10.0",
+      "labels": []
+    },
     {
       "number": 954,
       "title": "feat(build): 支持 experimental 算子严格隔离构建",
@@ -23,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T10:19:06Z",
+      "updatedAt": "2026-10-22T12:19:59Z",
       "createdAt": "2026-10-22T06:32:24Z",
       "headRef": "fix/torch-213-legacy-build",
       "labels": []
@@ -101,18 +137,6 @@
       "labels": []
     },
     {
-      "number": 945,
-      "title": " docs(Huawei Ascend): 将主页单独表述Ascend的地方修改为Huawei Ascend，避免混淆",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/945",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-21T12:57:33Z",
-      "createdAt": "2026-10-21T08:47:45Z",
-      "headRef": "main",
-      "labels": []
-    },
-    {
       "number": 943,
       "title": "perf(kda): sync main finalize A2/A3 optimization to v26.10.0",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/943",
@@ -125,25 +149,13 @@
       "labels": []
     },
     {
-      "number": 941,
-      "title": "perf(chunk_fwd_o): A2 overlap pipeline optimizations with form guards and V256 varlen UB race fix",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/941",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-22T04:28:30Z",
-      "createdAt": "2026-10-21T02:08:36Z",
-      "headRef": "fwd_o_a2_merge_verify",
-      "labels": []
-    },
-    {
       "number": 940,
       "title": "feat(gdn): 实现 910B/910C 单 kernel Finalize 并接入反向 Bwd",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/940",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T08:47:43Z",
+      "updatedAt": "2026-10-23T01:10:54Z",
       "createdAt": "2026-10-20T17:28:55Z",
       "headRef": "perf/gdn-a2-backward-661-p154",
       "labels": []
@@ -215,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T06:20:47Z",
+      "updatedAt": "2026-10-22T14:13:58Z",
       "createdAt": "2026-10-15T07:00:49Z",
       "headRef": "main",
       "labels": []
@@ -311,7 +323,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-20T13:55:55Z",
+      "updatedAt": "2026-10-23T02:18:12Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -1574,6 +1586,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 945,
+      "title": " docs(Huawei Ascend): 将主页单独表述Ascend的地方修改为Huawei Ascend，避免混淆",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/945",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-23T01:43:44Z",
+      "updatedAt": "2026-10-23T01:43:45Z",
+      "createdAt": "2026-10-21T08:47:45Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 941,
+      "title": "perf(chunk_fwd_o): A2 overlap pipeline optimizations with form guards and V256 varlen UB race fix",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/941",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-23T00:21:03Z",
+      "updatedAt": "2026-10-23T00:21:03Z",
+      "createdAt": "2026-10-21T02:08:36Z",
+      "headRef": "fwd_o_a2_merge_verify",
       "labels": []
     },
     {
