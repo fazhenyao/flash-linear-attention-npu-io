@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-10-23T10:19:53+08:00",
+  "generatedAt": "2026-10-23T18:38:03+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 568,
+  "total": 569,
   "items": [
+    {
+      "number": 960,
+      "title": "perf(kda): isolate arch22 prepare target pipeline on latest main",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/960",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-23T07:52:50Z",
+      "createdAt": "2026-10-23T06:44:33Z",
+      "headRef": "exp-c3next-latest",
+      "labels": []
+    },
     {
       "number": 957,
       "title": "fix: 修复 v26.9.0 的 torch 2.13 legacy 扩展构建",
@@ -59,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T12:19:59Z",
+      "updatedAt": "2026-10-23T06:14:28Z",
       "createdAt": "2026-10-22T06:32:24Z",
       "headRef": "fix/torch-213-legacy-build",
       "labels": []
@@ -71,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T06:10:38Z",
+      "updatedAt": "2026-10-23T09:49:07Z",
       "createdAt": "2026-10-22T03:00:18Z",
       "headRef": "gdn_fwd_chunk_32",
       "labels": []
@@ -149,18 +161,6 @@
       "labels": []
     },
     {
-      "number": 940,
-      "title": "feat(gdn): 实现 910B/910C 单 kernel Finalize 并接入反向 Bwd",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/940",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-23T01:10:54Z",
-      "createdAt": "2026-10-20T17:28:55Z",
-      "headRef": "perf/gdn-a2-backward-661-p154",
-      "labels": []
-    },
-    {
       "number": 935,
       "title": "blank",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/935",
@@ -227,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T14:13:58Z",
+      "updatedAt": "2026-10-23T08:14:00Z",
       "createdAt": "2026-10-15T07:00:49Z",
       "headRef": "main",
       "labels": []
@@ -323,7 +323,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-23T02:18:12Z",
+      "updatedAt": "2026-10-23T09:00:10Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -390,12 +390,12 @@
     },
     {
       "number": 838,
-      "title": "perf(gdn): 优化 A2 前向资源复用、静态分派与流水同步",
+      "title": "perf(gdn): 优化 A2 前向任务局部性、资源复用与流水同步",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/838",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T08:22:49Z",
+      "updatedAt": "2026-10-23T03:24:23Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
@@ -839,7 +839,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-20T14:49:04Z",
+      "updatedAt": "2026-10-23T06:15:37Z",
       "createdAt": "2026-09-03T07:53:01Z",
       "headRef": "main",
       "labels": []
@@ -1610,6 +1610,18 @@
       "updatedAt": "2026-10-23T00:21:03Z",
       "createdAt": "2026-10-21T02:08:36Z",
       "headRef": "fwd_o_a2_merge_verify",
+      "labels": []
+    },
+    {
+      "number": 940,
+      "title": "feat(gdn): 实现 910B/910C 单 kernel Finalize 并接入反向 Bwd",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/940",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-23T06:28:10Z",
+      "updatedAt": "2026-10-23T06:28:10Z",
+      "createdAt": "2026-10-20T17:28:55Z",
+      "headRef": "perf/gdn-a2-backward-661-p154",
       "labels": []
     },
     {
