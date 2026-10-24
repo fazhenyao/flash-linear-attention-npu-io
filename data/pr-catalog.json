@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-10-24T10:17:36+08:00",
+  "generatedAt": "2026-10-24T17:56:12+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 571,
   "items": [
     {
       "number": 962,
-      "title": "feat(kda): add A2 single-launch finalize S24 implementation",
+      "title": "feat(kda): unify A2/A3/A5 finalize interfaces and native layouts",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/962",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-24T02:10:23Z",
+      "updatedAt": "2026-10-24T07:54:30Z",
       "createdAt": "2026-10-24T02:06:18Z",
       "headRef": "kda-finalize-a2-s24-pr",
       "labels": []
@@ -23,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-23T16:24:41Z",
+      "updatedAt": "2026-10-24T06:06:40Z",
       "createdAt": "2026-10-23T12:20:53Z",
       "headRef": "refactor/stable-only-main",
       "labels": []
@@ -95,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-23T15:59:21Z",
+      "updatedAt": "2026-10-24T06:06:33Z",
       "createdAt": "2026-10-22T06:32:24Z",
       "headRef": "fix/torch-213-legacy-build",
       "labels": []
@@ -251,7 +251,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-23T08:14:00Z",
+      "updatedAt": "2026-10-24T02:26:34Z",
       "createdAt": "2026-10-15T07:00:49Z",
       "headRef": "main",
       "labels": []
@@ -419,7 +419,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-23T03:24:23Z",
+      "updatedAt": "2026-10-24T03:08:52Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
@@ -1583,7 +1583,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-20T07:59:17Z",
+      "updatedAt": "2026-10-24T06:07:48Z",
       "createdAt": "2026-06-11T14:58:13Z",
       "headRef": "kda_merge_zcc_v2",
       "labels": []
