@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-24T17:56:12+08:00",
+  "generatedAt": "2026-10-25T10:04:13+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 571,
@@ -11,7 +11,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-24T07:54:30Z",
+      "updatedAt": "2026-10-24T18:02:24Z",
       "createdAt": "2026-10-24T02:06:18Z",
       "headRef": "kda-finalize-a2-s24-pr",
       "labels": []
@@ -419,7 +419,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-24T03:08:52Z",
+      "updatedAt": "2026-10-24T10:39:48Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
