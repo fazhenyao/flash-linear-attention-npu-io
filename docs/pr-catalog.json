@@ -1,17 +1,17 @@
 {
-  "generatedAt": "2026-10-25T10:04:13+08:00",
+  "generatedAt": "2026-10-25T18:18:21+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 571,
   "items": [
     {
       "number": 962,
-      "title": "feat(kda): unify A2/A3/A5 finalize interfaces and native layouts",
+      "title": "A2A3chunk_kda_bwd_finalize优化版适配",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/962",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-24T18:02:24Z",
+      "updatedAt": "2026-10-25T06:06:23Z",
       "createdAt": "2026-10-24T02:06:18Z",
       "headRef": "kda-finalize-a2-s24-pr",
       "labels": []
