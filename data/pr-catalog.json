@@ -1,21 +1,9 @@
 {
-  "generatedAt": "2026-10-25T18:18:21+08:00",
+  "generatedAt": "2026-10-26T10:05:12+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 571,
   "items": [
-    {
-      "number": 962,
-      "title": "A2A3chunk_kda_bwd_finalize优化版适配",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/962",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-25T06:06:23Z",
-      "createdAt": "2026-10-24T02:06:18Z",
-      "headRef": "kda-finalize-a2-s24-pr",
-      "labels": []
-    },
     {
       "number": 961,
       "title": "refactor: converge AscendC on Stable ABI and harden validation",
@@ -30,12 +18,12 @@
     },
     {
       "number": 960,
-      "title": "perf(kda): isolate arch22 prepare target pipeline on latest main",
+      "title": "perf(kda): optimize A2 prepare and consolidate tiling keys",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/960",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-23T07:52:50Z",
+      "updatedAt": "2026-10-26T01:48:54Z",
       "createdAt": "2026-10-23T06:44:33Z",
       "headRef": "exp-c3next-latest",
       "labels": []
@@ -107,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-23T09:49:07Z",
+      "updatedAt": "2026-10-25T14:56:18Z",
       "createdAt": "2026-10-22T03:00:18Z",
       "headRef": "gdn_fwd_chunk_32",
       "labels": []
@@ -863,7 +851,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-23T06:15:37Z",
+      "updatedAt": "2026-10-26T01:43:30Z",
       "createdAt": "2026-09-03T07:53:01Z",
       "headRef": "main",
       "labels": []
@@ -1610,6 +1598,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 962,
+      "title": "A2A3chunk_kda_bwd_finalize优化版适配",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/962",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-26T01:18:20Z",
+      "updatedAt": "2026-10-26T01:18:20Z",
+      "createdAt": "2026-10-24T02:06:18Z",
+      "headRef": "kda-finalize-a2-s24-pr",
       "labels": []
     },
     {
