@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-10-26T10:05:12+08:00",
+  "generatedAt": "2026-10-26T19:44:34+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 571,
+  "total": 574,
   "items": [
+    {
+      "number": 969,
+      "title": "fix(kda): 取消 prepare 变长序列数量上限",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/969",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-26T09:25:51Z",
+      "createdAt": "2026-10-26T09:22:36Z",
+      "headRef": "codex/kda-prepare-remove-sequence-limit",
+      "labels": []
+    },
+    {
+      "number": 968,
+      "title": "feat(kda): add A2 kda chunk bwd implement",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/968",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-26T09:40:42Z",
+      "createdAt": "2026-10-26T08:05:29Z",
+      "headRef": "kda_bwd",
+      "labels": []
+    },
+    {
+      "number": 967,
+      "title": "feat(agents): 新增四层算子检视 skill 与历史 issue 看护",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/967",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-26T09:11:40Z",
+      "createdAt": "2026-10-26T07:14:12Z",
+      "headRef": "codex/operator-review-skill-dfx",
+      "labels": []
+    },
     {
       "number": 961,
       "title": "refactor: converge AscendC on Stable ABI and harden validation",
@@ -23,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-26T01:48:54Z",
+      "updatedAt": "2026-10-26T10:48:53Z",
       "createdAt": "2026-10-23T06:44:33Z",
       "headRef": "exp-c3next-latest",
       "labels": []
@@ -107,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T06:08:30Z",
+      "updatedAt": "2026-10-26T03:33:39Z",
       "createdAt": "2026-10-22T01:32:43Z",
       "headRef": "hyh-kda",
       "labels": []
@@ -407,7 +443,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-24T10:39:48Z",
+      "updatedAt": "2026-10-26T09:16:12Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
@@ -1607,7 +1643,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-10-26T01:18:20Z",
-      "updatedAt": "2026-10-26T01:18:20Z",
+      "updatedAt": "2026-10-26T11:21:19Z",
       "createdAt": "2026-10-24T02:06:18Z",
       "headRef": "kda-finalize-a2-s24-pr",
       "labels": []
