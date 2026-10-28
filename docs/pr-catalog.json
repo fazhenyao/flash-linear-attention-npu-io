@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-10-27T19:11:43+08:00",
+  "generatedAt": "2026-10-28T10:51:36+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 583,
+  "total": 586,
   "items": [
+    {
+      "number": 987,
+      "title": "perf(ci): 将 A2/A5 编译并发提升至 64",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/987",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-28T01:26:24Z",
+      "createdAt": "2026-10-28T01:23:33Z",
+      "headRef": "fix/ci-build-jobs-64",
+      "labels": []
+    },
+    {
+      "number": 986,
+      "title": "fix(kda): 修复 A5 chunk_kda_fwd bounded FwdH MMAD 跨任务自等待",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/986",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-27T14:10:24Z",
+      "createdAt": "2026-10-27T13:18:06Z",
+      "headRef": "codex/fix-7850-a5-bounded-stream",
+      "labels": []
+    },
+    {
+      "number": 985,
+      "title": "fix(dfx): 补充 ChunkKdaFwd 与 CP 反向预处理算子的结构化错误信息",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/985",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-28T02:45:26Z",
+      "createdAt": "2026-10-27T12:19:46Z",
+      "headRef": "codex/dfx-structured-errors",
+      "labels": []
+    },
     {
       "number": 982,
       "title": "blank3",
@@ -11,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-27T10:49:08Z",
+      "updatedAt": "2026-10-27T12:48:17Z",
       "createdAt": "2026-10-27T09:21:58Z",
       "headRef": "1027-blank3",
       "labels": []
@@ -41,25 +77,13 @@
       "labels": []
     },
     {
-      "number": 974,
-      "title": "FLA NPU 日落算子 deprecation 拦截告警",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/974",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-27T09:30:09Z",
-      "createdAt": "2026-10-27T03:32:47Z",
-      "headRef": "main",
-      "labels": []
-    },
-    {
       "number": 972,
-      "title": "perf(gdn): 优化 A2/A3 Finalize 反向 scan 与满行向量流水",
+      "title": "perf(gdn): 优化 A2/A3 Finalize 反向 scan、MHA 输出与归一化",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/972",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-27T07:41:55Z",
+      "updatedAt": "2026-10-27T18:27:33Z",
       "createdAt": "2026-10-27T02:26:15Z",
       "headRef": "perf/gdn-finalize-a2a3-modelcase-20261027",
       "labels": []
@@ -366,12 +390,12 @@
     },
     {
       "number": 878,
-      "title": "feat: add validated OPP overlays on the Stable ABI launcher",
+      "title": "feat: add validated OPP overlays and retire ctypes/legacy backends",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/878",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-23T16:24:44Z",
+      "updatedAt": "2026-10-28T02:37:58Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -1661,6 +1685,18 @@
       "labels": []
     },
     {
+      "number": 974,
+      "title": "FLA NPU 日落算子 deprecation 拦截告警",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/974",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-28T01:48:52Z",
+      "updatedAt": "2026-10-28T01:48:52Z",
+      "createdAt": "2026-10-27T03:32:47Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
       "number": 973,
       "title": "fix(ci): 修复 A2/A5 存储与代理回退并限制 16 并发编译",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/973",
@@ -1739,7 +1775,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-10-26T12:44:38Z",
-      "updatedAt": "2026-10-27T04:57:27Z",
+      "updatedAt": "2026-10-27T12:55:50Z",
       "createdAt": "2026-10-23T06:44:33Z",
       "headRef": "exp-c3next-latest",
       "labels": []
