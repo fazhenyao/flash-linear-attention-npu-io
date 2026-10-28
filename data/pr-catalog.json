@@ -1,9 +1,81 @@
 {
-  "generatedAt": "2026-10-28T10:51:36+08:00",
+  "generatedAt": "2026-10-28T19:45:59+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 586,
+  "total": 592,
   "items": [
+    {
+      "number": 996,
+      "title": "perf: optimize chunk_kda_fwd ascendc performance",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/996",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-28T11:10:50Z",
+      "createdAt": "2026-10-28T11:10:39Z",
+      "headRef": "kda_ascendc_opt",
+      "labels": []
+    },
+    {
+      "number": 995,
+      "title": "perf(kda): Dhu pre-gated qg直接装载",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/995",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-28T08:14:23Z",
+      "createdAt": "2026-10-28T07:05:53Z",
+      "headRef": "perf/kda-bwd-v2-dhu-qg-direct",
+      "labels": []
+    },
+    {
+      "number": 994,
+      "title": "perf(kda): update A2 prepare to R26 rewrite pipeline",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/994",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-28T08:51:24Z",
+      "createdAt": "2026-10-28T07:01:43Z",
+      "headRef": "r26-a2-final",
+      "labels": []
+    },
+    {
+      "number": 993,
+      "title": "fix(kda): 保留反向总接口布局并由 Finalize 直接写回",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/993",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-28T11:44:32Z",
+      "createdAt": "2026-10-28T06:25:09Z",
+      "headRef": "fix/kda-bwd-output-contract",
+      "labels": []
+    },
+    {
+      "number": 992,
+      "title": "fix(kda): preserve ACLNN errors and repair KDA/KKT tests",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/992",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-28T04:00:59Z",
+      "createdAt": "2026-10-28T03:46:10Z",
+      "headRef": "fix/kda-kkt-regressions-20261028",
+      "labels": []
+    },
+    {
+      "number": 990,
+      "title": "feat(gdn): 接入 A2 Prepare 及 ACLNN 分段路径",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/990",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-28T09:34:08Z",
+      "createdAt": "2026-10-28T03:07:26Z",
+      "headRef": "exp/a2-prepare-wu-prefetch-1026",
+      "labels": []
+    },
     {
       "number": 987,
       "title": "perf(ci): 将 A2/A5 编译并发提升至 64",
@@ -11,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-28T01:26:24Z",
+      "updatedAt": "2026-10-28T05:31:57Z",
       "createdAt": "2026-10-28T01:23:33Z",
       "headRef": "fix/ci-build-jobs-64",
       "labels": []
@@ -35,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-28T02:45:26Z",
+      "updatedAt": "2026-10-28T03:15:48Z",
       "createdAt": "2026-10-27T12:19:46Z",
       "headRef": "codex/dfx-structured-errors",
       "labels": []
@@ -47,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-27T12:48:17Z",
+      "updatedAt": "2026-10-28T07:05:15Z",
       "createdAt": "2026-10-27T09:21:58Z",
       "headRef": "1027-blank3",
       "labels": []
@@ -83,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-27T18:27:33Z",
+      "updatedAt": "2026-10-28T08:03:54Z",
       "createdAt": "2026-10-27T02:26:15Z",
       "headRef": "perf/gdn-finalize-a2a3-modelcase-20261027",
       "labels": []
@@ -167,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-25T14:56:18Z",
+      "updatedAt": "2026-10-28T09:52:14Z",
       "createdAt": "2026-10-22T03:00:18Z",
       "headRef": "gdn_fwd_chunk_32",
       "labels": []
@@ -294,12 +366,12 @@
     },
     {
       "number": 913,
-      "title": "perf(kda): BwdFinalize 五组 VF 行循环 unroll-2 zip 交错展开",
+      "title": "perf(kda): 优化V2 BwdFinalize流水与梯度输出",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/913",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T07:48:57Z",
+      "updatedAt": "2026-10-28T08:14:20Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -395,7 +467,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-28T02:37:58Z",
+      "updatedAt": "2026-10-28T06:55:32Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -1770,12 +1842,12 @@
     },
     {
       "number": 960,
-      "title": "perf(kda): optimize A2 prepare and consolidate tiling keys",
+      "title": "perf(kda): update A2 prepare to R26 rewrite pipeline",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/960",
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-10-26T12:44:38Z",
-      "updatedAt": "2026-10-27T12:55:50Z",
+      "updatedAt": "2026-10-28T07:03:13Z",
       "createdAt": "2026-10-23T06:44:33Z",
       "headRef": "exp-c3next-latest",
       "labels": []
