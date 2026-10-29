@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T19:45:59+08:00",
+  "generatedAt": "2026-10-29T11:14:14+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 592,
@@ -23,31 +23,31 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-28T08:14:23Z",
+      "updatedAt": "2026-10-28T12:09:48Z",
       "createdAt": "2026-10-28T07:05:53Z",
       "headRef": "perf/kda-bwd-v2-dhu-qg-direct",
       "labels": []
     },
     {
       "number": 994,
-      "title": "perf(kda): update A2 prepare to R26 rewrite pipeline",
+      "title": "A2: generalize chunk_kda_fwd_prepare with six runtime keys",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/994",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-28T08:51:24Z",
+      "updatedAt": "2026-10-28T18:57:35Z",
       "createdAt": "2026-10-28T07:01:43Z",
       "headRef": "r26-a2-final",
       "labels": []
     },
     {
       "number": 993,
-      "title": "fix(kda): 保留反向总接口布局并由 Finalize 直接写回",
+      "title": "fix(kda): 保持反向输出约定并融合前后向参数 Cast",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/993",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-28T11:44:32Z",
+      "updatedAt": "2026-10-29T02:24:40Z",
       "createdAt": "2026-10-28T06:25:09Z",
       "headRef": "fix/kda-bwd-output-contract",
       "labels": []
@@ -66,12 +66,12 @@
     },
     {
       "number": 990,
-      "title": "feat(gdn): 接入 A2 Prepare 及 ACLNN 分段路径",
+      "title": "feat(gdn): 接入并优化 A2 Prepare 及 ACLNN 分段路径",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/990",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-28T09:34:08Z",
+      "updatedAt": "2026-10-29T03:13:52Z",
       "createdAt": "2026-10-28T03:07:26Z",
       "headRef": "exp/a2-prepare-wu-prefetch-1026",
       "labels": []
@@ -155,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-28T08:03:54Z",
+      "updatedAt": "2026-10-29T03:13:39Z",
       "createdAt": "2026-10-27T02:26:15Z",
       "headRef": "perf/gdn-finalize-a2a3-modelcase-20261027",
       "labels": []
@@ -239,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-28T09:52:14Z",
+      "updatedAt": "2026-10-29T02:58:31Z",
       "createdAt": "2026-10-22T03:00:18Z",
       "headRef": "gdn_fwd_chunk_32",
       "labels": []
@@ -371,7 +371,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-28T08:14:20Z",
+      "updatedAt": "2026-10-28T12:09:42Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -983,7 +983,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-27T06:20:50Z",
+      "updatedAt": "2026-10-29T02:42:41Z",
       "createdAt": "2026-09-03T07:53:01Z",
       "headRef": "main",
       "labels": []
