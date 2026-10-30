@@ -1,19 +1,67 @@
 {
-  "generatedAt": "2026-10-29T19:53:43+08:00",
+  "generatedAt": "2026-10-30T11:17:27+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 601,
+  "total": 607,
   "items": [
     {
-      "number": 1007,
-      "title": "fix(ci): validate current and ordered OPP env contracts",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1007",
+      "number": 1012,
+      "title": "docs: 补充 operator-review 的公开接口兼容性检视规范",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1012",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T11:40:12Z",
-      "createdAt": "2026-10-29T11:40:05Z",
-      "headRef": "fix/ci-set-env-checker-contract",
+      "updatedAt": "2026-10-30T03:13:50Z",
+      "createdAt": "2026-10-30T02:12:48Z",
+      "headRef": "codex/operator-review-api-contract",
+      "labels": []
+    },
+    {
+      "number": 1011,
+      "title": "fix(ci): 对齐 v26.10.0 的 A2/A5 存储与代理路径",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1011",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-30T02:10:58Z",
+      "createdAt": "2026-10-30T01:39:37Z",
+      "headRef": "fix/v26-10-ci-npu-lock-dir",
+      "labels": []
+    },
+    {
+      "number": 1010,
+      "title": "perf: optimize A5 chunk_fwd_h fused pipeline",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1010",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-29T23:09:17Z",
+      "createdAt": "2026-10-29T23:09:07Z",
+      "headRef": "codex/optimize-chunk-fwd-h-a5",
+      "labels": []
+    },
+    {
+      "number": 1009,
+      "title": "perf(kda): skip redundant A2 Prepare valid-row initialization",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1009",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-29T18:59:16Z",
+      "createdAt": "2026-10-29T16:14:22Z",
+      "headRef": "perf/a2-prepare-padding-init-v34",
+      "labels": []
+    },
+    {
+      "number": 1008,
+      "title": "[Feature]: 【推理】KDA 正向融合算子支持 chunk_size 32",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1008",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-30T02:14:48Z",
+      "createdAt": "2026-10-29T15:30:48Z",
+      "headRef": "feat/chunk32-fused-pr",
       "labels": []
     },
     {
@@ -23,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T11:53:15Z",
+      "updatedAt": "2026-10-30T02:53:50Z",
       "createdAt": "2026-10-29T10:38:30Z",
       "headRef": "backport/gdn-finalize-a2a3-v26.10.0",
       "labels": []
@@ -35,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T11:14:57Z",
+      "updatedAt": "2026-10-30T02:10:00Z",
       "createdAt": "2026-10-29T07:13:41Z",
       "headRef": "backport/a2-prepare-v26.10.0-1029",
       "labels": []
@@ -47,21 +95,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T11:52:50Z",
+      "updatedAt": "2026-10-29T13:21:38Z",
       "createdAt": "2026-10-29T07:13:24Z",
       "headRef": "chunk_fwd_h_a2",
-      "labels": []
-    },
-    {
-      "number": 1002,
-      "title": "pref:[v26.10.0]chunk_gdn_bwd_intra算子A2和A3代际性能优化",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1002",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-29T09:46:16Z",
-      "createdAt": "2026-10-29T07:04:05Z",
-      "headRef": "v26.10.0",
       "labels": []
     },
     {
@@ -71,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T09:43:34Z",
+      "updatedAt": "2026-10-30T03:09:45Z",
       "createdAt": "2026-10-29T07:03:22Z",
       "headRef": "backport/gdn-a2-forward-v26.10.0-1029",
       "labels": []
@@ -119,31 +155,19 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T08:06:51Z",
+      "updatedAt": "2026-10-29T12:25:38Z",
       "createdAt": "2026-10-28T07:05:53Z",
       "headRef": "perf/kda-bwd-v2-dhu-qg-direct",
       "labels": []
     },
     {
-      "number": 994,
-      "title": "A2: optimize chunk_kda_fwd_prepare with six-key BF16 relay",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/994",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-29T11:41:19Z",
-      "createdAt": "2026-10-28T07:01:43Z",
-      "headRef": "r26-a2-final",
-      "labels": []
-    },
-    {
       "number": 993,
-      "title": "fix(kda): 统一反向布局和梯度 dtype，融合 gate/beta Cast",
+      "title": "feat(kda)!: 统一 A2/A3/A5 反向单 layout 与 beta_eff 接口",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/993",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T08:06:54Z",
+      "updatedAt": "2026-10-30T02:52:30Z",
       "createdAt": "2026-10-28T06:25:09Z",
       "headRef": "fix/kda-bwd-output-contract",
       "labels": []
@@ -167,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T11:53:31Z",
+      "updatedAt": "2026-10-29T15:12:36Z",
       "createdAt": "2026-10-28T03:07:26Z",
       "headRef": "exp/a2-prepare-wu-prefetch-1026",
       "labels": []
@@ -251,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T11:53:17Z",
+      "updatedAt": "2026-10-29T13:55:33Z",
       "createdAt": "2026-10-27T02:26:15Z",
       "headRef": "perf/gdn-finalize-a2a3-modelcase-20261027",
       "labels": []
@@ -335,7 +359,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T09:44:00Z",
+      "updatedAt": "2026-10-30T03:11:59Z",
       "createdAt": "2026-10-22T03:00:18Z",
       "headRef": "gdn_fwd_chunk_32",
       "labels": []
@@ -462,12 +486,12 @@
     },
     {
       "number": 913,
-      "title": "perf(kda): 优化V2 BwdFinalize流水与梯度输出",
+      "title": "perf(kda): 优化 V2 BwdFinalize 流水与梯度输出",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/913",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T08:06:45Z",
+      "updatedAt": "2026-10-30T01:47:37Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -563,7 +587,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T09:07:51Z",
+      "updatedAt": "2026-10-30T02:25:47Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -635,7 +659,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T10:42:03Z",
+      "updatedAt": "2026-10-30T03:05:15Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
@@ -659,7 +683,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-08T16:48:39Z",
+      "updatedAt": "2026-10-30T02:03:47Z",
       "createdAt": "2026-10-07T08:36:25Z",
       "headRef": "codex/cannbot-operator-workflow",
       "labels": []
@@ -1829,6 +1853,42 @@
       "labels": []
     },
     {
+      "number": 1013,
+      "title": "fix(ci): cancel sibling NPU job after matrix failure",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1013",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-30T03:05:06Z",
+      "updatedAt": "2026-10-30T03:05:06Z",
+      "createdAt": "2026-10-30T02:47:19Z",
+      "headRef": "codex/ci-matrix-fail-fast",
+      "labels": []
+    },
+    {
+      "number": 1007,
+      "title": "fix(ci): CI适配built-in打包方式",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1007",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-30T01:17:21Z",
+      "updatedAt": "2026-10-30T01:17:21Z",
+      "createdAt": "2026-10-29T11:40:05Z",
+      "headRef": "fix/ci-set-env-checker-contract",
+      "labels": []
+    },
+    {
+      "number": 1002,
+      "title": "pref:[v26.10.0]chunk_gdn_bwd_intra算子A2和A3代际性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1002",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-30T01:49:32Z",
+      "updatedAt": "2026-10-30T01:49:32Z",
+      "createdAt": "2026-10-29T07:04:05Z",
+      "headRef": "v26.10.0",
+      "labels": []
+    },
+    {
       "number": 998,
       "title": "fix(kda): support CANN 9.0 structured validation errors",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/998",
@@ -1838,6 +1898,18 @@
       "updatedAt": "2026-10-29T11:14:21Z",
       "createdAt": "2026-10-29T04:56:58Z",
       "headRef": "fix/issue981-cann900-host-logging",
+      "labels": []
+    },
+    {
+      "number": 994,
+      "title": "perf(A2): optimize chunk_kda_fwd_prepare with six-key BF16 relay",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/994",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-29T12:55:44Z",
+      "updatedAt": "2026-10-29T16:32:39Z",
+      "createdAt": "2026-10-28T07:01:43Z",
+      "headRef": "r26-a2-final",
       "labels": []
     },
     {
