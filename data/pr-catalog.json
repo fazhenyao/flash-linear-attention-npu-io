@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-10-31T11:01:16+08:00",
+  "generatedAt": "2026-10-31T19:20:52+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 616,
   "items": [
+    {
+      "number": 1025,
+      "title": "增加对causal_conv1d_bwd的非法参数校验拦截",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1025",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-10-31T03:28:50Z",
+      "createdAt": "2026-10-31T03:28:40Z",
+      "headRef": "test",
+      "labels": []
+    },
     {
       "number": 1024,
       "title": "fix: 校验 CausalConv1dBwd 输入 dtype 和 activation",
@@ -35,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-30T10:23:44Z",
+      "updatedAt": "2026-10-31T07:39:38Z",
       "createdAt": "2026-10-30T10:21:21Z",
       "headRef": "chunk_fwd_h_a2_test",
       "labels": []
@@ -47,21 +59,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-30T11:02:44Z",
+      "updatedAt": "2026-10-31T06:08:20Z",
       "createdAt": "2026-10-30T09:34:56Z",
       "headRef": "codex/final-chunk-fwd-h-a5",
-      "labels": []
-    },
-    {
-      "number": 1019,
-      "title": "test(atk): 补齐缺失 Ascend C 算子的 ATK 工程",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1019",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-31T02:58:02Z",
-      "createdAt": "2026-10-30T09:29:00Z",
-      "headRef": "tmp/atk-missing-ascendc-20261030",
       "labels": []
     },
     {
@@ -131,21 +131,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T02:16:36Z",
+      "updatedAt": "2026-10-31T06:21:14Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
-      "labels": []
-    },
-    {
-      "number": 1006,
-      "title": "feat(gdn): 向 v26.10.0 同步 A2/A3 反向 Finalize 实现与优化",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1006",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-31T02:40:16Z",
-      "createdAt": "2026-10-29T10:38:30Z",
-      "headRef": "backport/gdn-finalize-a2a3-v26.10.0",
       "labels": []
     },
     {
@@ -155,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-30T06:47:07Z",
+      "updatedAt": "2026-10-31T11:01:49Z",
       "createdAt": "2026-10-29T07:13:24Z",
       "headRef": "chunk_fwd_h_a2",
       "labels": []
@@ -186,12 +174,12 @@
     },
     {
       "number": 997,
-      "title": "perf(recurrent_kda): optimize A5 state recurrence by layout and dtype",
+      "title": "perf: optimize recurrent_kda A5 recurrence and validate A2/A5",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/997",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T02:24:52Z",
+      "updatedAt": "2026-10-31T10:39:59Z",
       "createdAt": "2026-10-29T03:47:42Z",
       "headRef": "codex/recurrent-kda-x8-pr",
       "labels": []
@@ -215,7 +203,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T12:25:38Z",
+      "updatedAt": "2026-10-31T09:43:24Z",
       "createdAt": "2026-10-28T07:05:53Z",
       "headRef": "perf/kda-bwd-v2-dhu-qg-direct",
       "labels": []
@@ -302,18 +290,6 @@
       "updatedAt": "2026-10-27T08:33:46Z",
       "createdAt": "2026-10-27T08:32:48Z",
       "headRef": "1027-blank",
-      "labels": []
-    },
-    {
-      "number": 972,
-      "title": "perf(gdn): 优化 A2/A3 Finalize 并补齐 Host 校验与 ATK 看护",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/972",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-31T02:40:12Z",
-      "createdAt": "2026-10-27T02:26:15Z",
-      "headRef": "perf/gdn-finalize-a2a3-modelcase-20261027",
       "labels": []
     },
     {
@@ -515,7 +491,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-30T16:46:34Z",
+      "updatedAt": "2026-10-31T08:48:42Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -611,19 +587,19 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T01:32:51Z",
+      "updatedAt": "2026-10-31T10:31:58Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
     },
     {
       "number": 866,
-      "title": "feat(examples): GDN/KDA CP 示例，KDA 支持 AllGather/PTP 与 A5",
+      "title": "feat(examples): GDN/KDA 支持 AllGather/PTP 与 packed/zigzag CP",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/866",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-30T14:36:43Z",
+      "updatedAt": "2026-10-31T03:41:10Z",
       "createdAt": "2026-10-10T15:37:09Z",
       "headRef": "examples/gdn-kda-cp",
       "labels": []
@@ -683,7 +659,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T02:34:07Z",
+      "updatedAt": "2026-10-31T08:04:16Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
@@ -1262,18 +1238,6 @@
       "updatedAt": "2026-09-07T15:16:57Z",
       "createdAt": "2026-08-24T14:59:12Z",
       "headRef": "chw_new_cumsum_kkt_solve_tri_simple",
-      "labels": []
-    },
-    {
-      "number": 374,
-      "title": "[Fix] fix causal_conv1d_bwd atk tests",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/374",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-09-21T01:57:53Z",
-      "createdAt": "2026-08-24T07:32:22Z",
-      "headRef": "test",
       "labels": []
     },
     {
@@ -1889,6 +1853,18 @@
       "labels": []
     },
     {
+      "number": 1019,
+      "title": "test(atk): 补齐缺失 Ascend C 算子的 ATK 工程",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1019",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-31T08:17:14Z",
+      "updatedAt": "2026-10-31T08:17:14Z",
+      "createdAt": "2026-10-30T09:29:00Z",
+      "headRef": "tmp/atk-missing-ascendc-20261030",
+      "labels": []
+    },
+    {
       "number": 1015,
       "title": "ci: persist five-stage timing history on A2/A5 runners",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1015",
@@ -1946,6 +1922,18 @@
       "updatedAt": "2026-10-30T01:17:21Z",
       "createdAt": "2026-10-29T11:40:05Z",
       "headRef": "fix/ci-set-env-checker-contract",
+      "labels": []
+    },
+    {
+      "number": 1006,
+      "title": "feat(gdn): 向 v26.10.0 同步 A2/A3 反向 Finalize 实现与优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1006",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-31T07:18:12Z",
+      "updatedAt": "2026-10-31T07:18:12Z",
+      "createdAt": "2026-10-29T10:38:30Z",
+      "headRef": "backport/gdn-finalize-a2a3-v26.10.0",
       "labels": []
     },
     {
@@ -2066,6 +2054,18 @@
       "updatedAt": "2026-10-27T08:28:39Z",
       "createdAt": "2026-10-27T03:23:07Z",
       "headRef": "fix/ci-runner-storage-permissions",
+      "labels": []
+    },
+    {
+      "number": 972,
+      "title": "perf(gdn): 优化 A2/A3 Finalize 并补齐 Host 校验与 ATK 看护",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/972",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-10-31T07:17:49Z",
+      "updatedAt": "2026-10-31T07:17:49Z",
+      "createdAt": "2026-10-27T02:26:15Z",
+      "headRef": "perf/gdn-finalize-a2a3-modelcase-20261027",
       "labels": []
     },
     {
