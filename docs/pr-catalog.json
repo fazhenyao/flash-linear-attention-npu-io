@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-31T19:20:52+08:00",
+  "generatedAt": "2026-11-01T10:56:26+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 616,
@@ -131,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T06:21:14Z",
+      "updatedAt": "2026-10-31T16:11:02Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
       "labels": []
@@ -155,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-30T12:24:17Z",
+      "updatedAt": "2026-10-31T12:29:31Z",
       "createdAt": "2026-10-29T07:03:22Z",
       "headRef": "backport/gdn-a2-forward-v26.10.0-1029",
       "labels": []
@@ -491,7 +491,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T08:48:42Z",
+      "updatedAt": "2026-10-31T17:01:54Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -587,7 +587,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T10:31:58Z",
+      "updatedAt": "2026-10-31T12:17:51Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -659,7 +659,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T08:04:16Z",
+      "updatedAt": "2026-10-31T12:29:18Z",
       "createdAt": "2026-10-09T02:26:30Z",
       "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
