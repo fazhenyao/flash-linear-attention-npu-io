@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-11-01T20:12:29+08:00",
+  "generatedAt": "2026-11-02T11:04:08+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 616,
+  "total": 618,
   "items": [
+    {
+      "number": 1028,
+      "title": "fix(rgdr): support 16-token verify windows",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1028",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-02T02:02:00Z",
+      "createdAt": "2026-11-01T16:14:45Z",
+      "headRef": "fix/rgdr-max-mtp-16-main",
+      "labels": []
+    },
     {
       "number": 1025,
       "title": "增加对causal_conv1d_bwd的非法参数校验拦截",
@@ -131,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-01T06:11:00Z",
+      "updatedAt": "2026-11-02T02:56:37Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
       "labels": []
@@ -143,21 +155,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T11:01:49Z",
+      "updatedAt": "2026-11-01T22:34:17Z",
       "createdAt": "2026-10-29T07:13:24Z",
       "headRef": "chunk_fwd_h_a2",
-      "labels": []
-    },
-    {
-      "number": 1001,
-      "title": "perf(gdn): [v26.10.0] 同步 A2 前向任务局部性、资源复用与流水优化",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1001",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-31T12:29:31Z",
-      "createdAt": "2026-10-29T07:03:22Z",
-      "headRef": "backport/gdn-a2-forward-v26.10.0-1029",
       "labels": []
     },
     {
@@ -179,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T10:39:59Z",
+      "updatedAt": "2026-11-02T01:25:50Z",
       "createdAt": "2026-10-29T03:47:42Z",
       "headRef": "codex/recurrent-kda-x8-pr",
       "labels": []
@@ -491,7 +491,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-01T03:53:37Z",
+      "updatedAt": "2026-11-02T03:01:29Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -587,7 +587,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-01T04:06:15Z",
+      "updatedAt": "2026-11-02T02:56:34Z",
       "createdAt": "2026-10-13T01:32:09Z",
       "headRef": "feat/opp-delta-overlay",
       "labels": []
@@ -650,18 +650,6 @@
       "updatedAt": "2026-10-10T04:20:17Z",
       "createdAt": "2026-10-09T09:07:25Z",
       "headRef": "fix_op_log",
-      "labels": []
-    },
-    {
-      "number": 838,
-      "title": "perf(gdn): 优化 A2 前向任务局部性、资源复用与流水同步",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/838",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-31T12:29:18Z",
-      "createdAt": "2026-10-09T02:26:30Z",
-      "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
     },
     {
@@ -1841,6 +1829,18 @@
       "labels": []
     },
     {
+      "number": 1029,
+      "title": "chunk_kda_bwd_intra 日落标签添加",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1029",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-02T02:23:51Z",
+      "updatedAt": "2026-11-02T02:23:51Z",
+      "createdAt": "2026-11-02T01:59:11Z",
+      "headRef": "LAST",
+      "labels": []
+    },
+    {
       "number": 1022,
       "title": "fix(stable): align KDA wrapper and enforce ABI gates",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1022",
@@ -1958,6 +1958,18 @@
       "updatedAt": "2026-10-30T01:49:32Z",
       "createdAt": "2026-10-29T07:04:05Z",
       "headRef": "v26.10.0",
+      "labels": []
+    },
+    {
+      "number": 1001,
+      "title": "perf(gdn): [v26.10.0] 同步 A2 前向任务局部性、资源复用与流水优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1001",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-02T01:41:27Z",
+      "updatedAt": "2026-11-02T01:41:27Z",
+      "createdAt": "2026-10-29T07:03:22Z",
+      "headRef": "backport/gdn-a2-forward-v26.10.0-1029",
       "labels": []
     },
     {
@@ -2582,6 +2594,18 @@
       "updatedAt": "2026-10-10T01:30:43Z",
       "createdAt": "2026-10-09T02:54:44Z",
       "headRef": "codex/rename-pre-process-bwd-kernel-merged",
+      "labels": []
+    },
+    {
+      "number": 838,
+      "title": "perf(gdn): 优化 A2 前向任务局部性、资源复用与流水同步",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/838",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-02T01:41:11Z",
+      "updatedAt": "2026-11-02T01:41:11Z",
+      "createdAt": "2026-10-09T02:26:30Z",
+      "headRef": "perf/gdn-a2-forward-pipeline-1009",
       "labels": []
     },
     {
