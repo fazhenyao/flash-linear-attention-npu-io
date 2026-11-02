@@ -1,9 +1,81 @@
 {
-  "generatedAt": "2026-11-02T11:04:08+08:00",
+  "generatedAt": "2026-11-02T22:01:27+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 618,
+  "total": 624,
   "items": [
+    {
+      "number": 1037,
+      "title": "docs: 补充镜像安装、Daily 命名与 latest 使用说明",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1037",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-02T12:54:59Z",
+      "createdAt": "2026-11-02T12:54:59Z",
+      "headRef": "docs/mirror-install-20261102",
+      "labels": []
+    },
+    {
+      "number": 1035,
+      "title": "TEST，不进行合入",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1035",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-02T07:48:09Z",
+      "createdAt": "2026-11-02T07:16:50Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 1034,
+      "title": "perf(examples): cache ChunkKDA CPU accuracy references",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1034",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-02T07:10:55Z",
+      "createdAt": "2026-11-02T07:10:49Z",
+      "headRef": "fix/kda-accuracy-golden-cache",
+      "labels": []
+    },
+    {
+      "number": 1033,
+      "title": "feature(recurrent_gdnA5): recurrent GDN 的 A5 功能增强、性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1033",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-02T06:50:54Z",
+      "createdAt": "2026-11-02T06:50:45Z",
+      "headRef": "rgdn_working",
+      "labels": []
+    },
+    {
+      "number": 1032,
+      "title": "fix(ci): 统一 32 核限制并缓存 KDA 精度标杆",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1032",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-02T14:01:14Z",
+      "createdAt": "2026-11-02T06:43:46Z",
+      "headRef": "fix/ci-test-cpu-limit-16",
+      "labels": []
+    },
+    {
+      "number": 1031,
+      "title": "fix(causal_conv1d): 统一 nullBlockId 缺省值并修正 None 转换",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1031",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-02T09:16:43Z",
+      "createdAt": "2026-11-02T06:38:17Z",
+      "headRef": "fix/causal-conv1d-null-block-none",
+      "labels": []
+    },
     {
       "number": 1028,
       "title": "fix(rgdr): support 16-token verify windows",
@@ -11,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-02T02:02:00Z",
+      "updatedAt": "2026-11-02T06:12:20Z",
       "createdAt": "2026-11-01T16:14:45Z",
       "headRef": "fix/rgdr-max-mtp-16-main",
       "labels": []
@@ -83,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-30T06:55:29Z",
+      "updatedAt": "2026-11-02T07:24:13Z",
       "createdAt": "2026-10-30T06:55:19Z",
       "headRef": "gdn_fwd_chunk_32_26.9.1",
       "labels": []
@@ -143,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-02T02:56:37Z",
+      "updatedAt": "2026-11-02T10:40:33Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
       "labels": []
@@ -155,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-01T22:34:17Z",
+      "updatedAt": "2026-11-02T12:34:59Z",
       "createdAt": "2026-10-29T07:13:24Z",
       "headRef": "chunk_fwd_h_a2",
       "labels": []
@@ -179,7 +251,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-02T01:25:50Z",
+      "updatedAt": "2026-11-02T12:34:00Z",
       "createdAt": "2026-10-29T03:47:42Z",
       "headRef": "codex/recurrent-kda-x8-pr",
       "labels": []
@@ -203,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T09:43:24Z",
+      "updatedAt": "2026-11-02T13:55:46Z",
       "createdAt": "2026-10-28T07:05:53Z",
       "headRef": "perf/kda-bwd-v2-dhu-qg-direct",
       "labels": []
@@ -371,7 +443,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-30T08:32:14Z",
+      "updatedAt": "2026-11-02T07:24:14Z",
       "createdAt": "2026-10-22T03:00:18Z",
       "headRef": "gdn_fwd_chunk_32",
       "labels": []
@@ -491,7 +563,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-02T03:01:29Z",
+      "updatedAt": "2026-11-02T08:46:15Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -578,18 +650,6 @@
       "updatedAt": "2026-10-13T07:21:39Z",
       "createdAt": "2026-10-13T07:21:38Z",
       "headRef": "fix/gdn-fwd-fp32-gate-2691",
-      "labels": []
-    },
-    {
-      "number": 878,
-      "title": "feat: add validated OPP overlays and retire ctypes/legacy backends",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/878",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-02T02:56:34Z",
-      "createdAt": "2026-10-13T01:32:09Z",
-      "headRef": "feat/opp-delta-overlay",
       "labels": []
     },
     {
@@ -2438,6 +2498,18 @@
       "updatedAt": "2026-10-14T03:30:40Z",
       "createdAt": "2026-10-13T01:50:46Z",
       "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 878,
+      "title": "feat: add validated OPP overlays and retire ctypes/legacy backends",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/878",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-02T07:06:06Z",
+      "updatedAt": "2026-11-02T07:06:06Z",
+      "createdAt": "2026-10-13T01:32:09Z",
+      "headRef": "feat/opp-delta-overlay",
       "labels": []
     },
     {
