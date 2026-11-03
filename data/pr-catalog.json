@@ -1,9 +1,105 @@
 {
-  "generatedAt": "2026-11-03T12:22:23+08:00",
+  "generatedAt": "2026-11-03T21:09:35+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 627,
+  "total": 634,
   "items": [
+    {
+      "number": 1053,
+      "title": "docs: 增加 CATLASS C++ / DSL 对照编译实验与实测 IR",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1053",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-03T11:57:26Z",
+      "createdAt": "2026-11-03T11:57:20Z",
+      "headRef": "docs/catlass-cpp-dsl-walkthrough-20261103",
+      "labels": []
+    },
+    {
+      "number": 1052,
+      "title": "fix(kda): keep safe-gate scores independent of future gates",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1052",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-03T11:36:20Z",
+      "createdAt": "2026-11-03T11:32:25Z",
+      "headRef": "fix/kda-safe-gate-causality",
+      "labels": []
+    },
+    {
+      "number": 1049,
+      "title": "fix: validate previous KDA acceptance against the state window",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1049",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-03T11:00:42Z",
+      "createdAt": "2026-11-03T09:01:30Z",
+      "headRef": "fix-recurrent-kda-previous-acceptance",
+      "labels": []
+    },
+    {
+      "number": 1048,
+      "title": "docs: 添加 Overlay 增量安装示例与操作指南",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1048",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-03T09:28:55Z",
+      "createdAt": "2026-11-03T08:36:41Z",
+      "headRef": "docs/overlay-quickstart-20261103",
+      "labels": []
+    },
+    {
+      "number": 1047,
+      "title": "fix: 修复 A5 O Stage1 越界与 Prepare 尾组 W/U 旧数据写回",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1047",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-03T08:16:59Z",
+      "createdAt": "2026-11-03T08:16:36Z",
+      "headRef": "fix/issue965-a5-gdn-bounds-drain",
+      "labels": []
+    },
+    {
+      "number": 1046,
+      "title": "ci: 独立触发名单与 CI 修改确认，执行 PR 自带 CI",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1046",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-03T10:52:33Z",
+      "createdAt": "2026-11-03T07:30:10Z",
+      "headRef": "codex/ci-authorization-policy",
+      "labels": []
+    },
+    {
+      "number": 1045,
+      "title": "perf: optimize causal_conv1d_bwd on Ascend 950 (2D split + VF fast path)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1045",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-03T07:44:22Z",
+      "createdAt": "2026-11-03T07:30:05Z",
+      "headRef": "causal_conv1d_bwd",
+      "labels": []
+    },
+    {
+      "number": 1044,
+      "title": "fix(chunk_fwd_h): seqChunkCounts attr 改 executor 托管，修复 host 侧 aclIntArray 泄漏",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1044",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-03T12:34:28Z",
+      "createdAt": "2026-11-03T07:27:26Z",
+      "headRef": "chunk_fwd_h_a2",
+      "labels": []
+    },
     {
       "number": 1043,
       "title": "feat(kda): 扩展V2空序列支持并收敛融合前向依赖",
@@ -11,19 +107,19 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T04:17:37Z",
+      "updatedAt": "2026-11-03T06:19:58Z",
       "createdAt": "2026-11-03T03:49:12Z",
       "headRef": "codex/kda-v2-v1-unify",
       "labels": []
     },
     {
       "number": 1041,
-      "title": "ci: 统一 A2/A5 流程并支持按差异增量编译与 ATK 验证",
+      "title": "ci: 统一 A2/A5 增量编译、ATK 验证与 Daily 底包缓存",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1041",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T03:57:13Z",
+      "updatedAt": "2026-11-03T07:43:33Z",
       "createdAt": "2026-11-03T03:07:36Z",
       "headRef": "codex/ci-unify-source-and-policy",
       "labels": []
@@ -35,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T01:55:01Z",
+      "updatedAt": "2026-11-03T06:22:36Z",
       "createdAt": "2026-11-03T01:54:51Z",
       "headRef": "codex/recurrent-gdn-core",
       "labels": []
@@ -47,32 +143,8 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T03:27:08Z",
+      "updatedAt": "2026-11-03T12:51:11Z",
       "createdAt": "2026-11-03T01:41:14Z",
-      "headRef": "main",
-      "labels": []
-    },
-    {
-      "number": 1037,
-      "title": "docs: 补充镜像安装、Daily 命名与 latest 使用说明",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1037",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-03T02:15:28Z",
-      "createdAt": "2026-11-02T12:54:59Z",
-      "headRef": "docs/mirror-install-20261102",
-      "labels": []
-    },
-    {
-      "number": 1035,
-      "title": "TEST，不进行合入",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1035",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-02T07:48:09Z",
-      "createdAt": "2026-11-02T07:16:50Z",
       "headRef": "main",
       "labels": []
     },
@@ -95,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-02T06:50:54Z",
+      "updatedAt": "2026-11-03T06:22:38Z",
       "createdAt": "2026-11-02T06:50:45Z",
       "headRef": "rgdn_working",
       "labels": []
@@ -162,12 +234,12 @@
     },
     {
       "number": 1023,
-      "title": "fix(chunk_kda_fwd_prepare): 按 arch92 独立实现适配 A6 1:1 核比",
+      "title": "fix(chunk_kda_fwd_prepare): arch92 独立实现并收敛 3-head 去 wave 适配 A6 1:1 核比",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1023",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T01:30:36Z",
+      "updatedAt": "2026-11-03T11:00:12Z",
       "createdAt": "2026-10-31T01:30:31Z",
       "headRef": "A6-dev-kda",
       "labels": []
@@ -215,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T02:33:01Z",
+      "updatedAt": "2026-11-03T11:27:10Z",
       "createdAt": "2026-10-30T06:46:47Z",
       "headRef": "chunk_fwd_h_v2610",
       "labels": []
@@ -263,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T03:48:43Z",
+      "updatedAt": "2026-11-03T05:11:23Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
       "labels": []
@@ -599,7 +671,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T03:24:56Z",
+      "updatedAt": "2026-11-03T12:40:50Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -1859,7 +1931,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-07-04T10:02:02Z",
+      "updatedAt": "2026-11-03T07:33:35Z",
       "createdAt": "2026-06-30T09:18:47Z",
       "headRef": "test_da_double",
       "labels": []
@@ -1910,6 +1982,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 1037,
+      "title": "docs: 补充镜像安装、Daily 命名与 latest 使用说明",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1037",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-03T08:32:08Z",
+      "updatedAt": "2026-11-03T08:32:09Z",
+      "createdAt": "2026-11-02T12:54:59Z",
+      "headRef": "docs/mirror-install-20261102",
       "labels": []
     },
     {
