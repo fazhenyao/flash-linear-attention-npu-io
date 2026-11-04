@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-11-03T21:09:35+08:00",
+  "generatedAt": "2026-11-04T11:40:54+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 634,
+  "total": 637,
   "items": [
+    {
+      "number": 1063,
+      "title": "fix(atk): 修正 KDA prepare 的 Stable 调用并补充使用说明",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1063",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-04T03:13:55Z",
+      "createdAt": "2026-11-04T03:13:53Z",
+      "headRef": "fix/atk-kda-prepare-stable-entry",
+      "labels": []
+    },
+    {
+      "number": 1062,
+      "title": "fix(kda): 统一 chunk_kda_bwd_finalize 架构分派",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1062",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-04T02:59:08Z",
+      "createdAt": "2026-11-04T02:57:27Z",
+      "headRef": "fix/issue1060-kda-finalize-arch",
+      "labels": []
+    },
+    {
+      "number": 1061,
+      "title": "backport(kda): sync A2 Prepare optimization and diagnostics to v26.10.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1061",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-04T03:07:31Z",
+      "createdAt": "2026-11-03T16:57:09Z",
+      "headRef": "backport/a2-prepare-v26.10.0-20261104",
+      "labels": []
+    },
     {
       "number": 1053,
       "title": "docs: 增加 CATLASS C++ / DSL 对照编译实验与实测 IR",
@@ -47,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T09:28:55Z",
+      "updatedAt": "2026-11-04T02:07:32Z",
       "createdAt": "2026-11-03T08:36:41Z",
       "headRef": "docs/overlay-quickstart-20261103",
       "labels": []
@@ -71,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T10:52:33Z",
+      "updatedAt": "2026-11-04T02:43:40Z",
       "createdAt": "2026-11-03T07:30:10Z",
       "headRef": "codex/ci-authorization-policy",
       "labels": []
@@ -86,18 +122,6 @@
       "updatedAt": "2026-11-03T07:44:22Z",
       "createdAt": "2026-11-03T07:30:05Z",
       "headRef": "causal_conv1d_bwd",
-      "labels": []
-    },
-    {
-      "number": 1044,
-      "title": "fix(chunk_fwd_h): seqChunkCounts attr 改 executor 托管，修复 host 侧 aclIntArray 泄漏",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1044",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-03T12:34:28Z",
-      "createdAt": "2026-11-03T07:27:26Z",
-      "headRef": "chunk_fwd_h_a2",
       "labels": []
     },
     {
@@ -143,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T12:51:11Z",
+      "updatedAt": "2026-11-04T03:08:12Z",
       "createdAt": "2026-11-03T01:41:14Z",
       "headRef": "main",
       "labels": []
@@ -182,18 +206,6 @@
       "updatedAt": "2026-11-02T15:53:59Z",
       "createdAt": "2026-11-02T06:43:46Z",
       "headRef": "fix/ci-test-cpu-limit-16",
-      "labels": []
-    },
-    {
-      "number": 1031,
-      "title": "fix(causal_conv1d): 统一 nullBlockId 缺省值并修正 None 转换",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1031",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-03T03:19:13Z",
-      "createdAt": "2026-11-02T06:38:17Z",
-      "headRef": "fix/causal-conv1d-null-block-none",
       "labels": []
     },
     {
@@ -239,7 +251,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T11:00:12Z",
+      "updatedAt": "2026-11-04T03:00:00Z",
       "createdAt": "2026-10-31T01:30:31Z",
       "headRef": "A6-dev-kda",
       "labels": []
@@ -287,7 +299,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T11:27:10Z",
+      "updatedAt": "2026-11-03T13:14:10Z",
       "createdAt": "2026-10-30T06:46:47Z",
       "headRef": "chunk_fwd_h_v2610",
       "labels": []
@@ -318,12 +330,12 @@
     },
     {
       "number": 1009,
-      "title": "perf(kda): skip redundant A2 Prepare valid-row initialization",
+      "title": "perf(kda): reduce Prepare initialization and improve error reporting",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1009",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-29T18:59:16Z",
+      "updatedAt": "2026-11-04T03:04:12Z",
       "createdAt": "2026-10-29T16:14:22Z",
       "headRef": "perf/a2-prepare-padding-init-v34",
       "labels": []
@@ -335,7 +347,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T05:11:23Z",
+      "updatedAt": "2026-11-04T01:22:52Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
       "labels": []
@@ -359,7 +371,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-02T20:30:23Z",
+      "updatedAt": "2026-11-03T13:53:23Z",
       "createdAt": "2026-10-29T03:47:42Z",
       "headRef": "codex/recurrent-kda-x8-pr",
       "labels": []
@@ -551,7 +563,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-02T07:24:14Z",
+      "updatedAt": "2026-11-03T13:42:09Z",
       "createdAt": "2026-10-22T03:00:18Z",
       "headRef": "gdn_fwd_chunk_32",
       "labels": []
@@ -671,7 +683,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T12:40:50Z",
+      "updatedAt": "2026-11-04T02:10:42Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -1985,6 +1997,18 @@
       "labels": []
     },
     {
+      "number": 1044,
+      "title": "fix(chunk_fwd_h): seqChunkCounts attr 改 executor 托管，修复 host 侧 aclIntArray 泄漏",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1044",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-04T01:44:18Z",
+      "updatedAt": "2026-11-04T01:44:18Z",
+      "createdAt": "2026-11-03T07:27:26Z",
+      "headRef": "chunk_fwd_h_a2",
+      "labels": []
+    },
+    {
       "number": 1037,
       "title": "docs: 补充镜像安装、Daily 命名与 latest 使用说明",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1037",
@@ -1994,6 +2018,18 @@
       "updatedAt": "2026-11-03T08:32:09Z",
       "createdAt": "2026-11-02T12:54:59Z",
       "headRef": "docs/mirror-install-20261102",
+      "labels": []
+    },
+    {
+      "number": 1031,
+      "title": "fix(causal_conv1d): 统一 nullBlockId 缺省值并修正 None 转换",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1031",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-04T02:18:29Z",
+      "updatedAt": "2026-11-04T02:19:03Z",
+      "createdAt": "2026-11-02T06:38:17Z",
+      "headRef": "fix/causal-conv1d-null-block-none",
       "labels": []
     },
     {
