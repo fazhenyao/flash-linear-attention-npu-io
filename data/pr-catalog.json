@@ -1,9 +1,69 @@
 {
-  "generatedAt": "2026-11-04T11:40:54+08:00",
+  "generatedAt": "2026-11-04T21:24:37+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 637,
+  "total": 643,
   "items": [
+    {
+      "number": 1072,
+      "title": "feat(gdn): 新增 GDN fwd Prepare 算子的 A6 实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1072",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-04T11:06:36Z",
+      "createdAt": "2026-11-04T11:06:22Z",
+      "headRef": "A6-dev-chunk-gdn-fwd-prepare",
+      "labels": []
+    },
+    {
+      "number": 1071,
+      "title": "chunk_gated_delta_rule_bwd融合算子中使用ChunkGdnBwdIntra",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1071",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-04T12:26:52Z",
+      "createdAt": "2026-11-04T10:52:10Z",
+      "headRef": "v26.10.0",
+      "labels": []
+    },
+    {
+      "number": 1069,
+      "title": "fix(atk): 声明通用后端限制并修正 KDA prepare 调用",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1069",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-04T09:49:17Z",
+      "createdAt": "2026-11-04T06:51:48Z",
+      "headRef": "fix/atk-kda-dual-backend-a2-a5",
+      "labels": []
+    },
+    {
+      "number": 1068,
+      "title": "feat(gdn): A5 支持 GVA 比例 1~16（chunk_fwd_o / prepare / 融合算子）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1068",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-04T06:33:49Z",
+      "createdAt": "2026-11-04T06:33:39Z",
+      "headRef": "gdn",
+      "labels": []
+    },
+    {
+      "number": 1067,
+      "title": "perf(kda): use existing Cube GEMMs for BF16 Post-WU tails",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1067",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-04T13:02:31Z",
+      "createdAt": "2026-11-04T04:53:09Z",
+      "headRef": "perf/kda-bf16-tail-cube",
+      "labels": []
+    },
     {
       "number": 1063,
       "title": "fix(atk): 修正 KDA prepare 的 Stable 调用并补充使用说明",
@@ -102,12 +162,12 @@
     },
     {
       "number": 1046,
-      "title": "ci: 独立触发名单与 CI 修改确认，执行 PR 自带 CI",
+      "title": "ci: 独立触发名单、Admin 作者 CI 修改与 A5 ARM64 支持",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1046",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T02:43:40Z",
+      "updatedAt": "2026-11-04T12:27:15Z",
       "createdAt": "2026-11-03T07:30:10Z",
       "headRef": "codex/ci-authorization-policy",
       "labels": []
@@ -155,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T06:22:36Z",
+      "updatedAt": "2026-11-04T06:43:25Z",
       "createdAt": "2026-11-03T01:54:51Z",
       "headRef": "codex/recurrent-gdn-core",
       "labels": []
@@ -167,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T03:08:12Z",
+      "updatedAt": "2026-11-04T10:20:56Z",
       "createdAt": "2026-11-03T01:41:14Z",
       "headRef": "main",
       "labels": []
@@ -191,7 +251,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T06:22:38Z",
+      "updatedAt": "2026-11-04T05:22:48Z",
       "createdAt": "2026-11-02T06:50:45Z",
       "headRef": "rgdn_working",
       "labels": []
@@ -299,7 +359,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T13:14:10Z",
+      "updatedAt": "2026-11-04T11:56:44Z",
       "createdAt": "2026-10-30T06:46:47Z",
       "headRef": "chunk_fwd_h_v2610",
       "labels": []
@@ -386,18 +446,6 @@
       "updatedAt": "2026-10-28T11:10:50Z",
       "createdAt": "2026-10-28T11:10:39Z",
       "headRef": "kda_ascendc_opt",
-      "labels": []
-    },
-    {
-      "number": 995,
-      "title": "perf(kda): Dhu pre-gated qg直接装载",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/995",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-02T13:55:46Z",
-      "createdAt": "2026-10-28T07:05:53Z",
-      "headRef": "perf/kda-bwd-v2-dhu-qg-direct",
       "labels": []
     },
     {
@@ -563,7 +611,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T13:42:09Z",
+      "updatedAt": "2026-11-04T07:44:38Z",
       "createdAt": "2026-10-22T03:00:18Z",
       "headRef": "gdn_fwd_chunk_32",
       "labels": []
@@ -683,7 +731,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T02:10:42Z",
+      "updatedAt": "2026-11-04T11:19:46Z",
       "createdAt": "2026-10-16T07:32:52Z",
       "headRef": "perf/kda-bwd-v2-finalize-x2unroll",
       "labels": []
@@ -851,7 +899,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-30T02:03:47Z",
+      "updatedAt": "2026-11-04T08:32:26Z",
       "createdAt": "2026-10-07T08:36:25Z",
       "headRef": "codex/cannbot-operator-workflow",
       "labels": []
@@ -911,7 +959,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-09-29T11:51:33Z",
+      "updatedAt": "2026-11-04T10:39:12Z",
       "createdAt": "2026-09-27T05:58:17Z",
       "headRef": "fix/install-opp-merge-load-priority",
       "labels": []
@@ -1997,6 +2045,18 @@
       "labels": []
     },
     {
+      "number": 1070,
+      "title": "add:   RecurrentGDN A2/A3 V2 kernel",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1070",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-04T11:08:39Z",
+      "updatedAt": "2026-11-04T11:21:58Z",
+      "createdAt": "2026-11-04T07:00:51Z",
+      "headRef": "recurrent-gdn-draft",
+      "labels": []
+    },
+    {
       "number": 1044,
       "title": "fix(chunk_fwd_h): seqChunkCounts attr 改 executor 托管，修复 host 侧 aclIntArray 泄漏",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1044",
@@ -2198,6 +2258,18 @@
       "updatedAt": "2026-10-29T11:14:21Z",
       "createdAt": "2026-10-29T04:56:58Z",
       "headRef": "fix/issue981-cann900-host-logging",
+      "labels": []
+    },
+    {
+      "number": 995,
+      "title": "perf(kda): Dhu pre-gated qg直接装载",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/995",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-04T07:49:03Z",
+      "updatedAt": "2026-11-04T07:49:04Z",
+      "createdAt": "2026-10-28T07:05:53Z",
+      "headRef": "perf/kda-bwd-v2-dhu-qg-direct",
       "labels": []
     },
     {
