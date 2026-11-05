@@ -1,43 +1,115 @@
 {
-  "generatedAt": "2026-11-05T11:59:21+08:00",
+  "generatedAt": "2026-11-05T21:38:50+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 649,
+  "total": 656,
   "items": [
     {
-      "number": 1079,
-      "title": "fix(ci): 统一 A2/A5 源码获取并离线校验固定版本",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1079",
+      "number": 1089,
+      "title": "ci: run Admin PR workflow from immutable merge tag",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1089",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T03:29:35Z",
-      "createdAt": "2026-11-05T03:25:06Z",
-      "headRef": "codex/ci-source-network-fallback",
+      "updatedAt": "2026-11-05T13:13:24Z",
+      "createdAt": "2026-11-05T13:06:22Z",
+      "headRef": "codex/ci-admin-workflow-tag",
       "labels": []
     },
     {
-      "number": 1078,
-      "title": "Performance improvement of slove_tri",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1078",
+      "number": 1088,
+      "title": "blank",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1088",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T03:44:06Z",
-      "createdAt": "2026-11-05T02:39:54Z",
+      "updatedAt": "2026-11-05T13:25:44Z",
+      "createdAt": "2026-11-05T12:54:24Z",
+      "headRef": "1105-blank",
+      "labels": []
+    },
+    {
+      "number": 1087,
+      "title": "fix(chunk_fwd_h): gated vnew epilogue 零计数 DataCopy 加守卫，修复末段余 1 形态非法读写",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1087",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-05T13:20:46Z",
+      "createdAt": "2026-11-05T12:29:19Z",
+      "headRef": "chunk_fwd_h_a2",
+      "labels": []
+    },
+    {
+      "number": 1085,
+      "title": "perf:Performance improvement of slove_tri",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1085",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-05T09:40:07Z",
+      "createdAt": "2026-11-05T09:12:11Z",
       "headRef": "main",
       "labels": []
     },
     {
-      "number": 1077,
-      "title": "fix: 统一 SoC 大小写并修复 A5 构建与预检",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1077",
+      "number": 1083,
+      "title": "feat(recurrent_gdn): 新增并优化 A5 RecurrentGDN V2 实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1083",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T03:23:15Z",
-      "createdAt": "2026-11-05T02:09:48Z",
-      "headRef": "fix/issue-1050-soc-case",
+      "updatedAt": "2026-11-05T07:47:47Z",
+      "createdAt": "2026-11-05T07:47:45Z",
+      "headRef": "codex/recurrent-gdn-v2-a5",
+      "labels": []
+    },
+    {
+      "number": 1082,
+      "title": "fix(v26.10.0): 修复 A5 O 越界与 Prepare 尾组旧数据写回",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1082",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-05T11:53:50Z",
+      "createdAt": "2026-11-05T07:09:48Z",
+      "headRef": "fix/issue965-v26.10.0",
+      "labels": []
+    },
+    {
+      "number": 1081,
+      "title": "fix(v26.9.1): 修复 A5 O 越界与 Prepare 尾组旧数据写回",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1081",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-05T10:41:43Z",
+      "createdAt": "2026-11-05T07:09:44Z",
+      "headRef": "fix/issue965-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 1080,
+      "title": "fix(main): 修复 A5 O 越界与 Prepare 尾组旧数据写回",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1080",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-05T09:55:37Z",
+      "createdAt": "2026-11-05T07:09:41Z",
+      "headRef": "fix/issue965-main-kernel-only",
+      "labels": []
+    },
+    {
+      "number": 1079,
+      "title": "fix(ci): 统一 A2/A5 源码获取与 PR workflow 分发，精简重复检查",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1079",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-05T08:15:39Z",
+      "createdAt": "2026-11-05T03:25:06Z",
+      "headRef": "codex/ci-source-network-fallback",
       "labels": []
     },
     {
@@ -71,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T18:25:24Z",
+      "updatedAt": "2026-11-05T12:56:27Z",
       "createdAt": "2026-11-04T13:57:53Z",
       "headRef": "bugfix_a3_recurrent_kda",
       "labels": []
@@ -83,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T02:58:43Z",
+      "updatedAt": "2026-11-05T13:24:18Z",
       "createdAt": "2026-11-04T11:06:22Z",
       "headRef": "A6-dev-chunk-gdn-fwd-prepare",
       "labels": []
@@ -95,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T12:26:52Z",
+      "updatedAt": "2026-11-05T12:13:57Z",
       "createdAt": "2026-11-04T10:52:10Z",
       "headRef": "v26.10.0",
       "labels": []
@@ -107,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T02:08:04Z",
+      "updatedAt": "2026-11-05T11:50:27Z",
       "createdAt": "2026-11-04T06:51:48Z",
       "headRef": "fix/atk-kda-dual-backend-a2-a5",
       "labels": []
@@ -119,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T06:33:49Z",
+      "updatedAt": "2026-11-05T06:13:19Z",
       "createdAt": "2026-11-04T06:33:39Z",
       "headRef": "gdn",
       "labels": []
@@ -131,7 +203,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T13:02:31Z",
+      "updatedAt": "2026-11-05T11:45:15Z",
       "createdAt": "2026-11-04T04:53:09Z",
       "headRef": "perf/kda-bf16-tail-cube",
       "labels": []
@@ -221,18 +293,6 @@
       "labels": []
     },
     {
-      "number": 1047,
-      "title": "fix: 修复 A5 O Stage1 越界与 Prepare 尾组 W/U 旧数据写回",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1047",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-03T08:16:59Z",
-      "createdAt": "2026-11-03T08:16:36Z",
-      "headRef": "fix/issue965-a5-gdn-bounds-drain",
-      "labels": []
-    },
-    {
       "number": 1045,
       "title": "perf: optimize causal_conv1d_bwd on Ascend 950 (2D split + VF fast path)",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1045",
@@ -281,18 +341,6 @@
       "labels": []
     },
     {
-      "number": 1039,
-      "title": "merge_fwd_bwd_kernel和chunk_kda_bwd_recompute添加README和文档",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1039",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-05T03:41:43Z",
-      "createdAt": "2026-11-03T01:41:14Z",
-      "headRef": "main",
-      "labels": []
-    },
-    {
       "number": 1034,
       "title": "perf(examples): cache ChunkKDA CPU accuracy references",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1034",
@@ -311,7 +359,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T03:37:59Z",
+      "updatedAt": "2026-11-05T13:23:20Z",
       "createdAt": "2026-11-02T06:50:45Z",
       "headRef": "rgdn_working",
       "labels": []
@@ -347,7 +395,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-31T03:28:50Z",
+      "updatedAt": "2026-11-05T07:29:48Z",
       "createdAt": "2026-10-31T03:28:40Z",
       "headRef": "test",
       "labels": []
@@ -371,7 +419,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T01:52:06Z",
+      "updatedAt": "2026-11-05T10:12:06Z",
       "createdAt": "2026-10-31T01:30:31Z",
       "headRef": "A6-dev-kda",
       "labels": []
@@ -419,7 +467,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T11:56:44Z",
+      "updatedAt": "2026-11-05T13:38:19Z",
       "createdAt": "2026-10-30T06:46:47Z",
       "headRef": "chunk_fwd_h_v2610",
       "labels": []
@@ -467,7 +515,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T01:22:52Z",
+      "updatedAt": "2026-11-05T12:53:06Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
       "labels": []
@@ -2093,6 +2141,30 @@
       "labels": []
     },
     {
+      "number": 1084,
+      "title": "fix(ci): 统一A2 A5代码拉取过程，容忍 GitHub 连接失败",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1084",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-05T12:46:06Z",
+      "updatedAt": "2026-11-05T13:20:05Z",
+      "createdAt": "2026-11-05T08:38:35Z",
+      "headRef": "codex/ci-device-offline-validation",
+      "labels": []
+    },
+    {
+      "number": 1077,
+      "title": "fix: 统一 SoC 大小写并修复 A5 构建与预检",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1077",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-05T09:49:59Z",
+      "updatedAt": "2026-11-05T09:51:06Z",
+      "createdAt": "2026-11-05T02:09:48Z",
+      "headRef": "fix/issue-1050-soc-case",
+      "labels": []
+    },
+    {
       "number": 1070,
       "title": "add:   RecurrentGDN A2/A3 V2 kernel",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1070",
@@ -2126,6 +2198,18 @@
       "updatedAt": "2026-11-04T01:44:18Z",
       "createdAt": "2026-11-03T07:27:26Z",
       "headRef": "chunk_fwd_h_a2",
+      "labels": []
+    },
+    {
+      "number": 1039,
+      "title": "merge_fwd_bwd_kernel和chunk_kda_bwd_recompute添加README和文档",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1039",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-05T06:08:48Z",
+      "updatedAt": "2026-11-05T06:08:48Z",
+      "createdAt": "2026-11-03T01:41:14Z",
+      "headRef": "main",
       "labels": []
     },
     {
