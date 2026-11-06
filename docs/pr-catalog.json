@@ -1,9 +1,93 @@
 {
-  "generatedAt": "2026-11-05T21:38:50+08:00",
+  "generatedAt": "2026-11-06T11:57:43+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 656,
+  "total": 664,
   "items": [
+    {
+      "number": 1097,
+      "title": "feat(experimental): 独立构建与装载并接入 RWKV8",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1097",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-06T03:45:51Z",
+      "createdAt": "2026-11-06T03:21:27Z",
+      "headRef": "feat/experimental-stable-abi",
+      "labels": []
+    },
+    {
+      "number": 1096,
+      "title": "perf(recurrent_kda): add class-based A5 state recurrence engine",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1096",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-06T02:55:19Z",
+      "createdAt": "2026-11-06T02:55:18Z",
+      "headRef": "codex/recurrent-kda-stand-pr-submit",
+      "labels": []
+    },
+    {
+      "number": 1095,
+      "title": "fix: reject safe_gate=false in A2/A3 KDA backward",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1095",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-05T15:17:06Z",
+      "createdAt": "2026-11-05T15:17:05Z",
+      "headRef": "fix/1057-kda-bwd-safe-gate",
+      "labels": []
+    },
+    {
+      "number": 1094,
+      "title": "fix(ci): Admin PR 使用自身 ci.yml 和 .github 流程",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1094",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-05T15:04:18Z",
+      "createdAt": "2026-11-05T15:00:57Z",
+      "headRef": "codex/admin-pr-workflow-source",
+      "labels": []
+    },
+    {
+      "number": 1093,
+      "title": "[Feature][26.10.0]: 【推理】GDN 正向融合算子支持 chunk_size 32 性能优化 ",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1093",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-06T03:17:35Z",
+      "createdAt": "2026-11-05T14:43:04Z",
+      "headRef": "gdn_fwd_chunk_32_26.10.0",
+      "labels": []
+    },
+    {
+      "number": 1092,
+      "title": "fix(ci): allow target branch advances during NPU CI",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1092",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-05T14:24:59Z",
+      "createdAt": "2026-11-05T14:24:58Z",
+      "headRef": "codex/allow-base-advance",
+      "labels": []
+    },
+    {
+      "number": 1091,
+      "title": "chore: verify NPU CI after target branch advance",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1091",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-05T15:23:33Z",
+      "createdAt": "2026-11-05T14:12:03Z",
+      "headRef": "codex/online-ci-base-advance-test",
+      "labels": []
+    },
     {
       "number": 1089,
       "title": "ci: run Admin PR workflow from immutable merge tag",
@@ -23,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T13:25:44Z",
+      "updatedAt": "2026-11-05T13:58:41Z",
       "createdAt": "2026-11-05T12:54:24Z",
       "headRef": "1105-blank",
       "labels": []
@@ -35,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T13:20:46Z",
+      "updatedAt": "2026-11-06T01:34:55Z",
       "createdAt": "2026-11-05T12:29:19Z",
       "headRef": "chunk_fwd_h_a2",
       "labels": []
@@ -47,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T09:40:07Z",
+      "updatedAt": "2026-11-06T03:55:45Z",
       "createdAt": "2026-11-05T09:12:11Z",
       "headRef": "main",
       "labels": []
@@ -143,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T12:56:27Z",
+      "updatedAt": "2026-11-06T01:48:19Z",
       "createdAt": "2026-11-04T13:57:53Z",
       "headRef": "bugfix_a3_recurrent_kda",
       "labels": []
@@ -155,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T13:24:18Z",
+      "updatedAt": "2026-11-06T03:40:50Z",
       "createdAt": "2026-11-04T11:06:22Z",
       "headRef": "A6-dev-chunk-gdn-fwd-prepare",
       "labels": []
@@ -170,18 +254,6 @@
       "updatedAt": "2026-11-05T12:13:57Z",
       "createdAt": "2026-11-04T10:52:10Z",
       "headRef": "v26.10.0",
-      "labels": []
-    },
-    {
-      "number": 1069,
-      "title": "fix(atk): 声明通用后端限制并修正 KDA prepare 调用",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1069",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-05T11:50:27Z",
-      "createdAt": "2026-11-04T06:51:48Z",
-      "headRef": "fix/atk-kda-dual-backend-a2-a5",
       "labels": []
     },
     {
@@ -353,18 +425,6 @@
       "labels": []
     },
     {
-      "number": 1033,
-      "title": "feature(recurrent_gdnA5): recurrent GDN 的 A5 功能增强、性能优化",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1033",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-05T13:23:20Z",
-      "createdAt": "2026-11-02T06:50:45Z",
-      "headRef": "rgdn_working",
-      "labels": []
-    },
-    {
       "number": 1032,
       "title": "fix(ci): 统一 32 核限制并缓存 KDA 精度标杆",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1032",
@@ -467,7 +527,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T13:38:19Z",
+      "updatedAt": "2026-11-05T15:42:58Z",
       "createdAt": "2026-10-30T06:46:47Z",
       "headRef": "chunk_fwd_h_v2610",
       "labels": []
@@ -719,7 +779,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T14:52:02Z",
+      "updatedAt": "2026-11-06T03:17:05Z",
       "createdAt": "2026-10-22T03:00:18Z",
       "headRef": "gdn_fwd_chunk_32",
       "labels": []
@@ -2141,6 +2201,18 @@
       "labels": []
     },
     {
+      "number": 1090,
+      "title": "fix(ci): allow target branch advances during NPU CI",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1090",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-05T14:06:15Z",
+      "updatedAt": "2026-11-05T14:06:15Z",
+      "createdAt": "2026-11-05T13:55:10Z",
+      "headRef": "codex/allow-base-advance",
+      "labels": []
+    },
+    {
       "number": 1084,
       "title": "fix(ci): 统一A2 A5代码拉取过程，容忍 GitHub 连接失败",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1084",
@@ -2174,6 +2246,18 @@
       "updatedAt": "2026-11-04T11:21:58Z",
       "createdAt": "2026-11-04T07:00:51Z",
       "headRef": "recurrent-gdn-draft",
+      "labels": []
+    },
+    {
+      "number": 1069,
+      "title": "fix(atk): 声明通用后端限制并修正 KDA prepare 调用",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1069",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-06T02:15:53Z",
+      "updatedAt": "2026-11-06T02:15:54Z",
+      "createdAt": "2026-11-04T06:51:48Z",
+      "headRef": "fix/atk-kda-dual-backend-a2-a5",
       "labels": []
     },
     {
@@ -2222,6 +2306,18 @@
       "updatedAt": "2026-11-03T08:32:09Z",
       "createdAt": "2026-11-02T12:54:59Z",
       "headRef": "docs/mirror-install-20261102",
+      "labels": []
+    },
+    {
+      "number": 1033,
+      "title": "feature(recurrent_gdnA5): recurrent GDN 的 A5 功能增强、性能优化",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1033",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-05T14:26:25Z",
+      "updatedAt": "2026-11-05T14:26:25Z",
+      "createdAt": "2026-11-02T06:50:45Z",
+      "headRef": "rgdn_working",
       "labels": []
     },
     {
