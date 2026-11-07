@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-11-07T11:32:25+08:00",
+  "generatedAt": "2026-11-07T20:00:29+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 678,
+  "total": 679,
   "items": [
+    {
+      "number": 1115,
+      "title": "ci: simplify package builds to local runner artifacts",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1115",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-07T08:49:37Z",
+      "createdAt": "2026-11-07T07:22:48Z",
+      "headRef": "codex/package-local-build",
+      "labels": []
+    },
     {
       "number": 1114,
       "title": "ci: validate automatic partial builds for two operators",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-06T14:41:56Z",
+      "updatedAt": "2026-11-07T07:53:43Z",
       "createdAt": "2026-11-06T10:21:39Z",
       "headRef": "codex/ci-partial-build-online-validation",
       "labels": []
@@ -323,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-06T13:52:51Z",
+      "updatedAt": "2026-11-07T06:11:47Z",
       "createdAt": "2026-11-04T13:57:53Z",
       "headRef": "bugfix_a3_recurrent_kda",
       "labels": []
@@ -527,7 +539,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-06T10:37:26Z",
+      "updatedAt": "2026-11-07T06:11:50Z",
       "createdAt": "2026-11-01T16:14:45Z",
       "headRef": "fix/rgdr-max-mtp-16-main",
       "labels": []
@@ -647,7 +659,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-06T14:25:30Z",
+      "updatedAt": "2026-11-07T06:58:53Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
       "labels": []
