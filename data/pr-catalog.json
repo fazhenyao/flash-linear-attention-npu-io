@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T21:22:27+08:00",
+  "generatedAt": "2026-11-07T11:32:25+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 678,
@@ -11,7 +11,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-06T13:19:07Z",
+      "updatedAt": "2026-11-06T14:41:56Z",
       "createdAt": "2026-11-06T10:21:39Z",
       "headRef": "codex/ci-partial-build-online-validation",
       "labels": []
@@ -323,7 +323,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-06T12:14:14Z",
+      "updatedAt": "2026-11-06T13:52:51Z",
       "createdAt": "2026-11-04T13:57:53Z",
       "headRef": "bugfix_a3_recurrent_kda",
       "labels": []
@@ -647,7 +647,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-06T10:03:59Z",
+      "updatedAt": "2026-11-06T14:25:30Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
       "labels": []
