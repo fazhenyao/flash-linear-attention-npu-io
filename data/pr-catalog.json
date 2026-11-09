@@ -1,19 +1,67 @@
 {
-  "generatedAt": "2026-11-08T20:21:11+08:00",
+  "generatedAt": "2026-11-09T11:24:33+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 680,
+  "total": 685,
   "items": [
     {
-      "number": 1116,
-      "title": "ci: 在当前 runner 本地编译并上传 package artifact",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1116",
+      "number": 1121,
+      "title": "fix: ignore comments when validating Stable adapter ABI",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1121",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-08T10:51:22Z",
-      "createdAt": "2026-11-08T06:29:26Z",
-      "headRef": "codex/package-local-standalone",
+      "updatedAt": "2026-11-09T03:24:22Z",
+      "createdAt": "2026-11-09T03:24:21Z",
+      "headRef": "codex/fix-abi-comment-parsing-20261109",
+      "labels": []
+    },
+    {
+      "number": 1120,
+      "title": "adapt causal_conv1d for Ascend960DT and expand test cases",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1120",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-09T03:10:04Z",
+      "createdAt": "2026-11-09T03:09:55Z",
+      "headRef": "A6_causal_conv1d",
+      "labels": []
+    },
+    {
+      "number": 1119,
+      "title": "/package触发权限与ci触发权限一致、限制编包线程到16",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1119",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-09T03:01:01Z",
+      "createdAt": "2026-11-09T02:48:44Z",
+      "headRef": "codex/package-full-j16-20261109",
+      "labels": []
+    },
+    {
+      "number": 1118,
+      "title": "perf: cache ChunkKDA CPU accuracy golden tensors",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1118",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-09T03:13:24Z",
+      "createdAt": "2026-11-09T02:37:13Z",
+      "headRef": "codex/kda-cpu-golden-cache",
+      "labels": []
+    },
+    {
+      "number": 1117,
+      "title": "test: verify quick CI and six packages with a tiling print",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1117",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-09T02:35:10Z",
+      "createdAt": "2026-11-09T01:36:05Z",
+      "headRef": "codex/verify-package-tiling-print-20261109",
       "labels": []
     },
     {
@@ -26,18 +74,6 @@
       "updatedAt": "2026-11-07T16:50:04Z",
       "createdAt": "2026-11-07T07:22:48Z",
       "headRef": "codex/package-local-build",
-      "labels": []
-    },
-    {
-      "number": 1114,
-      "title": "ci: validate automatic partial builds for two operators",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1114",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-07T07:53:43Z",
-      "createdAt": "2026-11-06T10:21:39Z",
-      "headRef": "codex/ci-partial-build-online-validation",
       "labels": []
     },
     {
@@ -143,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-08T06:08:13Z",
+      "updatedAt": "2026-11-09T03:22:59Z",
       "createdAt": "2026-11-06T02:55:18Z",
       "headRef": "codex/recurrent-kda-stand-pr-submit",
       "labels": []
@@ -170,18 +206,6 @@
       "updatedAt": "2026-11-06T06:17:36Z",
       "createdAt": "2026-11-05T15:00:57Z",
       "headRef": "codex/admin-pr-workflow-source",
-      "labels": []
-    },
-    {
-      "number": 1093,
-      "title": "[Feature][26.10.0]: 【推理】GDN 正向融合算子支持 chunk_size 32 性能优化 ",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1093",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-06T08:55:45Z",
-      "createdAt": "2026-11-05T14:43:04Z",
-      "headRef": "gdn_fwd_chunk_32_26.10.0",
       "labels": []
     },
     {
@@ -251,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-06T06:14:09Z",
+      "updatedAt": "2026-11-09T03:20:56Z",
       "createdAt": "2026-11-05T09:12:11Z",
       "headRef": "main",
       "labels": []
@@ -266,42 +290,6 @@
       "updatedAt": "2026-11-08T06:09:04Z",
       "createdAt": "2026-11-05T07:47:45Z",
       "headRef": "codex/recurrent-gdn-v2-a5",
-      "labels": []
-    },
-    {
-      "number": 1082,
-      "title": "fix(v26.10.0): 修复 A5 O 越界与 Prepare 尾组旧数据写回",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1082",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-05T11:53:50Z",
-      "createdAt": "2026-11-05T07:09:48Z",
-      "headRef": "fix/issue965-v26.10.0",
-      "labels": []
-    },
-    {
-      "number": 1081,
-      "title": "fix(v26.9.1): 修复 A5 O 越界与 Prepare 尾组旧数据写回",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1081",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-05T10:41:43Z",
-      "createdAt": "2026-11-05T07:09:44Z",
-      "headRef": "fix/issue965-v26.9.1",
-      "labels": []
-    },
-    {
-      "number": 1080,
-      "title": "fix(main): 修复 A5 O 越界与 Prepare 尾组旧数据写回",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1080",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-05T09:55:37Z",
-      "createdAt": "2026-11-05T07:09:41Z",
-      "headRef": "fix/issue965-main-kernel-only",
       "labels": []
     },
     {
@@ -347,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-07T06:11:47Z",
+      "updatedAt": "2026-11-09T03:20:03Z",
       "createdAt": "2026-11-04T13:57:53Z",
       "headRef": "bugfix_a3_recurrent_kda",
       "labels": []
@@ -479,7 +467,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-03T07:44:22Z",
+      "updatedAt": "2026-11-09T03:11:25Z",
       "createdAt": "2026-11-03T07:30:05Z",
       "headRef": "causal_conv1d_bwd",
       "labels": []
@@ -671,7 +659,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-08T11:36:56Z",
+      "updatedAt": "2026-11-09T02:51:33Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
       "labels": []
@@ -866,18 +854,6 @@
       "updatedAt": "2026-10-24T06:06:33Z",
       "createdAt": "2026-10-22T06:32:24Z",
       "headRef": "fix/torch-213-legacy-build",
-      "labels": []
-    },
-    {
-      "number": 951,
-      "title": "[Feature]: 【推理】GDN 正向融合算子支持 chunk_size 32 性能优化 ",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/951",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-06T08:19:08Z",
-      "createdAt": "2026-10-22T03:00:18Z",
-      "headRef": "gdn_fwd_chunk_32",
       "labels": []
     },
     {
@@ -2297,6 +2273,30 @@
       "labels": []
     },
     {
+      "number": 1116,
+      "title": "ci: 在当前 runner 本地编译并上传 package artifact",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1116",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-09T01:27:39Z",
+      "updatedAt": "2026-11-09T01:27:39Z",
+      "createdAt": "2026-11-08T06:29:26Z",
+      "headRef": "codex/package-local-standalone",
+      "labels": []
+    },
+    {
+      "number": 1114,
+      "title": "ci: validate automatic partial builds for two operators",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1114",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-09T01:27:53Z",
+      "updatedAt": "2026-11-09T01:27:53Z",
+      "createdAt": "2026-11-06T10:21:39Z",
+      "headRef": "codex/ci-partial-build-online-validation",
+      "labels": []
+    },
+    {
       "number": 1109,
       "title": "ci(v26.10.0): 强制四名 Code Owner approval",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1109",
@@ -2369,6 +2369,18 @@
       "labels": []
     },
     {
+      "number": 1093,
+      "title": "[Feature][26.10.0]: 【推理】GDN 正向融合算子支持 chunk_size 32 性能优化 ",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1093",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-09T02:44:11Z",
+      "updatedAt": "2026-11-09T02:44:11Z",
+      "createdAt": "2026-11-05T14:43:04Z",
+      "headRef": "gdn_fwd_chunk_32_26.10.0",
+      "labels": []
+    },
+    {
       "number": 1090,
       "title": "fix(ci): allow target branch advances during NPU CI",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1090",
@@ -2390,6 +2402,42 @@
       "updatedAt": "2026-11-05T13:20:05Z",
       "createdAt": "2026-11-05T08:38:35Z",
       "headRef": "codex/ci-device-offline-validation",
+      "labels": []
+    },
+    {
+      "number": 1082,
+      "title": "fix(v26.10.0): 修复 A5 O 越界与 Prepare 尾组旧数据写回",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1082",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-09T02:46:22Z",
+      "updatedAt": "2026-11-09T02:46:23Z",
+      "createdAt": "2026-11-05T07:09:48Z",
+      "headRef": "fix/issue965-v26.10.0",
+      "labels": []
+    },
+    {
+      "number": 1081,
+      "title": "fix(v26.9.1): 修复 A5 O 越界与 Prepare 尾组旧数据写回",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1081",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-09T02:45:12Z",
+      "updatedAt": "2026-11-09T02:45:13Z",
+      "createdAt": "2026-11-05T07:09:44Z",
+      "headRef": "fix/issue965-v26.9.1",
+      "labels": []
+    },
+    {
+      "number": 1080,
+      "title": "fix(main): 修复 A5 O 越界与 Prepare 尾组旧数据写回",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1080",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-09T02:45:06Z",
+      "updatedAt": "2026-11-09T02:45:07Z",
+      "createdAt": "2026-11-05T07:09:41Z",
+      "headRef": "fix/issue965-main-kernel-only",
       "labels": []
     },
     {
@@ -2870,6 +2918,18 @@
       "updatedAt": "2026-10-28T07:03:13Z",
       "createdAt": "2026-10-23T06:44:33Z",
       "headRef": "exp-c3next-latest",
+      "labels": []
+    },
+    {
+      "number": 951,
+      "title": "[Feature]: 【推理】GDN 正向融合算子支持 chunk_size 32 性能优化 ",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/951",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-09T02:43:57Z",
+      "updatedAt": "2026-11-09T02:43:57Z",
+      "createdAt": "2026-10-22T03:00:18Z",
+      "headRef": "gdn_fwd_chunk_32",
       "labels": []
     },
     {
