@@ -1,9 +1,69 @@
 {
-  "generatedAt": "2026-11-09T22:34:03+08:00",
+  "generatedAt": "2026-11-10T12:59:40+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 701,
+  "total": 706,
   "items": [
+    {
+      "number": 1144,
+      "title": "fix(gdn/fwd_h): 移除 varlen 跨核标量前缀表",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1144",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-10T04:10:57Z",
+      "createdAt": "2026-11-10T03:43:17Z",
+      "headRef": "codex/fix-gdn-fwd-h-varlen-936",
+      "labels": []
+    },
+    {
+      "number": 1143,
+      "title": "fix: 按需保存 NPU CI 完整日志并独立生成诊断摘要",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1143",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-10T03:58:51Z",
+      "createdAt": "2026-11-10T03:13:47Z",
+      "headRef": "fix/ci-complete-build-logs",
+      "labels": []
+    },
+    {
+      "number": 1142,
+      "title": "feat(gdn): support A5 backward GVA ratios 1–16",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1142",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-10T03:10:22Z",
+      "createdAt": "2026-11-10T03:10:22Z",
+      "headRef": "feature/issue795-gva1-16",
+      "labels": []
+    },
+    {
+      "number": 1141,
+      "title": "causal_conv1d_bwd A6 适配",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1141",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-10T03:38:44Z",
+      "createdAt": "2026-11-10T02:36:45Z",
+      "headRef": "A6-arch92",
+      "labels": []
+    },
+    {
+      "number": 1140,
+      "title": "fix: preserve vendor ACLNN priority and add opt-in AscendC entry tracing",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1140",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-10T03:41:51Z",
+      "createdAt": "2026-11-10T02:21:06Z",
+      "headRef": "codex/fix-opapi-symbol-owner",
+      "labels": []
+    },
     {
       "number": 1138,
       "title": "Codex/chunk gdn bwd layout",
@@ -11,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T14:21:20Z",
+      "updatedAt": "2026-11-09T15:47:08Z",
       "createdAt": "2026-11-09T13:00:55Z",
       "headRef": "codex/chunk-gdn-bwd-layout",
       "labels": []
@@ -23,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T13:57:29Z",
+      "updatedAt": "2026-11-10T03:55:44Z",
       "createdAt": "2026-11-09T12:32:48Z",
       "headRef": "issue-1060-26.10.0",
       "labels": []
@@ -35,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T12:49:18Z",
+      "updatedAt": "2026-11-10T03:12:32Z",
       "createdAt": "2026-11-09T12:31:34Z",
       "headRef": "issue-1060",
       "labels": []
@@ -47,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T13:44:41Z",
+      "updatedAt": "2026-11-10T01:46:46Z",
       "createdAt": "2026-11-09T11:56:04Z",
       "headRef": "main",
       "labels": []
@@ -62,18 +122,6 @@
       "updatedAt": "2026-11-09T13:27:25Z",
       "createdAt": "2026-11-09T09:54:42Z",
       "headRef": "A6-dev",
-      "labels": []
-    },
-    {
-      "number": 1132,
-      "title": "fix: allow additive APIs and replace previous OPP overlays",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1132",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-09T12:29:37Z",
-      "createdAt": "2026-11-09T08:15:56Z",
-      "headRef": "fix/ci-remove-stable-api-snapshot",
       "labels": []
     },
     {
@@ -143,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T14:16:47Z",
+      "updatedAt": "2026-11-09T14:55:03Z",
       "createdAt": "2026-11-09T03:27:21Z",
       "headRef": "main",
       "labels": []
@@ -215,7 +263,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T13:00:23Z",
+      "updatedAt": "2026-11-10T01:38:05Z",
       "createdAt": "2026-11-06T09:53:25Z",
       "headRef": "issue-1055-26.10.0",
       "labels": []
@@ -227,7 +275,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T12:16:22Z",
+      "updatedAt": "2026-11-10T01:36:33Z",
       "createdAt": "2026-11-06T09:52:42Z",
       "headRef": "issue-1055",
       "labels": []
@@ -257,18 +305,6 @@
       "labels": []
     },
     {
-      "number": 1099,
-      "title": "perf:chunk_gated_delta_rule_bwd融合算子中使用ChunkGdnBwdIntra",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1099",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-09T08:11:40Z",
-      "createdAt": "2026-11-06T07:35:30Z",
-      "headRef": "main",
-      "labels": []
-    },
-    {
       "number": 1098,
       "title": "ci: classify PR changes for targeted NPU validation",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1098",
@@ -287,7 +323,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T07:58:45Z",
+      "updatedAt": "2026-11-10T03:30:45Z",
       "createdAt": "2026-11-06T03:21:27Z",
       "headRef": "feat/experimental-stable-abi",
       "labels": []
@@ -299,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T13:38:10Z",
+      "updatedAt": "2026-11-10T02:41:26Z",
       "createdAt": "2026-11-06T02:55:18Z",
       "headRef": "codex/recurrent-kda-stand-pr-submit",
       "labels": []
@@ -383,7 +419,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-06T10:27:43Z",
+      "updatedAt": "2026-11-10T00:43:16Z",
       "createdAt": "2026-11-05T12:29:19Z",
       "headRef": "chunk_fwd_h_a2",
       "labels": []
@@ -455,21 +491,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T12:38:26Z",
+      "updatedAt": "2026-11-10T04:01:08Z",
       "createdAt": "2026-11-04T13:57:53Z",
       "headRef": "bugfix_a3_recurrent_kda",
-      "labels": []
-    },
-    {
-      "number": 1071,
-      "title": "perf:chunk_gated_delta_rule_bwd融合算子中使用ChunkGdnBwdIntra",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1071",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-09T08:11:07Z",
-      "createdAt": "2026-11-04T10:52:10Z",
-      "headRef": "v26.10.0",
       "labels": []
     },
     {
@@ -551,7 +575,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T13:57:12Z",
+      "updatedAt": "2026-11-09T15:00:05Z",
       "createdAt": "2026-11-03T11:32:25Z",
       "headRef": "fix/kda-safe-gate-causality",
       "labels": []
@@ -671,7 +695,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T12:24:48Z",
+      "updatedAt": "2026-11-10T03:45:27Z",
       "createdAt": "2026-10-31T03:28:40Z",
       "headRef": "test",
       "labels": []
@@ -683,7 +707,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T13:42:37Z",
+      "updatedAt": "2026-11-10T01:14:36Z",
       "createdAt": "2026-10-31T02:44:50Z",
       "headRef": "fix/a6-causal-conv1d-bwd-validation",
       "labels": []
@@ -731,7 +755,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-06T10:30:42Z",
+      "updatedAt": "2026-11-10T00:43:21Z",
       "createdAt": "2026-10-30T06:46:47Z",
       "headRef": "chunk_fwd_h_v2610",
       "labels": []
@@ -779,7 +803,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T08:52:00Z",
+      "updatedAt": "2026-11-10T02:19:21Z",
       "createdAt": "2026-10-29T15:30:48Z",
       "headRef": "feat/chunk32-fused-pr",
       "labels": []
@@ -791,7 +815,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T14:21:14Z",
+      "updatedAt": "2026-11-10T01:39:06Z",
       "createdAt": "2026-10-29T06:43:59Z",
       "headRef": "feat/a6-causal-conv1d-bwd-recurrent-kda",
       "labels": []
@@ -2405,6 +2429,18 @@
       "labels": []
     },
     {
+      "number": 1132,
+      "title": "fix: allow additive APIs and replace previous OPP overlays",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1132",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-10T03:58:27Z",
+      "updatedAt": "2026-11-10T03:58:27Z",
+      "createdAt": "2026-11-09T08:15:56Z",
+      "headRef": "fix/ci-remove-stable-api-snapshot",
+      "labels": []
+    },
+    {
       "number": 1127,
       "title": "fix(package): 源码直连失败后启用 runner 代理重试",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1127",
@@ -2561,6 +2597,18 @@
       "labels": []
     },
     {
+      "number": 1099,
+      "title": "perf:chunk_gated_delta_rule_bwd融合算子中使用ChunkGdnBwdIntra",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1099",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-10T01:32:46Z",
+      "updatedAt": "2026-11-10T01:32:47Z",
+      "createdAt": "2026-11-06T07:35:30Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
       "number": 1093,
       "title": "[Feature][26.10.0]: 【推理】GDN 正向融合算子支持 chunk_size 32 性能优化 ",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1093",
@@ -2654,6 +2702,18 @@
       "updatedAt": "2026-11-06T09:42:25Z",
       "createdAt": "2026-11-04T11:06:22Z",
       "headRef": "A6-dev-chunk-gdn-fwd-prepare",
+      "labels": []
+    },
+    {
+      "number": 1071,
+      "title": "perf:chunk_gated_delta_rule_bwd融合算子中使用ChunkGdnBwdIntra",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1071",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-10T01:32:46Z",
+      "updatedAt": "2026-11-10T01:32:47Z",
+      "createdAt": "2026-11-04T10:52:10Z",
+      "headRef": "v26.10.0",
       "labels": []
     },
     {
