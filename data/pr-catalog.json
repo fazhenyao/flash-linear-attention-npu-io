@@ -1,9 +1,69 @@
 {
-  "generatedAt": "2026-11-12T12:41:26+08:00",
+  "generatedAt": "2026-11-12T22:08:37+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 737,
+  "total": 741,
   "items": [
+    {
+      "number": 1194,
+      "title": "fix: build KDA varlen chunk indices in aclnn host",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1194",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T13:35:17Z",
+      "createdAt": "2026-11-12T13:31:17Z",
+      "headRef": "codex/fix-kda-varlen-chunk-indices",
+      "labels": []
+    },
+    {
+      "number": 1193,
+      "title": "fix(ascendc): 统一全部算子 Host/Kernel 架构隔离判据",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1193",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T12:53:23Z",
+      "createdAt": "2026-11-12T12:42:05Z",
+      "headRef": "codex/platform-arch-isolation",
+      "labels": []
+    },
+    {
+      "number": 1191,
+      "title": "refactor: unify GDN and KDA forward architecture checks",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1191",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T10:18:03Z",
+      "createdAt": "2026-11-12T10:17:53Z",
+      "headRef": "codex/unify-gdn-kda-arch3510",
+      "labels": []
+    },
+    {
+      "number": 1190,
+      "title": "fix(kda): preserve FP32 WY intermediates in A2 finalize (#1156)",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1190",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T08:53:40Z",
+      "createdAt": "2026-11-12T08:53:39Z",
+      "headRef": "issue1156-finalize-fp32",
+      "labels": []
+    },
+    {
+      "number": 1189,
+      "title": "perf(gdn): 消除 ChunkGatedDeltaRuleBwd 的 QKV 和梯度布局转置",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1189",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T10:11:30Z",
+      "createdAt": "2026-11-12T08:34:56Z",
+      "headRef": "codex/chunk-gdn-bwd-layout",
+      "labels": []
+    },
     {
       "number": 1186,
       "title": "feat(kda): 新增KDA bwd Recompute 算子的 A6 实现",
@@ -11,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T03:24:44Z",
+      "updatedAt": "2026-11-12T14:01:09Z",
       "createdAt": "2026-11-12T03:24:35Z",
       "headRef": "A6_recompute",
       "labels": []
@@ -47,19 +107,19 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T03:57:58Z",
+      "updatedAt": "2026-11-12T11:55:52Z",
       "createdAt": "2026-11-12T02:34:12Z",
       "headRef": "fix/default-run-install-20261112",
       "labels": []
     },
     {
       "number": 1182,
-      "title": "Fix/error code remediation",
+      "title": "[Feature]: 统一Ascend C DFX错误上报公共utils并兼容CANN 9.0",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1182",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T04:05:53Z",
+      "updatedAt": "2026-11-12T14:00:59Z",
       "createdAt": "2026-11-12T02:01:44Z",
       "headRef": "fix/error-code-remediation",
       "labels": []
@@ -107,21 +167,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T03:17:22Z",
+      "updatedAt": "2026-11-12T12:22:40Z",
       "createdAt": "2026-11-11T09:27:15Z",
       "headRef": "main",
-      "labels": []
-    },
-    {
-      "number": 1175,
-      "title": "[Feature]: 统一Ascend C DFX错误上报公共utils并兼容CANN 9.0",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1175",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-11T10:57:03Z",
-      "createdAt": "2026-11-11T08:42:47Z",
-      "headRef": "26.10.0",
       "labels": []
     },
     {
@@ -155,7 +203,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T07:21:21Z",
+      "updatedAt": "2026-11-12T06:07:00Z",
       "createdAt": "2026-11-11T07:19:42Z",
       "headRef": "a6_dhu",
       "labels": []
@@ -167,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T03:08:46Z",
+      "updatedAt": "2026-11-12T11:01:17Z",
       "createdAt": "2026-11-11T07:18:10Z",
       "headRef": "codex/chunk-kda-fwd-prepare-gva",
       "labels": []
@@ -179,21 +227,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T07:20:15Z",
+      "updatedAt": "2026-11-12T06:08:18Z",
       "createdAt": "2026-11-11T07:14:32Z",
       "headRef": "codex/ci-remove-abi-checks-20261111",
-      "labels": []
-    },
-    {
-      "number": 1166,
-      "title": "fix(gdn): remove redundant recurrent metadata validation",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1166",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-12T04:10:31Z",
-      "createdAt": "2026-11-11T06:05:23Z",
-      "headRef": "add_refine",
       "labels": []
     },
     {
@@ -203,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T02:36:15Z",
+      "updatedAt": "2026-11-12T08:13:54Z",
       "createdAt": "2026-11-11T03:31:52Z",
       "headRef": "A6-dev-chunk-fwd-h",
       "labels": []
@@ -233,18 +269,6 @@
       "labels": []
     },
     {
-      "number": 1155,
-      "title": "fix(stable): prevent double free after queued execution errors",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1155",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-10T16:54:03Z",
-      "createdAt": "2026-11-10T12:21:55Z",
-      "headRef": "fix/stable-enqueue-double-free",
-      "labels": []
-    },
-    {
       "number": 1151,
       "title": "test: verify Code Owner check after admin permission update",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1151",
@@ -263,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T08:14:34Z",
+      "updatedAt": "2026-11-12T13:26:38Z",
       "createdAt": "2026-11-10T09:52:33Z",
       "headRef": "RecurrentKDA-A6",
       "labels": []
@@ -311,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T02:12:25Z",
+      "updatedAt": "2026-11-12T08:06:38Z",
       "createdAt": "2026-11-10T02:36:45Z",
       "headRef": "A6-arch92",
       "labels": []
@@ -329,25 +353,13 @@
       "labels": []
     },
     {
-      "number": 1138,
-      "title": "Codex/chunk gdn bwd layout",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1138",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-12T02:29:23Z",
-      "createdAt": "2026-11-09T13:00:55Z",
-      "headRef": "codex/chunk-gdn-bwd-layout",
-      "labels": []
-    },
-    {
       "number": 1137,
       "title": "chunkGdnFwdPrepare统一 SocVersion 与 NpuArch 的架构判断方式",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1137",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-10T03:55:44Z",
+      "updatedAt": "2026-11-12T07:49:35Z",
       "createdAt": "2026-11-09T12:32:48Z",
       "headRef": "issue-1060-26.10.0",
       "labels": []
@@ -359,7 +371,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-10T10:30:59Z",
+      "updatedAt": "2026-11-12T07:49:23Z",
       "createdAt": "2026-11-09T12:31:34Z",
       "headRef": "issue-1060",
       "labels": []
@@ -371,7 +383,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T09:42:28Z",
+      "updatedAt": "2026-11-12T08:22:50Z",
       "createdAt": "2026-11-09T09:54:42Z",
       "headRef": "A6-dev",
       "labels": []
@@ -383,7 +395,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T03:37:46Z",
+      "updatedAt": "2026-11-12T11:47:17Z",
       "createdAt": "2026-11-09T08:01:34Z",
       "headRef": "A6-dev-kda-trait-refactor",
       "labels": []
@@ -491,7 +503,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-10T01:38:05Z",
+      "updatedAt": "2026-11-12T07:49:07Z",
       "createdAt": "2026-11-06T09:53:25Z",
       "headRef": "issue-1055-26.10.0",
       "labels": []
@@ -503,7 +515,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-10T01:36:33Z",
+      "updatedAt": "2026-11-12T07:48:55Z",
       "createdAt": "2026-11-06T09:52:42Z",
       "headRef": "issue-1055",
       "labels": []
@@ -551,7 +563,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T09:40:29Z",
+      "updatedAt": "2026-11-12T11:55:36Z",
       "createdAt": "2026-11-06T03:21:27Z",
       "headRef": "feat/experimental-stable-abi",
       "labels": []
@@ -635,7 +647,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T02:15:56Z",
+      "updatedAt": "2026-11-12T12:34:00Z",
       "createdAt": "2026-11-05T12:29:19Z",
       "headRef": "chunk_fwd_h_a2",
       "labels": []
@@ -647,7 +659,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T03:31:54Z",
+      "updatedAt": "2026-11-12T06:40:54Z",
       "createdAt": "2026-11-05T09:12:11Z",
       "headRef": "main",
       "labels": []
@@ -707,7 +719,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-05T06:13:19Z",
+      "updatedAt": "2026-11-12T07:32:50Z",
       "createdAt": "2026-11-04T06:33:39Z",
       "headRef": "gdn",
       "labels": []
@@ -959,7 +971,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T09:15:38Z",
+      "updatedAt": "2026-11-12T12:50:59Z",
       "createdAt": "2026-10-30T06:46:47Z",
       "headRef": "chunk_fwd_h_v2610",
       "labels": []
@@ -1218,12 +1230,12 @@
     },
     {
       "number": 947,
-      "title": "finalize A2/A3/A5 backward prepare kernel and validation",
+      "title": "【回合】fix(gdn/fwd_h): 移除 varlen 跨核标量前缀表",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/947",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T03:14:44Z",
+      "updatedAt": "2026-11-12T04:47:27Z",
       "createdAt": "2026-10-21T15:10:06Z",
       "headRef": "26.10.0",
       "labels": []
@@ -1271,7 +1283,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T17:00:44Z",
+      "updatedAt": "2026-11-12T12:51:36Z",
       "createdAt": "2026-10-19T04:20:46Z",
       "headRef": "fix/a5-gdn-fp32-gate",
       "labels": []
@@ -1463,7 +1475,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-04T08:32:26Z",
+      "updatedAt": "2026-11-12T08:25:17Z",
       "createdAt": "2026-10-07T08:36:25Z",
       "headRef": "codex/cannbot-operator-workflow",
       "labels": []
@@ -2609,6 +2621,18 @@
       "labels": []
     },
     {
+      "number": 1187,
+      "title": "fix(recurrent_kda): align A5 QKV view support with A2/A3",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1187",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-12T11:17:22Z",
+      "updatedAt": "2026-11-12T11:17:23Z",
+      "createdAt": "2026-11-12T07:01:06Z",
+      "headRef": "codex/recurrent-kda-stride-docs-main",
+      "labels": []
+    },
+    {
       "number": 1177,
       "title": "feat: 支持适配层与 OPP 独立增量安装",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1177",
@@ -2618,6 +2642,18 @@
       "updatedAt": "2026-11-12T02:04:38Z",
       "createdAt": "2026-11-11T11:00:14Z",
       "headRef": "feat/wheel-overlay-20261111",
+      "labels": []
+    },
+    {
+      "number": 1166,
+      "title": "fix(gdn): remove redundant recurrent metadata validation",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1166",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-12T08:53:00Z",
+      "updatedAt": "2026-11-12T08:53:00Z",
+      "createdAt": "2026-11-11T06:05:23Z",
+      "headRef": "add_refine",
       "labels": []
     },
     {
@@ -2690,6 +2726,18 @@
       "updatedAt": "2026-11-10T11:41:55Z",
       "createdAt": "2026-11-10T11:34:45Z",
       "headRef": "codex/remove-codeowner-write-gate",
+      "labels": []
+    },
+    {
+      "number": 1148,
+      "title": "build: pin opbase to c8cfc45e",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1148",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-12T13:31:09Z",
+      "updatedAt": "2026-11-12T13:31:10Z",
+      "createdAt": "2026-11-10T09:12:38Z",
+      "headRef": "fix/use-single-opbase-revision",
       "labels": []
     },
     {
