@@ -1,9 +1,93 @@
 {
-  "generatedAt": "2026-11-11T21:05:54+08:00",
+  "generatedAt": "2026-11-12T12:41:26+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 730,
+  "total": 737,
   "items": [
+    {
+      "number": 1186,
+      "title": "feat(kda): 新增KDA bwd Recompute 算子的 A6 实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1186",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T03:24:44Z",
+      "createdAt": "2026-11-12T03:24:35Z",
+      "headRef": "A6_recompute",
+      "labels": []
+    },
+    {
+      "number": 1185,
+      "title": "【回合】fix(gdn/fwd_h): 移除 varlen 跨核标量前缀表",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1185",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T03:28:32Z",
+      "createdAt": "2026-11-12T03:20:36Z",
+      "headRef": "26.6.0",
+      "labels": []
+    },
+    {
+      "number": 1184,
+      "title": "【回合】fix(gdn/fwd_h): 移除 varlen 跨核标量前缀表",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1184",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T03:18:11Z",
+      "createdAt": "2026-11-12T03:17:58Z",
+      "headRef": "26.9.1",
+      "labels": []
+    },
+    {
+      "number": 1183,
+      "title": "fix: run 默认增量安装，保留未覆盖算子",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1183",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T03:57:58Z",
+      "createdAt": "2026-11-12T02:34:12Z",
+      "headRef": "fix/default-run-install-20261112",
+      "labels": []
+    },
+    {
+      "number": 1182,
+      "title": "Fix/error code remediation",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1182",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T04:05:53Z",
+      "createdAt": "2026-11-12T02:01:44Z",
+      "headRef": "fix/error-code-remediation",
+      "labels": []
+    },
+    {
+      "number": 1181,
+      "title": "perf(kda): Ascend950PR prepare/finalize 性能优化（varlen 尾部均衡 + 消除冗余工作）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1181",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T02:48:33Z",
+      "createdAt": "2026-11-12T01:22:33Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 1179,
+      "title": "perf(kda): optimize GVA prepare and forward finalize scheduling",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1179",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-12T02:59:59Z",
+      "createdAt": "2026-11-11T13:39:23Z",
+      "headRef": "codex/chunk-kda-fwd-finalize-gva",
+      "labels": []
+    },
     {
       "number": 1178,
       "title": "fix(kda): 回补 v26.9.1 旧 WY 的 FIX→MTE2 同步缺失",
@@ -17,25 +101,13 @@
       "labels": []
     },
     {
-      "number": 1177,
-      "title": "feat: 支持骨架与带 OPP 的 wheel 增量安装",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1177",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-11T11:22:39Z",
-      "createdAt": "2026-11-11T11:00:14Z",
-      "headRef": "feat/wheel-overlay-20261111",
-      "labels": []
-    },
-    {
       "number": 1176,
       "title": "feat(gdn): chunk_gdn_bwd_intra A2 支持 GVA 比例 1~16",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1176",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T09:27:26Z",
+      "updatedAt": "2026-11-12T03:17:22Z",
       "createdAt": "2026-11-11T09:27:15Z",
       "headRef": "main",
       "labels": []
@@ -95,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T07:21:54Z",
+      "updatedAt": "2026-11-12T03:08:46Z",
       "createdAt": "2026-11-11T07:18:10Z",
       "headRef": "codex/chunk-kda-fwd-prepare-gva",
       "labels": []
@@ -119,21 +191,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T08:26:52Z",
+      "updatedAt": "2026-11-12T04:10:31Z",
       "createdAt": "2026-11-11T06:05:23Z",
       "headRef": "add_refine",
-      "labels": []
-    },
-    {
-      "number": 1163,
-      "title": "fix(issue1060): 统一A5架构判断",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1163",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-11T12:35:11Z",
-      "createdAt": "2026-11-11T03:50:00Z",
-      "headRef": "issue_fix",
       "labels": []
     },
     {
@@ -143,7 +203,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T08:04:58Z",
+      "updatedAt": "2026-11-12T02:36:15Z",
       "createdAt": "2026-11-11T03:31:52Z",
       "headRef": "A6-dev-chunk-fwd-h",
       "labels": []
@@ -251,7 +311,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T01:42:42Z",
+      "updatedAt": "2026-11-12T02:12:25Z",
       "createdAt": "2026-11-10T02:36:45Z",
       "headRef": "A6-arch92",
       "labels": []
@@ -275,7 +335,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T11:26:43Z",
+      "updatedAt": "2026-11-12T02:29:23Z",
       "createdAt": "2026-11-09T13:00:55Z",
       "headRef": "codex/chunk-gdn-bwd-layout",
       "labels": []
@@ -323,7 +383,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T08:30:11Z",
+      "updatedAt": "2026-11-12T03:37:46Z",
       "createdAt": "2026-11-09T08:01:34Z",
       "headRef": "A6-dev-kda-trait-refactor",
       "labels": []
@@ -497,18 +557,6 @@
       "labels": []
     },
     {
-      "number": 1096,
-      "title": "perf(recurrent_kda): add class-based A5 state recurrence engine",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1096",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-11T10:42:59Z",
-      "createdAt": "2026-11-06T02:55:18Z",
-      "headRef": "codex/recurrent-kda-stand-pr-submit",
-      "labels": []
-    },
-    {
       "number": 1095,
       "title": "fix: reject safe_gate=false in A2/A3 KDA backward",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1095",
@@ -587,7 +635,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T09:15:19Z",
+      "updatedAt": "2026-11-12T02:15:56Z",
       "createdAt": "2026-11-05T12:29:19Z",
       "headRef": "chunk_fwd_h_a2",
       "labels": []
@@ -599,7 +647,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-11T10:00:51Z",
+      "updatedAt": "2026-11-12T03:31:54Z",
       "createdAt": "2026-11-05T09:12:11Z",
       "headRef": "main",
       "labels": []
@@ -1175,7 +1223,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-22T01:12:07Z",
+      "updatedAt": "2026-11-12T03:14:44Z",
       "createdAt": "2026-10-21T15:10:06Z",
       "headRef": "26.10.0",
       "labels": []
@@ -1223,7 +1271,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-10-19T06:48:06Z",
+      "updatedAt": "2026-11-11T17:00:44Z",
       "createdAt": "2026-10-19T04:20:46Z",
       "headRef": "fix/a5-gdn-fp32-gate",
       "labels": []
@@ -2561,6 +2609,30 @@
       "labels": []
     },
     {
+      "number": 1177,
+      "title": "feat: 支持适配层与 OPP 独立增量安装",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1177",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-12T02:04:38Z",
+      "updatedAt": "2026-11-12T02:04:38Z",
+      "createdAt": "2026-11-11T11:00:14Z",
+      "headRef": "feat/wheel-overlay-20261111",
+      "labels": []
+    },
+    {
+      "number": 1163,
+      "title": "fix(issue1060): 统一A5架构判断",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1163",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-11T14:22:44Z",
+      "updatedAt": "2026-11-12T02:30:54Z",
+      "createdAt": "2026-11-11T03:50:00Z",
+      "headRef": "issue_fix",
+      "labels": []
+    },
+    {
       "number": 1160,
       "title": "fix(ci): backport review status refresh",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1160",
@@ -2870,6 +2942,18 @@
       "updatedAt": "2026-11-10T01:32:47Z",
       "createdAt": "2026-11-06T07:35:30Z",
       "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 1096,
+      "title": "perf(recurrent_kda): add class-based A5 state recurrence engine",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1096",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-12T03:51:58Z",
+      "updatedAt": "2026-11-12T03:51:58Z",
+      "createdAt": "2026-11-06T02:55:18Z",
+      "headRef": "codex/recurrent-kda-stand-pr-submit",
       "labels": []
     },
     {
