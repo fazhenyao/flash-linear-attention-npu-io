@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-11-14T11:52:18+08:00",
+  "generatedAt": "2026-11-14T20:38:23+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 764,
+  "total": 768,
   "items": [
+    {
+      "number": 1229,
+      "title": "perf: 降低 A2/A3 GDN backward Finalize workspace",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1229",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-14T11:48:38Z",
+      "createdAt": "2026-11-14T11:48:37Z",
+      "headRef": "perf/gdn-finalize-workspace-c57-20261114",
+      "labels": []
+    },
+    {
+      "number": 1228,
+      "title": "fix(recurrent_kda): 补齐 A5 引擎头文件，修复 ascend950 编包失败",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1228",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-14T12:10:34Z",
+      "createdAt": "2026-11-14T11:37:09Z",
+      "headRef": "fix-recurrentkda",
+      "labels": []
+    },
+    {
+      "number": 1227,
+      "title": "sync(dfx): 将 #1182 的统一 Ascend C DFX 错误上报整改同步到 v26.10.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1227",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-14T12:25:16Z",
+      "createdAt": "2026-11-14T08:27:55Z",
+      "headRef": "sync/pr1182-v26.10.0",
+      "labels": []
+    },
+    {
+      "number": 1226,
+      "title": "fix(ci): 为结果 artifact 上传与下载增加有限重试",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1226",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-14T07:37:43Z",
+      "createdAt": "2026-11-14T07:37:42Z",
+      "headRef": "fix/ci-artifact-transfer-retries",
+      "labels": []
+    },
     {
       "number": 1224,
       "title": "fix(ascendc): A2/A3 KDA recompute 使用每核双页 workspace",
@@ -11,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T03:50:55Z",
+      "updatedAt": "2026-11-14T06:46:48Z",
       "createdAt": "2026-11-14T03:50:54Z",
       "headRef": "codex/recompute-slots",
       "labels": []
@@ -23,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T03:43:03Z",
+      "updatedAt": "2026-11-14T12:25:31Z",
       "createdAt": "2026-11-14T03:42:54Z",
       "headRef": "error_lost",
       "labels": []
@@ -38,42 +86,6 @@
       "updatedAt": "2026-11-14T03:18:02Z",
       "createdAt": "2026-11-13T14:56:23Z",
       "headRef": "perf/a2-prepare-ub-prefetch-20261113",
-      "labels": []
-    },
-    {
-      "number": 1220,
-      "title": "[v26.10.0] 回合 A2/A3 KDA 前反向与 recurrent_kda 优化和修复",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1220",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-14T02:47:33Z",
-      "createdAt": "2026-11-13T14:02:21Z",
-      "headRef": "codex/backport-kda-a2a3-26.10",
-      "labels": []
-    },
-    {
-      "number": 1219,
-      "title": "fix(kda): 修复 v26.10.0 的 RecurrentKDA 空布局参数校验",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1219",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-14T03:51:07Z",
-      "createdAt": "2026-11-13T10:41:21Z",
-      "headRef": "woey/fix-recurrent-kda-layout-v26.10.0",
-      "labels": []
-    },
-    {
-      "number": 1218,
-      "title": "fix(kda): 修复 main 的 RecurrentKDA 空布局参数校验",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1218",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-14T02:54:37Z",
-      "createdAt": "2026-11-13T10:41:15Z",
-      "headRef": "woey/fix-recurrent-kda-layout-main",
       "labels": []
     },
     {
@@ -209,18 +221,6 @@
       "labels": []
     },
     {
-      "number": 1186,
-      "title": "feat(kda): 新增KDA bwd Recompute 算子的 A6 实现",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1186",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-14T03:11:53Z",
-      "createdAt": "2026-11-12T03:24:35Z",
-      "headRef": "A6_recompute",
-      "labels": []
-    },
-    {
       "number": 1185,
       "title": "【回合】fix(gdn/fwd_h): 移除 varlen 跨核标量前缀表",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1185",
@@ -263,7 +263,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T01:54:13Z",
+      "updatedAt": "2026-11-14T10:14:45Z",
       "createdAt": "2026-11-11T13:39:23Z",
       "headRef": "codex/chunk-kda-fwd-finalize-gva",
       "labels": []
@@ -323,7 +323,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-13T10:50:49Z",
+      "updatedAt": "2026-11-14T10:37:15Z",
       "createdAt": "2026-11-11T07:19:42Z",
       "headRef": "a6_dhu",
       "labels": []
@@ -350,18 +350,6 @@
       "updatedAt": "2026-11-12T06:08:18Z",
       "createdAt": "2026-11-11T07:14:32Z",
       "headRef": "codex/ci-remove-abi-checks-20261111",
-      "labels": []
-    },
-    {
-      "number": 1162,
-      "title": "feat:  chunk_fwd_h 适配A6实现",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1162",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-13T07:38:13Z",
-      "createdAt": "2026-11-11T03:31:52Z",
-      "headRef": "A6-dev-chunk-fwd-h",
       "labels": []
     },
     {
@@ -431,7 +419,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T03:51:58Z",
+      "updatedAt": "2026-11-14T05:04:46Z",
       "createdAt": "2026-11-10T03:10:22Z",
       "headRef": "feature/issue795-gva1-16",
       "labels": []
@@ -467,7 +455,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T02:53:05Z",
+      "updatedAt": "2026-11-14T10:48:25Z",
       "createdAt": "2026-11-09T09:54:42Z",
       "headRef": "A6-dev",
       "labels": []
@@ -503,7 +491,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-09T07:22:50Z",
+      "updatedAt": "2026-11-14T12:11:57Z",
       "createdAt": "2026-11-09T07:22:49Z",
       "headRef": "codex/ci-device-id-20261109",
       "labels": []
@@ -719,7 +707,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-13T11:25:57Z",
+      "updatedAt": "2026-11-14T10:53:28Z",
       "createdAt": "2026-11-04T06:33:39Z",
       "headRef": "gdn",
       "labels": []
@@ -2597,6 +2585,42 @@
       "labels": []
     },
     {
+      "number": 1220,
+      "title": "[v26.10.0] 回合 A2/A3 KDA 前反向与 recurrent_kda 优化和修复",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1220",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-14T06:32:30Z",
+      "updatedAt": "2026-11-14T06:32:31Z",
+      "createdAt": "2026-11-13T14:02:21Z",
+      "headRef": "codex/backport-kda-a2a3-26.10",
+      "labels": []
+    },
+    {
+      "number": 1219,
+      "title": "fix(kda): 修复 v26.10.0 的 RecurrentKDA 空布局参数校验",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1219",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-14T11:46:41Z",
+      "updatedAt": "2026-11-14T11:46:41Z",
+      "createdAt": "2026-11-13T10:41:21Z",
+      "headRef": "woey/fix-recurrent-kda-layout-v26.10.0",
+      "labels": []
+    },
+    {
+      "number": 1218,
+      "title": "fix(kda): 修复 main 的 RecurrentKDA 空布局参数校验",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1218",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-14T11:48:55Z",
+      "updatedAt": "2026-11-14T11:48:55Z",
+      "createdAt": "2026-11-13T10:41:15Z",
+      "headRef": "woey/fix-recurrent-kda-layout-main",
+      "labels": []
+    },
+    {
       "number": 1217,
       "title": "fix(A6-dev): prevent CI cache from restoring stale opbase headers",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1217",
@@ -2741,6 +2765,18 @@
       "labels": []
     },
     {
+      "number": 1186,
+      "title": "feat(kda): 新增KDA bwd Recompute 算子的 A6 实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1186",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-14T06:25:06Z",
+      "updatedAt": "2026-11-14T07:12:41Z",
+      "createdAt": "2026-11-12T03:24:35Z",
+      "headRef": "A6_recompute",
+      "labels": []
+    },
+    {
       "number": 1183,
       "title": "fix: run 默认增量安装，保留未覆盖算子",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1183",
@@ -2798,6 +2834,18 @@
       "updatedAt": "2026-11-12T02:30:54Z",
       "createdAt": "2026-11-11T03:50:00Z",
       "headRef": "issue_fix",
+      "labels": []
+    },
+    {
+      "number": 1162,
+      "title": "feat:  chunk_fwd_h 适配A6实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1162",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-14T06:18:30Z",
+      "updatedAt": "2026-11-14T06:18:31Z",
+      "createdAt": "2026-11-11T03:31:52Z",
+      "headRef": "A6-dev-chunk-fwd-h",
       "labels": []
     },
     {
