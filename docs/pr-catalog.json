@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-11-15T11:33:30+08:00",
+  "generatedAt": "2026-11-15T21:04:32+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 771,
+  "total": 774,
   "items": [
+    {
+      "number": 1237,
+      "title": "feat(a6): 接入 A6 AIC+AIV 算子实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1237",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-15T13:02:35Z",
+      "createdAt": "2026-11-15T09:47:26Z",
+      "headRef": "codex/a6-mixed-mainline-20261114",
+      "labels": []
+    },
+    {
+      "number": 1236,
+      "title": "feat(recurrent_kda): 接入 A6 arch92 纯 AIV 实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1236",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-15T13:02:33Z",
+      "createdAt": "2026-11-15T09:47:25Z",
+      "headRef": "codex/a6-vec-mainline-20261114",
+      "labels": []
+    },
+    {
+      "number": 1234,
+      "title": "feat(build): 接入 A6 ascend960dt 平台构建支持",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1234",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-15T13:02:33Z",
+      "createdAt": "2026-11-15T08:20:33Z",
+      "headRef": "codex/a6-platform-mainline-20261114",
+      "labels": []
+    },
     {
       "number": 1231,
       "title": "perf(gdn): 在 UB 中保留 A2 Prepare 的 32×32 对角块",
@@ -71,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T12:43:47Z",
+      "updatedAt": "2026-11-15T10:04:43Z",
       "createdAt": "2026-11-14T03:42:54Z",
       "headRef": "error_lost",
       "labels": []
@@ -467,7 +503,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-13T07:03:33Z",
+      "updatedAt": "2026-11-15T06:09:03Z",
       "createdAt": "2026-11-09T07:39:38Z",
       "headRef": "codex/a6-causal-conv1d",
       "labels": []
