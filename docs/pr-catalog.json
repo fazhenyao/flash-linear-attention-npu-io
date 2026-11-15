@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-11-14T20:38:23+08:00",
+  "generatedAt": "2026-11-15T11:33:30+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 768,
+  "total": 771,
   "items": [
+    {
+      "number": 1231,
+      "title": "perf(gdn): 在 UB 中保留 A2 Prepare 的 32×32 对角块",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1231",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-14T15:05:05Z",
+      "createdAt": "2026-11-14T15:05:03Z",
+      "headRef": "perf/a2-prepare-retain-d32-1114",
+      "labels": []
+    },
+    {
+      "number": 1230,
+      "title": "fix(kda): backport bounded recompute workspace to v26.10.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1230",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-14T14:56:58Z",
+      "createdAt": "2026-11-14T14:07:39Z",
+      "headRef": "codex/backport-pr1224-v26.10.0",
+      "labels": []
+    },
     {
       "number": 1229,
       "title": "perf: 降低 A2/A3 GDN backward Finalize workspace",
@@ -17,25 +41,13 @@
       "labels": []
     },
     {
-      "number": 1228,
-      "title": "fix(recurrent_kda): 补齐 A5 引擎头文件，修复 ascend950 编包失败",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1228",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-14T12:10:34Z",
-      "createdAt": "2026-11-14T11:37:09Z",
-      "headRef": "fix-recurrentkda",
-      "labels": []
-    },
-    {
       "number": 1227,
       "title": "sync(dfx): 将 #1182 的统一 Ascend C DFX 错误上报整改同步到 v26.10.0",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1227",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T12:25:16Z",
+      "updatedAt": "2026-11-14T13:58:56Z",
       "createdAt": "2026-11-14T08:27:55Z",
       "headRef": "sync/pr1182-v26.10.0",
       "labels": []
@@ -53,25 +65,13 @@
       "labels": []
     },
     {
-      "number": 1224,
-      "title": "fix(ascendc): A2/A3 KDA recompute 使用每核双页 workspace",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1224",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-14T06:46:48Z",
-      "createdAt": "2026-11-14T03:50:54Z",
-      "headRef": "codex/recompute-slots",
-      "labels": []
-    },
-    {
       "number": 1223,
       "title": "Error lost统一Ascend C DFX错误 修复",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1223",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T12:25:31Z",
+      "updatedAt": "2026-11-14T12:43:47Z",
       "createdAt": "2026-11-14T03:42:54Z",
       "headRef": "error_lost",
       "labels": []
@@ -263,7 +263,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T10:14:45Z",
+      "updatedAt": "2026-11-14T14:43:53Z",
       "createdAt": "2026-11-11T13:39:23Z",
       "headRef": "codex/chunk-kda-fwd-finalize-gva",
       "labels": []
@@ -317,25 +317,13 @@
       "labels": []
     },
     {
-      "number": 1169,
-      "title": "feat(gdn): adapt chunk gated delta rule backward dhu to A6",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1169",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-14T10:37:15Z",
-      "createdAt": "2026-11-11T07:19:42Z",
-      "headRef": "a6_dhu",
-      "labels": []
-    },
-    {
       "number": 1168,
       "title": "perf(kda): chunk_kda_fwd_prepare支持 GVA 比例 1~16（A2/A3/A5）",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1168",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T01:53:45Z",
+      "updatedAt": "2026-11-14T14:44:12Z",
       "createdAt": "2026-11-11T07:18:10Z",
       "headRef": "codex/chunk-kda-fwd-prepare-gva",
       "labels": []
@@ -2585,6 +2573,42 @@
       "labels": []
     },
     {
+      "number": 1232,
+      "title": "[v26.10.0] 回合 #1224：限制 KDA recompute workspace",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1232",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-14T16:29:31Z",
+      "updatedAt": "2026-11-14T16:29:31Z",
+      "createdAt": "2026-11-14T15:12:09Z",
+      "headRef": "codex/recompute-slots-26.10",
+      "labels": []
+    },
+    {
+      "number": 1228,
+      "title": "fix(recurrent_kda): 补齐 A5 引擎头文件，修复 ascend950 编包失败",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1228",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-14T15:23:16Z",
+      "updatedAt": "2026-11-14T15:23:16Z",
+      "createdAt": "2026-11-14T11:37:09Z",
+      "headRef": "fix-recurrentkda",
+      "labels": []
+    },
+    {
+      "number": 1224,
+      "title": "fix(ascendc): A2/A3 KDA recompute 使用每核双页 workspace",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1224",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-14T16:29:25Z",
+      "updatedAt": "2026-11-14T16:29:26Z",
+      "createdAt": "2026-11-14T03:50:54Z",
+      "headRef": "codex/recompute-slots",
+      "labels": []
+    },
+    {
       "number": 1220,
       "title": "[v26.10.0] 回合 A2/A3 KDA 前反向与 recurrent_kda 优化和修复",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1220",
@@ -2810,6 +2834,18 @@
       "updatedAt": "2026-11-12T02:04:38Z",
       "createdAt": "2026-11-11T11:00:14Z",
       "headRef": "feat/wheel-overlay-20261111",
+      "labels": []
+    },
+    {
+      "number": 1169,
+      "title": "feat(gdn): adapt chunk gated delta rule backward dhu to A6",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1169",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-14T14:01:50Z",
+      "updatedAt": "2026-11-14T14:01:50Z",
+      "createdAt": "2026-11-11T07:19:42Z",
+      "headRef": "a6_dhu",
       "labels": []
     },
     {
