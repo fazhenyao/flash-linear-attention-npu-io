@@ -1,43 +1,19 @@
 {
-  "generatedAt": "2026-11-15T21:04:32+08:00",
+  "generatedAt": "2026-11-16T11:33:02+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
   "total": 774,
   "items": [
     {
-      "number": 1237,
-      "title": "feat(a6): 接入 A6 AIC+AIV 算子实现",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1237",
+      "number": 1272,
+      "title": "feat(causal_conv1d): 支持 A6 并更新产品支持范围",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1272",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-15T13:02:35Z",
-      "createdAt": "2026-11-15T09:47:26Z",
-      "headRef": "codex/a6-mixed-mainline-20261114",
-      "labels": []
-    },
-    {
-      "number": 1236,
-      "title": "feat(recurrent_kda): 接入 A6 arch92 纯 AIV 实现",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1236",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-15T13:02:33Z",
-      "createdAt": "2026-11-15T09:47:25Z",
-      "headRef": "codex/a6-vec-mainline-20261114",
-      "labels": []
-    },
-    {
-      "number": 1234,
-      "title": "feat(build): 接入 A6 ascend960dt 平台构建支持",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1234",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-15T13:02:33Z",
-      "createdAt": "2026-11-15T08:20:33Z",
-      "headRef": "codex/a6-platform-mainline-20261114",
+      "updatedAt": "2026-11-16T03:25:35Z",
+      "createdAt": "2026-11-16T02:22:12Z",
+      "headRef": "a6-causal-conv1d-main",
       "labels": []
     },
     {
@@ -59,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T14:56:58Z",
+      "updatedAt": "2026-11-16T01:07:03Z",
       "createdAt": "2026-11-14T14:07:39Z",
       "headRef": "codex/backport-pr1224-v26.10.0",
       "labels": []
@@ -107,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-15T10:04:43Z",
+      "updatedAt": "2026-11-16T03:17:51Z",
       "createdAt": "2026-11-14T03:42:54Z",
       "headRef": "error_lost",
       "labels": []
@@ -323,7 +299,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-13T13:08:01Z",
+      "updatedAt": "2026-11-16T02:27:07Z",
       "createdAt": "2026-11-11T09:27:15Z",
       "headRef": "main",
       "labels": []
@@ -731,7 +707,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-14T10:53:28Z",
+      "updatedAt": "2026-11-16T02:42:34Z",
       "createdAt": "2026-11-04T06:33:39Z",
       "headRef": "gdn",
       "labels": []
@@ -1502,18 +1478,6 @@
       "updatedAt": "2026-09-30T06:09:30Z",
       "createdAt": "2026-09-29T07:52:46Z",
       "headRef": "kda-varlen-dense-fastpath",
-      "labels": []
-    },
-    {
-      "number": 792,
-      "title": "perf(26.9.0):chunk_gated_delta_rule_bwd_dhu性能优化(950)及aclnn接口增加一致性校验",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/792",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-10-09T01:58:03Z",
-      "createdAt": "2026-09-28T07:17:13Z",
-      "headRef": "v26.9.0",
       "labels": []
     },
     {
@@ -2609,6 +2573,42 @@
       "labels": []
     },
     {
+      "number": 1237,
+      "title": "feat(a6): 接入 A6 AIC+AIV 算子实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1237",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-15T16:04:36Z",
+      "updatedAt": "2026-11-15T16:04:36Z",
+      "createdAt": "2026-11-15T09:47:26Z",
+      "headRef": "codex/a6-mixed-mainline-20261114",
+      "labels": []
+    },
+    {
+      "number": 1236,
+      "title": "feat(recurrent_kda): 接入 A6 arch92 纯 AIV 实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1236",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-15T15:05:21Z",
+      "updatedAt": "2026-11-15T15:05:21Z",
+      "createdAt": "2026-11-15T09:47:25Z",
+      "headRef": "codex/a6-vec-mainline-20261114",
+      "labels": []
+    },
+    {
+      "number": 1234,
+      "title": "feat(build): 接入 A6 ascend960dt 平台构建支持",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1234",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-15T15:04:48Z",
+      "updatedAt": "2026-11-15T15:04:48Z",
+      "createdAt": "2026-11-15T08:20:33Z",
+      "headRef": "codex/a6-platform-mainline-20261114",
+      "labels": []
+    },
+    {
       "number": 1232,
       "title": "[v26.10.0] 回合 #1224：限制 KDA recompute workspace",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1232",
@@ -2783,7 +2783,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-11-13T09:42:01Z",
-      "updatedAt": "2026-11-13T09:42:01Z",
+      "updatedAt": "2026-11-16T02:47:23Z",
       "createdAt": "2026-11-13T03:36:16Z",
       "headRef": "gdn_fwd",
       "labels": []
@@ -3623,7 +3623,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-11-06T08:22:57Z",
-      "updatedAt": "2026-11-06T08:22:57Z",
+      "updatedAt": "2026-11-16T03:02:20Z",
       "createdAt": "2026-10-31T01:30:31Z",
       "headRef": "A6-dev-kda",
       "labels": []
