@@ -1,19 +1,67 @@
 {
-  "generatedAt": "2026-11-18T12:57:04+08:00",
+  "generatedAt": "2026-11-18T22:43:12+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 800,
+  "total": 803,
   "items": [
     {
-      "number": 1311,
-      "title": "fix(build): update Catlass and fix A5 full operator compilation",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1311",
+      "number": 1317,
+      "title": "feat(ci): 纳入 daily 构建与镜像发布流程",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1317",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T03:48:29Z",
-      "createdAt": "2026-11-18T02:53:13Z",
-      "headRef": "fix/catlass-master-a5-build-20261118",
+      "updatedAt": "2026-11-18T13:43:03Z",
+      "createdAt": "2026-11-18T13:43:02Z",
+      "headRef": "feat/daily-mirror-publish-20261118",
+      "labels": []
+    },
+    {
+      "number": 1316,
+      "title": "feat(kda): 新增KDA bwd Prepare 算子的 A6 实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1316",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-18T09:28:10Z",
+      "createdAt": "2026-11-18T09:27:54Z",
+      "headRef": "A6_recompute",
+      "labels": []
+    },
+    {
+      "number": 1315,
+      "title": "perf(gdn): 消除 ChunkGatedDeltaRuleBwd 的 QKV 和梯度布局转置",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1315",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-18T13:05:30Z",
+      "createdAt": "2026-11-18T07:50:19Z",
+      "headRef": "codex/chunk-gdn-bwd-layout-main",
+      "labels": []
+    },
+    {
+      "number": 1314,
+      "title": "fix(chunk_kda_fwd): A6 无 V1 融合实现，按 SoC 绕过 work_items 门控直走 V2",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1314",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-18T09:34:42Z",
+      "createdAt": "2026-11-18T07:49:26Z",
+      "headRef": "fix/a6-chunk-kda-fwd-v2-gate",
+      "labels": []
+    },
+    {
+      "number": 1313,
+      "title": "fix(chunk_fwd_h): 补齐 arch92 Cube 和 Vector 的序列参数",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1313",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-18T07:35:42Z",
+      "createdAt": "2026-11-18T06:25:12Z",
+      "headRef": "A6-fix-chunk-fwd-h",
       "labels": []
     },
     {
@@ -47,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T03:14:20Z",
+      "updatedAt": "2026-11-18T13:16:30Z",
       "createdAt": "2026-11-18T02:35:45Z",
       "headRef": "fix/fwd-h-fp32-state-handoff-20261118",
       "labels": []
@@ -65,18 +113,6 @@
       "labels": []
     },
     {
-      "number": 1305,
-      "title": "fix(build): update shared Catlass revision for all SoCs",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1305",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-18T01:27:37Z",
-      "createdAt": "2026-11-18T01:27:35Z",
-      "headRef": "fix/unify-catlass-20261118",
-      "labels": []
-    },
-    {
       "number": 1304,
       "title": "fix(build): skip unused CATLASS submodules during dependency fetching",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1304",
@@ -86,30 +122,6 @@
       "updatedAt": "2026-11-17T11:59:04Z",
       "createdAt": "2026-11-17T11:59:02Z",
       "headRef": "patch-1",
-      "labels": []
-    },
-    {
-      "number": 1303,
-      "title": "perf(kda): backport Finalize interleave vector rows to v26.10.0",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1303",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-17T11:46:47Z",
-      "createdAt": "2026-11-17T11:26:17Z",
-      "headRef": "perf/kda-finalize-pairs-v26-10",
-      "labels": []
-    },
-    {
-      "number": 1302,
-      "title": "perf(kda): backport Finalize reuse band factors to v26.10.0",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1302",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-17T11:46:46Z",
-      "createdAt": "2026-11-17T11:26:10Z",
-      "headRef": "perf/kda-finalize-band-v26-10",
       "labels": []
     },
     {
@@ -143,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T03:15:18Z",
+      "updatedAt": "2026-11-18T12:58:45Z",
       "createdAt": "2026-11-17T03:24:52Z",
       "headRef": "A6-dev-chunk-fwd-o",
       "labels": []
@@ -185,25 +197,13 @@
       "labels": []
     },
     {
-      "number": 1291,
-      "title": "fix(ci): 按源码指定提交校验并更新 third_party 缓存",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1291",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-17T04:04:48Z",
-      "createdAt": "2026-11-16T15:52:42Z",
-      "headRef": "fix/ci-dependency-revision-20261116",
-      "labels": []
-    },
-    {
       "number": 1283,
       "title": "feat(rgdn): add A6 (ascend960dt) arch92 kernel dispatch",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1283",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-16T12:49:37Z",
+      "updatedAt": "2026-11-18T06:59:12Z",
       "createdAt": "2026-11-16T12:49:27Z",
       "headRef": "rgdn-a6-only",
       "labels": []
@@ -242,18 +242,6 @@
       "updatedAt": "2026-11-16T08:18:59Z",
       "createdAt": "2026-11-16T08:02:56Z",
       "headRef": "docs/issue-931-acceptance-20261116",
-      "labels": []
-    },
-    {
-      "number": 1231,
-      "title": "perf(gdn): 在 UB 中保留 A2 Prepare 的 32×32 对角块",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1231",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-18T02:53:33Z",
-      "createdAt": "2026-11-14T15:05:03Z",
-      "headRef": "perf/a2-prepare-retain-d32-1114",
       "labels": []
     },
     {
@@ -299,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T04:43:48Z",
+      "updatedAt": "2026-11-18T09:42:34Z",
       "createdAt": "2026-11-14T03:42:54Z",
       "headRef": "error_lost",
       "labels": []
@@ -443,7 +431,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T02:01:46Z",
+      "updatedAt": "2026-11-18T06:28:25Z",
       "createdAt": "2026-11-12T08:34:56Z",
       "headRef": "codex/chunk-gdn-bwd-layout",
       "labels": []
@@ -623,7 +611,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T03:33:33Z",
+      "updatedAt": "2026-11-18T07:12:03Z",
       "createdAt": "2026-11-10T03:10:22Z",
       "headRef": "feature/issue795-gva1-16",
       "labels": []
@@ -2693,6 +2681,30 @@
       "labels": []
     },
     {
+      "number": 1311,
+      "title": "fix(build): pin Catlass with the HSTU fix, skip submodules and qualify cache hints",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1311",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-18T08:02:48Z",
+      "updatedAt": "2026-11-18T08:16:49Z",
+      "createdAt": "2026-11-18T02:53:13Z",
+      "headRef": "fix/catlass-master-a5-build-20261118",
+      "labels": []
+    },
+    {
+      "number": 1305,
+      "title": "fix(build): update shared Catlass revision for all SoCs",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1305",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-18T06:20:57Z",
+      "updatedAt": "2026-11-18T06:20:57Z",
+      "createdAt": "2026-11-18T01:27:35Z",
+      "headRef": "fix/unify-catlass-20261118",
+      "labels": []
+    },
+    {
       "number": 1299,
       "title": "fix(build): prefer pinned OPBASE source headers over CANN SDK",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1299",
@@ -2702,6 +2714,18 @@
       "updatedAt": "2026-11-18T03:34:27Z",
       "createdAt": "2026-11-17T07:51:48Z",
       "headRef": "fix/opbase-source-headers-20261117",
+      "labels": []
+    },
+    {
+      "number": 1291,
+      "title": "fix(ci): 按源码指定提交校验并更新 third_party 缓存",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1291",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-18T07:19:38Z",
+      "updatedAt": "2026-11-18T07:19:38Z",
+      "createdAt": "2026-11-16T15:52:42Z",
+      "headRef": "fix/ci-dependency-revision-20261116",
       "labels": []
     },
     {
@@ -2870,6 +2894,18 @@
       "updatedAt": "2026-11-14T16:29:31Z",
       "createdAt": "2026-11-14T15:12:09Z",
       "headRef": "codex/recompute-slots-26.10",
+      "labels": []
+    },
+    {
+      "number": 1231,
+      "title": "perf(gdn): 在 UB 中保留 A2 Prepare 的 32×32 对角块",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1231",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-18T09:08:18Z",
+      "updatedAt": "2026-11-18T09:08:18Z",
+      "createdAt": "2026-11-14T15:05:03Z",
+      "headRef": "perf/a2-prepare-retain-d32-1114",
       "labels": []
     },
     {
