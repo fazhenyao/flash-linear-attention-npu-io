@@ -1,31 +1,127 @@
 {
-  "generatedAt": "2026-11-19T12:51:03+08:00",
+  "generatedAt": "2026-11-19T22:49:53+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 807,
+  "total": 814,
   "items": [
     {
+      "number": 1334,
+      "title": "fix(build): 固定 metadef 源码头文件并限定 AscendC::Reg::ReduceType，兼容 CANN 9.0.0 编译",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1334",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T14:36:28Z",
+      "createdAt": "2026-11-19T14:36:27Z",
+      "headRef": "fix/cann900-metadef-headers",
+      "labels": []
+    },
+    {
+      "number": 1333,
+      "title": "fix: use aclnn_exclude for gdn_recoverssm_verify",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1333",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T14:23:13Z",
+      "createdAt": "2026-11-19T14:23:03Z",
+      "headRef": "codex/gdn-recoverssm-verify-aclnn-exclude",
+      "labels": []
+    },
+    {
+      "number": 1332,
+      "title": "feat(kda): support B=1 BNSD varlen in chunk32",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1332",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T14:41:04Z",
+      "createdAt": "2026-11-19T14:11:17Z",
+      "headRef": "feat/chunk32-bnsd-varlen",
+      "labels": []
+    },
+    {
+      "number": 1331,
+      "title": "Add grouped training causal convolution for independent projections",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1331",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T13:24:16Z",
+      "createdAt": "2026-11-19T13:24:16Z",
+      "headRef": "feat/grouped-causal-conv-training",
+      "labels": []
+    },
+    {
+      "number": 1330,
+      "title": "perf(gdn): skip unrequested causal convolution bias gradients",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1330",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T13:32:24Z",
+      "createdAt": "2026-11-19T13:04:58Z",
+      "headRef": "perf/causal-conv-bwd-optional-bias",
+      "labels": []
+    },
+    {
+      "number": 1329,
+      "title": "fix(kda): schedule one task per block in chunk32",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1329",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T12:47:49Z",
+      "createdAt": "2026-11-19T12:40:44Z",
+      "headRef": "fix/chunk32-block-per-task",
+      "labels": []
+    },
+    {
+      "number": 1328,
+      "title": "fix(kda): keep chunk32 beta_eff in FP32",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1328",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T12:33:56Z",
+      "createdAt": "2026-11-19T12:20:42Z",
+      "headRef": "fix/chunk32-beta-eff-fp32-main",
+      "labels": []
+    },
+    {
+      "number": 1325,
+      "title": "refactor(gdn): consolidate the recurrent ACLNN interface",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1325",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T11:43:53Z",
+      "createdAt": "2026-11-19T06:58:50Z",
+      "headRef": "codex/recurrent-gdn-refine-main-20261119",
+      "labels": []
+    },
+    {
+      "number": 1324,
+      "title": "feat: add A2/A3 GVA backward recompute and 200-case validation",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1324",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T07:13:44Z",
+      "createdAt": "2026-11-19T06:47:42Z",
+      "headRef": "codex/recompute-a2a3-gva-v2",
+      "labels": []
+    },
+    {
       "number": 1323,
-      "title": "feat: 为 chunk_gdn_bwd_intra 适配昇腾 A6",
+      "title": "feat: adapt chunk_gdn_bwd_intra to Ascend A6",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1323",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T04:13:09Z",
+      "updatedAt": "2026-11-19T12:15:24Z",
       "createdAt": "2026-11-19T04:13:00Z",
       "headRef": "a6_intra",
-      "labels": []
-    },
-    {
-      "number": 1322,
-      "title": "docs:仓库README整改，增加跳转链接",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1322",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-19T02:28:50Z",
-      "createdAt": "2026-11-19T02:26:26Z",
-      "headRef": "gdn_bwd_pro",
       "labels": []
     },
     {
@@ -35,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T01:17:04Z",
+      "updatedAt": "2026-11-19T13:40:19Z",
       "createdAt": "2026-11-18T19:28:59Z",
       "headRef": "codex/gdn-recoverssm-verify",
       "labels": []
@@ -59,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T04:43:09Z",
+      "updatedAt": "2026-11-19T12:36:15Z",
       "createdAt": "2026-11-18T09:27:54Z",
       "headRef": "A6_recompute",
       "labels": []
@@ -71,21 +167,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T03:45:25Z",
+      "updatedAt": "2026-11-19T10:27:20Z",
       "createdAt": "2026-11-18T07:49:26Z",
       "headRef": "fix/a6-chunk-kda-fwd-v2-gate",
-      "labels": []
-    },
-    {
-      "number": 1313,
-      "title": "fix(chunk_fwd_h): 补齐 arch92 Cube 和 Vector 的序列参数",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1313",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-18T07:35:42Z",
-      "createdAt": "2026-11-18T06:25:12Z",
-      "headRef": "A6-fix-chunk-fwd-h",
       "labels": []
     },
     {
@@ -101,25 +185,13 @@
       "labels": []
     },
     {
-      "number": 1309,
-      "title": "Add refine",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1309",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-19T04:29:15Z",
-      "createdAt": "2026-11-18T02:44:55Z",
-      "headRef": "add_refine",
-      "labels": []
-    },
-    {
       "number": 1307,
       "title": "fix(chunk_fwd_h): gated 块间 fp32 state 直传 finalState 槽，修复 bf16 往返量化",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1307",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T02:30:41Z",
+      "updatedAt": "2026-11-19T11:22:45Z",
       "createdAt": "2026-11-18T02:35:45Z",
       "headRef": "fix/fwd-h-fp32-state-handoff-20261118",
       "labels": []
@@ -299,7 +371,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T04:50:05Z",
+      "updatedAt": "2026-11-19T12:36:03Z",
       "createdAt": "2026-11-14T03:42:54Z",
       "headRef": "error_lost",
       "labels": []
@@ -347,7 +419,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-17T08:34:54Z",
+      "updatedAt": "2026-11-19T12:43:06Z",
       "createdAt": "2026-11-13T08:26:51Z",
       "headRef": "test/merge-chunk32-accuracy",
       "labels": []
@@ -434,18 +506,6 @@
       "updatedAt": "2026-11-12T14:41:52Z",
       "createdAt": "2026-11-12T13:31:17Z",
       "headRef": "codex/fix-kda-varlen-chunk-indices",
-      "labels": []
-    },
-    {
-      "number": 1189,
-      "title": "perf(gdn): 消除 ChunkGatedDeltaRuleBwd 的 QKV 和梯度布局转置",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1189",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-18T06:28:25Z",
-      "createdAt": "2026-11-12T08:34:56Z",
-      "headRef": "codex/chunk-gdn-bwd-layout",
       "labels": []
     },
     {
@@ -623,7 +683,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T03:35:36Z",
+      "updatedAt": "2026-11-19T13:26:01Z",
       "createdAt": "2026-11-10T03:10:22Z",
       "headRef": "feature/issue795-gva1-16",
       "labels": []
@@ -2693,6 +2753,18 @@
       "labels": []
     },
     {
+      "number": 1322,
+      "title": "docs:仓库README整改，增加跳转链接",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1322",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-19T09:36:29Z",
+      "updatedAt": "2026-11-19T09:36:29Z",
+      "createdAt": "2026-11-19T02:26:26Z",
+      "headRef": "gdn_bwd_pro",
+      "labels": []
+    },
+    {
       "number": 1321,
       "title": "ci: 将 Canzovo 加入 NPU CI 触发名单",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1321",
@@ -2714,6 +2786,18 @@
       "updatedAt": "2026-11-19T02:20:28Z",
       "createdAt": "2026-11-18T07:50:19Z",
       "headRef": "codex/chunk-gdn-bwd-layout-main",
+      "labels": []
+    },
+    {
+      "number": 1313,
+      "title": "fix(chunk_fwd_h): 补齐 arch92 Cube 和 Vector 的序列参数",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1313",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-19T06:37:24Z",
+      "updatedAt": "2026-11-19T06:37:24Z",
+      "createdAt": "2026-11-18T06:25:12Z",
+      "headRef": "A6-fix-chunk-fwd-h",
       "labels": []
     },
     {
