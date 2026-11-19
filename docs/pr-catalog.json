@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-11-18T22:43:12+08:00",
+  "generatedAt": "2026-11-19T12:51:03+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 803,
+  "total": 807,
   "items": [
+    {
+      "number": 1323,
+      "title": "feat: 为 chunk_gdn_bwd_intra 适配昇腾 A6",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1323",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T04:13:09Z",
+      "createdAt": "2026-11-19T04:13:00Z",
+      "headRef": "a6_intra",
+      "labels": []
+    },
+    {
+      "number": 1322,
+      "title": "docs:仓库README整改，增加跳转链接",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1322",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T02:28:50Z",
+      "createdAt": "2026-11-19T02:26:26Z",
+      "headRef": "gdn_bwd_pro",
+      "labels": []
+    },
+    {
+      "number": 1319,
+      "title": "feat: add A5 gdn_recoverssm_verify operator",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1319",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T01:17:04Z",
+      "createdAt": "2026-11-18T19:28:59Z",
+      "headRef": "codex/gdn-recoverssm-verify",
+      "labels": []
+    },
     {
       "number": 1317,
       "title": "feat(ci): 纳入 daily 构建与镜像发布流程",
@@ -23,21 +59,9 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T09:28:10Z",
+      "updatedAt": "2026-11-19T04:43:09Z",
       "createdAt": "2026-11-18T09:27:54Z",
       "headRef": "A6_recompute",
-      "labels": []
-    },
-    {
-      "number": 1315,
-      "title": "perf(gdn): 消除 ChunkGatedDeltaRuleBwd 的 QKV 和梯度布局转置",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1315",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-18T13:05:30Z",
-      "createdAt": "2026-11-18T07:50:19Z",
-      "headRef": "codex/chunk-gdn-bwd-layout-main",
       "labels": []
     },
     {
@@ -47,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T09:34:42Z",
+      "updatedAt": "2026-11-19T03:45:25Z",
       "createdAt": "2026-11-18T07:49:26Z",
       "headRef": "fix/a6-chunk-kda-fwd-v2-gate",
       "labels": []
@@ -83,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T02:45:06Z",
+      "updatedAt": "2026-11-19T04:29:15Z",
       "createdAt": "2026-11-18T02:44:55Z",
       "headRef": "add_refine",
       "labels": []
@@ -95,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T13:16:30Z",
+      "updatedAt": "2026-11-19T02:30:41Z",
       "createdAt": "2026-11-18T02:35:45Z",
       "headRef": "fix/fwd-h-fp32-state-handoff-20261118",
       "labels": []
@@ -155,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T12:58:45Z",
+      "updatedAt": "2026-11-19T03:18:42Z",
       "createdAt": "2026-11-17T03:24:52Z",
       "headRef": "A6-dev-chunk-fwd-o",
       "labels": []
@@ -194,18 +218,6 @@
       "updatedAt": "2026-11-17T03:46:55Z",
       "createdAt": "2026-11-16T15:52:44Z",
       "headRef": "fix/ci-dependency-revision-v26.11.0-20261116",
-      "labels": []
-    },
-    {
-      "number": 1283,
-      "title": "feat(rgdn): add A6 (ascend960dt) arch92 kernel dispatch",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1283",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-18T06:59:12Z",
-      "createdAt": "2026-11-16T12:49:27Z",
-      "headRef": "rgdn-a6-only",
       "labels": []
     },
     {
@@ -287,7 +299,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T09:42:34Z",
+      "updatedAt": "2026-11-19T04:50:05Z",
       "createdAt": "2026-11-14T03:42:54Z",
       "headRef": "error_lost",
       "labels": []
@@ -611,7 +623,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-18T07:12:03Z",
+      "updatedAt": "2026-11-19T03:35:36Z",
       "createdAt": "2026-11-10T03:10:22Z",
       "headRef": "feature/issue795-gva1-16",
       "labels": []
@@ -2681,6 +2693,30 @@
       "labels": []
     },
     {
+      "number": 1321,
+      "title": "ci: 将 Canzovo 加入 NPU CI 触发名单",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1321",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-19T03:30:46Z",
+      "updatedAt": "2026-11-19T03:37:58Z",
+      "createdAt": "2026-11-19T01:49:59Z",
+      "headRef": "ci/add-canzovo",
+      "labels": []
+    },
+    {
+      "number": 1315,
+      "title": "perf(gdn): 消除 ChunkGatedDeltaRuleBwd 的 QKV 和梯度布局转置",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1315",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-19T02:20:28Z",
+      "updatedAt": "2026-11-19T02:20:28Z",
+      "createdAt": "2026-11-18T07:50:19Z",
+      "headRef": "codex/chunk-gdn-bwd-layout-main",
+      "labels": []
+    },
+    {
       "number": 1311,
       "title": "fix(build): pin Catlass with the HSTU fix, skip submodules and qualify cache hints",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1311",
@@ -2798,6 +2834,18 @@
       "updatedAt": "2026-11-17T06:51:45Z",
       "createdAt": "2026-11-16T13:01:39Z",
       "headRef": "fix/catlass-debug-opbase-headers-20261116",
+      "labels": []
+    },
+    {
+      "number": 1283,
+      "title": "feat(rgdn): add A6 (ascend960dt) arch92 kernel dispatch",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1283",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-19T04:05:14Z",
+      "updatedAt": "2026-11-19T04:05:14Z",
+      "createdAt": "2026-11-16T12:49:27Z",
+      "headRef": "rgdn-a6-only",
       "labels": []
     },
     {
