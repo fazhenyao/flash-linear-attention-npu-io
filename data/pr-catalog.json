@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-11-19T22:49:53+08:00",
+  "generatedAt": "2026-11-20T12:41:01+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 814,
+  "total": 816,
   "items": [
+    {
+      "number": 1337,
+      "title": "fix(gdn): prevent arch22 ChunkFwdH offset overflow",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1337",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-20T01:32:49Z",
+      "createdAt": "2026-11-20T01:32:49Z",
+      "headRef": "fix/gdn-arch22-h-offset-u64",
+      "labels": []
+    },
+    {
+      "number": 1336,
+      "title": "perf(causal_conv1d): reuse BF16 W4 weights in backward",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1336",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-20T01:49:51Z",
+      "createdAt": "2026-11-19T21:01:01Z",
+      "headRef": "perf/conv1d-bf16-w4-dx-weight-reuse-20261119",
+      "labels": []
+    },
+    {
+      "number": 1335,
+      "title": "feat(causal-conv1d): preserve BF16 SiLU gradient rounding in fused backward",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1335",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-19T23:26:36Z",
+      "createdAt": "2026-11-19T19:40:04Z",
+      "headRef": "perf/causal-conv-bf16-silu-grad-950",
+      "labels": []
+    },
     {
       "number": 1334,
       "title": "fix(build): 固定 metadef 源码头文件并限定 AscendC::Reg::ReduceType，兼容 CANN 9.0.0 编译",
@@ -47,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T13:24:16Z",
+      "updatedAt": "2026-11-19T21:21:51Z",
       "createdAt": "2026-11-19T13:24:16Z",
       "headRef": "feat/grouped-causal-conv-training",
       "labels": []
@@ -59,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T13:32:24Z",
+      "updatedAt": "2026-11-20T00:19:31Z",
       "createdAt": "2026-11-19T13:04:58Z",
       "headRef": "perf/causal-conv-bwd-optional-bias",
       "labels": []
@@ -71,7 +107,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T12:47:49Z",
+      "updatedAt": "2026-11-20T03:52:08Z",
       "createdAt": "2026-11-19T12:40:44Z",
       "headRef": "fix/chunk32-block-per-task",
       "labels": []
@@ -83,7 +119,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T12:33:56Z",
+      "updatedAt": "2026-11-20T01:54:20Z",
       "createdAt": "2026-11-19T12:20:42Z",
       "headRef": "fix/chunk32-beta-eff-fp32-main",
       "labels": []
@@ -119,7 +155,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T12:15:24Z",
+      "updatedAt": "2026-11-20T02:30:33Z",
       "createdAt": "2026-11-19T04:13:00Z",
       "headRef": "a6_intra",
       "labels": []
@@ -131,7 +167,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T13:40:19Z",
+      "updatedAt": "2026-11-20T03:56:53Z",
       "createdAt": "2026-11-18T19:28:59Z",
       "headRef": "codex/gdn-recoverssm-verify",
       "labels": []
@@ -167,7 +203,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T10:27:20Z",
+      "updatedAt": "2026-11-20T01:33:05Z",
       "createdAt": "2026-11-18T07:49:26Z",
       "headRef": "fix/a6-chunk-kda-fwd-v2-gate",
       "labels": []
@@ -191,7 +227,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T11:22:45Z",
+      "updatedAt": "2026-11-20T02:52:57Z",
       "createdAt": "2026-11-18T02:35:45Z",
       "headRef": "fix/fwd-h-fp32-state-handoff-20261118",
       "labels": []
@@ -251,7 +287,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T03:18:42Z",
+      "updatedAt": "2026-11-20T03:48:03Z",
       "createdAt": "2026-11-17T03:24:52Z",
       "headRef": "A6-dev-chunk-fwd-o",
       "labels": []
@@ -371,7 +407,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T12:36:03Z",
+      "updatedAt": "2026-11-20T03:48:24Z",
       "createdAt": "2026-11-14T03:42:54Z",
       "headRef": "error_lost",
       "labels": []
@@ -539,7 +575,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T02:48:33Z",
+      "updatedAt": "2026-11-20T04:16:04Z",
       "createdAt": "2026-11-12T01:22:33Z",
       "headRef": "main",
       "labels": []
@@ -683,7 +719,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T13:26:01Z",
+      "updatedAt": "2026-11-20T03:34:58Z",
       "createdAt": "2026-11-10T03:10:22Z",
       "headRef": "feature/issue795-gva1-16",
       "labels": []
@@ -698,18 +734,6 @@
       "updatedAt": "2026-11-10T03:41:51Z",
       "createdAt": "2026-11-10T02:21:06Z",
       "headRef": "codex/fix-opapi-symbol-owner",
-      "labels": []
-    },
-    {
-      "number": 1134,
-      "title": "feat(ascendc): sync recurrent_gated_delta_rule operator and configs f…",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1134",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-16T08:57:19Z",
-      "createdAt": "2026-11-09T09:54:42Z",
-      "headRef": "A6-dev",
       "labels": []
     },
     {
@@ -1619,7 +1643,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-12T08:25:17Z",
+      "updatedAt": "2026-11-20T03:10:00Z",
       "createdAt": "2026-10-07T08:36:25Z",
       "headRef": "codex/cannbot-operator-workflow",
       "labels": []
