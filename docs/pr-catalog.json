@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-11-20T22:31:25+08:00",
+  "generatedAt": "2026-11-21T12:36:06+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 819,
+  "total": 821,
   "items": [
+    {
+      "number": 1343,
+      "title": "perf(kda): remove dense layout transposes",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1343",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-20T16:11:52Z",
+      "createdAt": "2026-11-20T15:49:52Z",
+      "headRef": "fix/chunk32-dense-transpose",
+      "labels": []
+    },
     {
       "number": 1341,
       "title": "feat(abi): 支持 Inner-only 算子的 OPP 打包与 wheel overlay 校验",
@@ -11,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-20T14:27:08Z",
+      "updatedAt": "2026-11-20T16:10:00Z",
       "createdAt": "2026-11-20T14:21:21Z",
       "headRef": "feat/private-abi-delivery",
       "labels": []
@@ -83,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-20T14:21:55Z",
+      "updatedAt": "2026-11-20T15:15:36Z",
       "createdAt": "2026-11-19T14:36:27Z",
       "headRef": "fix/cann900-metadef-headers",
       "labels": []
@@ -203,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-20T08:04:44Z",
+      "updatedAt": "2026-11-21T02:44:36Z",
       "createdAt": "2026-11-18T09:27:54Z",
       "headRef": "A6_recompute",
       "labels": []
@@ -287,7 +299,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-20T07:56:11Z",
+      "updatedAt": "2026-11-21T02:10:34Z",
       "createdAt": "2026-11-17T03:24:52Z",
       "headRef": "A6-dev-chunk-fwd-o",
       "labels": []
@@ -701,18 +713,6 @@
       "labels": []
     },
     {
-      "number": 1142,
-      "title": "feat(gdn): support A5 backward GVA ratios 1–16",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1142",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-20T12:09:21Z",
-      "createdAt": "2026-11-10T03:10:22Z",
-      "headRef": "feature/issue795-gva1-16",
-      "labels": []
-    },
-    {
       "number": 1140,
       "title": "fix: preserve vendor ACLNN priority and add opt-in AscendC entry tracing",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1140",
@@ -1019,7 +1019,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-17T11:29:33Z",
+      "updatedAt": "2026-11-21T04:02:30Z",
       "createdAt": "2026-11-03T11:32:25Z",
       "headRef": "fix/kda-safe-gate-causality",
       "labels": []
@@ -2765,6 +2765,18 @@
       "labels": []
     },
     {
+      "number": 1344,
+      "title": "ci: 将七位贡献者加入 NPU CI 触发名单",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1344",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-21T02:38:32Z",
+      "updatedAt": "2026-11-21T02:38:32Z",
+      "createdAt": "2026-11-21T02:16:58Z",
+      "headRef": "ci/npu-trigger-users-20261121-1aa8a40",
+      "labels": []
+    },
+    {
       "number": 1329,
       "title": "fix(kda): schedule one task per block in chunk32",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1329",
@@ -3554,6 +3566,18 @@
       "updatedAt": "2026-11-11T01:42:54Z",
       "createdAt": "2026-11-10T03:13:47Z",
       "headRef": "fix/ci-complete-build-logs",
+      "labels": []
+    },
+    {
+      "number": 1142,
+      "title": "feat(gdn): support A5 backward GVA ratios 1–16",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1142",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-21T01:57:46Z",
+      "updatedAt": "2026-11-21T01:57:47Z",
+      "createdAt": "2026-11-10T03:10:22Z",
+      "headRef": "feature/issue795-gva1-16",
       "labels": []
     },
     {
