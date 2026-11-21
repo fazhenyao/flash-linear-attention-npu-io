@@ -1,9 +1,48 @@
 {
-  "generatedAt": "2026-11-21T12:36:06+08:00",
+  "generatedAt": "2026-11-21T21:50:00+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 821,
+  "total": 825,
   "items": [
+    {
+      "number": 1352,
+      "title": "docs: 完善 operator-review 的 Stable-ABI 分层与结构化报错规则",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1352",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-21T09:40:17Z",
+      "createdAt": "2026-11-21T09:18:16Z",
+      "headRef": "codex/operator-review-stable-dfx",
+      "labels": []
+    },
+    {
+      "number": 1350,
+      "title": "fix(kda): 修复阶段算子逻辑形状与公开格式兼容问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1350",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-21T09:51:49Z",
+      "createdAt": "2026-11-21T08:52:26Z",
+      "headRef": "main",
+      "labels": []
+    },
+    {
+      "number": 1348,
+      "title": "[WIP][暂不合入] feat:chunk_kda_fwd 支持 QKV 尾轴非连续输入（BSND/BNSD）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1348",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-21T08:44:25Z",
+      "createdAt": "2026-11-21T08:44:10Z",
+      "headRef": "feat/853-chunk-kda-fwd-strided-qkv",
+      "labels": [
+        "enhancement",
+        "op:chunk_kda_fwd"
+      ]
+    },
     {
       "number": 1343,
       "title": "perf(kda): remove dense layout transposes",
@@ -155,7 +194,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T11:43:53Z",
+      "updatedAt": "2026-11-21T08:36:16Z",
       "createdAt": "2026-11-19T06:58:50Z",
       "headRef": "codex/recurrent-gdn-refine-main-20261119",
       "labels": []
@@ -173,25 +212,13 @@
       "labels": []
     },
     {
-      "number": 1323,
-      "title": "feat: adapt chunk_gdn_bwd_intra to Ascend A6",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1323",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-20T07:58:16Z",
-      "createdAt": "2026-11-19T04:13:00Z",
-      "headRef": "a6_intra",
-      "labels": []
-    },
-    {
       "number": 1319,
-      "title": "feat: add A5 gdn_recoverssm_verify operator",
+      "title": "feat: add A5 GDN RecoverSSM verify and commit operators",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1319",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-20T03:56:53Z",
+      "updatedAt": "2026-11-21T08:36:33Z",
       "createdAt": "2026-11-18T19:28:59Z",
       "headRef": "codex/gdn-recoverssm-verify",
       "labels": []
@@ -206,18 +233,6 @@
       "updatedAt": "2026-11-18T13:43:03Z",
       "createdAt": "2026-11-18T13:43:02Z",
       "headRef": "feat/daily-mirror-publish-20261118",
-      "labels": []
-    },
-    {
-      "number": 1316,
-      "title": "feat(kda): 新增KDA bwd Prepare 算子的 A6 实现",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1316",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-21T02:44:36Z",
-      "createdAt": "2026-11-18T09:27:54Z",
-      "headRef": "A6_recompute",
       "labels": []
     },
     {
@@ -239,7 +254,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-20T02:52:57Z",
+      "updatedAt": "2026-11-21T09:29:01Z",
       "createdAt": "2026-11-18T02:35:45Z",
       "headRef": "fix/fwd-h-fp32-state-handoff-20261118",
       "labels": []
@@ -299,7 +314,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-21T02:10:34Z",
+      "updatedAt": "2026-11-21T09:46:37Z",
       "createdAt": "2026-11-17T03:24:52Z",
       "headRef": "A6-dev-chunk-fwd-o",
       "labels": []
@@ -419,7 +434,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-20T10:12:39Z",
+      "updatedAt": "2026-11-21T12:31:45Z",
       "createdAt": "2026-11-14T03:42:54Z",
       "headRef": "error_lost",
       "labels": []
@@ -2765,6 +2780,18 @@
       "labels": []
     },
     {
+      "number": 1345,
+      "title": "fix(kda): keep safe-gate scores independent of future gates",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1345",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-21T09:31:13Z",
+      "updatedAt": "2026-11-21T09:31:13Z",
+      "createdAt": "2026-11-21T07:24:43Z",
+      "headRef": "codex/kda-safe-gate-a2-a5",
+      "labels": []
+    },
+    {
       "number": 1344,
       "title": "ci: 将七位贡献者加入 NPU CI 触发名单",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1344",
@@ -2801,6 +2828,18 @@
       "labels": []
     },
     {
+      "number": 1323,
+      "title": "feat: adapt chunk_gdn_bwd_intra to Ascend A6",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1323",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-21T08:10:13Z",
+      "updatedAt": "2026-11-21T08:10:13Z",
+      "createdAt": "2026-11-19T04:13:00Z",
+      "headRef": "a6_intra",
+      "labels": []
+    },
+    {
       "number": 1322,
       "title": "docs:仓库README整改，增加跳转链接",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1322",
@@ -2822,6 +2861,18 @@
       "updatedAt": "2026-11-19T03:37:58Z",
       "createdAt": "2026-11-19T01:49:59Z",
       "headRef": "ci/add-canzovo",
+      "labels": []
+    },
+    {
+      "number": 1316,
+      "title": "feat(kda): 新增KDA bwd Prepare 算子的 A6 实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1316",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-21T09:06:00Z",
+      "updatedAt": "2026-11-21T09:06:01Z",
+      "createdAt": "2026-11-18T09:27:54Z",
+      "headRef": "A6_recompute",
       "labels": []
     },
     {
