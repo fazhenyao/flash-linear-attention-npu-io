@@ -1,9 +1,21 @@
 {
-  "generatedAt": "2026-11-21T21:50:00+08:00",
+  "generatedAt": "2026-11-22T11:50:38+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 825,
+  "total": 826,
   "items": [
+    {
+      "number": 1354,
+      "title": "fix(stable): restore chunk_local_cumsum varlen and output_dtype contract",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1354",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-22T02:36:26Z",
+      "createdAt": "2026-11-22T01:36:02Z",
+      "headRef": "fix/cumsum-stable-contract",
+      "labels": []
+    },
     {
       "number": 1352,
       "title": "docs: 完善 operator-review 的 Stable-ABI 分层与结构化报错规则",
@@ -35,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-21T08:44:25Z",
+      "updatedAt": "2026-11-22T01:03:19Z",
       "createdAt": "2026-11-21T08:44:10Z",
       "headRef": "feat/853-chunk-kda-fwd-strided-qkv",
       "labels": [
@@ -434,7 +446,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-21T12:31:45Z",
+      "updatedAt": "2026-11-21T14:46:07Z",
       "createdAt": "2026-11-14T03:42:54Z",
       "headRef": "error_lost",
       "labels": []
