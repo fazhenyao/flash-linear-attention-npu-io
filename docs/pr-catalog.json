@@ -1,9 +1,33 @@
 {
-  "generatedAt": "2026-11-22T21:42:38+08:00",
+  "generatedAt": "2026-11-23T12:28:45+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 828,
+  "total": 829,
   "items": [
+    {
+      "number": 1361,
+      "title": "fix(kda): 修复阶段算子逻辑形状与公开格式兼容问题",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1361",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-23T04:14:08Z",
+      "createdAt": "2026-11-23T03:50:18Z",
+      "headRef": "fix/issue1308-main-refresh-20261123",
+      "labels": []
+    },
+    {
+      "number": 1360,
+      "title": "perf(gdn): 消减 Finalize 多布局路径的性能回退",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1360",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-23T03:26:05Z",
+      "createdAt": "2026-11-23T02:03:51Z",
+      "headRef": "perf/finalize-layout-constants-20261123",
+      "labels": []
+    },
     {
       "number": 1358,
       "title": "docs(stable): drop the stale solve_tri TND refusal note",
@@ -41,37 +65,13 @@
       "labels": []
     },
     {
-      "number": 1352,
-      "title": "docs: 完善 operator-review 的 Stable-ABI 分层与结构化报错规则",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1352",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-21T09:40:17Z",
-      "createdAt": "2026-11-21T09:18:16Z",
-      "headRef": "codex/operator-review-stable-dfx",
-      "labels": []
-    },
-    {
-      "number": 1350,
-      "title": "fix(kda): 修复阶段算子逻辑形状与公开格式兼容问题",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1350",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-21T09:51:49Z",
-      "createdAt": "2026-11-21T08:52:26Z",
-      "headRef": "main",
-      "labels": []
-    },
-    {
       "number": 1348,
       "title": "[WIP][暂不合入] feat:chunk_kda_fwd 支持 QKV 尾轴非连续输入（BSND/BNSD）",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1348",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-22T01:03:19Z",
+      "updatedAt": "2026-11-23T03:08:17Z",
       "createdAt": "2026-11-21T08:44:10Z",
       "headRef": "feat/853-chunk-kda-fwd-strided-qkv",
       "labels": [
@@ -86,7 +86,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-20T16:11:52Z",
+      "updatedAt": "2026-11-23T03:23:59Z",
       "createdAt": "2026-11-20T15:49:52Z",
       "headRef": "fix/chunk32-dense-transpose",
       "labels": []
@@ -110,7 +110,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-20T08:32:35Z",
+      "updatedAt": "2026-11-23T02:37:39Z",
       "createdAt": "2026-11-20T08:32:34Z",
       "headRef": "docs/gdn-bwd-readme-661-20261120",
       "labels": []
@@ -194,7 +194,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-19T14:41:04Z",
+      "updatedAt": "2026-11-23T02:42:39Z",
       "createdAt": "2026-11-19T14:11:17Z",
       "headRef": "feat/chunk32-bnsd-varlen",
       "labels": []
@@ -230,7 +230,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-22T05:15:54Z",
+      "updatedAt": "2026-11-23T03:46:08Z",
       "createdAt": "2026-11-19T06:58:50Z",
       "headRef": "codex/recurrent-gdn-refine-main-20261119",
       "labels": []
@@ -254,7 +254,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-21T08:36:33Z",
+      "updatedAt": "2026-11-23T04:04:20Z",
       "createdAt": "2026-11-18T19:28:59Z",
       "headRef": "codex/gdn-recoverssm-verify",
       "labels": []
@@ -350,7 +350,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-21T09:46:37Z",
+      "updatedAt": "2026-11-23T04:14:11Z",
       "createdAt": "2026-11-17T03:24:52Z",
       "headRef": "A6-dev-chunk-fwd-o",
       "labels": []
@@ -461,18 +461,6 @@
       "updatedAt": "2026-11-14T07:37:43Z",
       "createdAt": "2026-11-14T07:37:42Z",
       "headRef": "fix/ci-artifact-transfer-retries",
-      "labels": []
-    },
-    {
-      "number": 1223,
-      "title": "Error lost统一Ascend C DFX错误 修复",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1223",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-21T14:46:07Z",
-      "createdAt": "2026-11-14T03:42:54Z",
-      "headRef": "error_lost",
       "labels": []
     },
     {
@@ -2816,6 +2804,18 @@
       "labels": []
     },
     {
+      "number": 1352,
+      "title": "docs: 完善 operator-review 的 Stable-ABI 分层与结构化报错规则",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1352",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-23T01:14:35Z",
+      "updatedAt": "2026-11-23T01:14:35Z",
+      "createdAt": "2026-11-21T09:18:16Z",
+      "headRef": "codex/operator-review-stable-dfx",
+      "labels": []
+    },
+    {
       "number": 1345,
       "title": "fix(kda): keep safe-gate scores independent of future gates",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1345",
@@ -3224,6 +3224,18 @@
       "labels": []
     },
     {
+      "number": 1223,
+      "title": "Error lost统一Ascend C DFX错误 修复",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1223",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-23T01:23:25Z",
+      "updatedAt": "2026-11-23T01:25:10Z",
+      "createdAt": "2026-11-14T03:42:54Z",
+      "headRef": "error_lost",
+      "labels": []
+    },
+    {
       "number": 1220,
       "title": "[v26.10.0] 回合 A2/A3 KDA 前反向与 recurrent_kda 优化和修复",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1220",
@@ -3434,7 +3446,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-11-13T14:44:05Z",
-      "updatedAt": "2026-11-13T14:46:24Z",
+      "updatedAt": "2026-11-23T02:57:01Z",
       "createdAt": "2026-11-12T02:01:44Z",
       "headRef": "fix/error-code-remediation",
       "labels": []
@@ -4250,7 +4262,7 @@
       "status": "merged",
       "statusText": "已合入",
       "mergedAt": "2026-11-02T02:23:51Z",
-      "updatedAt": "2026-11-02T02:23:51Z",
+      "updatedAt": "2026-11-23T02:56:58Z",
       "createdAt": "2026-11-02T01:59:11Z",
       "headRef": "LAST",
       "labels": []
