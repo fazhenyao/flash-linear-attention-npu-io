@@ -1,9 +1,45 @@
 {
-  "generatedAt": "2026-11-26T00:21:16+08:00",
+  "generatedAt": "2026-11-26T13:45:36+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 854,
+  "total": 857,
   "items": [
+    {
+      "number": 1409,
+      "title": "ci: add nightly KDA forward/backward model checks on A2 and A5",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1409",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-26T03:34:18Z",
+      "createdAt": "2026-11-26T03:28:12Z",
+      "headRef": "test/kda-model-daily-39",
+      "labels": []
+    },
+    {
+      "number": 1407,
+      "title": "test(gdn): 删除 chunk_gated_delta_rule_fwd 的 ACLNN ABI 自检脚本并清理引用",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1407",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-26T02:34:50Z",
+      "createdAt": "2026-11-26T02:17:25Z",
+      "headRef": "gdn_fwd",
+      "labels": []
+    },
+    {
+      "number": 1405,
+      "title": "[Feature] Export native FP32 KDA prefill checkpoints on Ascend A5",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1405",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-26T01:33:04Z",
+      "createdAt": "2026-11-26T01:33:03Z",
+      "headRef": "feat/kda-prefill-checkpoint-export",
+      "labels": []
+    },
     {
       "number": 1401,
       "title": "add chunk_gated_delta_rule_bwd_finalize A6",
@@ -14,18 +50,6 @@
       "updatedAt": "2026-11-25T09:25:21Z",
       "createdAt": "2026-11-25T09:22:52Z",
       "headRef": "a6_finalize",
-      "labels": []
-    },
-    {
-      "number": 1400,
-      "title": "fix(kda): backport A5 backward precision fixes to v26.11.0",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1400",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-25T09:45:14Z",
-      "createdAt": "2026-11-25T08:51:23Z",
-      "headRef": "codex/a5-kda-gate-precision-v26.11.0",
       "labels": []
     },
     {
@@ -71,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-25T10:02:14Z",
+      "updatedAt": "2026-11-26T04:02:39Z",
       "createdAt": "2026-11-25T04:28:07Z",
       "headRef": "codex/gdn-fwd-h-fp32-v26.11",
       "labels": []
@@ -125,18 +149,6 @@
       "labels": []
     },
     {
-      "number": 1390,
-      "title": "fix(kda): 修复 A5 反向门控、块内梯度与 BF16 重计算精度",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1390",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-25T09:45:09Z",
-      "createdAt": "2026-11-24T14:36:30Z",
-      "headRef": "codex/a5-kda-gate-precision",
-      "labels": []
-    },
-    {
       "number": 1388,
       "title": "feat(kda): 新增KDA bwd Finalize 算子的 A6 实现",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1388",
@@ -167,7 +179,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-25T01:42:07Z",
+      "updatedAt": "2026-11-26T03:09:16Z",
       "createdAt": "2026-11-24T12:09:20Z",
       "headRef": "perf/a2-gdn-fwdo-direct-bsnd-1124",
       "labels": []
@@ -179,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-25T08:47:07Z",
+      "updatedAt": "2026-11-26T04:04:34Z",
       "createdAt": "2026-11-24T07:11:28Z",
       "headRef": "fix/dfx-silent-returns-batch1-3",
       "labels": []
@@ -203,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-25T01:25:52Z",
+      "updatedAt": "2026-11-26T02:45:06Z",
       "createdAt": "2026-11-23T13:28:38Z",
       "headRef": "feat/mega-recurrent-kda-a5",
       "labels": []
@@ -227,25 +239,13 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-25T09:15:30Z",
+      "updatedAt": "2026-11-26T03:37:40Z",
       "createdAt": "2026-11-23T08:57:03Z",
       "headRef": "dfx/unify-without-report",
       "labels": [
         "DFX",
         "main"
       ]
-    },
-    {
-      "number": 1366,
-      "title": "feat(gdn): 接入 A6 前向三算子路径",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1366",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-25T13:35:19Z",
-      "createdAt": "2026-11-23T08:00:16Z",
-      "headRef": "codex/a6-gdn-fwd-l2",
-      "labels": []
     },
     {
       "number": 1348,
@@ -269,7 +269,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-25T05:57:42Z",
+      "updatedAt": "2026-11-26T01:23:49Z",
       "createdAt": "2026-11-20T15:49:52Z",
       "headRef": "fix/chunk32-dense-transpose",
       "labels": []
@@ -353,7 +353,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-24T13:33:57Z",
+      "updatedAt": "2026-11-25T16:54:27Z",
       "createdAt": "2026-11-19T14:11:17Z",
       "headRef": "feat/chunk32-bnsd-varlen",
       "labels": []
@@ -2915,6 +2915,18 @@
       "labels": []
     },
     {
+      "number": 1400,
+      "title": "fix(kda): backport A5 backward precision fixes to v26.11.0",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1400",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-26T03:02:06Z",
+      "updatedAt": "2026-11-26T03:02:12Z",
+      "createdAt": "2026-11-25T08:51:23Z",
+      "headRef": "codex/a5-kda-gate-precision-v26.11.0",
+      "labels": []
+    },
+    {
       "number": 1392,
       "title": "feat(gdn): A2/A3 Bwd 父链放开 GVA 1~16 准入并合入 arch22 Finalize 性能优化",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1392",
@@ -2924,6 +2936,18 @@
       "updatedAt": "2026-11-25T11:33:01Z",
       "createdAt": "2026-11-25T02:04:32Z",
       "headRef": "gdn_bwd",
+      "labels": []
+    },
+    {
+      "number": 1390,
+      "title": "fix(kda): 修复 A5 反向门控、块内梯度与 BF16 重计算精度",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1390",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-26T02:44:35Z",
+      "updatedAt": "2026-11-26T02:44:35Z",
+      "createdAt": "2026-11-24T14:36:30Z",
+      "headRef": "codex/a5-kda-gate-precision",
       "labels": []
     },
     {
@@ -2972,6 +2996,18 @@
       "updatedAt": "2026-11-25T01:34:30Z",
       "createdAt": "2026-11-23T12:36:57Z",
       "headRef": "fix/a2-prepare-outl-sani-1123",
+      "labels": []
+    },
+    {
+      "number": 1366,
+      "title": "feat(gdn): 接入 A6 前向三算子路径",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1366",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-26T02:40:44Z",
+      "updatedAt": "2026-11-26T02:40:44Z",
+      "createdAt": "2026-11-23T08:00:16Z",
+      "headRef": "codex/a6-gdn-fwd-l2",
       "labels": []
     },
     {
