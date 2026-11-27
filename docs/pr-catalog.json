@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-11-26T23:56:02+08:00",
+  "generatedAt": "2026-11-27T13:40:35+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 865,
+  "total": 867,
   "items": [
     {
       "number": 1420,
@@ -23,7 +23,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T12:17:20Z",
+      "updatedAt": "2026-11-27T02:40:56Z",
       "createdAt": "2026-11-26T09:25:01Z",
       "headRef": "test/atk-passing-smoke-20261126",
       "labels": []
@@ -35,7 +35,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T08:09:45Z",
+      "updatedAt": "2026-11-27T02:17:20Z",
       "createdAt": "2026-11-26T07:48:39Z",
       "headRef": "fix/kda-prepare-pipe-v-1410-v26.10.0",
       "labels": []
@@ -47,7 +47,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T08:09:37Z",
+      "updatedAt": "2026-11-27T02:32:24Z",
       "createdAt": "2026-11-26T07:48:32Z",
       "headRef": "fix/kda-prepare-pipe-v-1410-main",
       "labels": []
@@ -95,7 +95,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T07:51:25Z",
+      "updatedAt": "2026-11-27T03:42:33Z",
       "createdAt": "2026-11-25T09:22:52Z",
       "headRef": "a6_finalize",
       "labels": []
@@ -305,7 +305,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T07:09:16Z",
+      "updatedAt": "2026-11-27T02:45:25Z",
       "createdAt": "2026-11-20T15:49:52Z",
       "headRef": "fix/chunk32-dense-transpose",
       "labels": []
@@ -665,7 +665,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-13T03:35:20Z",
+      "updatedAt": "2026-11-27T03:07:09Z",
       "createdAt": "2026-11-13T03:35:18Z",
       "headRef": "clean-code/chunk-kda-fwd-fused-arch35",
       "labels": []
@@ -2948,6 +2948,30 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 1423,
+      "title": "chore(gdn): 清理 chunk_gated_delta_rule_fwd_h 冗余注释",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1423",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-27T03:23:58Z",
+      "updatedAt": "2026-11-27T03:23:58Z",
+      "createdAt": "2026-11-27T02:29:20Z",
+      "headRef": "gdn_26.11.0",
+      "labels": []
+    },
+    {
+      "number": 1422,
+      "title": "chore(gdn): 清理 chunk_gated_delta_rule_fwd_h 冗余注释",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1422",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-27T03:23:37Z",
+      "updatedAt": "2026-11-27T03:23:38Z",
+      "createdAt": "2026-11-27T01:58:18Z",
+      "headRef": "gdn",
       "labels": []
     },
     {
