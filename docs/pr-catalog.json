@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-11-27T13:40:35+08:00",
+  "generatedAt": "2026-11-27T23:44:47+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 867,
+  "total": 872,
   "items": [
+    {
+      "number": 1428,
+      "title": "Conv1d/v26.11.0 stride pair t4",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1428",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-27T12:49:56Z",
+      "createdAt": "2026-11-27T12:49:46Z",
+      "headRef": "conv1d/v26.11.0-stride-pair-t4",
+      "labels": []
+    },
+    {
+      "number": 1426,
+      "title": "fix(chunk_fwd_h): 移植 #1307 至 v26.11.0——fp32 state 直传/varlen 游标/gatedEngine 守卫（不含 #1315 布局）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1426",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-27T09:25:54Z",
+      "createdAt": "2026-11-27T07:54:49Z",
+      "headRef": "port/1307-v26.11.0",
+      "labels": []
+    },
+    {
+      "number": 1425,
+      "title": "feat: 支持正式与实验 wheel 独立安装并在同一进程调用",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1425",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-27T09:35:49Z",
+      "createdAt": "2026-11-27T07:38:39Z",
+      "headRef": "feature/experimental-wheel-coexist",
+      "labels": []
+    },
+    {
+      "number": 1424,
+      "title": "[WIP] merge_fwd_bwd_kernel补充atk双标杆测试用例",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1424",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-27T07:08:10Z",
+      "createdAt": "2026-11-27T07:07:53Z",
+      "headRef": "main",
+      "labels": []
+    },
     {
       "number": 1420,
       "title": "refactor(gdn): 整理 FwdO Host 分派与融合 ACLNN 依赖",
@@ -23,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-27T02:40:56Z",
+      "updatedAt": "2026-11-27T13:26:28Z",
       "createdAt": "2026-11-26T09:25:01Z",
       "headRef": "test/atk-passing-smoke-20261126",
       "labels": []
@@ -35,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-27T02:17:20Z",
+      "updatedAt": "2026-11-27T10:27:21Z",
       "createdAt": "2026-11-26T07:48:39Z",
       "headRef": "fix/kda-prepare-pipe-v-1410-v26.10.0",
       "labels": []
@@ -95,7 +143,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-27T03:42:33Z",
+      "updatedAt": "2026-11-27T09:56:39Z",
       "createdAt": "2026-11-25T09:22:52Z",
       "headRef": "a6_finalize",
       "labels": []
@@ -167,7 +215,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T09:21:43Z",
+      "updatedAt": "2026-11-27T10:07:44Z",
       "createdAt": "2026-11-25T03:33:38Z",
       "headRef": "feat/vdn-forward-910b",
       "labels": []
@@ -203,7 +251,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T13:11:13Z",
+      "updatedAt": "2026-11-27T07:49:32Z",
       "createdAt": "2026-11-24T12:42:49Z",
       "headRef": "A6_recompute",
       "labels": []
@@ -275,7 +323,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T12:31:10Z",
+      "updatedAt": "2026-11-27T07:42:52Z",
       "createdAt": "2026-11-23T08:57:03Z",
       "headRef": "dfx/unify-without-report",
       "labels": [
@@ -2948,6 +2996,18 @@
       "updatedAt": "2026-06-30T20:39:09Z",
       "createdAt": "2026-06-03T07:10:32Z",
       "headRef": "github-cherry-zhang-e-old-dqkwg",
+      "labels": []
+    },
+    {
+      "number": 1427,
+      "title": "fix(ci): 补齐 v26.10.0 Stable coverage 失败用例的阶段预期",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1427",
+      "status": "merged",
+      "statusText": "已合入",
+      "mergedAt": "2026-11-27T09:35:54Z",
+      "updatedAt": "2026-11-27T09:35:54Z",
+      "createdAt": "2026-11-27T09:05:49Z",
+      "headRef": "fix/v2610-ci-contract",
       "labels": []
     },
     {
