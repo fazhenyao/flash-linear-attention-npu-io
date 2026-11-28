@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-11-28T13:18:41+08:00",
+  "generatedAt": "2026-11-28T22:40:51+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 876,
+  "total": 879,
   "items": [
+    {
+      "number": 1436,
+      "title": "ci: 独立接入 A2/A5 算子 ATK 框架和逐用例结果缓存",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1436",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-28T12:59:55Z",
+      "createdAt": "2026-11-28T12:28:40Z",
+      "headRef": "ci/atk-smoke-framework-cache-20261128",
+      "labels": []
+    },
+    {
+      "number": 1435,
+      "title": "fix(gdn): distribute packed NTD chunk32 sequences across cores",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1435",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-28T12:31:53Z",
+      "createdAt": "2026-11-28T11:35:44Z",
+      "headRef": "fix/chunk32-ntd-scheduling-main",
+      "labels": []
+    },
+    {
+      "number": 1434,
+      "title": "fix(gdn): distribute packed NTD chunk32 sequences across cores",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1434",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-28T12:32:00Z",
+      "createdAt": "2026-11-28T11:35:14Z",
+      "headRef": "fix/chunk32-ntd-scheduling-v26.10.0",
+      "labels": []
+    },
+    {
+      "number": 1433,
+      "title": "feat(gdn): 新增 Finalize A6 三 head 三槽实现",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1433",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-28T11:05:40Z",
+      "createdAt": "2026-11-28T11:05:30Z",
+      "headRef": "woey/a6-finalize-three-slot",
+      "labels": []
+    },
     {
       "number": 1432,
       "title": "test(atk): 补充 7 个 KDA 算子的 CPU 标杆及用例（3/3）",
@@ -11,7 +59,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-28T03:04:54Z",
+      "updatedAt": "2026-11-28T12:29:25Z",
       "createdAt": "2026-11-28T02:32:58Z",
       "headRef": "test/atk-smoke-kda-20261128",
       "labels": []
@@ -23,7 +71,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-28T03:04:52Z",
+      "updatedAt": "2026-11-28T12:29:23Z",
       "createdAt": "2026-11-28T02:32:56Z",
       "headRef": "test/atk-smoke-gdn-cp-20261128",
       "labels": []
@@ -83,7 +131,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-28T03:48:42Z",
+      "updatedAt": "2026-11-28T12:53:54Z",
       "createdAt": "2026-11-27T07:38:39Z",
       "headRef": "feature/experimental-wheel-coexist",
       "labels": []
@@ -114,12 +162,12 @@
     },
     {
       "number": 1418,
-      "title": "ci: 接入 A2/A5 完整冒烟任务流及首批 7 个算子（1/3）",
+      "title": "test(atk): 补充首批 7 个算子标杆、用例及模型回归（1/3）",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1418",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-28T03:16:03Z",
+      "updatedAt": "2026-11-28T12:29:21Z",
       "createdAt": "2026-11-26T09:25:01Z",
       "headRef": "test/atk-passing-smoke-20261126",
       "labels": []
@@ -191,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-28T04:08:33Z",
+      "updatedAt": "2026-11-28T10:25:10Z",
       "createdAt": "2026-11-25T09:22:52Z",
       "headRef": "a6_finalize",
       "labels": []
@@ -263,7 +311,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-28T03:36:15Z",
+      "updatedAt": "2026-11-28T11:17:32Z",
       "createdAt": "2026-11-25T03:33:38Z",
       "headRef": "feat/vdn-forward-910b",
       "labels": []
@@ -299,7 +347,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-28T03:12:40Z",
+      "updatedAt": "2026-11-28T12:19:48Z",
       "createdAt": "2026-11-24T12:42:49Z",
       "headRef": "A6_recompute",
       "labels": []
@@ -371,7 +419,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-28T02:09:53Z",
+      "updatedAt": "2026-11-28T07:32:20Z",
       "createdAt": "2026-11-23T08:57:03Z",
       "headRef": "dfx/unify-without-report",
       "labels": [
@@ -761,7 +809,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-27T03:07:09Z",
+      "updatedAt": "2026-11-28T08:14:39Z",
       "createdAt": "2026-11-13T03:35:18Z",
       "headRef": "clean-code/chunk-kda-fwd-fused-arch35",
       "labels": []
@@ -1424,18 +1472,6 @@
       "updatedAt": "2026-10-31T06:08:20Z",
       "createdAt": "2026-10-30T09:34:56Z",
       "headRef": "codex/final-chunk-fwd-h-a5",
-      "labels": []
-    },
-    {
-      "number": 1018,
-      "title": "[test] Gdn fwd chunk 32 26.9.1",
-      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1018",
-      "status": "open",
-      "statusText": "未合入",
-      "mergedAt": null,
-      "updatedAt": "2026-11-02T07:24:13Z",
-      "createdAt": "2026-10-30T06:55:19Z",
-      "headRef": "gdn_fwd_chunk_32_26.9.1",
       "labels": []
     },
     {
