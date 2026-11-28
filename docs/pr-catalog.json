@@ -1,9 +1,57 @@
 {
-  "generatedAt": "2026-11-27T23:44:47+08:00",
+  "generatedAt": "2026-11-28T13:18:41+08:00",
   "sourceRepo": "flashserve/flash-linear-attention-npu",
   "rule": "仅包含已合入 PR 和仍开放 PR；关闭且未合入的 PR 不进入候选池。",
-  "total": 872,
+  "total": 876,
   "items": [
+    {
+      "number": 1432,
+      "title": "test(atk): 补充 7 个 KDA 算子的 CPU 标杆及用例（3/3）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1432",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-28T03:04:54Z",
+      "createdAt": "2026-11-28T02:32:58Z",
+      "headRef": "test/atk-smoke-kda-20261128",
+      "labels": []
+    },
+    {
+      "number": 1431,
+      "title": "test(atk): 补充 8 个 GDN 和 CP 算子的 CPU 标杆及用例（2/3）",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1431",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-28T03:04:52Z",
+      "createdAt": "2026-11-28T02:32:56Z",
+      "headRef": "test/atk-smoke-gdn-cp-20261128",
+      "labels": []
+    },
+    {
+      "number": 1430,
+      "title": "[v26.11.0] 保留 wheel 依赖下限，安装时选择 CPU 版 torch",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1430",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-28T02:10:07Z",
+      "createdAt": "2026-11-28T01:58:24Z",
+      "headRef": "fix/cpu-torch-v26.11.0-20261128",
+      "labels": []
+    },
+    {
+      "number": 1429,
+      "title": "保留 wheel 依赖下限，安装时选择 CPU 版 torch",
+      "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1429",
+      "status": "open",
+      "statusText": "未合入",
+      "mergedAt": null,
+      "updatedAt": "2026-11-28T02:10:05Z",
+      "createdAt": "2026-11-28T01:58:11Z",
+      "headRef": "fix/cpu-torch-main-20261128",
+      "labels": []
+    },
     {
       "number": 1428,
       "title": "Conv1d/v26.11.0 stride pair t4",
@@ -35,7 +83,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-27T09:35:49Z",
+      "updatedAt": "2026-11-28T03:48:42Z",
       "createdAt": "2026-11-27T07:38:39Z",
       "headRef": "feature/experimental-wheel-coexist",
       "labels": []
@@ -66,12 +114,12 @@
     },
     {
       "number": 1418,
-      "title": "test(atk): 收录 A2、A5 已通过的 CPU 双标杆冒烟用例",
+      "title": "ci: 接入 A2/A5 完整冒烟任务流及首批 7 个算子（1/3）",
       "url": "https://github.com/flashserve/flash-linear-attention-npu/pull/1418",
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-27T13:26:28Z",
+      "updatedAt": "2026-11-28T03:16:03Z",
       "createdAt": "2026-11-26T09:25:01Z",
       "headRef": "test/atk-passing-smoke-20261126",
       "labels": []
@@ -143,7 +191,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-27T09:56:39Z",
+      "updatedAt": "2026-11-28T04:08:33Z",
       "createdAt": "2026-11-25T09:22:52Z",
       "headRef": "a6_finalize",
       "labels": []
@@ -191,7 +239,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T10:11:28Z",
+      "updatedAt": "2026-11-28T02:51:49Z",
       "createdAt": "2026-11-25T04:28:07Z",
       "headRef": "codex/gdn-fwd-h-fp32-v26.11",
       "labels": []
@@ -203,7 +251,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T09:52:21Z",
+      "updatedAt": "2026-11-28T02:27:24Z",
       "createdAt": "2026-11-25T04:28:04Z",
       "headRef": "codex/gdn-fwd-h-fp32-main",
       "labels": []
@@ -215,7 +263,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-27T10:07:44Z",
+      "updatedAt": "2026-11-28T03:36:15Z",
       "createdAt": "2026-11-25T03:33:38Z",
       "headRef": "feat/vdn-forward-910b",
       "labels": []
@@ -251,7 +299,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-27T07:49:32Z",
+      "updatedAt": "2026-11-28T03:12:40Z",
       "createdAt": "2026-11-24T12:42:49Z",
       "headRef": "A6_recompute",
       "labels": []
@@ -299,7 +347,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-26T02:45:06Z",
+      "updatedAt": "2026-11-28T03:35:16Z",
       "createdAt": "2026-11-23T13:28:38Z",
       "headRef": "feat/mega-recurrent-kda-a5",
       "labels": []
@@ -323,7 +371,7 @@
       "status": "open",
       "statusText": "未合入",
       "mergedAt": null,
-      "updatedAt": "2026-11-27T07:42:52Z",
+      "updatedAt": "2026-11-28T02:09:53Z",
       "createdAt": "2026-11-23T08:57:03Z",
       "headRef": "dfx/unify-without-report",
       "labels": [
